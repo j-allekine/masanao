@@ -1,0 +1,543 @@
+.loginPage {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-columns: minmax(20rem, 0.88fr) minmax(28rem, 1.12fr);
+  background: var(--masanao-canvas);
+  color: var(--masanao-ink);
+  font-family: var(--masanao-type-body-family), sans-serif;
+}
+
+.welcomePanel {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(var(--masanao-space-xl), 5vw, var(--masanao-space-4xl));
+  background: var(--masanao-primary-strong);
+  color: var(--masanao-on-primary);
+}
+
+.welcomePanel::before,
+.welcomePanel::after {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  border: 1px solid var(--masanao-primary);
+  border-radius: 50%;
+  content: "";
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.welcomePanel::before {
+  width: 27rem;
+  height: 27rem;
+  right: -12rem;
+  bottom: 12rem;
+}
+
+.welcomePanel::after {
+  width: 17rem;
+  height: 17rem;
+  right: -7rem;
+  bottom: 17rem;
+}
+
+.panelTop,
+.welcomeCopy,
+.welcomeFooter {
+  position: relative;
+  z-index: 1;
+}
+
+.panelTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--masanao-space-lg);
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--masanao-space-md);
+  color: var(--masanao-on-primary);
+}
+
+.brandGlyph {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: var(--masanao-radius-md);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.08em;
+}
+
+.brandWords {
+  display: grid;
+  gap: var(--masanao-space-xs);
+}
+
+.brandWords strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.brandWords small {
+  color: var(--masanao-primary-soft);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.staffPill {
+  flex-shrink: 0;
+  padding: var(--masanao-space-xs) var(--masanao-space-sm);
+  border: 1px solid var(--masanao-primary);
+  border-radius: var(--masanao-radius-pill);
+  color: var(--masanao-primary-soft);
+  font-size: var(--masanao-type-label-size);
+  font-weight: var(--masanao-type-label-weight);
+  letter-spacing: var(--masanao-type-label-letter-spacing);
+  line-height: var(--masanao-type-label-line-height);
+}
+
+.welcomeCopy {
+  max-width: 31rem;
+  margin: auto 0;
+  padding: var(--masanao-space-4xl) 0;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--masanao-ink-muted);
+  font-size: var(--masanao-type-label-size);
+  font-weight: var(--masanao-type-label-weight);
+  letter-spacing: var(--masanao-type-label-letter-spacing);
+  line-height: var(--masanao-type-label-line-height);
+  text-transform: uppercase;
+}
+
+.welcomeCopy .eyebrow {
+  color: var(--masanao-primary-soft);
+}
+
+.welcomeCopy h1 {
+  max-width: 27rem;
+  margin: var(--masanao-space-md) 0 var(--masanao-space-xl);
+  font-family: var(--masanao-type-h1-family), sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.7rem);
+  font-weight: var(--masanao-type-display-weight);
+  letter-spacing: var(--masanao-type-display-letter-spacing);
+  line-height: 0.98;
+}
+
+.welcomeCopy > p:last-child {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--masanao-primary-soft);
+  font-size: var(--masanao-type-body-sm-size);
+  line-height: 1.6;
+}
+
+.welcomeFooter {
+  display: grid;
+  gap: var(--masanao-space-sm);
+}
+
+.locationLine {
+  display: flex;
+  align-items: center;
+  gap: var(--masanao-space-sm);
+  font-size: var(--masanao-type-body-sm-size);
+  font-weight: 600;
+}
+
+.locationMarker {
+  display: inline-block;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid currentColor;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+
+.welcomeFooter p {
+  max-width: 20rem;
+  margin: 0;
+  color: var(--masanao-primary-soft);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.signInPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: clamp(var(--masanao-space-2xl), 8vw, var(--masanao-space-4xl));
+  background: var(--masanao-surface);
+}
+
+.signInContent {
+  width: min(100%, 31rem);
+}
+
+.signInHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--masanao-space-xl);
+  margin-bottom: var(--masanao-space-2xl);
+}
+
+.signInHeading h2 {
+  margin: var(--masanao-space-sm) 0 var(--masanao-space-md);
+  color: var(--masanao-ink);
+  font-family: var(--masanao-type-h1-family), sans-serif;
+  font-size: var(--masanao-type-h1-size);
+  font-weight: var(--masanao-type-h1-weight);
+  letter-spacing: var(--masanao-type-h1-letter-spacing);
+  line-height: var(--masanao-type-h1-line-height);
+}
+
+.signInHeading p:last-child {
+  max-width: 23rem;
+  margin: 0;
+  color: var(--masanao-ink-muted);
+  font-size: var(--masanao-type-body-sm-size);
+  line-height: var(--masanao-type-body-sm-line-height);
+}
+
+.secureBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--masanao-space-xs);
+  padding-top: var(--masanao-space-xs);
+  color: var(--masanao-success-ink);
+  font-size: var(--masanao-type-label-size);
+  font-weight: var(--masanao-type-label-weight);
+  letter-spacing: 0.035em;
+  line-height: var(--masanao-type-label-line-height);
+  text-transform: uppercase;
+}
+
+.secureMarker,
+.noteMarker,
+.messageMarker {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.secureMarker {
+  width: 1.1rem;
+  height: 1.1rem;
+  background: var(--masanao-success-soft);
+  font-size: 0.72rem;
+}
+
+.loginForm {
+  display: grid;
+  gap: var(--masanao-space-lg);
+}
+
+.fieldGroup {
+  display: grid;
+  gap: var(--masanao-space-sm);
+}
+
+.fieldLabel {
+  color: var(--masanao-ink);
+  font-size: var(--masanao-type-label-size);
+  font-weight: var(--masanao-type-label-weight);
+  letter-spacing: var(--masanao-type-label-letter-spacing);
+  line-height: var(--masanao-type-label-line-height);
+}
+
+.inputShell {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  gap: var(--masanao-space-sm);
+  border: 1px solid var(--masanao-border-control);
+  border-radius: var(--masanao-radius-md);
+  background: var(--masanao-surface-raised);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.inputShell:focus-within {
+  border-color: var(--masanao-primary-strong);
+  box-shadow: 0 0 0 3px var(--masanao-focus-ring);
+}
+
+.inputMarker {
+  display: inline-grid;
+  width: 1.25rem;
+  flex: 0 0 1.25rem;
+  place-items: center;
+  color: var(--masanao-ink-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.lockMarker {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--masanao-ink);
+  font-family: var(--masanao-type-body-family), sans-serif;
+  font-size: var(--masanao-type-body-size);
+  line-height: var(--masanao-type-body-line-height);
+}
+
+.input::placeholder {
+  color: var(--masanao-ink-muted);
+  opacity: 0.8;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.inputShell:has(.input:disabled) {
+  background: var(--masanao-surface-subtle);
+  opacity: 0.8;
+}
+
+.passwordInput {
+  letter-spacing: 0.08em;
+}
+
+.visibilityButton {
+  display: inline-grid;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  flex: 0 0 2.75rem;
+  place-items: center;
+  margin-right: var(--masanao-space-xs);
+  border: 0;
+  border-radius: var(--masanao-radius-sm);
+  background: transparent;
+  color: var(--masanao-ink-muted);
+  cursor: pointer;
+}
+
+.visibilityButton:hover:not(:disabled) {
+  background: var(--masanao-surface-subtle);
+  color: var(--masanao-primary-strong);
+}
+
+.visibilityButton:focus-visible,
+.submitButton:focus-visible {
+  outline: 3px solid var(--masanao-focus-ring);
+  outline-offset: 2px;
+}
+
+.visibilityButton:disabled {
+  cursor: not-allowed;
+}
+
+.eyeMarker {
+  position: relative;
+  display: block;
+  width: 1.15rem;
+  height: 0.72rem;
+  border: 1.5px solid currentColor;
+  border-radius: 70% 30%;
+  transform: rotate(-45deg);
+}
+
+.eyeMarker::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.fieldError {
+  margin: calc(-1 * var(--masanao-space-xs)) 0 0;
+  color: var(--masanao-danger-ink);
+  font-size: var(--masanao-type-body-sm-size);
+  line-height: var(--masanao-type-body-sm-line-height);
+}
+
+.formMessageError,
+.formMessageSuccess {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--masanao-space-sm);
+  margin: 0;
+  padding: var(--masanao-space-md);
+  border: 1px solid;
+  border-radius: var(--masanao-radius-md);
+  font-size: var(--masanao-type-body-sm-size);
+  line-height: var(--masanao-type-body-sm-line-height);
+}
+
+.formMessageError {
+  border-color: var(--masanao-danger);
+  background: var(--masanao-danger-soft);
+  color: var(--masanao-danger-ink);
+}
+
+.formMessageSuccess {
+  border-color: var(--masanao-success);
+  background: var(--masanao-success-soft);
+  color: var(--masanao-success-ink);
+}
+
+.messageMarker {
+  width: 1.1rem;
+  height: 1.1rem;
+  background: currentColor;
+  color: var(--masanao-on-danger);
+  font-size: 0.72rem;
+}
+
+.formMessageSuccess .messageMarker {
+  color: var(--masanao-on-success);
+}
+
+.submitButton {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--masanao-space-md);
+  margin-top: var(--masanao-space-xs);
+  padding: var(--masanao-space-md) var(--masanao-space-lg);
+  border: 1px solid var(--masanao-primary-strong);
+  border-radius: var(--masanao-radius-md);
+  background: var(--masanao-primary);
+  color: var(--masanao-on-primary);
+  cursor: pointer;
+  font-family: var(--masanao-type-body-family), sans-serif;
+  font-size: var(--masanao-type-body-size);
+  font-weight: 600;
+  line-height: var(--masanao-type-body-line-height);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  border-color: var(--masanao-primary-strong);
+  background: var(--masanao-primary-strong);
+}
+
+.submitButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.submitArrow {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.accessNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--masanao-space-sm);
+  margin-top: var(--masanao-space-2xl);
+  padding-top: var(--masanao-space-lg);
+  border-top: 1px solid var(--masanao-border);
+  color: var(--masanao-ink-muted);
+}
+
+.accessNote p {
+  margin: 0;
+  font-size: var(--masanao-type-body-sm-size);
+  line-height: var(--masanao-type-body-sm-line-height);
+}
+
+.noteMarker {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid var(--masanao-border-control);
+  color: var(--masanao-primary-strong);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 48rem) {
+  .loginPage {
+    display: block;
+  }
+
+  .welcomePanel {
+    min-height: auto;
+    padding: var(--masanao-space-xl) var(--masanao-layout-page-gutter) var(--masanao-space-2xl);
+  }
+
+  .welcomeCopy {
+    margin: var(--masanao-space-4xl) 0 var(--masanao-space-3xl);
+    padding: 0;
+  }
+
+  .welcomeCopy h1 {
+    max-width: 24rem;
+    font-size: clamp(2.65rem, 12vw, 4rem);
+  }
+
+  .welcomePanel::before {
+    right: -14rem;
+    bottom: -12rem;
+  }
+
+  .welcomePanel::after {
+    right: -9rem;
+    bottom: -7rem;
+  }
+
+  .signInPanel {
+    min-height: auto;
+    padding: var(--masanao-space-3xl) var(--masanao-layout-page-gutter) var(--masanao-space-4xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .panelTop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .staffPill {
+    display: none;
+  }
+
+  .signInHeading {
+    display: block;
+  }
+
+  .secureBadge {
+    margin-top: var(--masanao-space-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inputShell,
+  .submitButton {
+    transition: none;
+  }
+}

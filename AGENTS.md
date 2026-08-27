@@ -8,14 +8,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Frontend component policy
+## Frontend implementation policy
 
-- Read `components.json` before modifying the component layer.
-- Before creating UI, inspect `components/ui` for existing primitives.
-- Use existing shadcn primitives for buttons, inputs, fields, dialogs, menus, and other controls.
-- If a required primitive is missing, add it through the shadcn CLI.
-- Do not recreate shadcn primitives with native elements and custom CSS.
-- Custom visual designs must compose shadcn primitives. Page-specific CSS is allowed for layout, spacing, surfaces, and branding.
-- Native controls are allowed only inside shadcn primitive implementations or when an explicit exception is documented.
+### UI system
+
+- Before modifying the component layer, read `./components.json`.
+- Before creating UI, inspect `./components/ui/` for existing primitives.
+- Prefer existing shadcn/ui primitives for buttons, inputs, fields, dialogs, menus, and other controls.
+- If a required primitive is missing, add it through the shadcn CLI using the project's package manager.
+- Review generated component files after adding them.
+- Custom page designs must compose shadcn/ui primitives.
+- Use existing component variants and semantic design tokens.
+- Page-specific CSS may handle layout, spacing, surfaces, and branding.
+- Do not recreate shadcn/ui controls with native elements and custom CSS.
+- Native HTML is allowed for semantic structure or when no suitable primitive exists; document exceptions.
 - Invoke the installed `shadcn` skill for component work.
-- Invoke the installed Vercel React best-practices skill for React/Next.js work when relevant.
+
+### React / Next.js
+
+- Follow the existing React and Next.js architecture before introducing new patterns.
+- For Next.js changes, read the relevant guide under `./node_modules/next/dist/docs/`.
+- Keep domain rules, data access, and mutations outside presentational components.
+- Invoke the installed Vercel React best-practices skill for meaningful React/Next.js work.
