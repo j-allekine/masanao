@@ -23,6 +23,33 @@ _Avoid_: Meal Occasion
 **Schedule Entry**:
 The canonical internal term for one named and timed entry inside a Meal Schedule. Its name or description is user-entered; Lunch, Snack, and Feeding are examples, not fixed types.
 
+### Master data
+
+**Item**:
+A distinct supply identity tracked in inventory, with one Base Unit and optional Item Unit Conversions.
+
+**Base Unit**:
+The authoritative unit in which an Item's inventory balance and ledger movements are recorded.
+
+**Unit**:
+A reusable quantity label such as kg, piece, sack, or tray. A Unit label does not define how much of a particular Item it represents.
+_Avoid_: conversion
+
+**Item Unit Conversion**:
+A fixed relationship between an Item's alternate Unit and its Base Unit, such as one sack of rice equaling 25 kg. It is available for both receiving and issuance.
+
+**Conversion Override**:
+A transaction-specific Base Unit quantity that replaces the calculated quantity for that transaction without changing the Item Unit Conversion.
+
+**Category**:
+A flat classification assigned to an Item. It does not determine the Item's Unit or expiry behavior.
+
+**Vendor**:
+A supplier or organization from which supplies may be procured and received.
+
+**Office**:
+An LGU department or office associated with an activity. It is not a stock location.
+
 ### Food and issuance
 
 **Recipe**:

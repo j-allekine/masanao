@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "tokens:generate": "node scripts/generate-tokens-css.mjs",
     "dev": "next dev",
+    "predev": "node scripts/generate-tokens-css.mjs",
     "build": "next build",
+    "prebuild": "node scripts/generate-tokens-css.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",

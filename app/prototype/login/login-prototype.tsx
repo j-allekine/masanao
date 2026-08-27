@@ -3,8 +3,7 @@
 import {
   ArrowLeft,
   ArrowRight,
-  Building2,
-  Check,
+  ClipboardCheck,
   CircleCheck,
   Eye,
   EyeOff,
@@ -12,11 +11,21 @@ import {
   LockKeyhole,
   MapPin,
   ShieldCheck,
+  UserRoundCog,
   UserRound,
 } from "lucide-react";
-import { type FormEvent, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
+import { prototypeTokenStyle } from "./login-prototype.tokens";
 import styles from "./login-prototype.module.css";
 
 const variants = ["A", "B", "C"] as const;
@@ -43,6 +52,8 @@ type LoginFieldsProps = {
   onUsernameChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onTogglePassword: () => void;
+  showFieldHints?: boolean;
+  disabled?: boolean;
 };
 
 function BrandMark({ inverted = false }: { inverted?: boolean }) {
@@ -70,6 +81,8 @@ function LoginFields({
   onUsernameChange,
   onPasswordChange,
   onTogglePassword,
+  showFieldHints = true,
+  disabled = false,
 }: LoginFieldsProps) {
   const fieldClass = `${styles.formFields} ${
     theme === "dark"
@@ -83,7 +96,7 @@ function LoginFields({
     <div className={fieldClass}>
       <label className={styles.fieldLabel} htmlFor={`${idPrefix}-username`}>
         <span>Username</span>
-        <span className={styles.fieldHint}>Assigned by an administrator</span>
+        {showFieldHints ? <span className={styles.fieldHint}>Assigned by an administrator</span> : null}
       </label>
       <div className={styles.inputShell}>
         <UserRound className={styles.inputIcon} aria-hidden="true" />
@@ -97,6 +110,7 @@ function LoginFields({
           spellCheck={false}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${idPrefix}-error` : undefined}
+          disabled={disabled}
           placeholder="e.g. m.alvarez…"
           value={username}
           onChange={(event) => onUsernameChange(event.target.value)}
@@ -105,7 +119,7 @@ function LoginFields({
 
       <label className={styles.fieldLabel} htmlFor={`${idPrefix}-password`}>
         <span>Password</span>
-        <span className={styles.fieldHint}>Your permanent account password</span>
+        {showFieldHints ? <span className={styles.fieldHint}>Your permanent account password</span> : null}
       </label>
       <div className={styles.inputShell}>
         <LockKeyhole className={styles.inputIcon} aria-hidden="true" />
@@ -118,6 +132,7 @@ function LoginFields({
           spellCheck={false}
           aria-invalid={hasError}
           aria-describedby={hasError ? `${idPrefix}-error` : undefined}
+          disabled={disabled}
           placeholder="Enter your password…"
           value={password}
           onChange={(event) => onPasswordChange(event.target.value)}
@@ -126,6 +141,7 @@ function LoginFields({
           className={styles.visibilityButton}
           type="button"
           onClick={onTogglePassword}
+          disabled={disabled}
           aria-label={passwordVisible ? "Hide password" : "Show password"}
           aria-pressed={passwordVisible}
         >
@@ -136,12 +152,17 @@ function LoginFields({
   );
 }
 
-function Feedback({ id, message }: { id: string; message: string }) {
+function Feedback({ id, message, kind = "error" }: { id: string; message: string; kind?: "error" | "success" }) {
   if (!message) return null;
 
   return (
-    <p id={id} className={styles.errorMessage} role="status" aria-live="polite">
-      <span className={styles.errorDot} aria-hidden="true" />
+    <p
+      id={id}
+      className={kind === "success" ? styles.successMessage : styles.errorMessage}
+      role={kind === "error" ? "alert" : "status"}
+      aria-live="polite"
+    >
+      {kind === "success" ? <CircleCheck aria-hidden="true" /> : <span className={styles.errorDot} aria-hidden="true" />}
       {message}
     </p>
   );
@@ -151,6 +172,9 @@ type FormProps = Omit<LoginFieldsProps, "theme"> & {
   theme: LoginFieldsProps["theme"];
   buttonLabel: string;
   feedback: string;
+  successMessage: string;
+  isSubmitting: boolean;
+  isSignedIn: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -158,20 +182,32 @@ function LoginForm({
   theme,
   buttonLabel,
   feedback,
+  successMessage,
+  isSubmitting,
+  isSignedIn,
   onSubmit,
   ...fieldProps
 }: FormProps) {
+  const submitLabel = isSubmitting
+    ? "Checking local access"
+    : isSignedIn
+      ? "Access granted"
+      : buttonLabel;
+
   return (
     <form
       id={`${fieldProps.idPrefix}-login-form`}
       className={styles.loginForm}
       onSubmit={onSubmit}
       noValidate
+      aria-busy={isSubmitting}
     >
-      <LoginFields theme={theme} {...fieldProps} />
+      <LoginFields theme={theme} {...fieldProps} disabled={isSubmitting || isSignedIn} />
       <Feedback id={`${fieldProps.idPrefix}-error`} message={feedback} />
-      <button className={styles.submitButton} type="submit">
-        <span>{buttonLabel}</span>
+      <Feedback id={`${fieldProps.idPrefix}-success`} kind="success" message={successMessage} />
+      <button className={styles.submitButton} type="submit" disabled={isSubmitting || isSignedIn}>
+        <span>{submitLabel}</span>
+        {isSubmitting ? <span className={styles.submitSpinner} aria-hidden="true" /> : null}
         <ArrowRight aria-hidden="true" />
       </button>
     </form>
@@ -251,7 +287,7 @@ function VariantB(props: FormProps) {
           <h1 id="variant-b-title">
             Sign In.
             <br />
-            See What <em>Needs Doing.</em>
+            See What <span>Needs Doing.</span>
           </h1>
           <p className={styles.bDescription}>
             Masanao gives local teams a shared view of the work happening now. Use your assigned
@@ -289,7 +325,7 @@ function VariantB(props: FormProps) {
 
       <footer className={styles.bFooter}>
         <span>Masanao / Municipal operations system</span>
-        <span>v0.1 local access</span>
+        <span>Administrator-managed accounts</span>
       </footer>
     </section>
   );
@@ -300,42 +336,58 @@ function VariantC(props: FormProps) {
     <section className={`${styles.variant} ${styles.variantC}`} aria-labelledby="variant-c-title">
       <div className={styles.cFrame}>
         <div className={styles.cWelcomePanel}>
-          <div className={styles.cTopline}>
-            <span className={styles.prototypePill}>PROTOTYPE / C</span>
-            <span className={styles.cStatus}><span aria-hidden="true" />SYSTEM READY</span>
+          <div className={styles.cVisual}>
+            <Image
+              src="/images/municipal-kitchen-login-v2.png"
+              alt="A municipal kitchen worker preparing leafy vegetables beside a large cooking pot."
+              fill
+              priority
+              sizes="(max-width: 720px) 100vw, 32vw"
+              className={styles.cVisualImage}
+            />
+            <div className={styles.cVisualShade} aria-hidden="true" />
+            <div className={styles.cVisualCaption} aria-hidden="true">
+              <span>COMMUNITY KITCHEN</span>
+              <span>DAILY SERVICE / 01</span>
+            </div>
           </div>
           <div className={styles.cWelcomeCopy}>
-            <div className={styles.cMark} aria-hidden="true">
-              <Building2 />
-            </div>
-            <p className={styles.eyebrow}>MASANAO OPERATIONS</p>
+            <p className={styles.eyebrow}>COMMUNITY KITCHEN · DAILY SERVICE</p>
             <h1 id="variant-c-title">
-              Ready when
-              <br />
-              <span>you are.</span>
+              Make the next <span>handoff count.</span>
             </h1>
-            <p>Tools for the people who keep the work moving.</p>
+            <p>Plan service, track supplies, and keep every accountable movement moving.</p>
           </div>
           <div className={styles.cTrustBlock}>
             <div className={styles.cTrustIcon}>
-              <Check aria-hidden="true" />
+              <ClipboardCheck aria-hidden="true" />
             </div>
             <div>
-              <strong>Managed local access</strong>
-              <span>Accounts are created and maintained by your administrator.</span>
+              <strong>Ready for the next handoff</strong>
+              <span>Assigned work, supplies, and service records stay in one place.</span>
             </div>
           </div>
         </div>
 
         <div className={styles.cFormPanel}>
-          <BrandMark />
-          <div className={styles.cFormHeading}>
-            <p className={styles.eyebrow}>SIGN IN</p>
-            <h2>Welcome to Masanao</h2>
-            <p>Use your assigned username and password.</p>
+          <div
+            className={`${styles.cFormContent} ${
+              props.isSubmitting ? styles.cFormContentSubmitting : ""
+            } ${props.isSignedIn ? styles.cFormContentSignedIn : ""}`}
+          >
+            <div className={styles.cFormHeading}>
+              <p className={styles.eyebrow}>LOCAL ACCOUNT ACCESS</p>
+              <h2>Your work starts here.</h2>
+              <p>Enter the account assigned to you by the municipal administrator.</p>
+            </div>
+            <LoginForm {...props} showFieldHints={false} theme="dark" buttonLabel="Sign in" />
+            <div className={styles.cAccessNote}>
+              <div className={styles.cAccessIcon} aria-hidden="true">
+                <UserRoundCog />
+              </div>
+              <span>Need access or a password reset? Contact your administrator.</span>
+            </div>
           </div>
-          <LoginForm {...props} theme="dark" buttonLabel="Enter workspace" />
-          <p className={styles.cBottomNote}>If you need an account change, contact an administrator.</p>
         </div>
       </div>
     </section>
@@ -376,7 +428,15 @@ export default function LoginPrototype({ initialVariant }: LoginPrototypeProps) 
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "success">("idle");
   const usernameRef = useRef<HTMLInputElement>(null);
+  const submitTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (submitTimerRef.current !== null) window.clearTimeout(submitTimerRef.current);
+    };
+  }, []);
 
   const changeVariant = useCallback((nextVariant: VariantKey) => {
     setVariant(nextVariant);
@@ -408,8 +468,17 @@ export default function LoginPrototype({ initialVariant }: LoginPrototypeProps) 
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback("Check your username and password, or contact an administrator.");
-    usernameRef.current?.focus();
+
+    if (!username.trim() || !password) {
+      setSubmitState("idle");
+      setFeedback("Enter your username and password to continue.");
+      usernameRef.current?.focus();
+      return;
+    }
+
+    setFeedback("");
+    setSubmitState("submitting");
+    submitTimerRef.current = window.setTimeout(() => setSubmitState("success"), 480);
   }
 
   const formProps: FormProps = {
@@ -423,19 +492,24 @@ export default function LoginPrototype({ initialVariant }: LoginPrototypeProps) 
     onUsernameChange: (value) => {
       setUsername(value);
       setFeedback("");
+      setSubmitState("idle");
     },
     onPasswordChange: (value) => {
       setPassword(value);
       setFeedback("");
+      setSubmitState("idle");
     },
     onTogglePassword: () => setPasswordVisible((visible) => !visible),
     buttonLabel: variant === "A" ? "Sign In" : variant === "B" ? "Sign In" : "Enter Workspace",
     feedback,
+    successMessage: submitState === "success" ? `Local session ready for ${username.trim()}.` : "",
+    isSubmitting: submitState === "submitting",
+    isSignedIn: submitState === "success",
     onSubmit: handleSubmit,
   };
 
   return (
-    <main className={styles.prototypeShell}>
+    <main className={styles.prototypeShell} style={prototypeTokenStyle}>
       <a className={styles.skipLink} href={`#${variant.toLowerCase()}-login-form`}>
         Skip to sign-in form
       </a>

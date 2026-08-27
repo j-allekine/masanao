@@ -2,7 +2,7 @@
 version: alpha
 name: Masanao Municipal Kitchen
 description: A calm, compact civic operations system for planning activities, managing food supplies, recording deliveries, and maintaining accountable inventory.
-colors:
+color:
   canvas: "#F3F1EB"
   surface: "#FFFDF8"
   surfaceRaised: "#FFFFFF"
@@ -10,26 +10,37 @@ colors:
   ink: "#1A2825"
   inkMuted: "#53665E"
   border: "#D2DBD4"
+  borderControl: "#738C7F"
   primary: "#1F5A4B"
   primaryStrong: "#164538"
   primarySoft: "#DDEBE1"
   onPrimary: "#FFFDF8"
-  accent: "#B9684A"
+  secondary: "#A3553D"
+  secondarySoft: "#F3E1D8"
+  secondaryInk: "#713B2B"
+  accent: "#A3553D"
   accentSoft: "#F3E1D8"
-  onAccent: "#120C08"
+  onAccent: "#FFFDF8"
+  accentStrong: "#8F4C32"
+  onAccentStrong: "#FFFDF8"
   success: "#2F6B4E"
   successSoft: "#E1F0E4"
   successInk: "#1D4B35"
+  onSuccess: "#FFFDF8"
   warning: "#8A5A18"
   warningSoft: "#F8ECCD"
   warningInk: "#5F3D0C"
+  onWarning: "#FFFDF8"
   danger: "#9D4137"
   dangerSoft: "#F7E1DE"
   dangerInk: "#713029"
+  onDanger: "#FFFDF8"
   info: "#2D6670"
   infoSoft: "#DDECEF"
   infoInk: "#1E4B53"
-  focusRing: "#6F9F80"
+  onInfo: "#FFFDF8"
+  focusRing: "#164538"
+  focusRingInverse: "#FFFDF8"
 typography:
   display:
     fontFamily: Geist
@@ -99,163 +110,195 @@ spacing:
   contentMaxWidth: 90rem
   pageGutter: 24px
   sectionGap: 24px
+  navGroupGap: 20px
 components:
   app-shell:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.canvas}"
+    textColor: "{color.ink}"
     typography: "{typography.body}"
   app-sidebar:
-    backgroundColor: "{colors.primaryStrong}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.primaryStrong}"
+    textColor: "{color.onPrimary}"
     width: "{spacing.sidebarWidth}"
     padding: "{spacing.xl}"
   nav-item:
-    backgroundColor: "{colors.primaryStrong}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.primaryStrong}"
+    textColor: "{color.onPrimary}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   nav-item-active:
-    backgroundColor: "{colors.primarySoft}"
-    textColor: "{colors.primaryStrong}"
+    backgroundColor: "{color.primarySoft}"
+    textColor: "{color.primaryStrong}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   app-header:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.surface}"
+    textColor: "{color.ink}"
     height: 64px
     padding: "{spacing.lg}"
   page-surface:
-    backgroundColor: "{colors.canvas}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.canvas}"
+    textColor: "{color.ink}"
     padding: "{spacing.xl}"
   card:
-    backgroundColor: "{colors.surfaceRaised}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.surfaceRaised}"
+    textColor: "{color.ink}"
     rounded: "{rounded.md}"
     padding: "{spacing.xl}"
   data-table:
-    backgroundColor: "{colors.surfaceRaised}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.surfaceRaised}"
+    textColor: "{color.ink}"
     rounded: "{rounded.sm}"
     padding: 0px
   table-header:
-    backgroundColor: "{colors.surfaceSubtle}"
-    textColor: "{colors.inkMuted}"
+    backgroundColor: "{color.surfaceSubtle}"
+    textColor: "{color.inkMuted}"
     typography: "{typography.label}"
     padding: "{spacing.md}"
   divider:
-    backgroundColor: "{colors.border}"
+    backgroundColor: "{color.border}"
     height: 1px
     width: 100%
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.primary}"
+    textColor: "{color.onPrimary}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-primary-hover:
-    backgroundColor: "{colors.primaryStrong}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.primaryStrong}"
+    textColor: "{color.onPrimary}"
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.primaryStrong}"
+    backgroundColor: "{color.surface}"
+    textColor: "{color.primaryStrong}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-secondary-hover:
-    backgroundColor: "{colors.primarySoft}"
-    textColor: "{colors.primaryStrong}"
+    backgroundColor: "{color.primarySoft}"
+    textColor: "{color.primaryStrong}"
   button-accent:
-    backgroundColor: "{colors.accent}"
-    textColor: "{colors.onAccent}"
+    backgroundColor: "{color.accent}"
+    textColor: "{color.onAccent}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-accent-hover:
-    backgroundColor: "{colors.primaryStrong}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.accentStrong}"
+    textColor: "{color.onAccentStrong}"
   input:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.surface}"
+    textColor: "{color.ink}"
+    borderColor: "{color.borderControl}"
     typography: "{typography.bodySm}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   input-focus:
-    backgroundColor: "{colors.surfaceRaised}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{color.surfaceRaised}"
+    textColor: "{color.ink}"
   status-success:
-    backgroundColor: "{colors.successSoft}"
-    textColor: "{colors.successInk}"
+    backgroundColor: "{color.successSoft}"
+    textColor: "{color.successInk}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-warning:
-    backgroundColor: "{colors.warningSoft}"
-    textColor: "{colors.warningInk}"
+    backgroundColor: "{color.warningSoft}"
+    textColor: "{color.warningInk}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-danger:
-    backgroundColor: "{colors.dangerSoft}"
-    textColor: "{colors.dangerInk}"
+    backgroundColor: "{color.dangerSoft}"
+    textColor: "{color.dangerInk}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-info:
-    backgroundColor: "{colors.infoSoft}"
-    textColor: "{colors.infoInk}"
+    backgroundColor: "{color.infoSoft}"
+    textColor: "{color.infoInk}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   success-action:
-    backgroundColor: "{colors.success}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.success}"
+    textColor: "{color.onSuccess}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   info-action:
-    backgroundColor: "{colors.info}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.info}"
+    textColor: "{color.onInfo}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   warning-action:
-    backgroundColor: "{colors.warning}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.warning}"
+    textColor: "{color.onWarning}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   danger-action:
-    backgroundColor: "{colors.danger}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.danger}"
+    textColor: "{color.onDanger}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   danger-action-hover:
-    backgroundColor: "{colors.dangerInk}"
-    textColor: "{colors.onPrimary}"
+    backgroundColor: "{color.dangerInk}"
+    textColor: "{color.onDanger}"
   role-badge-admin:
-    backgroundColor: "{colors.accentSoft}"
-    textColor: "{colors.onAccent}"
+    backgroundColor: "{color.accentSoft}"
+    textColor: "{color.secondaryInk}"
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "{spacing.sm}"
   role-badge-user:
-    backgroundColor: "{colors.primarySoft}"
-    textColor: "{colors.primaryStrong}"
+    backgroundColor: "{color.primarySoft}"
+    textColor: "{color.primaryStrong}"
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "{spacing.sm}"
   empty-state:
-    backgroundColor: "{colors.infoSoft}"
-    textColor: "{colors.infoInk}"
+    backgroundColor: "{color.infoSoft}"
+    textColor: "{color.infoInk}"
     rounded: "{rounded.md}"
     padding: "{spacing.2xl}"
   focus-indicator:
-    backgroundColor: "{colors.focusRing}"
-    height: 2px
-    width: 2px
+    outlineColor: "{color.focusRing}"
+    outlineWidth: 3px
+    outlineOffset: 2px
+  workbench-nav-group:
+    textColor: "{color.primarySoft}"
+    typography: "{typography.label}"
+  workbench-context-tab:
+    backgroundColor: "{color.surfaceRaised}"
+    textColor: "{color.inkMuted}"
+    typography: "{typography.label}"
+    padding: "{spacing.md}"
+  workbench-context-tab-active:
+    backgroundColor: "{color.primarySoft}"
+    textColor: "{color.primaryStrong}"
+    typography: "{typography.label}"
+    padding: "{spacing.md}"
+  workbench-next-action:
+    backgroundColor: "{color.secondarySoft}"
+    textColor: "{color.secondaryInk}"
+    rounded: "{rounded.md}"
+    padding: "{spacing.xl}"
+  workbench-next-action-accent:
+    backgroundColor: "{color.secondary}"
+    height: 4px
+    width: 100%
 ---
+
+## Token source and themes
+
+`tokens.json` is the machine-readable source for this design system. The `color.*` group is the light theme. Dark-mode overrides live under `theme.dark.*` and are consumed by the `.dark` class in `app/globals.css`.
+
+Use the semantic color roles instead of copying hex values into components. Use `border` for quiet dividers, `borderControl` for form controls, `focusRing` on light surfaces, and `focusRingInverse` on dark surfaces. The clay `accent` is an alias of `secondary` and is reserved for emphasis, role badges, and next-action treatment.
+
+Tailwind consumes the generated `app/tokens.css` layer through `app/globals.css`. Use shadcn-compatible roles such as `bg-background`, `text-foreground`, `bg-primary`, and `text-primary-foreground`, or use Masanao-specific utilities such as `bg-masanao-primary-soft`, `text-masanao-ink-muted`, `p-masanao-xl`, and `text-masanao-h1`.
 
 ## Overview
 
@@ -292,6 +335,8 @@ The default application frame is a persistent left navigation rail with a compac
 
 Prefer compact vertical rhythm: 8px and 12px for control groups, 16px for related content, and 24px for sections. Use tables, timelines, lists, and action panels when they reveal current work more clearly than charts.
 
+For task-heavy screens, use the Workbench shell: group navigation by the staff member's job to be done, keep the current workspace visibly active, and use contextual tabs for the selected record. Keep the primary rail stable while the content area changes from planning context to operational action.
+
 Every page should establish:
 
 1. Where the staff member is.
@@ -315,6 +360,8 @@ Borders should be thin and low contrast. Focus indicators must remain visible an
 ## Components
 
 Primary buttons are green and reserved for the main safe action on a screen. Secondary buttons use quiet surfaces with green text. Clay is an accent, not the default call to action. Destructive actions use the danger treatment and should be labeled with an explicit verb.
+
+The Workbench shell uses grouped navigation labels such as Today, Plan, Supplies, Accountability, and Admin. The selected item uses the soft-green active state, while the clay secondary token is reserved for attention cues, draft or review emphasis, and the next-action panel. Contextual tabs belong to the selected workspace and should not replace the stable global navigation.
 
 Data tables should support scanning: stable column alignment, compact rows, clear headers, readable quantities, and visible status labels. Use monospace type selectively for IDs, quantities, and reference numbers rather than styling the entire table as code.
 
