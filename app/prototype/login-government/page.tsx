@@ -1,6 +1,5 @@
-import LoginPrototype from "./prototype/login/login-prototype";
+import GovernmentLoginPrototype from "./government-login-prototype";
 
-// Three variants of the login page, switchable via `?variant=` on the existing `/` route.
 const variants = ["A", "B", "C"] as const;
 type VariantKey = (typeof variants)[number];
 
@@ -8,7 +7,7 @@ function isVariant(value: string | string[] | undefined): value is VariantKey {
   return typeof value === "string" && variants.includes(value as VariantKey);
 }
 
-export default async function Home({
+export default async function GovernmentLoginPrototypePage({
   searchParams,
 }: {
   searchParams: Promise<{ variant?: string | string[] | undefined }>;
@@ -16,5 +15,5 @@ export default async function Home({
   const requestedVariant = (await searchParams).variant;
   const initialVariant = isVariant(requestedVariant) ? requestedVariant : "A";
 
-  return <LoginPrototype initialVariant={initialVariant} />;
+  return <GovernmentLoginPrototype initialVariant={initialVariant} />;
 }

@@ -1,0 +1,998 @@
+.prototypeShell {
+  min-height: 100dvh;
+  background: #f3f1eb;
+  color: #1a2825;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.skipLink {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 20;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.55rem;
+  background: #1d302a;
+  color: #fffaf2;
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus-visible {
+  outline: 3px solid #c86d4c;
+  outline-offset: 3px;
+  transform: translateY(0);
+}
+
+.variant {
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  color: #1b302b;
+}
+
+.brandMarkInverted {
+  color: #f6f2e8;
+}
+
+.brandGlyph {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 0.72rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: -0.08em;
+}
+
+.brandWords {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.brandWords strong {
+  font-size: 0.88rem;
+  letter-spacing: 0.18em;
+}
+
+.brandWords small {
+  color: currentColor;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #6a7d76;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.19em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.prototypePill,
+.prototypePillDark {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.4rem 0.62rem;
+  border: 1px solid rgb(246 242 232 / 25%);
+  border-radius: 999px;
+  color: #d4e0d8;
+  font-size: 0.56rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+}
+
+.prototypePillDark {
+  border-color: rgb(31 58 49 / 17%);
+  color: #60776d;
+}
+
+.variantA {
+  display: grid;
+  grid-template-columns: minmax(22rem, 0.92fr) minmax(28rem, 1.08fr);
+  background: #f3f1eb;
+}
+
+.aRail {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: clamp(1.7rem, 4vw, 4.8rem);
+  position: relative;
+  background: #183d35;
+  color: #f6f2e8;
+}
+
+.aRail::before,
+.aRail::after {
+  border: 1px solid rgb(215 229 216 / 13%);
+  border-radius: 50%;
+  content: "";
+  height: 32rem;
+  position: absolute;
+  right: -15rem;
+  top: 32%;
+  width: 32rem;
+}
+
+.aRail::after {
+  height: 23rem;
+  right: -10.5rem;
+  top: 40%;
+  width: 23rem;
+}
+
+.aRailTop,
+.aRailBottom,
+.aMessage {
+  position: relative;
+  z-index: 1;
+}
+
+.aRailTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.aMessage {
+  max-width: 30rem;
+  margin: auto 0;
+  padding: 5rem 0;
+}
+
+.aMessage .eyebrow {
+  color: #a4c2ad;
+}
+
+.aMessage h1 {
+  max-width: 24rem;
+  margin: 1rem 0 1.35rem;
+  font-size: clamp(2.5rem, 5vw, 5rem);
+  font-weight: 520;
+  letter-spacing: -0.075em;
+  line-height: 0.97;
+}
+
+.aMessage > p:last-child {
+  max-width: 22rem;
+  color: #b9cbbf;
+  font-size: 0.97rem;
+  line-height: 1.65;
+}
+
+.aRailBottom {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.locationLine {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e4eee4;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+.locationLine svg {
+  width: 0.95rem;
+}
+
+.railNote {
+  max-width: 18rem;
+  margin: 0;
+  color: #8eaa9b;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.aFormPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 8vw, 8rem);
+}
+
+.aFormHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 0 auto 2.4rem;
+  width: min(100%, 31rem);
+}
+
+.aFormHeader h2,
+.bFormHeading h2,
+.cFormHeading h2 {
+  margin: 0.55rem 0 0.65rem;
+  color: #1e2d29;
+  font-size: clamp(1.75rem, 3vw, 2.55rem);
+  font-weight: 550;
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+
+.aFormHeader p:last-child,
+.cFormHeading p:last-child {
+  max-width: 22rem;
+  margin: 0;
+  color: #73847d;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.secureBadge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+  padding-top: 0.35rem;
+  color: #527068;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.secureBadge svg {
+  width: 1rem;
+}
+
+.loginForm {
+  display: grid;
+  gap: 1.15rem;
+  margin: 0 auto;
+  width: min(100%, 31rem);
+}
+
+.formFields {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.fieldLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 720;
+  letter-spacing: 0.02em;
+}
+
+.fieldHint {
+  color: #85938d;
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.inputShell {
+  position: relative;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 3.55rem;
+  padding: 0.9rem 1rem 0.9rem 3rem;
+  border: 1px solid rgb(39 68 59 / 17%);
+  border-radius: 0.85rem;
+  background: rgb(255 255 255 / 70%);
+  color: #1a2825;
+  font: inherit;
+  font-size: 0.9rem;
+  touch-action: manipulation;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.input::placeholder {
+  color: #a0aaa5;
+}
+
+.input:focus-visible {
+  border-color: #5e8876;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(91 133 112 / 12%);
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  width: 1rem;
+  color: #7d938a;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.passwordInput {
+  padding-right: 3.6rem;
+}
+
+.visibilityButton {
+  display: grid;
+  height: 2.4rem;
+  width: 2.4rem;
+  position: absolute;
+  right: 0.58rem;
+  top: 50%;
+  place-items: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: #71877e;
+  cursor: pointer;
+  transform: translateY(-50%);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.visibilityButton:hover,
+.visibilityButton:focus-visible {
+  background: rgb(75 115 96 / 10%);
+  color: #315f4d;
+}
+
+.visibilityButton:focus-visible {
+  outline: 3px solid rgb(75 115 96 / 30%);
+  outline-offset: 2px;
+}
+
+.visibilityButton svg {
+  width: 1.05rem;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.55rem;
+  padding: 0.9rem 1.15rem 0.9rem 1.3rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #c86d4c;
+  color: #fffaf2;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.submitButton:hover {
+  background: #b85d3e;
+  transform: translateY(-1px);
+}
+
+.submitButton:focus-visible {
+  outline: 3px solid rgb(200 109 76 / 30%);
+  outline-offset: 3px;
+}
+
+.submitButton svg {
+  width: 1.1rem;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: -0.2rem 0 0;
+  color: #a74836;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.errorDot {
+  width: 0.42rem;
+  height: 0.42rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.aFooter {
+  display: grid;
+  gap: 0.8rem;
+  margin: 2rem auto 0;
+  width: min(100%, 31rem);
+}
+
+.footerCheck {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #527068;
+  font-size: 0.72rem;
+}
+
+.footerCheck svg {
+  width: 0.95rem;
+}
+
+.aFooter > p {
+  margin: 0;
+  color: #9aa39e;
+  font-size: 0.7rem;
+}
+
+.variantB {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.5rem, 3vw, 3.4rem) clamp(1.5rem, 5vw, 7rem) 2rem;
+  background: #f7f4ee;
+}
+
+.bTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.bTopbarMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  color: #7f9089;
+  font-size: 0.59rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+}
+
+.bTopbarRule {
+  width: 2.4rem;
+  height: 1px;
+  background: #c6cec8;
+}
+
+.bContent {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+  align-items: center;
+  flex: 1;
+  gap: clamp(3rem, 10vw, 12rem);
+  width: min(100%, 90rem);
+  margin: 0 auto;
+  padding: clamp(4rem, 9vh, 9rem) 0 4rem;
+}
+
+.bStatement {
+  max-width: 43rem;
+}
+
+.bKicker {
+  margin: 4rem 0 0.8rem;
+  color: #58746a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.bStatement h1 {
+  max-width: 42rem;
+  margin: 0;
+  color: #1d302a;
+  font-size: clamp(3.4rem, 7.2vw, 8rem);
+  font-weight: 480;
+  letter-spacing: -0.095em;
+  line-height: 0.9;
+  text-wrap: balance;
+}
+
+.bStatement h1 em {
+  color: #c56d4e;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.08em;
+}
+
+.bDescription {
+  max-width: 27rem;
+  margin: 2rem 0 0;
+  color: #74837d;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.bPrinciples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem 2.4rem;
+  margin-top: 3rem;
+}
+
+.bPrinciples > div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #38594d;
+  font-size: 0.71rem;
+  font-weight: 700;
+}
+
+.bPrincipleNumber {
+  color: #bf7255;
+  font-size: 0.61rem;
+  letter-spacing: 0.12em;
+}
+
+.bFormColumn {
+  padding: clamp(1.5rem, 3vw, 3rem) 0 clamp(1.5rem, 3vw, 3rem) clamp(1.5rem, 5vw, 5rem);
+  border-left: 1px solid #d8ddd7;
+}
+
+.bFormHeading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 auto 2rem;
+  width: min(100%, 31rem);
+}
+
+.bFormIcon {
+  display: grid;
+  width: 2.85rem;
+  height: 2.85rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #dce9df;
+  color: #3f715b;
+}
+
+.bFormIcon svg {
+  width: 1.1rem;
+}
+
+.bFormHeading h2 {
+  margin-bottom: 0;
+  font-size: 1.55rem;
+  text-wrap: balance;
+}
+
+.formFieldsQuiet .input {
+  border-color: #d1d9d2;
+  background: #fffdf9;
+}
+
+.formFieldsQuiet .input:focus {
+  border-color: #6b927e;
+  box-shadow: 0 0 0 4px rgb(104 145 123 / 11%);
+}
+
+.bPrivacyNote {
+  max-width: 31rem;
+  margin: 1.5rem auto 0;
+  color: #89948f;
+  font-size: 0.68rem;
+  line-height: 1.6;
+}
+
+.bFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #d8ddd7;
+  padding-top: 1rem;
+  color: #99a39e;
+  font-size: 0.61rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.variantC {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: clamp(1.1rem, 4vw, 4rem);
+  background: #cbded2;
+}
+
+.cFrame {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.78fr) minmax(24rem, 1.22fr);
+  width: min(100%, 74rem);
+  min-height: min(43rem, calc(100dvh - 5rem));
+  overflow: hidden;
+  border-radius: 2rem;
+  background: #153930;
+  box-shadow: 0 1.8rem 4.5rem rgb(22 57 45 / 19%);
+}
+
+.cWelcomePanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(1.5rem, 4vw, 4.2rem);
+  color: #f5f4eb;
+}
+
+.cTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #9dc4a8;
+  font-size: 0.58rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.cStatus > span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #85cf8c;
+  box-shadow: 0 0 0 0.25rem rgb(133 207 140 / 13%);
+}
+
+.cWelcomeCopy {
+  margin: auto 0;
+  padding: 5rem 0;
+}
+
+.cMark {
+  display: grid;
+  width: 3.1rem;
+  height: 3.1rem;
+  margin-bottom: 2.2rem;
+  place-items: center;
+  border: 1px solid rgb(220 240 222 / 27%);
+  border-radius: 1rem;
+  color: #b3d0ba;
+}
+
+.cMark svg {
+  width: 1.35rem;
+}
+
+.cWelcomeCopy .eyebrow {
+  color: #a7c9af;
+}
+
+.cWelcomeCopy h1 {
+  margin: 1rem 0 1rem;
+  font-size: clamp(2.8rem, 5.2vw, 5.3rem);
+  font-weight: 480;
+  letter-spacing: -0.085em;
+  line-height: 0.92;
+}
+
+.cWelcomeCopy h1 span {
+  color: #efa47b;
+}
+
+.cWelcomeCopy p:last-child {
+  max-width: 16rem;
+  margin: 0;
+  color: #a9c2af;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.cTrustBlock {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  max-width: 18rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgb(221 238 222 / 15%);
+}
+
+.cTrustIcon {
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #c0dcc5;
+  color: #1e4a39;
+}
+
+.cTrustIcon svg {
+  width: 0.85rem;
+}
+
+.cTrustBlock div:last-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.cTrustBlock strong {
+  color: #e6f0e5;
+  font-size: 0.74rem;
+}
+
+.cTrustBlock span {
+  color: #9db7a5;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.cFormPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 7vw, 7rem);
+  background: #f8f6ef;
+}
+
+.cFormPanel > .brandMark {
+  margin-bottom: clamp(3.5rem, 8vh, 7rem);
+}
+
+.cFormHeading {
+  margin-bottom: 2rem;
+}
+
+.cFormHeading h2 {
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+}
+
+.formFieldsDark .input {
+  border-color: #d6ded5;
+  background: #fffefa;
+}
+
+.formFieldsDark .input:focus {
+  border-color: #48745e;
+  box-shadow: 0 0 0 4px rgb(72 116 94 / 12%);
+}
+
+.cBottomNote {
+  margin: 1.4rem 0 0;
+  color: #99a39c;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3.5rem;
+  position: fixed;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 10;
+  padding: 0.45rem;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 999px;
+  background: rgb(25 39 34 / 94%);
+  box-shadow: 0 0.8rem 2.2rem rgb(13 33 26 / 25%);
+  color: #edf3e9;
+  transform: translateX(-50%);
+}
+
+.switcher button {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switcher button:hover,
+.switcher button:focus-visible {
+  background: #365b4a;
+}
+
+.switcher button:focus-visible {
+  outline: 3px solid rgb(237 243 233 / 65%);
+  outline-offset: 2px;
+}
+
+.switcher button svg {
+  width: 1rem;
+}
+
+.switcherLabel {
+  display: grid;
+  min-width: 9.8rem;
+  gap: 0.18rem;
+  padding: 0 0.35rem;
+  text-align: center;
+}
+
+.switcherLabel span {
+  color: #9bb7a6;
+  font-size: 0.5rem;
+  font-weight: 750;
+  letter-spacing: 0.17em;
+}
+
+.switcherLabel strong {
+  color: #f4f5ec;
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.switcherLabel i {
+  padding: 0 0.15rem;
+  color: #9bb7a6;
+  font-style: normal;
+}
+
+.switcherHint {
+  margin: 0 0.5rem 0 0.2rem;
+  color: #8ea799;
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 920px) {
+  .variantA {
+    grid-template-columns: minmax(17rem, 0.82fr) minmax(22rem, 1.18fr);
+  }
+
+  .aFormPanel {
+    padding: 3rem;
+  }
+
+  .bContent {
+    gap: 3rem;
+  }
+
+  .bStatement h1 {
+    font-size: clamp(3rem, 7vw, 5rem);
+  }
+
+  .cFrame {
+    min-height: 38rem;
+  }
+
+  .cFormPanel {
+    padding: 3.2rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .variantA {
+    display: block;
+  }
+
+  .aRail {
+    min-height: 26rem;
+    padding: 1.5rem;
+  }
+
+  .aMessage {
+    padding: 3rem 0 2rem;
+  }
+
+  .aMessage h1 {
+    max-width: 20rem;
+    font-size: clamp(2.5rem, 13vw, 4rem);
+  }
+
+  .aFormPanel {
+    padding: 3rem 1.5rem 8rem;
+  }
+
+  .aFormHeader {
+    display: block;
+  }
+
+  .secureBadge {
+    margin-top: 1.1rem;
+  }
+
+  .variantB {
+    padding: 1.5rem 1.25rem 8rem;
+  }
+
+  .bTopbarMeta {
+    display: none;
+  }
+
+  .bContent {
+    display: block;
+    padding: 4rem 0 3rem;
+  }
+
+  .bKicker {
+    margin-top: 2.4rem;
+  }
+
+  .bStatement h1 {
+    font-size: clamp(3.3rem, 15vw, 5rem);
+  }
+
+  .bFormColumn {
+    margin-top: 4rem;
+    padding: 2rem 0 0;
+    border-top: 1px solid #d8ddd7;
+    border-left: 0;
+  }
+
+  .bFooter {
+    display: grid;
+  }
+
+  .variantC {
+    display: block;
+    padding: 0;
+  }
+
+  .cFrame {
+    display: block;
+    min-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .cWelcomePanel {
+    min-height: 30rem;
+    padding: 1.5rem;
+  }
+
+  .cWelcomeCopy {
+    padding: 3rem 0;
+  }
+
+  .cWelcomeCopy h1 {
+    font-size: clamp(3.1rem, 14vw, 5rem);
+  }
+
+  .cFormPanel {
+    min-height: 37rem;
+    padding: 3rem 1.5rem 8rem;
+  }
+
+  .cFormPanel > .brandMark {
+    margin-bottom: 3.5rem;
+  }
+
+  .switcher {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .switcherHint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .submitButton {
+    transition: none;
+  }
+}

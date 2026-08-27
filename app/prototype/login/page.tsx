@@ -1,6 +1,5 @@
-import LoginPrototype from "./prototype/login/login-prototype";
+import LoginPrototype from "./login-prototype";
 
-// Three variants of the login page, switchable via `?variant=` on the existing `/` route.
 const variants = ["A", "B", "C"] as const;
 type VariantKey = (typeof variants)[number];
 
@@ -8,7 +7,7 @@ function isVariant(value: string | string[] | undefined): value is VariantKey {
   return typeof value === "string" && variants.includes(value as VariantKey);
 }
 
-export default async function Home({
+export default async function LoginPrototypePage({
   searchParams,
 }: {
   searchParams: Promise<{ variant?: string | string[] | undefined }>;
