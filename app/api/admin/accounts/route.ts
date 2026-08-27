@@ -27,6 +27,10 @@ const resetPasswordSchema = z.object({
   password: z.string().min(minPasswordLength).max(maxPasswordLength),
 });
 
+const disableAccountSchema = z.object({
+  username: usernameSchema,
+});
+
 async function readJson(request: Request) {
   try {
     return await request.json();
@@ -128,4 +132,31 @@ export async function PATCH(request: Request) {
   });
 
   return Response.json({ account: { username: user.username } });
+}
+
+export async function DELETE(request: Request) {
+  const authorizationResponse = await requireAdministrator(request);
+  if (authorizationResponse) return authorizationResponse;
+
+  const parsedBody = disableAccountSchema.safeParse(await readJson(request));
+  if (!parsedBody.success) return invalidAccountDetails();
+
+  const { username } = parsedBody.data;
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, role: true, username: true },
+  });
+
+  if (!user || user.role !== "staff") {
+    return Response.json({ error: "Account not found" }, { status: 404 });
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { disabled: true },
+  });
+
+  return Response.json({
+    account: { username: user.username, disabled: true },
+  });
 }

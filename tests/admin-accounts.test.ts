@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 import {
+  DELETE as adminAccountsDelete,
   PATCH as adminAccountsPatch,
   POST as adminAccountsPost,
 } from "@/app/api/admin/accounts/route";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
+import { GET as operationsGet } from "@/app/api/operations/route";
 import { prisma } from "@/lib/prisma";
 
 const adminPassword = "administrator-password";
@@ -61,7 +63,7 @@ async function cookieFor(username: string, password: string) {
 }
 
 function adminRequest(
-  method: "PATCH" | "POST",
+  method: "DELETE" | "PATCH" | "POST",
   body: Record<string, string>,
   cookie = "",
 ) {
@@ -74,9 +76,9 @@ function adminRequest(
     body: JSON.stringify(body),
   });
 
-  return method === "POST"
-    ? adminAccountsPost(request)
-    : adminAccountsPatch(request);
+  if (method === "POST") return adminAccountsPost(request);
+  if (method === "DELETE") return adminAccountsDelete(request);
+  return adminAccountsPatch(request);
 }
 
 describe("administrator account management API", () => {
@@ -155,6 +157,99 @@ describe("administrator account management API", () => {
     ).toBe(200);
   });
 
+  it("lets an administrator disable a staff account without revoking its session", async () => {
+    await createAccount({
+      id: "admin-user",
+      username: "municipal.admin",
+      role: "admin",
+      password: adminPassword,
+    });
+    await createAccount({
+      id: "staff-user",
+      username: "kitchen.staff",
+      password: originalStaffPassword,
+    });
+
+    const adminCookie = await cookieFor("municipal.admin", adminPassword);
+    const staffCookie = await cookieFor("kitchen.staff", originalStaffPassword);
+
+    const response = await adminRequest(
+      "DELETE",
+      { username: "kitchen.staff" },
+      adminCookie,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      account: { username: "kitchen.staff", disabled: true },
+    });
+    expect(
+      (
+        await prisma.user.findUnique({
+          where: { username: "kitchen.staff" },
+          select: { disabled: true },
+        })
+      )?.disabled,
+    ).toBe(true);
+    expect(await prisma.session.count()).toBe(2);
+
+    const existingSessionResponse = await operationsGet(
+      new Request("http://localhost:3000/api/operations", {
+        headers: { cookie: staffCookie },
+      }),
+    );
+    expect(existingSessionResponse.status).toBe(200);
+
+    const invalidPasswordResponse = await signInWithUsername(
+      "kitchen.staff",
+      "wrong-password",
+    );
+    const disabledAccountResponse = await signInWithUsername(
+      "kitchen.staff",
+      originalStaffPassword,
+    );
+
+    expect(disabledAccountResponse.status).toBe(401);
+    expect(disabledAccountResponse.headers.get("set-cookie")).toBeNull();
+    expect(await disabledAccountResponse.json()).toEqual(
+      await invalidPasswordResponse.json(),
+    );
+    expect(await prisma.session.count()).toBe(2);
+  });
+
+  it("does not disable administrators or unknown accounts", async () => {
+    await createAccount({
+      id: "admin-user",
+      username: "municipal.admin",
+      role: "admin",
+      password: adminPassword,
+    });
+
+    const adminCookie = await cookieFor("municipal.admin", adminPassword);
+
+    const administratorResponse = await adminRequest(
+      "DELETE",
+      { username: "municipal.admin" },
+      adminCookie,
+    );
+    const unknownResponse = await adminRequest(
+      "DELETE",
+      { username: "missing.staff" },
+      adminCookie,
+    );
+
+    expect(administratorResponse.status).toBe(404);
+    expect(unknownResponse.status).toBe(404);
+    expect(
+      (
+        await prisma.user.findUnique({
+          where: { username: "municipal.admin" },
+          select: { disabled: true },
+        })
+      )?.disabled,
+    ).toBe(false);
+  });
+
   it("restricts account creation and password resets to administrators", async () => {
     await createAccount({
       id: "staff-user",
@@ -177,6 +272,16 @@ describe("administrator account management API", () => {
       [
         "PATCH",
         { username: "kitchen.staff", password: replacementStaffPassword },
+        await cookieFor("kitchen.staff", originalStaffPassword),
+      ],
+      [
+        "DELETE",
+        { username: "kitchen.staff" },
+        "",
+      ],
+      [
+        "DELETE",
+        { username: "kitchen.staff" },
         await cookieFor("kitchen.staff", originalStaffPassword),
       ],
     ] as const;
