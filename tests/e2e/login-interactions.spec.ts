@@ -37,7 +37,7 @@ test.describe("production login interactions", () => {
     await expect(password).toHaveValue(enteredPassword);
   });
 
-  test("submits trimmed username and password and shows success status", async ({ page }) => {
+  test("submits trimmed username and requests the overview handoff", async ({ page }) => {
     await page.route(signInEndpoint, async (route) => {
       if (route.request().method() !== "POST") {
         await route.continue();
@@ -85,15 +85,19 @@ test.describe("production login interactions", () => {
         response.request().method() === "GET" &&
         new URL(response.url()).pathname === "/api/operations",
     );
+    const overviewRequestPromise = page.waitForRequest(
+      (request) => new URL(request.url()).pathname === "/overview",
+    );
 
     await username.fill("  kitchen.staff  ");
     await password.fill("correct-horse-battery-staple");
     await password.press("Enter");
 
-    const [request, response, protectedResponse] = await Promise.all([
+    const [request, response, protectedResponse, overviewRequest] = await Promise.all([
       requestPromise,
       responsePromise,
       protectedResponsePromise,
+      overviewRequestPromise,
     ]);
     expect(response.status()).toBe(200);
     expect(protectedResponse.status()).toBe(200);
@@ -101,7 +105,7 @@ test.describe("production login interactions", () => {
       username: "kitchen.staff",
       password: "correct-horse-battery-staple",
     });
-    await expect(page.getByRole("status")).toBeVisible();
+    expect(new URL(overviewRequest.url()).pathname).toBe("/overview");
   });
 
   test("shows a generic alert for an unauthorized sign-in", async ({ page }) => {
@@ -143,7 +147,6 @@ test.describe("production login interactions", () => {
       await test.step(viewport.name, async () => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await openLogin(page);
-        await expect(page.getByRole("complementary")).toBeVisible();
         await expect(loginForm(page)).toBeVisible();
 
         const layout = await loginMain(page).evaluate((main) => {
@@ -165,6 +168,7 @@ test.describe("production login interactions", () => {
             welcomeRight: welcomeBounds.right,
             signInLeft: signInBounds.left,
             signInTop: signInBounds.top,
+            welcomeDisplay: getComputedStyle(welcome).display,
           };
         });
 
@@ -172,10 +176,12 @@ test.describe("production login interactions", () => {
 
         if (viewport.name === "desktop") {
           expect(layout.display).toBe("grid");
+          expect(layout.welcomeDisplay).not.toBe("none");
           expect(layout.signInLeft).toBeGreaterThanOrEqual(layout.welcomeRight - 1);
         } else {
-          expect(layout.display).toBe("block");
-          expect(layout.signInTop).toBeGreaterThanOrEqual(layout.welcomeBottom - 1);
+          expect(layout.display).toBe("grid");
+          expect(layout.welcomeDisplay).toBe("none");
+          expect(layout.signInTop).toBe(0);
         }
       });
     }

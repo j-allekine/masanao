@@ -1,0 +1,17 @@
+import { Suspense } from "react"
+
+import SidebarPrototype from "./sidebar-prototype"
+
+export default function SidebarPrototypePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh items-center justify-center bg-background text-sm text-muted-foreground">
+          Loading sidebar prototype…
+        </div>
+      }
+    >
+      <SidebarPrototype />
+    </Suspense>
+  )
+}

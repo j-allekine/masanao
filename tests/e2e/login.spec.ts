@@ -12,3 +12,12 @@ test("renders a production login without prototype controls", async ({ page }) =
     page.getByRole("button", { name: "Show password" }),
   ).toBeVisible();
 });
+
+test("redirects an unauthenticated overview visit to login", async ({ page }) => {
+  await page.goto("/overview");
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("main", { name: "Masanao staff sign-in" }),
+  ).toBeVisible();
+});

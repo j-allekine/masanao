@@ -69,14 +69,14 @@
   --color-input: var(--masanao-border-control);
   --color-ring: var(--masanao-focus-ring);
 
-  --color-sidebar: var(--masanao-primary-strong);
-  --color-sidebar-foreground: var(--masanao-on-primary);
-  --color-sidebar-primary: var(--masanao-primary-soft);
-  --color-sidebar-primary-foreground: var(--masanao-primary-strong);
-  --color-sidebar-accent: var(--masanao-primary-soft);
-  --color-sidebar-accent-foreground: var(--masanao-primary-strong);
-  --color-sidebar-border: var(--masanao-border);
-  --color-sidebar-ring: var(--masanao-focus-ring-inverse);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   --color-chart-1: var(--masanao-primary);
   --color-chart-2: var(--masanao-accent);
