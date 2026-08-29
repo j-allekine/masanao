@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@mermaid-js/mermaid-cli": "^11.16.0",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20",
@@ -47,7 +46,6 @@
     "eslint-config-next": "16.3.3",
     "prisma": "7.10.0",
     "prisma-erd-generator": "^3.2.1",
-    "puppeteer": "^25.9.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
