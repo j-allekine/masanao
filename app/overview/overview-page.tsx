@@ -1,92 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
 import {
   ArrowUpRight,
-  BarChart3,
   Boxes,
-  CalendarDays,
   CheckCircle2,
   ClipboardList,
   FileText,
-  LayoutDashboard,
-  PackageCheck,
-  Settings2,
-  Truck,
-  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarSeparator,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
-
-type OverviewUser = {
-  name: string;
-  username: string;
-};
-
-type NavigationItem = {
-  label: string;
-  icon: LucideIcon;
-  active?: boolean;
-};
-
-type NavigationGroup = {
-  label: string;
-  items: NavigationItem[];
-};
-
-const navigationGroups: NavigationGroup[] = [
-  {
-    label: "Today",
-    items: [{ label: "Overview", icon: LayoutDashboard, active: true }],
-  },
-  {
-    label: "Plan",
-    items: [
-      { label: "Activities", icon: ClipboardList },
-      { label: "Schedule", icon: CalendarDays },
-    ],
-  },
-  {
-    label: "Supplies",
-    items: [
-      { label: "Inventory", icon: Boxes },
-      { label: "Deliveries", icon: Truck },
-      { label: "Issuance", icon: PackageCheck },
-    ],
-  },
-  {
-    label: "Accountability",
-    items: [
-      { label: "Records", icon: FileText },
-      { label: "Reports", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { label: "Staff accounts", icon: Users },
-      { label: "Settings", icon: Settings2 },
-    ],
-  },
-];
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import WorkspaceShell, {
+  type WorkspaceUser,
+} from "@/components/workspace-shell";
 
 const overviewModules = [
   {
@@ -109,98 +36,12 @@ const overviewModules = [
   },
 ];
 
-function getInitials(name: string) {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-
-  return initials || "MS";
-}
-
 function getFirstName(name: string) {
   const firstName = name.split(/\s+/).filter(Boolean)[0];
   return firstName || "there";
 }
 
-function AppSidebar({ user }: { user: OverviewUser }) {
-  return (
-    <Sidebar collapsible="offcanvas" variant="sidebar">
-      <SidebarHeader className="gap-5 p-4">
-        <Link
-          href="/overview"
-          className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-        >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-heading text-sm font-semibold text-sidebar-primary-foreground">
-            M
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold tracking-[0.08em]">MASANAO</span>
-            <span className="block truncate text-xs text-sidebar-foreground/65">
-              Municipal operations
-            </span>
-          </span>
-        </Link>
-
-        <div className="rounded-md border border-sidebar-border/70 bg-sidebar-accent/45 p-3">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/60">
-            Current workspace
-          </p>
-          <p className="mt-1 truncate text-sm font-medium">Operations desk</p>
-          <p className="mt-1 text-xs text-sidebar-foreground/65">Masanao, Lanao del Sur</p>
-        </div>
-      </SidebarHeader>
-
-      <SidebarSeparator />
-
-      <SidebarContent>
-        {navigationGroups.map((group) => (
-          <SidebarGroup key={group.label} className="py-3">
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton
-                        type="button"
-                        disabled={!item.active}
-                        isActive={item.active}
-                        tooltip={item.active ? item.label : `${item.label} is coming next`}
-                      >
-                        <Icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-
-      <SidebarFooter className="gap-3 p-4">
-        <div className="flex items-center gap-3 rounded-md border border-sidebar-border/70 p-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
-            {getInitials(user.name)}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium">{user.name}</span>
-            <span className="block truncate text-xs text-sidebar-foreground/65">{user.username}</span>
-          </span>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
-  );
-}
-
-function OverviewContent({ user }: { user: OverviewUser }) {
+function OverviewContent({ user }: { user: WorkspaceUser }) {
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <header className="flex min-h-16 items-center justify-between gap-4 border-b px-4 sm:px-6">
@@ -310,15 +151,10 @@ function OverviewContent({ user }: { user: OverviewUser }) {
   );
 }
 
-export default function OverviewPage({ user }: { user: OverviewUser }) {
+export default function OverviewPage({ user }: { user: WorkspaceUser }) {
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar user={user} />
-        <SidebarInset>
-          <OverviewContent user={user} />
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+    <WorkspaceShell user={user} activePath="/overview">
+      <OverviewContent user={user} />
+    </WorkspaceShell>
   );
 }
