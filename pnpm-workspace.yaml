@@ -2,6 +2,5 @@ allowBuilds:
   '@prisma/engines': true
   better-sqlite3: true
   prisma: false
-  puppeteer: true
   sharp: false
   unrs-resolver: false
