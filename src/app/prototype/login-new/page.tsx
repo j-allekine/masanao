@@ -1,4 +1,4 @@
-import LoginPrototype from "./login-prototype"
+import LoginPrototype from "@/components/prototypes/login-new/login-prototype"
 
 const validVariants = ["A", "B", "C"] as const
 type LoginVariant = (typeof validVariants)[number]

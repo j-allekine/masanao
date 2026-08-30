@@ -48,6 +48,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Test architecture boundaries
+        run: pnpm test:architecture
+
       - name: Run tests
         run: pnpm test:run -- --passWithNoTests
 

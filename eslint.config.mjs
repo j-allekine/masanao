@@ -32,10 +32,14 @@ const architectureConfig = {
         partialMatch: false,
         capture: ["featureName"],
       },
+      // WDS models each app file as a separate element so only CSS can flow
+      // between app files. Boundaries v7 retains `mode: "full"` as the only
+      // file-level element form; `partialMatch: false` still uses folders.
       {
         type: "app",
-        pattern: "src/app",
-        partialMatch: false,
+        pattern: "src/app/**/*",
+        mode: "full",
+        capture: ["_", "fileName"],
       },
       {
         type: "feature",
@@ -92,6 +96,17 @@ const architectureConfig = {
           {
             from: { element: { type: "app" } },
             allow: { to: { element: { type: sharedTypes } } },
+          },
+          {
+            from: { element: { type: "app" } },
+            allow: {
+              to: {
+                element: {
+                  type: "app",
+                  captured: { fileName: "*.css" },
+                },
+              },
+            },
           },
           {
             from: { element: { type: featureTypes } },

@@ -45,7 +45,7 @@ import {
 import {
   workspaceNavigationGroups,
   type WorkspaceSectionId,
-} from "@/app/_lib/workspace-navigation"
+} from "@/lib/workspace-navigation"
 
 export type AppSidebarUser = {
   name: string

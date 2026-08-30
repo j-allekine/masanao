@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 
-import SidebarPrototype from "./sidebar-prototype"
+import SidebarPrototype from "@/components/prototypes/sidebar/sidebar-prototype"
 
 export default function SidebarPrototypePage() {
   return (
