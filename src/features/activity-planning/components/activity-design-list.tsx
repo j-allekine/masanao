@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
 
 import {
   Alert,
@@ -108,6 +109,14 @@ function ActivityDesignListItemCard({
         </p>
       ) : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2 border-t pt-3">
+        <Button
+          nativeButton={false}
+          render={<Link href={`/activity-designs/${activityDesign.id}`} />}
+          size="sm"
+        >
+          Open
+          <ArrowRight data-icon="inline-end" />
+        </Button>
         <Button type="button" variant="outline" size="sm" onClick={onEdit}>
           <Pencil data-icon="inline-start" />
           Edit

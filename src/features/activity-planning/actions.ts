@@ -1,5 +1,6 @@
 "use server";
 
+import { executeCreateActivity } from "./server/actions/create-activity";
 import { executeCreateActivityDesign } from "./server/actions/create-activity-design";
 import { executeDeleteActivityDesign } from "./server/actions/delete-activity-design";
 import { executeUpdateActivityDesign } from "./server/actions/update-activity-design";
@@ -13,6 +14,10 @@ export async function createActivityDesignAction(
   formData: FormData,
 ): Promise<ActivityDesignActionState> {
   return executeCreateActivityDesign(formData);
+}
+
+export async function createActivityAction(formData: FormData) {
+  return executeCreateActivity(formData);
 }
 
 export async function updateActivityDesignAction(
