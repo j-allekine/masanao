@@ -51,6 +51,20 @@ export function isForeignKeyConstraintViolation(error: unknown) {
   );
 }
 
+export function isRecordNotFound(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  );
+}
+
+export function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
+  );
+}
+
 function toActivityListItem(activity: {
   id: string;
   activityDesignId: string;
@@ -144,4 +158,79 @@ export async function createActivityRecord(
     if (isForeignKeyConstraintViolation(error)) return null;
     throw error;
   }
+}
+
+export async function updateActivityRecord(
+  activityDesignId: string,
+  activityId: string,
+  input: ActivityInput,
+): Promise<ActivityListItem | null> {
+  const existingActivity = await prisma.activity.findFirst({
+    where: { id: activityId, activityDesignId },
+    select: { id: true },
+  });
+
+  if (!existingActivity) return null;
+
+  try {
+    const activity = await prisma.activity.update({
+      where: { id: activityId },
+      data: {
+        name: input.name,
+        particulars: input.particulars ?? null,
+        scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
+        venue: input.venue ?? null,
+        plannedParticipantCount: input.plannedParticipantCount ?? null,
+        plannedBudgetCentavos: input.plannedBudgetCentavos ?? null,
+      },
+      select: activitySelect,
+    });
+
+    return toActivityListItem(activity);
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+    throw error;
+  }
+}
+
+export async function deleteActivityRecord(
+  activityDesignId: string,
+  activityId: string,
+) {
+  const activity = await prisma.activity.findFirst({
+    where: { id: activityId, activityDesignId },
+    select: {
+      _count: { select: { mealSchedules: true } },
+    },
+  });
+
+  if (!activity) return null;
+
+  if (activity._count.mealSchedules > 0) {
+    return {
+      deleted: false as const,
+      mealScheduleCount: activity._count.mealSchedules,
+    };
+  }
+
+  try {
+    await prisma.activity.delete({ where: { id: activityId } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+
+    if (isRestrictiveRelationViolation(error)) {
+      const currentMealScheduleCount = await prisma.mealSchedule.count({
+        where: { activityId },
+      });
+
+      return {
+        deleted: false as const,
+        mealScheduleCount: currentMealScheduleCount,
+      };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }
