@@ -21,7 +21,7 @@ process.env.BETTER_AUTH_SECRET =
 process.env.BETTER_AUTH_URL = "http://localhost:3000";
 
 const database = new Database(join(testDatabaseDirectory, "test.db"));
-const migrationDirectory = join(process.cwd(), "prisma", "migrations");
+const migrationDirectory = join(process.cwd(), "src", "prisma", "migrations");
 
 for (const migration of readdirSync(migrationDirectory, {
   withFileTypes: true,
@@ -36,7 +36,7 @@ for (const migration of readdirSync(migrationDirectory, {
 database.close();
 
 afterAll(async () => {
-  const { prisma } = await import("../lib/prisma");
+  const { prisma } = await import("@/prisma/client");
 
   await prisma.$disconnect();
   rmSync(testDatabaseDirectory, { force: true, recursive: true });

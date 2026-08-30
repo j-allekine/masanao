@@ -5,7 +5,7 @@ import {
   POST as activityDesignsPost,
 } from "@/app/api/activity-designs/route";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/prisma/client";
 
 const staffPassword = "correct-horse-battery-staple";
 const validActivityDesign = {

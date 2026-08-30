@@ -1,5 +1,0 @@
-import WorkspaceLoading from "@/components/workspace-loading"
-
-export default function OverviewLoading() {
-  return <WorkspaceLoading />
-}

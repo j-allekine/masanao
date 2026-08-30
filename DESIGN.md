@@ -294,11 +294,11 @@ components:
 
 ## Token source and themes
 
-`tokens.json` is the machine-readable source for this design system. The `color.*` group is the light theme. Dark-mode overrides live under `theme.dark.*` and are consumed by the `.dark` class in `app/globals.css`.
+`tokens.json` is the machine-readable source for this design system. The `color.*` group is the light theme. Dark-mode overrides live under `theme.dark.*` and are consumed by the `.dark` class in `src/app/globals.css`.
 
 Use the semantic color roles instead of copying hex values into components. Use `border` for quiet dividers, `borderControl` for form controls, `focusRing` on light surfaces, and `focusRingInverse` on dark surfaces. The clay `accent` is an alias of `secondary` and is reserved for emphasis, role badges, and next-action treatment.
 
-Tailwind consumes the generated `app/tokens.css` layer through `app/globals.css`. Use shadcn-compatible roles such as `bg-background`, `text-foreground`, `bg-primary`, and `text-primary-foreground`, or use Masanao-specific utilities such as `bg-masanao-primary-soft`, `text-masanao-ink-muted`, `p-masanao-xl`, and `text-masanao-h1`.
+Tailwind consumes the generated `src/app/tokens.css` layer through `src/app/globals.css`. Use shadcn-compatible roles such as `bg-background`, `text-foreground`, `bg-primary`, and `text-primary-foreground`, or use Masanao-specific utilities such as `bg-masanao-primary-soft`, `text-masanao-ink-muted`, `p-masanao-xl`, and `text-masanao-h1`.
 
 ## Overview
 
