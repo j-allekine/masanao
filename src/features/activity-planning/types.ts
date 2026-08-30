@@ -19,6 +19,12 @@ export type ActivityFieldErrors = Partial<
   Record<ActivityField | "form", string[]>
 >;
 
+export type MealScheduleField = "label" | "mealTime" | "plannedServings";
+
+export type MealScheduleFieldErrors = Partial<
+  Record<MealScheduleField | "form", string[]>
+>;
+
 export type ActivityDesignListItem = {
   id: string;
   activityDesignNo: string;
@@ -27,6 +33,14 @@ export type ActivityDesignListItem = {
   officeName: string;
   aipReferenceCode: string | null;
   activityCount: number;
+};
+
+export type MealScheduleListItem = {
+  id: string;
+  activityId: string;
+  label: string;
+  mealTime: string;
+  plannedServings: number | null;
 };
 
 export type ActivityListItem = {
@@ -39,6 +53,7 @@ export type ActivityListItem = {
   plannedParticipantCount: number | null;
   plannedBudgetCentavos: number | null;
   mealScheduleCount: number;
+  mealSchedules: MealScheduleListItem[];
 };
 
 export type ActivityDesignDetail = ActivityDesignListItem & {
@@ -111,6 +126,18 @@ export type ActivityDeleteResult =
       mealScheduleCount?: number;
     };
 
+export type MealScheduleCreateResult =
+  | {
+      ok: true;
+      mealSchedule: MealScheduleListItem;
+    }
+  | {
+      ok: false;
+      kind: "validation" | "not-found";
+      error: string;
+      fields: MealScheduleFieldErrors;
+    };
+
 export type ActivityDesignUpdateActionState =
   | { status: "success"; activityDesign: ActivityDesignListItem }
   | {
@@ -151,3 +178,11 @@ export type ActivityUpdateActionState =
 export type ActivityDeleteActionState =
   | { status: "success" }
   | { status: "error"; error: string };
+
+export type MealScheduleActionState =
+  | { status: "success"; mealSchedule: MealScheduleListItem }
+  | {
+      status: "error";
+      error: string;
+      fields: MealScheduleFieldErrors;
+    };
