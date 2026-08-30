@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getCurrentActor } from "@/server/auth";
+import type { CurrentActor } from "@/server/auth";
 import {
   createStaffAccountSchema,
   disableStaffAccountSchema,
@@ -15,95 +15,109 @@ import {
 } from "./server/commands/accounts";
 import { isAdministrator } from "./server/policies/authorization";
 
-async function readJson(request: Request) {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
-}
+type AccessManagementFailure = {
+  ok: false;
+  kind: "forbidden" | "validation" | "duplicate" | "not-found";
+  error: string;
+};
 
-async function requireAdministrator(request: Request) {
-  const actor = await getCurrentActor(request);
-
-  if (!actor) {
-    return Response.json(
-      { error: "Authentication required" },
-      { status: 401 },
-    );
-  }
-
+async function authorizeAdministrator(
+  actor: CurrentActor,
+): Promise<AccessManagementFailure | null> {
   if (!(await isAdministrator(actor))) {
-    return Response.json(
-      { error: "Administrator access required" },
-      { status: 403 },
-    );
+    return {
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    };
   }
 
   return null;
 }
 
-function invalidAccountDetails() {
-  return Response.json({ error: "Invalid account details" }, { status: 400 });
+function invalidAccountDetails(): AccessManagementFailure {
+  return {
+    ok: false,
+    kind: "validation",
+    error: "Invalid account details",
+  };
 }
 
-export async function createStaffAccount(request: Request) {
-  const authorizationResponse = await requireAdministrator(request);
-  if (authorizationResponse) return authorizationResponse;
+export async function createStaffAccount(
+  actor: CurrentActor,
+  input: unknown,
+) {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
 
-  const parsedBody = createStaffAccountSchema.safeParse(await readJson(request));
+  const parsedBody = createStaffAccountSchema.safeParse(input);
   if (!parsedBody.success) return invalidAccountDetails();
 
   try {
     const account = await createStaffAccountCommand(parsedBody.data);
-    return Response.json({ account }, { status: 201 });
+    return { ok: true as const, account };
   } catch (error) {
     if (error instanceof AccountAlreadyExistsError) {
-      return Response.json({ error: error.message }, { status: 409 });
+      return {
+        ok: false as const,
+        kind: "duplicate" as const,
+        error: error.message,
+      };
     }
 
     throw error;
   }
 }
 
-export async function resetStaffPassword(request: Request) {
-  const authorizationResponse = await requireAdministrator(request);
-  if (authorizationResponse) return authorizationResponse;
+export async function resetStaffPassword(
+  actor: CurrentActor,
+  input: unknown,
+) {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
 
-  const parsedBody = resetAccountPasswordSchema.safeParse(
-    await readJson(request),
-  );
+  const parsedBody = resetAccountPasswordSchema.safeParse(input);
   if (!parsedBody.success) return invalidAccountDetails();
 
   try {
     const account = await resetAccountPassword(parsedBody.data);
-    return Response.json({ account: { username: account.username } });
+    return { ok: true as const, account: { username: account.username } };
   } catch (error) {
     if (error instanceof AccountNotFoundError) {
-      return Response.json({ error: error.message }, { status: 404 });
+      return {
+        ok: false as const,
+        kind: "not-found" as const,
+        error: error.message,
+      };
     }
 
     throw error;
   }
 }
 
-export async function disableStaffAccount(request: Request) {
-  const authorizationResponse = await requireAdministrator(request);
-  if (authorizationResponse) return authorizationResponse;
+export async function disableStaffAccount(
+  actor: CurrentActor,
+  input: unknown,
+) {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
 
-  const parsedBody = disableStaffAccountSchema.safeParse(
-    await readJson(request),
-  );
+  const parsedBody = disableStaffAccountSchema.safeParse(input);
   if (!parsedBody.success) return invalidAccountDetails();
 
   try {
     const account = await disableStaffAccountCommand(parsedBody.data);
-    return Response.json({
-      account: { username: account.username, disabled: true },
-    });
+    return {
+      ok: true as const,
+      account: { username: account.username, disabled: true as const },
+    };
   } catch (error) {
     if (error instanceof AccountNotFoundError) {
-      return Response.json({ error: error.message }, { status: 404 });
+      return {
+        ok: false as const,
+        kind: "not-found" as const,
+        error: error.message,
+      };
     }
 
     throw error;
