@@ -90,6 +90,27 @@ export type ActivityCreateResult =
       fields: ActivityFieldErrors;
     };
 
+export type ActivityUpdateResult =
+  | {
+      ok: true;
+      activity: ActivityListItem;
+    }
+  | {
+      ok: false;
+      kind: "validation" | "not-found";
+      error: string;
+      fields: ActivityFieldErrors;
+    };
+
+export type ActivityDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "not-found" | "has-meal-schedules";
+      error: string;
+      mealScheduleCount?: number;
+    };
+
 export type ActivityDesignUpdateActionState =
   | { status: "success"; activityDesign: ActivityDesignListItem }
   | {
@@ -118,3 +139,15 @@ export type ActivityActionState =
       error: string;
       fields: ActivityFieldErrors;
     };
+
+export type ActivityUpdateActionState =
+  | { status: "success"; activity: ActivityListItem }
+  | {
+      status: "error";
+      error: string;
+      fields: ActivityFieldErrors;
+    };
+
+export type ActivityDeleteActionState =
+  | { status: "success" }
+  | { status: "error"; error: string };
