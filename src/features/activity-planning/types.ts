@@ -29,6 +29,39 @@ export type ActivityDesignCreateResult =
       fields: FieldErrors;
     };
 
+export type ActivityDesignUpdateResult =
+  | {
+      ok: true;
+      activityDesign: ActivityDesignListItem;
+    }
+  | {
+      ok: false;
+      kind: "validation" | "duplicate" | "not-found";
+      error: string;
+      fields: FieldErrors;
+    };
+
+export type ActivityDesignDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "not-found" | "has-activities";
+      error: string;
+      activityCount?: number;
+    };
+
+export type ActivityDesignUpdateActionState =
+  | { status: "success"; activityDesign: ActivityDesignListItem }
+  | {
+      status: "error";
+      error: string;
+      fields: FieldErrors;
+    };
+
+export type ActivityDesignDeleteActionState =
+  | { status: "success" }
+  | { status: "error"; error: string };
+
 export type ActivityDesignActionState =
   | { status: "idle" }
   | { status: "success" }
