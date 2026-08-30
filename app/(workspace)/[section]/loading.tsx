@@ -1,5 +1,5 @@
 import WorkspaceLoading from "@/components/workspace-loading"
 
-export default function OverviewLoading() {
+export default function WorkspaceSectionLoading() {
   return <WorkspaceLoading />
 }

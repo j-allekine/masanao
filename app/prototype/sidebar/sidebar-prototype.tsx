@@ -1,16 +1,18 @@
 "use client"
 
+// Three sidebar layouts, switchable via ?variant=, on /prototype/sidebar.
+
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useCallback, useEffect } from "react"
 import type { CSSProperties } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
-  Archive,
-  ArrowUpRight,
   BarChart3,
   Boxes,
   CalendarDays,
-  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -31,15 +33,18 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-type PrototypeVariant = "workbench" | "quiet" | "compact"
+type PrototypeVariant = "grouped" | "workflow" | "compact"
 type SectionId =
   | "dashboard"
   | "activities"
@@ -65,11 +70,11 @@ type NavigationGroup = {
 
 const navigationGroups: NavigationGroup[] = [
   {
-    label: "Today",
+    label: "Overview",
     items: [{ id: "dashboard", label: "Dashboard", icon: LayoutDashboard }],
   },
   {
-    label: "Plan",
+    label: "Planning",
     items: [
       { id: "activities", label: "Activities", icon: ClipboardList },
       { id: "schedule", label: "Schedule", icon: CalendarDays },
@@ -91,7 +96,7 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
-    label: "Admin",
+    label: "Administration",
     items: [
       { id: "staff", label: "Staff accounts", icon: Users },
       { id: "settings", label: "Settings", icon: Settings2 },
@@ -99,131 +104,7 @@ const navigationGroups: NavigationGroup[] = [
   },
 ]
 
-const sectionIds = navigationGroups.flatMap((group) =>
-  group.items.map((item) => item.id)
-)
-
-const sectionContent: Record<
-  SectionId,
-  {
-    eyebrow: string
-    title: string
-    description: string
-    action: string
-    metrics: { label: string; value: string; detail: string }[]
-  }
-> = {
-  dashboard: {
-    eyebrow: "Today · Wednesday, August 28",
-    title: "Good morning, Mara.",
-    description: "Here is the work that needs attention across the municipality.",
-    action: "Review today’s queue",
-    metrics: [
-      { label: "Open activities", value: "08", detail: "3 need planning" },
-      { label: "Supply movements", value: "14", detail: "5 arriving today" },
-      { label: "Records to review", value: "06", detail: "2 due before noon" },
-    ],
-  },
-  activities: {
-    eyebrow: "Plan · Activities",
-    title: "Activities",
-    description: "Keep each municipal activity moving toward its next safe action.",
-    action: "Add activity",
-    metrics: [
-      { label: "Draft", value: "03", detail: "Awaiting details" },
-      { label: "Scheduled", value: "05", detail: "This month" },
-      { label: "Completed", value: "18", detail: "This quarter" },
-    ],
-  },
-  schedule: {
-    eyebrow: "Plan · Schedule",
-    title: "Schedule",
-    description: "See what is planned next and where staff or supplies may overlap.",
-    action: "Plan an activity",
-    metrics: [
-      { label: "Today", value: "04", detail: "Across 3 locations" },
-      { label: "This week", value: "17", detail: "2 conflicts" },
-      { label: "Unassigned", value: "02", detail: "Need an owner" },
-    ],
-  },
-  inventory: {
-    eyebrow: "Supplies · Inventory",
-    title: "Inventory",
-    description: "Know what is available before the next request reaches the storeroom.",
-    action: "View low stock",
-    metrics: [
-      { label: "Tracked items", value: "126", detail: "Across 4 locations" },
-      { label: "Low stock", value: "07", detail: "Need replenishment" },
-      { label: "Last count", value: "Aug 27", detail: "98% reconciled" },
-    ],
-  },
-  deliveries: {
-    eyebrow: "Supplies · Deliveries",
-    title: "Deliveries",
-    description: "Record incoming supplies and keep the receiving trail complete.",
-    action: "Record delivery",
-    metrics: [
-      { label: "Expected today", value: "05", detail: "2 in transit" },
-      { label: "For review", value: "03", detail: "Missing attachments" },
-      { label: "Received this month", value: "42", detail: "Across 9 suppliers" },
-    ],
-  },
-  issuance: {
-    eyebrow: "Supplies · Issuance",
-    title: "Issuance",
-    description: "Track where supplies go after they leave the storeroom.",
-    action: "Create issuance",
-    metrics: [
-      { label: "Pending", value: "04", detail: "Need approval" },
-      { label: "Issued today", value: "11", detail: "For 6 activities" },
-      { label: "This month", value: "86", detail: "All acknowledged" },
-    ],
-  },
-  records: {
-    eyebrow: "Accountability · Records",
-    title: "Records",
-    description: "Find the evidence behind each movement, activity, and decision.",
-    action: "Find a record",
-    metrics: [
-      { label: "Needs review", value: "06", detail: "Oldest is 2 days" },
-      { label: "Complete", value: "91%", detail: "This month" },
-      { label: "Archived", value: "284", detail: "All time" },
-    ],
-  },
-  reports: {
-    eyebrow: "Accountability · Reports",
-    title: "Reports",
-    description: "Turn operational records into a clear view for the people accountable.",
-    action: "Create a report",
-    metrics: [
-      { label: "Ready to share", value: "04", detail: "Updated this week" },
-      { label: "In progress", value: "02", detail: "Awaiting final data" },
-      { label: "Last published", value: "Aug 25", detail: "Monthly supplies" },
-    ],
-  },
-  staff: {
-    eyebrow: "Admin · Staff accounts",
-    title: "Staff accounts",
-    description: "Keep access aligned with each staff member’s responsibilities.",
-    action: "Add staff account",
-    metrics: [
-      { label: "Active staff", value: "18", detail: "Across 5 teams" },
-      { label: "Pending access", value: "02", detail: "Need administrator review" },
-      { label: "Last change", value: "Today", detail: "One role updated" },
-    ],
-  },
-  settings: {
-    eyebrow: "Admin · Settings",
-    title: "Settings",
-    description: "Manage the municipality’s operational defaults and account rules.",
-    action: "Review settings",
-    metrics: [
-      { label: "Organization", value: "Ready", detail: "Profile complete" },
-      { label: "Permissions", value: "5", detail: "Role groups" },
-      { label: "Audit status", value: "Good", detail: "No open warnings" },
-    ],
-  },
-}
+const navigationItems = navigationGroups.flatMap((group) => group.items)
 
 const prototypeVariants: {
   id: PrototypeVariant
@@ -231,19 +112,46 @@ const prototypeVariants: {
   description: string
 }[] = [
   {
-    id: "workbench",
-    label: "Workbench rail",
-    description: "Deep green, grouped, and task-oriented",
+    id: "grouped",
+    label: "Sidebar-07 shell",
+    description: "Its inset, icon-collapsing shell with our flat grouped navigation.",
   },
   {
-    id: "quiet",
-    label: "Quiet rail",
-    description: "Light surface with less visual weight",
+    id: "workflow",
+    label: "Task-flow navigation",
+    description: "Daily work comes first, with queue counts for pending tasks.",
   },
   {
     id: "compact",
-    label: "Compact rail",
-    description: "Icon-first for experienced staff",
+    label: "Compact icon rail",
+    description: "A narrow rail for experienced staff who need more canvas space.",
+  },
+]
+
+const workflowGroups: (NavigationGroup & {
+  badges?: Partial<Record<SectionId, string>>
+})[] = [
+  {
+    label: "Run today’s work",
+    items: navigationItems.filter((item) =>
+      ["dashboard", "activities", "schedule", "deliveries", "issuance"].includes(item.id)
+    ),
+    badges: {
+      activities: "3",
+      deliveries: "5",
+      issuance: "2",
+    },
+  },
+  {
+    label: "Check and report",
+    items: navigationItems.filter((item) =>
+      ["inventory", "records", "reports"].includes(item.id)
+    ),
+    badges: { records: "6" },
+  },
+  {
+    label: "Manage access",
+    items: navigationItems.filter((item) => ["staff", "settings"].includes(item.id)),
   },
 ]
 
@@ -252,94 +160,97 @@ function isPrototypeVariant(value: string | null): value is PrototypeVariant {
 }
 
 function isSectionId(value: string | null): value is SectionId {
-  return sectionIds.includes(value as SectionId)
+  return navigationItems.some((item) => item.id === value)
 }
 
-function getSidebarStyle(variant: PrototypeVariant): CSSProperties {
-  const baseStyle = {
-    "--sidebar-width": "15rem",
-  }
-
-  if (variant !== "quiet") {
-    return baseStyle as CSSProperties
-  }
-
-  return {
-    ...baseStyle,
-    "--sidebar": "var(--masanao-surface-raised)",
-    "--sidebar-foreground": "var(--masanao-ink)",
-    "--sidebar-primary": "var(--masanao-primary)",
-    "--sidebar-primary-foreground": "var(--masanao-on-primary)",
-    "--sidebar-accent": "var(--masanao-primary-soft)",
-    "--sidebar-accent-foreground": "var(--masanao-primary-strong)",
-    "--sidebar-border": "var(--masanao-border)",
-    "--sidebar-ring": "var(--masanao-focus-ring)",
-    "--color-sidebar": "var(--masanao-surface-raised)",
-    "--color-sidebar-foreground": "var(--masanao-ink)",
-    "--color-sidebar-primary": "var(--masanao-primary)",
-    "--color-sidebar-primary-foreground": "var(--masanao-on-primary)",
-    "--color-sidebar-accent": "var(--masanao-primary-soft)",
-    "--color-sidebar-accent-foreground": "var(--masanao-primary-strong)",
-    "--color-sidebar-border": "var(--masanao-border)",
-    "--color-sidebar-ring": "var(--masanao-focus-ring)",
-  } as CSSProperties
+function sectionHref(variant: PrototypeVariant, section: SectionId) {
+  return `/prototype/sidebar?variant=${variant}&section=${section}`
 }
 
-function AppSidebar({
-  activeSection,
+function Brand({
   variant,
+  compact = false,
 }: {
-  activeSection: SectionId
   variant: PrototypeVariant
+  compact?: boolean
 }) {
   return (
-    <Sidebar
-      collapsible={variant === "compact" ? "icon" : "offcanvas"}
-      variant={variant === "quiet" ? "inset" : "sidebar"}
+    <Link
+      href={sectionHref(variant, "dashboard")}
+      className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
     >
-      <SidebarHeader className="gap-5 p-4">
-        <Link
-          href={`/prototype/sidebar?variant=${variant}&section=dashboard`}
-          className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-heading text-sm font-semibold text-sidebar-primary-foreground">
+        M
+      </span>
+      {compact ? null : (
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold tracking-[0.08em]">MASANAO</span>
+          <span className="block truncate text-xs text-sidebar-foreground/65">Municipal operations</span>
+        </span>
+      )}
+    </Link>
+  )
+}
+
+function UserSummary({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 rounded-md p-2">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
+        MR
+      </span>
+      {compact ? null : (
+        <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+          <span className="block truncate text-sm font-medium">Mara R.</span>
+          <span className="block truncate text-xs text-sidebar-foreground/65">Administrator</span>
+        </span>
+      )}
+    </div>
+  )
+}
+
+function WorkspaceHeader({ variant }: { variant: PrototypeVariant }) {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          render={<Link href={sectionHref(variant, "dashboard")} />}
+          tooltip="Masanao municipal operations"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-heading text-sm font-semibold text-sidebar-primary-foreground">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-xs font-semibold text-sidebar-primary-foreground">
             M
           </span>
-          <span className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="block truncate text-sm font-semibold tracking-[0.08em]">
-              MASANAO
-            </span>
-            <span className="block truncate text-xs text-sidebar-foreground/65">
-              Municipal operations
-            </span>
+          <span className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold tracking-[0.06em]">MASANAO</span>
+            <span className="truncate text-xs text-sidebar-foreground/65">Operations desk</span>
           </span>
-        </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
 
-        <div className="rounded-md border border-sidebar-border/70 bg-sidebar-accent/45 p-3 group-data-[collapsible=icon]:hidden">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/60">
-            Current workspace
-          </p>
-          <p className="mt-1 truncate text-sm font-medium">Operations desk</p>
-          <p className="mt-1 text-xs text-sidebar-foreground/65">Masanao, Lanao del Sur</p>
-        </div>
+function GroupedSidebar({ activeSection }: { activeSection: SectionId }) {
+  const variant: PrototypeVariant = "grouped"
+
+  return (
+    <Sidebar collapsible="icon" variant="inset">
+      <SidebarHeader>
+        <WorkspaceHeader variant={variant} />
       </SidebarHeader>
-
-      <SidebarSeparator />
-
       <SidebarContent>
         {navigationGroups.map((group) => (
-          <SidebarGroup key={group.label} className="py-3">
+          <SidebarGroup key={group.label} className="py-2">
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon
-                  const href = `/prototype/sidebar?variant=${variant}&section=${item.id}`
 
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
-                        render={<Link href={href} />}
+                        render={<Link href={sectionHref(variant, item.id)} />}
                         isActive={activeSection === item.id}
                         tooltip={item.label}
                       >
@@ -354,19 +265,157 @@ function AppSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter>
+        <UserSummary />
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
+}
 
-      <SidebarFooter className="gap-3 p-4">
-        <div className="flex items-center gap-3 rounded-md border border-sidebar-border/70 p-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
-            MR
-          </span>
-          <span className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="block truncate text-sm font-medium">Mara R.</span>
-            <span className="block truncate text-xs text-sidebar-foreground/65">Administrator</span>
-          </span>
+function WorkflowSidebar({ activeSection }: { activeSection: SectionId }) {
+  const variant: PrototypeVariant = "workflow"
+
+  return (
+    <Sidebar collapsible="offcanvas" variant="inset">
+      <SidebarHeader className="gap-4 p-4">
+        <Brand variant={variant} />
+        <div className="rounded-lg bg-sidebar-primary p-4 text-sidebar-primary-foreground">
+          <p className="text-xs text-sidebar-primary-foreground/70">Wednesday, August 28</p>
+          <p className="mt-2 text-sm font-semibold">16 items need attention</p>
+          <p className="mt-1 text-xs text-sidebar-primary-foreground/70">Start with today’s queue.</p>
         </div>
+      </SidebarHeader>
+      <SidebarContent>
+        {workflowGroups.map((group) => (
+          <SidebarGroup key={group.label} className="py-3">
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const badge = group.badges?.[item.id]
+
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        render={<Link href={sectionHref(variant, item.id)} />}
+                        isActive={activeSection === item.id}
+                      >
+                        <Icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                      {badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+      <SidebarFooter className="gap-3 p-4">
+        <div className="flex items-center gap-2 text-xs text-sidebar-foreground/65">
+          <span className="size-2 rounded-full bg-masanao-success" aria-hidden="true" />
+          All records synced
+        </div>
+        <UserSummary />
       </SidebarFooter>
     </Sidebar>
+  )
+}
+
+function CompactSidebar({ activeSection }: { activeSection: SectionId }) {
+  const variant: PrototypeVariant = "compact"
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="items-center p-3">
+        <Brand variant={variant} compact />
+      </SidebarHeader>
+      <SidebarSeparator />
+      <SidebarContent>
+        <SidebarGroup className="px-2 py-3">
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon
+
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      render={<Link href={sectionHref(variant, item.id)} />}
+                      isActive={activeSection === item.id}
+                      tooltip={item.label}
+                    >
+                      <Icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="items-center p-3">
+        <UserSummary compact />
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
+function PagePlaceholder({ activeSection }: { activeSection: SectionId }) {
+  const activeItem = navigationItems.find((item) => item.id === activeSection)
+
+  return (
+    <div className="flex min-h-svh flex-col bg-background pb-24">
+      <header className="flex min-h-16 items-center gap-3 border-b px-4 sm:px-6">
+        <SidebarTrigger />
+        <div className="min-w-0 border-l pl-3">
+          <p className="truncate text-xs text-muted-foreground">Masanao municipality</p>
+          <p className="truncate text-sm font-medium">{activeItem?.label}</p>
+        </div>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8">
+        <div className="max-w-2xl">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">Page placeholder</p>
+          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+            {activeItem?.label}
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            Values and actions for this page are intentionally left as placeholders. Use this prototype to judge the sidebar’s structure, density, and navigation.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3" aria-label="Placeholder summary values">
+          {["Summary value", "Summary value", "Summary value"].map((label, index) => (
+            <section key={`${label}-${index}`} className="rounded-lg border border-dashed p-5">
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <Skeleton className="mt-5 h-8 w-24" />
+              <Skeleton className="mt-3 h-3 w-32" />
+            </section>
+          ))}
+        </div>
+
+        <section className="flex min-h-64 flex-col gap-5 rounded-lg border border-dashed p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-48 max-w-full" />
+            </div>
+            <Skeleton className="h-8 w-24" />
+          </div>
+          <div className="flex flex-1 flex-col gap-3 pt-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </section>
+      </main>
+    </div>
   )
 }
 
@@ -377,160 +426,91 @@ function PrototypeSwitcher({
   activeVariant: PrototypeVariant
   onVariantChange: (variant: PrototypeVariant) => void
 }) {
+  const activeIndex = prototypeVariants.findIndex((variant) => variant.id === activeVariant)
+  const activeDetails = prototypeVariants[activeIndex]
+
+  const cycleVariant = useCallback(
+    (direction: -1 | 1) => {
+      const nextIndex =
+        (activeIndex + direction + prototypeVariants.length) % prototypeVariants.length
+      onVariantChange(prototypeVariants[nextIndex].id)
+    },
+    [activeIndex, onVariantChange]
+  )
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      return
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      const isEditing =
+        target?.matches("input, textarea, [contenteditable='true']") ?? false
+
+      if (isEditing || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) {
+        return
+      }
+
+      cycleVariant(event.key === "ArrowLeft" ? -1 : 1)
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [cycleVariant])
+
+  if (process.env.NODE_ENV === "production") {
+    return null
+  }
+
   return (
-    <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-3xl flex-col gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-          Sidebar prototype
-        </p>
+    <div className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-xl items-center gap-3 rounded-xl border bg-card/95 p-2 shadow-lg backdrop-blur-sm">
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Previous sidebar layout"
+        onClick={() => cycleVariant(-1)}
+      >
+        <ChevronLeft />
+      </Button>
+      <div className="min-w-0 flex-1 text-center">
         <p className="truncate text-sm font-medium">
-          Viewing: {prototypeVariants.find((item) => item.id === activeVariant)?.label}
+          {activeIndex + 1} of {prototypeVariants.length} · {activeDetails.label}
+        </p>
+        <p className="hidden truncate text-xs text-muted-foreground sm:block">
+          {activeDetails.description}
         </p>
       </div>
-
-      <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1" aria-label="Sidebar prototype views">
-        {prototypeVariants.map((item) => (
-          <Button
-            key={item.id}
-            type="button"
-            size="sm"
-            variant={activeVariant === item.id ? "default" : "ghost"}
-            aria-pressed={activeVariant === item.id}
-            onClick={() => onVariantChange(item.id)}
-          >
-            {item.label}
-          </Button>
-        ))}
-      </div>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Next sidebar layout"
+        onClick={() => cycleVariant(1)}
+      >
+        <ChevronRight />
+      </Button>
     </div>
   )
 }
 
-function StatusRow({
-  label,
-  detail,
-  tone,
-}: {
-  label: string
-  detail: string
-  tone: "ready" | "attention" | "neutral"
-}) {
-  const toneClass = {
-    ready: "bg-masanao-success",
-    attention: "bg-masanao-accent-strong",
-    neutral: "bg-muted-foreground/45",
-  }[tone]
-
-  return (
-    <div className="flex items-center justify-between gap-4 border-b py-3 last:border-b-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className={`size-2 shrink-0 rounded-full ${toneClass}`} aria-hidden="true" />
-        <span className="truncate text-sm font-medium">{label}</span>
-      </div>
-      <span className="shrink-0 text-xs text-muted-foreground">{detail}</span>
-    </div>
-  )
-}
-
-function DashboardContent({
+function ActiveSidebar({
   activeSection,
   activeVariant,
 }: {
   activeSection: SectionId
   activeVariant: PrototypeVariant
 }) {
-  const content = sectionContent[activeSection]
-  const variant = prototypeVariants.find((item) => item.id === activeVariant)
+  if (activeVariant === "workflow") {
+    return <WorkflowSidebar activeSection={activeSection} />
+  }
 
-  return (
-    <div className="flex min-h-svh flex-col bg-background pb-28">
-      <header className="flex min-h-16 items-center justify-between gap-4 border-b px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <SidebarTrigger />
-          <div className="min-w-0 border-l pl-3">
-            <p className="truncate text-xs text-muted-foreground">Operations desk</p>
-            <p className="truncate text-sm font-medium">Masanao municipality</p>
-          </div>
-        </div>
-        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
-          <span className="size-2 rounded-full bg-masanao-success" aria-hidden="true" />
-          Prototype state · {variant?.label}
-        </div>
-      </header>
+  if (activeVariant === "compact") {
+    return <CompactSidebar activeSection={activeSection} />
+  }
 
-      <div className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">
-              {content.eyebrow}
-            </p>
-            <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              {content.title}
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              {content.description}
-            </p>
-          </div>
-          <Button nativeButton={false} render={<Link href="#next-action" />}>
-            {content.action}
-            <ArrowUpRight data-icon="inline-end" />
-          </Button>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {content.metrics.map((metric) => (
-            <article key={metric.label} className="min-w-0 rounded-lg border bg-card p-5">
-              <p className="text-sm text-muted-foreground">{metric.label}</p>
-              <p className="mt-4 font-heading text-3xl font-semibold tracking-tight">{metric.value}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{metric.detail}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-          <article className="min-w-0 rounded-lg border bg-card p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  {activeSection === "dashboard" ? "Needs attention" : "Sample workspace"}
-                </p>
-                <h2 className="mt-2 text-lg font-semibold">A clear next action</h2>
-              </div>
-              <Archive className="text-muted-foreground" aria-hidden="true" />
-            </div>
-
-            <div className="mt-5">
-              <StatusRow label="Confirm rice delivery for Activity 24-018" detail="Due 10:00 AM" tone="attention" />
-              <StatusRow label="Review the weekly issuance record" detail="2 attachments" tone="neutral" />
-              <StatusRow label="Inventory count reconciled" detail="Completed" tone="ready" />
-            </div>
-          </article>
-
-          <article id="next-action" className="min-w-0 rounded-lg border border-primary/20 bg-primary p-5 text-primary-foreground sm:p-6">
-            <CheckCircle2 aria-hidden="true" />
-            <p className="mt-8 text-xs font-medium uppercase tracking-[0.12em] text-primary-foreground/70">
-              Next safe action
-            </p>
-            <h2 className="mt-2 text-lg font-semibold">Keep the delivery trail complete.</h2>
-            <p className="mt-3 text-sm leading-6 text-primary-foreground/75">
-              One missing receipt can slow the whole record. Start with the two deliveries waiting for review.
-            </p>
-            <Link
-              href={`/prototype/sidebar?variant=${activeVariant}&section=deliveries`}
-              className="mt-6 inline-flex items-center gap-2 text-sm font-medium underline decoration-primary-foreground/35 underline-offset-4 hover:decoration-primary-foreground"
-            >
-              Open deliveries
-              <ArrowUpRight data-icon="inline-end" />
-            </Link>
-          </article>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Prototype question: can staff understand where they are, what needs attention, and what to do next without losing the stable navigation rail?
-        </p>
-      </div>
-    </div>
-  )
+  return <GroupedSidebar activeSection={activeSection} />
 }
 
 export default function SidebarPrototype() {
@@ -541,26 +521,33 @@ export default function SidebarPrototype() {
   const sectionParam = searchParams.get("section")
   const activeVariant: PrototypeVariant = isPrototypeVariant(variantParam)
     ? variantParam
-    : "workbench"
+    : "grouped"
   const activeSection: SectionId = isSectionId(sectionParam) ? sectionParam : "dashboard"
 
-  function updateVariant(nextVariant: PrototypeVariant) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("variant", nextVariant)
-    params.set("section", activeSection)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  const updateVariant = useCallback(
+    (nextVariant: PrototypeVariant) => {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set("variant", nextVariant)
+      params.set("section", activeSection)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    },
+    [activeSection, pathname, router, searchParams]
+  )
+
+  const sidebarStyle = {
+    "--sidebar-width": activeVariant === "workflow" ? "17rem" : "15rem",
+  } as CSSProperties
 
   return (
     <TooltipProvider>
       <SidebarProvider
         key={activeVariant}
         defaultOpen={activeVariant !== "compact"}
-        style={getSidebarStyle(activeVariant)}
+        style={sidebarStyle}
       >
-        <AppSidebar activeSection={activeSection} variant={activeVariant} />
+        <ActiveSidebar activeSection={activeSection} activeVariant={activeVariant} />
         <SidebarInset>
-          <DashboardContent activeSection={activeSection} activeVariant={activeVariant} />
+          <PagePlaceholder activeSection={activeSection} />
         </SidebarInset>
       </SidebarProvider>
       <PrototypeSwitcher activeVariant={activeVariant} onVariantChange={updateVariant} />

@@ -7,10 +7,10 @@ Shared language for the Municipal Kitchen's activity planning, food supplies, de
 ### Activity planning
 
 **Activity Design**:
-A planning context that groups related Activities.
+A planning context that groups related Activities. Multiple Activity Designs can exist independently.
 
 **Activity**:
-A named undertaking within an Activity Design, with its own date, particulars, and one or more Meal Schedules.
+A named undertaking within an Activity Design, with its own date and planning particulars. Meal Schedules are added as planning progresses, so an Activity may temporarily have none.
 
 **Activity particulars**:
 Free-form descriptive information about an Activity.
@@ -62,7 +62,7 @@ The food context associated with an Issuance Record. Its ingredient lines identi
 An inventory item issued separately from the ingredient lines of a Food Supply.
 
 **Issuance Record**:
-A record of supplies associated with a Meal Schedule.
+A record of supplies associated with a Meal Schedule. A Meal Schedule can have zero or one Issuance Record; the record is created when supply lines are added.
 
 ### Purchasing and inventory
 

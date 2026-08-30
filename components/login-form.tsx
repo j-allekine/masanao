@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useRef, useState } from "react";
-import { EyeIcon, EyeOffIcon, KeyRoundIcon, UserRoundIcon } from "lucide-react";
+import {
+  CircleHelpIcon,
+  EyeIcon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -126,7 +132,10 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
     >
       <FieldGroup>
         <div className="flex flex-col gap-2">
-          <h1 id={headingId} className="text-3xl font-semibold tracking-tight text-balance">
+          <h1
+            id={headingId}
+            className="text-masanao-h1 font-semibold tracking-masanao-h1 text-balance"
+          >
             Welcome back
           </h1>
           <p className="text-sm leading-6 text-muted-foreground text-pretty">
@@ -191,15 +200,16 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 type="button"
+                size="icon-sm"
                 aria-label={passwordVisible ? "Hide password" : "Show password"}
                 aria-controls="masanao-password"
                 disabled={isSubmitting}
                 onClick={() => setPasswordVisible((visible) => !visible)}
               >
                 {passwordVisible ? (
-                  <EyeOffIcon aria-hidden="true" strokeWidth={1.75} />
+                  <EyeOffIcon aria-hidden="true" strokeWidth={2} />
                 ) : (
-                  <EyeIcon aria-hidden="true" strokeWidth={1.75} />
+                  <EyeIcon aria-hidden="true" strokeWidth={2} />
                 )}
               </InputGroupButton>
             </InputGroupAddon>
@@ -218,8 +228,9 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
           </Button>
         </Field>
 
-        <FieldDescription className="text-center">
-          Need access? Contact your system administrator.
+        <FieldDescription className="flex items-center justify-center gap-2 text-center">
+          <CircleHelpIcon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
+          <span>Need access? Contact your system administrator.</span>
         </FieldDescription>
       </FieldGroup>
     </form>

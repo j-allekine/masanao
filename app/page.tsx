@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { CookingPotIcon } from "lucide-react";
+import { SproutIcon } from "lucide-react";
 
 import { LoginForm } from "@/components/login-form";
 import { auth } from "@/lib/auth";
@@ -11,7 +11,7 @@ function BrandLockup({ inverse = false }: { inverse?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        <CookingPotIcon aria-hidden="true" strokeWidth={1.75} />
+        <SproutIcon aria-hidden="true" strokeWidth={1.75} />
       </span>
       <span className={cn(inverse ? "text-masanao-on-primary" : "text-foreground")}>
         <span className="block text-sm font-semibold tracking-tight">Masanao</span>
