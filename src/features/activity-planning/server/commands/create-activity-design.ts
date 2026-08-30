@@ -1,13 +1,14 @@
 import "server-only";
 
-import { Prisma } from "@/prisma/generated/client";
-
 import {
   activityDesignFieldErrors,
   activityDesignSchema,
 } from "../../schemas/activity-design";
 import type { ActivityDesignCreateResult } from "../../types";
-import { createActivityDesignRecord } from "../db/activity-designs";
+import {
+  createActivityDesignRecord,
+  isUniqueConstraintViolation,
+} from "../db/activity-designs";
 
 export async function createActivityDesignCommand(
   input: unknown,
@@ -29,10 +30,7 @@ export async function createActivityDesignCommand(
       activityDesign: await createActivityDesignRecord(parsedInput.data),
     };
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (isUniqueConstraintViolation(error)) {
       return {
         ok: false,
         kind: "duplicate",

@@ -37,6 +37,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 canonical architecture specification. Masanao remains one Next.js application.
 Do not split it into separate frontend and backend apps.
 
+Use `CONTEXT.md` as the source of truth for Masanao's domain terminology.
+
 Issue #21 moves authored application code under `src`. Until that migration is
 complete, preserve existing behavior and move only code that is in scope for the
 current change.
