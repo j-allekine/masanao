@@ -1,6 +1,6 @@
 "use client"
 
-import { AppSidebar, type AppSidebarUser } from "@/app/_components/app-sidebar"
+import { AppSidebar, type AppSidebarUser } from "@/components/workspace/app-sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   SidebarInset,
@@ -11,7 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   getWorkspaceSectionDetails,
   type WorkspaceSectionId,
-} from "@/app/_lib/workspace-navigation"
+} from "@/lib/workspace-navigation"
 
 type WorkspacePageProps = {
   user: AppSidebarUser

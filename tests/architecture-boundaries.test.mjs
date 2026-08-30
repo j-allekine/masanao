@@ -21,6 +21,16 @@ test("allowed architecture dependencies pass", async () => {
         'import { listActivityDesigns } from "@/features/activity-planning/server";',
     },
     {
+      name: "app to shared code",
+      filePath: "src/app/architecture-fixture.ts",
+      source: 'import { Button } from "@/components/ui/button";',
+    },
+    {
+      name: "app to app stylesheet",
+      filePath: "src/app/architecture-fixture.ts",
+      source: 'import "@/app/globals.css";',
+    },
+    {
       name: "same-feature import",
       filePath:
         "src/features/activity-planning/server/commands/architecture-fixture.ts",
@@ -84,6 +94,12 @@ test("forbidden architecture dependencies are rejected", async () => {
       filePath: "src/app/architecture-fixture.ts",
       source:
         'import { listActivityDesignRecords } from "@/features/activity-planning/server/db/activity-designs";',
+      ruleId: "boundaries/dependencies",
+    },
+    {
+      name: "app code importing app code",
+      filePath: "src/app/architecture-fixture.ts",
+      source: 'import HomePage from "@/app/page";',
       ruleId: "boundaries/dependencies",
     },
     {

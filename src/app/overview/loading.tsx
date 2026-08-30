@@ -1,4 +1,4 @@
-import WorkspaceLoading from "@/app/_components/workspace-loading"
+import WorkspaceLoading from "@/components/workspace/workspace-loading"
 
 export default function OverviewLoading() {
   return <WorkspaceLoading />

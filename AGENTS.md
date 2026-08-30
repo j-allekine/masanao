@@ -45,7 +45,9 @@ current change.
 
 ### Dependency rules
 
-- App code may import app code, feature public gateways, and shared code.
+- App code may import feature public gateways and shared code.
+- App files may import app-owned CSS, but general app-to-app code imports are
+  forbidden.
 - A feature may import its own internals and shared code.
 - Shared code may import only shared code.
 - Cross-feature imports are forbidden.
@@ -57,8 +59,8 @@ current change.
 
 ### Placement
 
-- `src/app`: routes, layouts, Route Handlers, global styles, application shell,
-  and page composition.
+- `src/app`: routes, layouts, Route Handlers, global styles, and page
+  composition.
 - `src/features/<feature>/components`: feature-owned UI.
 - `src/features/<feature>/schemas`: input validation and normalization.
 - `src/features/<feature>/server/actions`: Server Action adapters.
@@ -67,7 +69,8 @@ current change.
 - `src/features/<feature>/server/policies`: feature authorization when needed.
 - `src/features/<feature>/server/db`: feature-owned Prisma access.
 - `src/features/<feature>/domain`: pure reusable feature rules when needed.
-- `src/components`: generic UI, including shadcn primitives.
+- `src/components`: feature-independent UI, including the application shell and
+  shadcn primitives.
 - `src/hooks`: feature-independent hooks.
 - `src/lib`: universal utilities.
 - `src/server`: shared server-only infrastructure such as authentication,

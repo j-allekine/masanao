@@ -1,4 +1,4 @@
-import LoginPrototype from "./login-prototype";
+import LoginPrototype from "@/components/prototypes/login/login-prototype";
 
 const variants = ["A", "B", "C"] as const;
 type VariantKey = (typeof variants)[number];

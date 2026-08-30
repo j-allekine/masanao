@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/server/auth";
-import OverviewPage from "./overview-page";
+import OverviewPage from "@/components/workspace/overview-page";
 
 export const metadata: Metadata = {
   title: "Overview | Masanao",

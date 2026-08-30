@@ -3,7 +3,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { SproutIcon } from "lucide-react";
 
-import { LoginForm } from "@/app/_components/login-form";
+import { LoginForm } from "@/components/login-form";
 import { auth } from "@/server/auth";
 import { cn } from "@/lib/utils";
 

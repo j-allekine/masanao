@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import WorkspaceShell from "@/app/_components/workspace-shell";
+import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { auth } from "@/server/auth";
 import { listActivityDesigns } from "@/features/activity-planning/server";
 import { ActivityDesignsContent } from "@/features/activity-planning/ui";

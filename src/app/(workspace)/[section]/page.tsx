@@ -1,9 +1,9 @@
 import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 
-import WorkspacePage from "@/app/_components/workspace-page"
+import WorkspacePage from "@/components/workspace/workspace-page"
 import { auth } from "@/server/auth"
-import { getWorkspaceSection } from "@/app/_lib/workspace-navigation"
+import { getWorkspaceSection } from "@/lib/workspace-navigation"
 
 export default async function WorkspaceSectionRoute({
   params,
