@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import {
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import {
   ClipboardList,
   Plus,
@@ -39,22 +43,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
-import type { ActivityDesignListItem } from "@/lib/activity-designs";
 
-type ActivityDesignField =
-  | "activityDesignNo"
-  | "fiscalYear"
-  | "title"
-  | "officeName"
-  | "aipReferenceCode";
+import { createActivityDesignAction } from "../actions";
+import type {
+  ActivityDesignField,
+  ActivityDesignListItem,
+  FieldErrors,
+} from "../types";
 
 type ActivityDesignFormValues = Record<ActivityDesignField, string>;
-type FieldErrors = Partial<Record<ActivityDesignField, string[]>>;
-
-type ApiErrorPayload = {
-  error?: string;
-  fields?: FieldErrors;
-};
 
 const emptyFormValues: ActivityDesignFormValues = {
   activityDesignNo: "",
@@ -183,12 +180,11 @@ export default function ActivityDesignsContent({
 }: {
   initialActivityDesigns: ActivityDesignListItem[];
 }) {
-  const router = useRouter();
   const [formValues, setFormValues] = useState(emptyFormValues);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, startTransition] = useTransition();
 
   function updateField(field: ActivityDesignField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
@@ -203,40 +199,32 @@ export default function ActivityDesignsContent({
     setSuccessMessage(null);
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSubmitting(true);
     setFieldErrors({});
     setFormError(null);
     setSuccessMessage(null);
 
-    try {
-      const response = await fetch("/api/activity-designs", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...formValues,
-          fiscalYear: formValues.fiscalYear
-            ? Number(formValues.fiscalYear)
-            : formValues.fiscalYear,
-        }),
-      });
-      const payload = (await response.json().catch(() => ({}))) as ApiErrorPayload;
+    const formData = new FormData(event.currentTarget);
 
-      if (!response.ok) {
-        setFormError(payload.error ?? "The Activity Design could not be saved.");
-        setFieldErrors(payload.fields ?? {});
-        return;
+    startTransition(async () => {
+      try {
+        const result = await createActivityDesignAction(formData);
+
+        if (result.status === "error") {
+          setFormError(result.error);
+          setFieldErrors(result.fields);
+          return;
+        }
+
+        setFormValues(emptyFormValues);
+        setSuccessMessage("Activity Design created. It is now in your planning list.");
+      } catch {
+        setFormError(
+          "The Activity Design could not be saved. Check your connection and try again.",
+        );
       }
-
-      setFormValues(emptyFormValues);
-      setSuccessMessage("Activity Design created. It is now in your planning list.");
-      router.refresh();
-    } catch {
-      setFormError("The Activity Design could not be saved. Check your connection and try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (
