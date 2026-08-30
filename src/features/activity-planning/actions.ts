@@ -2,6 +2,7 @@
 
 import { executeCreateActivity } from "./server/actions/create-activity";
 import { executeCreateActivityDesign } from "./server/actions/create-activity-design";
+import { executeCreateMealSchedule } from "./server/actions/create-meal-schedule";
 import { executeDeleteActivity } from "./server/actions/delete-activity";
 import { executeDeleteActivityDesign } from "./server/actions/delete-activity-design";
 import { executeUpdateActivity } from "./server/actions/update-activity";
@@ -12,6 +13,7 @@ import type {
   ActivityDesignDeleteActionState,
   ActivityDesignUpdateActionState,
   ActivityUpdateActionState,
+  MealScheduleActionState,
 } from "./types";
 
 export async function createActivityDesignAction(
@@ -22,6 +24,12 @@ export async function createActivityDesignAction(
 
 export async function createActivityAction(formData: FormData) {
   return executeCreateActivity(formData);
+}
+
+export async function createMealScheduleAction(
+  formData: FormData,
+): Promise<MealScheduleActionState> {
+  return executeCreateMealSchedule(formData);
 }
 
 export async function updateActivityAction(

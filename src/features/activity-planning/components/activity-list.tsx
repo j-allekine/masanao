@@ -35,11 +35,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { deleteActivityAction } from "../actions";
 import type { ActivityListItem } from "../types";
 import ActivityEditForm from "./forms/activity-edit-form";
+import MealScheduleForm from "./forms/meal-schedule-form";
+import MealScheduleList from "./meal-schedule-list";
 
 function formatScheduledDate(value: string) {
   return new Intl.DateTimeFormat("en-PH", {
@@ -135,6 +138,34 @@ function ActivityListItemCard({
           ) : null}
         </dl>
       ) : null}
+      <section
+        aria-labelledby={`meal-schedules-title-${activity.id}`}
+        className="mt-4"
+      >
+        <Separator className="mb-4" />
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <h4
+            id={`meal-schedules-title-${activity.id}`}
+            className="text-sm font-semibold"
+          >
+            Meal Schedules
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            {activity.mealScheduleCount === 0
+              ? "No schedules yet"
+              : `${activity.mealScheduleCount} saved ${activity.mealScheduleCount === 1 ? "schedule" : "schedules"}`}
+          </p>
+        </div>
+        <div className="mt-3">
+          <MealScheduleList mealSchedules={activity.mealSchedules} />
+        </div>
+        <div className="mt-4">
+          <MealScheduleForm
+            activityDesignId={activity.activityDesignId}
+            activityId={activity.id}
+          />
+        </div>
+      </section>
       <div className="mt-4 flex flex-wrap justify-end gap-2 border-t pt-3">
         <Button type="button" variant="outline" size="sm" onClick={onEdit}>
           <Pencil data-icon="inline-start" />

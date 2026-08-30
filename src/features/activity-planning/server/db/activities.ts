@@ -8,6 +8,11 @@ import type {
   ActivityDesignDetail,
   ActivityListItem,
 } from "../../types";
+import {
+  mealScheduleOrderBy,
+  mealScheduleSelect,
+  toMealScheduleListItem,
+} from "./meal-schedules";
 
 const activitySelect = {
   id: true,
@@ -20,6 +25,10 @@ const activitySelect = {
   plannedBudgetCentavos: true,
   _count: {
     select: { mealSchedules: true },
+  },
+  mealSchedules: {
+    select: mealScheduleSelect,
+    orderBy: mealScheduleOrderBy,
   },
 } as const;
 
@@ -75,6 +84,7 @@ function toActivityListItem(activity: {
   plannedParticipantCount: number | null;
   plannedBudgetCentavos: number | null;
   _count: { mealSchedules: number };
+  mealSchedules: Array<Parameters<typeof toMealScheduleListItem>[0]>;
 }): ActivityListItem {
   return {
     id: activity.id,
@@ -86,6 +96,7 @@ function toActivityListItem(activity: {
     plannedParticipantCount: activity.plannedParticipantCount,
     plannedBudgetCentavos: activity.plannedBudgetCentavos,
     mealScheduleCount: activity._count.mealSchedules,
+    mealSchedules: activity.mealSchedules.map(toMealScheduleListItem),
   };
 }
 
