@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:architecture": "node --test tests/architecture-boundaries.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -45,6 +46,8 @@
     "better-sqlite3": "^13.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "eslint-import-resolver-typescript": "3.10.1",
+    "eslint-plugin-boundaries": "7.1.0",
     "prisma": "7.10.0",
     "prisma-erd-generator": "^3.2.1",
     "tailwindcss": "^4",

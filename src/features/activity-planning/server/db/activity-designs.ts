@@ -1,5 +1,6 @@
 import "server-only";
 
+import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { ActivityDesignInput } from "../../schemas/activity-design";
@@ -25,6 +26,13 @@ const activityDesignResponseSelect = {
   officeName: true,
   aipReferenceCode: true,
 } as const;
+
+export function isUniqueConstraintViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
 
 function toActivityDesignListItem(
   activityDesign: {
