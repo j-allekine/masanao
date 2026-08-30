@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword } from "better-auth/crypto";
+import { Prisma } from "@/prisma/generated/client";
 import {
   GET as activityDesignsGet,
   POST as activityDesignsPost,
@@ -320,6 +321,77 @@ describe("activity designs API", () => {
     });
   });
 
+  it("preserves an existing AIP reference when PATCH omits it", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest(
+        "POST",
+        { ...validActivityDesign, aipReferenceCode: "AIP-2026-014" },
+        cookie,
+      ),
+    );
+    const created = await createResponse.json();
+
+    const response = await activityDesignPatch(
+      activityDesignRequest(
+        created.activityDesign.id,
+        "PATCH",
+        {
+          activityDesignNo: "AD-2026-002",
+          title: "Updated title",
+          officeName: validActivityDesign.officeName,
+        },
+        cookie,
+      ),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      activityDesign: {
+        activityDesignNo: "ad-2026-002",
+        aipReferenceCode: "AIP-2026-014",
+      },
+    });
+  });
+
+  it("clears an existing AIP reference when PATCH explicitly blanks it", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest(
+        "POST",
+        { ...validActivityDesign, aipReferenceCode: "AIP-2026-014" },
+        cookie,
+      ),
+    );
+    const created = await createResponse.json();
+
+    const response = await activityDesignPatch(
+      activityDesignRequest(
+        created.activityDesign.id,
+        "PATCH",
+        {
+          activityDesignNo: "AD-2026-002",
+          title: validActivityDesign.title,
+          officeName: validActivityDesign.officeName,
+          aipReferenceCode: "  ",
+        },
+        cookie,
+      ),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      activityDesign: {
+        activityDesignNo: "ad-2026-002",
+        aipReferenceCode: null,
+      },
+    });
+  });
+
   it("rejects a duplicate normalized Activity Design No. during edit", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
@@ -510,5 +582,41 @@ describe("activity designs API", () => {
       prisma.activity.findUnique({ where: { id: activity.id } }),
     ).resolves.toMatchObject({ activityDesignId: created.activityDesign.id });
     expect(await prisma.activityDesign.count()).toBe(1);
+  });
+
+  it("returns not found when a concurrent delete removes the design first", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, cookie),
+    );
+    const created = await createResponse.json();
+    const deleteSpy = vi
+      .spyOn(prisma.activityDesign, "delete")
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError(
+          "Record to delete does not exist.",
+          { code: "P2025", clientVersion: "7.10.0" },
+        ),
+      );
+
+    try {
+      const response = await activityDesignDelete(
+        activityDesignRequest(
+          created.activityDesign.id,
+          "DELETE",
+          undefined,
+          cookie,
+        ),
+        routeParams(created.activityDesign.id),
+      );
+
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({
+        error: "The Activity Design could not be found.",
+      });
+    } finally {
+      deleteSpy.mockRestore();
+    }
   });
 });
