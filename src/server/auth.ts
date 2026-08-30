@@ -8,6 +8,12 @@ import {
 } from "better-auth/plugins/username";
 import { prisma } from "@/prisma/client";
 
+export type CurrentActor = {
+  id: string;
+  name: string;
+  username: string | null;
+};
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "sqlite",
@@ -63,3 +69,19 @@ export const auth = betterAuth({
     }),
   ],
 });
+
+export async function getCurrentActor(
+  request: Request,
+): Promise<CurrentActor | null> {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) return null;
+
+  return {
+    id: session.user.id,
+    name: session.user.name,
+    username: session.user.username ?? null,
+  };
+}

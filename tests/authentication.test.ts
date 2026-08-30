@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { GET as operationsGet } from "@/app/api/operations/route";
+import { getCurrentActor } from "@/server/auth";
 import { prisma } from "@/prisma/client";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -68,6 +69,28 @@ describe("username authentication API", () => {
 
     const payload = await response.json();
     expect(payload.user.username).toBe("kitchen.staff");
+  });
+
+  it("identifies the current actor from an authenticated request", async () => {
+    await createStaffAccount();
+
+    const signInResponse = await signInWithUsername(
+      "kitchen.staff",
+      staffPassword,
+    );
+    const cookie = signInResponse.headers.get("set-cookie");
+
+    await expect(
+      getCurrentActor(
+        new Request("http://localhost:3000/api/operations", {
+          headers: { cookie: cookie?.split(";")[0] ?? "" },
+        }),
+      ),
+    ).resolves.toEqual({
+      id: "staff-user",
+      name: "Kitchen Staff",
+      username: "kitchen.staff",
+    });
   });
 
   it("uses the same generic failure for an unknown username and a bad password", async () => {
