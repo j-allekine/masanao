@@ -199,6 +199,40 @@ describe("activities API", () => {
     });
   });
 
+  it("rejects integers outside the Prisma Int range with field-level errors", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const activityDesign = await createActivityDesign(cookie);
+
+    const response = await activitiesPost(
+      request(
+        `/api/activity-designs/${activityDesign.id}/activities`,
+        "POST",
+        {
+          ...validActivity,
+          plannedParticipantCount: 2_147_483_648,
+          plannedBudgetCentavos: 2_147_483_648,
+        },
+        cookie,
+      ),
+      routeParams(activityDesign.id),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: "Please correct the highlighted Activity fields.",
+      fields: {
+        plannedParticipantCount: [
+          "Planned participant count exceeds the supported maximum",
+        ],
+        plannedBudgetCentavos: [
+          "Planned budget exceeds the supported maximum",
+        ],
+      },
+    });
+    expect(await prisma.activity.count()).toBe(0);
+  });
+
   it.each([
     ["a blank name", { name: " " }, "name"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],

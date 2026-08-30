@@ -38,6 +38,7 @@ const optionalNonNegativeInteger = (label: string) =>
       .number()
       .int(`${label} must be a whole number`)
       .min(0, `${label} cannot be negative`)
+      .max(2_147_483_647, `${label} exceeds the supported maximum`)
       .optional(),
   );
 
