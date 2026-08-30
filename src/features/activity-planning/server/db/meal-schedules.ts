@@ -42,6 +42,20 @@ function isForeignKeyConstraintViolation(error: unknown) {
   );
 }
 
+function isRecordNotFound(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  );
+}
+
+function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
+  );
+}
+
 export async function createMealScheduleRecord(
   activityDesignId: string,
   activityId: string,
@@ -71,4 +85,68 @@ export async function createMealScheduleRecord(
     if (isForeignKeyConstraintViolation(error)) return null;
     throw error;
   }
+}
+
+export async function updateMealScheduleRecord(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+  input: MealScheduleInput,
+): Promise<MealScheduleListItem | null> {
+  const existingMealSchedule = await prisma.mealSchedule.findFirst({
+    where: {
+      id: mealScheduleId,
+      activityId,
+      activity: { activityDesignId },
+    },
+    select: { id: true },
+  });
+
+  if (!existingMealSchedule) return null;
+
+  try {
+    const mealSchedule = await prisma.mealSchedule.update({
+      where: { id: mealScheduleId },
+      data: {
+        label: input.label,
+        mealTime: input.mealTime,
+        plannedServings: input.plannedServings ?? null,
+      },
+      select: mealScheduleSelect,
+    });
+
+    return toMealScheduleListItem(mealSchedule);
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+    throw error;
+  }
+}
+
+export async function deleteMealScheduleRecord(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+) {
+  const existingMealSchedule = await prisma.mealSchedule.findFirst({
+    where: {
+      id: mealScheduleId,
+      activityId,
+      activity: { activityDesignId },
+    },
+    select: { id: true },
+  });
+
+  if (!existingMealSchedule) return null;
+
+  try {
+    await prisma.mealSchedule.delete({ where: { id: mealScheduleId } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+    if (isRestrictiveRelationViolation(error)) {
+      return { deleted: false as const };
+    }
+    throw error;
+  }
+
+  return { deleted: true as const };
 }

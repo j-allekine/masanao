@@ -91,6 +91,53 @@ describe("activity planning database foundation", () => {
     expect(await prisma.activity.count()).toBe(1);
   });
 
+  it("stores timestamps on every planning model and permits leaf-first deletion", async () => {
+    const design = await prisma.activityDesign.create({
+      data: {
+        id: "timestamp-design",
+        activityDesignNo: "timestamp-design",
+        fiscalYear: 2026,
+        title: "Timestamp verification",
+        officeName: "Municipal Kitchen",
+      },
+    });
+    const activity = await prisma.activity.create({
+      data: {
+        id: "timestamp-activity",
+        activityDesignId: design.id,
+        name: "Timestamp activity",
+        scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
+      },
+    });
+    const mealSchedule = await prisma.mealSchedule.create({
+      data: {
+        id: "timestamp-meal-schedule",
+        activityId: activity.id,
+        label: "Lunch",
+        mealTime: "12:00",
+      },
+    });
+
+    for (const record of [design, activity, mealSchedule]) {
+      expect(record.createdAt).toBeInstanceOf(Date);
+      expect(record.updatedAt).toBeInstanceOf(Date);
+    }
+
+    await prisma.mealSchedule.delete({ where: { id: mealSchedule.id } });
+    await prisma.activity.delete({ where: { id: activity.id } });
+    await prisma.activityDesign.delete({ where: { id: design.id } });
+
+    await expect(
+      prisma.mealSchedule.findUnique({ where: { id: mealSchedule.id } }),
+    ).resolves.toBeNull();
+    await expect(
+      prisma.activity.findUnique({ where: { id: activity.id } }),
+    ).resolves.toBeNull();
+    await expect(
+      prisma.activityDesign.findUnique({ where: { id: design.id } }),
+    ).resolves.toBeNull();
+  });
+
   it("applies the planning migration without removing existing authentication data", () => {
     const directory = mkdtempSync(join(tmpdir(), "masanao-planning-migration-"));
     const databasePath = join(directory, "migration.db");

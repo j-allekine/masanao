@@ -3,8 +3,10 @@
 import { executeCreateActivity } from "./server/actions/create-activity";
 import { executeCreateActivityDesign } from "./server/actions/create-activity-design";
 import { executeCreateMealSchedule } from "./server/actions/create-meal-schedule";
+import { executeDeleteMealSchedule } from "./server/actions/delete-meal-schedule";
 import { executeDeleteActivity } from "./server/actions/delete-activity";
 import { executeDeleteActivityDesign } from "./server/actions/delete-activity-design";
+import { executeUpdateMealSchedule } from "./server/actions/update-meal-schedule";
 import { executeUpdateActivity } from "./server/actions/update-activity";
 import { executeUpdateActivityDesign } from "./server/actions/update-activity-design";
 import type {
@@ -14,6 +16,7 @@ import type {
   ActivityDesignUpdateActionState,
   ActivityUpdateActionState,
   MealScheduleActionState,
+  MealScheduleDeleteActionState,
 } from "./types";
 
 export async function createActivityDesignAction(
@@ -30,6 +33,24 @@ export async function createMealScheduleAction(
   formData: FormData,
 ): Promise<MealScheduleActionState> {
   return executeCreateMealSchedule(formData);
+}
+
+export async function updateMealScheduleAction(
+  formData: FormData,
+): Promise<MealScheduleActionState> {
+  return executeUpdateMealSchedule(formData);
+}
+
+export async function deleteMealScheduleAction(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+): Promise<MealScheduleDeleteActionState> {
+  return executeDeleteMealSchedule(
+    activityDesignId,
+    activityId,
+    mealScheduleId,
+  );
 }
 
 export async function updateActivityAction(

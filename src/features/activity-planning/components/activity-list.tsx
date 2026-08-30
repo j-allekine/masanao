@@ -157,7 +157,11 @@ function ActivityListItemCard({
           </p>
         </div>
         <div className="mt-3">
-          <MealScheduleList mealSchedules={activity.mealSchedules} />
+          <MealScheduleList
+            activityDesignId={activity.activityDesignId}
+            activityId={activity.id}
+            mealSchedules={activity.mealSchedules}
+          />
         </div>
         <div className="mt-4">
           <MealScheduleForm

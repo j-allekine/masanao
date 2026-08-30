@@ -3,13 +3,19 @@ import "server-only";
 import { createActivityCommand } from "./server/commands/create-activity";
 import { createActivityDesignCommand } from "./server/commands/create-activity-design";
 import { createMealScheduleCommand } from "./server/commands/create-meal-schedule";
+import { deleteMealScheduleCommand } from "./server/commands/delete-meal-schedule";
 import { deleteActivityCommand } from "./server/commands/delete-activity";
 import { deleteActivityDesignCommand } from "./server/commands/delete-activity-design";
+import { updateMealScheduleCommand } from "./server/commands/update-meal-schedule";
 import { updateActivityCommand } from "./server/commands/update-activity";
 import { updateActivityDesignCommand } from "./server/commands/update-activity-design";
 import { getActivityDesign as getActivityDesignQuery } from "./server/queries/get-activity-design";
 import { listActivityDesigns as listActivityDesignQuery } from "./server/queries/list-activity-designs";
-import type { MealScheduleCreateResult } from "./types";
+import type {
+  MealScheduleCreateResult,
+  MealScheduleDeleteResult,
+  MealScheduleUpdateResult,
+} from "./types";
 
 export type {
   ActivityCreateResult,
@@ -21,6 +27,8 @@ export type {
   ActivityUpdateResult,
   ActivityDesignUpdateResult,
   MealScheduleCreateResult,
+  MealScheduleDeleteResult,
+  MealScheduleUpdateResult,
 } from "./types";
 
 export async function listActivityDesigns() {
@@ -41,6 +49,32 @@ export async function createMealSchedule(
   input: unknown,
 ): Promise<MealScheduleCreateResult> {
   return createMealScheduleCommand(activityDesignId, activityId, input);
+}
+
+export async function updateMealSchedule(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+  input: unknown,
+): Promise<MealScheduleUpdateResult> {
+  return updateMealScheduleCommand(
+    activityDesignId,
+    activityId,
+    mealScheduleId,
+    input,
+  );
+}
+
+export async function deleteMealSchedule(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+): Promise<MealScheduleDeleteResult> {
+  return deleteMealScheduleCommand(
+    activityDesignId,
+    activityId,
+    mealScheduleId,
+  );
 }
 
 export async function updateActivity(
