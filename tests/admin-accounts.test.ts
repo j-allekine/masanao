@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 import {
+  createStaffAccount as createStaffAccountFeature,
+} from "@/features/access-management/server";
+import {
   DELETE as adminAccountsDelete,
   PATCH as adminAccountsPatch,
   POST as adminAccountsPost,
@@ -8,10 +11,17 @@ import {
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { GET as operationsGet } from "@/app/api/operations/route";
 import { prisma } from "@/prisma/client";
+import type { CurrentActor } from "@/server/auth";
 
 const adminPassword = "administrator-password";
 const originalStaffPassword = "original-staff-password";
 const replacementStaffPassword = "replacement-staff-password";
+
+const adminActor: CurrentActor = {
+  id: "admin-user",
+  name: "municipal.admin",
+  username: "municipal.admin",
+};
 
 async function createAccount({
   id,
@@ -81,7 +91,7 @@ function adminRequest(
   return adminAccountsPatch(request);
 }
 
-describe("administrator account management API", () => {
+describe("administrator account management", () => {
   beforeEach(async () => {
     await prisma.session.deleteMany();
     await prisma.user.deleteMany();
@@ -123,6 +133,55 @@ describe("administrator account management API", () => {
       originalStaffPassword,
     );
     expect(signInResponse.status).toBe(200);
+  });
+
+  it("exposes account creation through a transport-neutral feature gateway", async () => {
+    await createAccount({
+      id: "admin-user",
+      username: "municipal.admin",
+      role: "admin",
+      password: adminPassword,
+    });
+
+    const result = await createStaffAccountFeature(adminActor, {
+      username: "gateway.staff",
+      password: originalStaffPassword,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      account: {
+        name: "gateway.staff",
+        role: "staff",
+        username: "gateway.staff",
+      },
+    });
+  });
+
+  it("keeps administrator authorization inside the feature gateway", async () => {
+    await createAccount({
+      id: "staff-user",
+      username: "kitchen.staff",
+      password: originalStaffPassword,
+    });
+
+    const result = await createStaffAccountFeature(
+      {
+        id: "staff-user",
+        name: "kitchen.staff",
+        username: "kitchen.staff",
+      },
+      {
+        username: "blocked.staff",
+        password: replacementStaffPassword,
+      },
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
   });
 
   it("lets an administrator reset a staff password without email", async () => {
