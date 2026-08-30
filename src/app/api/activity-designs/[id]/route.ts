@@ -1,5 +1,6 @@
 import {
   deleteActivityDesign,
+  getActivityDesign,
   updateActivityDesign,
 } from "@/features/activity-planning/server";
 import { auth } from "@/server/auth";
@@ -28,6 +29,26 @@ async function requireAuthenticated(request: Request) {
 type ActivityDesignRouteContext = {
   params: Promise<{ id: string }>;
 };
+
+export async function GET(
+  request: Request,
+  { params }: ActivityDesignRouteContext,
+) {
+  const authorizationResponse = await requireAuthenticated(request);
+  if (authorizationResponse) return authorizationResponse;
+
+  const { id } = await params;
+  const activityDesign = await getActivityDesign(id);
+
+  if (!activityDesign) {
+    return Response.json(
+      { error: "The Activity Design could not be found." },
+      { status: 404 },
+    );
+  }
+
+  return Response.json({ activityDesign });
+}
 
 export async function PATCH(
   request: Request,
