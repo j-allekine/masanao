@@ -106,11 +106,12 @@ export async function updateActivityDesignRecord(
   id: string,
   input: ActivityDesignUpdateInput,
 ): Promise<ActivityDesignListItem> {
+  const { aipReferenceCode, ...requiredFields } = input;
   const activityDesign = await prisma.activityDesign.update({
     where: { id },
     data: {
-      ...input,
-      aipReferenceCode: input.aipReferenceCode ?? null,
+      ...requiredFields,
+      ...(aipReferenceCode === undefined ? {} : { aipReferenceCode }),
     },
     select: activityDesignListSelect,
   });
@@ -138,6 +139,10 @@ export async function deleteActivityDesignRecord(id: string) {
   try {
     await prisma.activityDesign.delete({ where: { id } });
   } catch (error) {
+    if (isRecordNotFound(error)) {
+      return null;
+    }
+
     if (isRestrictiveRelationViolation(error)) {
       const currentActivityCount = await prisma.activity.count({
         where: { activityDesignId: id },

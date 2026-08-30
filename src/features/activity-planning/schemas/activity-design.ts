@@ -54,6 +54,25 @@ const aipReferenceCodeSchema = z.preprocess(
       .optional(),
   );
 
+const aipReferenceCodeUpdateSchema = z.preprocess(
+  (value) => {
+    if (
+      value === null ||
+      (typeof value === "string" && value.trim() === "")
+    ) {
+      return null;
+    }
+
+    return value;
+  },
+  z
+    .string()
+    .trim()
+    .max(100, "AIP Reference Code must be 100 characters or fewer")
+    .nullable()
+    .optional(),
+);
+
 export const activityDesignSchema = z.object({
   activityDesignNo: activityDesignNoSchema,
   fiscalYear: fiscalYearSchema,
@@ -68,7 +87,7 @@ export const activityDesignUpdateSchema = z.object({
   activityDesignNo: activityDesignNoSchema,
   title: titleSchema,
   officeName: officeNameSchema,
-  aipReferenceCode: aipReferenceCodeSchema,
+  aipReferenceCode: aipReferenceCodeUpdateSchema,
 });
 
 export type ActivityDesignUpdateInput = z.infer<
