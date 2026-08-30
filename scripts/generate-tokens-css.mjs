@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, "..");
 const tokenPath = path.join(projectRoot, "tokens.json");
-const outputPath = path.join(projectRoot, "app", "tokens.css");
+const outputPath = path.join(projectRoot, "src", "app", "tokens.css");
 
 const tokens = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
 

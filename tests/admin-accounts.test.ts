@@ -7,7 +7,7 @@ import {
 } from "@/app/api/admin/accounts/route";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { GET as operationsGet } from "@/app/api/operations/route";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/prisma/client";
 
 const adminPassword = "administrator-password";
 const originalStaffPassword = "original-staff-password";

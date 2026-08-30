@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/prisma/client";
 
 const planningMigrationName = "20260829090000_add_activity_planning";
 
@@ -95,7 +95,7 @@ describe("activity planning database foundation", () => {
     const directory = mkdtempSync(join(tmpdir(), "masanao-planning-migration-"));
     const databasePath = join(directory, "migration.db");
     const database = new Database(databasePath);
-    const migrationDirectory = join(process.cwd(), "prisma", "migrations");
+    const migrationDirectory = join(process.cwd(), "src", "prisma", "migrations");
 
     const migrationNames = readdirSync(migrationDirectory, {
       withFileTypes: true,
