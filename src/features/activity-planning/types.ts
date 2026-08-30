@@ -138,6 +138,26 @@ export type MealScheduleCreateResult =
       fields: MealScheduleFieldErrors;
     };
 
+export type MealScheduleUpdateResult =
+  | {
+      ok: true;
+      mealSchedule: MealScheduleListItem;
+    }
+  | {
+      ok: false;
+      kind: "validation" | "not-found";
+      error: string;
+      fields: MealScheduleFieldErrors;
+    };
+
+export type MealScheduleDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "not-found" | "has-issuance-record";
+      error: string;
+    };
+
 export type ActivityDesignUpdateActionState =
   | { status: "success"; activityDesign: ActivityDesignListItem }
   | {
@@ -186,3 +206,7 @@ export type MealScheduleActionState =
       error: string;
       fields: MealScheduleFieldErrors;
     };
+
+export type MealScheduleDeleteActionState =
+  | { status: "success" }
+  | { status: "error"; error: string };
