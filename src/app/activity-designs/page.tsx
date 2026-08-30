@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/app/_components/workspace-shell";
 import { auth } from "@/server/auth";
-import { listActivityDesigns } from "@/lib/activity-designs";
-import ActivityDesignsContent from "./activity-designs-content";
+import { listActivityDesigns } from "@/features/activity-planning/server";
+import { ActivityDesignsContent } from "@/features/activity-planning/ui";
 
 export const metadata: Metadata = {
   title: "Activity Designs | Masanao",
