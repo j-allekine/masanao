@@ -5,7 +5,7 @@
   "scripts": {
     "tokens:generate": "node scripts/generate-tokens-css.mjs",
     "dev": "next dev",
-    "predev": "node scripts/generate-tokens-css.mjs",
+    "predev": "pnpm exec prisma migrate deploy --config prisma7.config.ts && node scripts/generate-tokens-css.mjs",
     "build": "next build",
     "prebuild": "node scripts/generate-tokens-css.mjs",
     "start": "next start",
