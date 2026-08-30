@@ -3,7 +3,10 @@ import "server-only";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
-import type { ActivityDesignInput } from "../../schemas/activity-design";
+import type {
+  ActivityDesignInput,
+  ActivityDesignUpdateInput,
+} from "../../schemas/activity-design";
 import type { ActivityDesignListItem } from "../../types";
 
 const activityDesignListSelect = {
@@ -31,6 +34,20 @@ export function isUniqueConstraintViolation(error: unknown) {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
+  );
+}
+
+export function isRecordNotFound(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  );
+}
+
+export function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
   );
 }
 
@@ -83,4 +100,57 @@ export async function createActivityDesignRecord(
     ...activityDesign,
     activityCount: 0,
   };
+}
+
+export async function updateActivityDesignRecord(
+  id: string,
+  input: ActivityDesignUpdateInput,
+): Promise<ActivityDesignListItem> {
+  const activityDesign = await prisma.activityDesign.update({
+    where: { id },
+    data: {
+      ...input,
+      aipReferenceCode: input.aipReferenceCode ?? null,
+    },
+    select: activityDesignListSelect,
+  });
+
+  return toActivityDesignListItem(activityDesign);
+}
+
+export async function deleteActivityDesignRecord(id: string) {
+  const activityDesign = await prisma.activityDesign.findUnique({
+    where: { id },
+    select: {
+      _count: { select: { activities: true } },
+    },
+  });
+
+  if (!activityDesign) return null;
+
+  if (activityDesign._count.activities > 0) {
+    return {
+      deleted: false as const,
+      activityCount: activityDesign._count.activities,
+    };
+  }
+
+  try {
+    await prisma.activityDesign.delete({ where: { id } });
+  } catch (error) {
+    if (isRestrictiveRelationViolation(error)) {
+      const currentActivityCount = await prisma.activity.count({
+        where: { activityDesignId: id },
+      });
+
+      return {
+        deleted: false as const,
+        activityCount: currentActivityCount,
+      };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }

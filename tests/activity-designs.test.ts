@@ -4,6 +4,10 @@ import {
   GET as activityDesignsGet,
   POST as activityDesignsPost,
 } from "@/app/api/activity-designs/route";
+import {
+  DELETE as activityDesignDelete,
+  PATCH as activityDesignPatch,
+} from "@/app/api/activity-designs/[id]/route";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { prisma } from "@/prisma/client";
 
@@ -66,6 +70,26 @@ function activityDesignsRequest(
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
+}
+
+function activityDesignRequest(
+  id: string,
+  method: "PATCH" | "DELETE",
+  body?: Record<string, unknown>,
+  cookie = "",
+) {
+  return new Request(`http://localhost:3000/api/activity-designs/${id}`, {
+    method,
+    headers: {
+      ...(body ? { "content-type": "application/json" } : {}),
+      ...(cookie ? { cookie } : {}),
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+}
+
+function routeParams(id: string) {
+  return { params: Promise.resolve({ id }) };
 }
 
 describe("activity designs API", () => {
@@ -242,5 +266,249 @@ describe("activity designs API", () => {
         },
       ],
     });
+  });
+
+  it("edits an Activity Design and persists normalized values after reload", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, cookie),
+    );
+    const created = await createResponse.json();
+
+    const response = await activityDesignPatch(
+      activityDesignRequest(
+        created.activityDesign.id,
+        "PATCH",
+        {
+          activityDesignNo: "  AD-2026-002  ",
+          title: "  Updated Nutrition Month  ",
+          officeName: "  Municipal Health Office  ",
+          aipReferenceCode: "  AIP-2026-099  ",
+        },
+        cookie,
+      ),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      activityDesign: {
+        id: created.activityDesign.id,
+        activityDesignNo: "ad-2026-002",
+        fiscalYear: 2026,
+        title: "Updated Nutrition Month",
+        officeName: "Municipal Health Office",
+        aipReferenceCode: "AIP-2026-099",
+        activityCount: 0,
+      },
+    });
+
+    const reloadResponse = await activityDesignsGet(
+      activityDesignsRequest("GET", undefined, cookie),
+    );
+
+    expect(await reloadResponse.json()).toMatchObject({
+      activityDesigns: [
+        {
+          activityDesignNo: "ad-2026-002",
+          title: "Updated Nutrition Month",
+          officeName: "Municipal Health Office",
+          aipReferenceCode: "AIP-2026-099",
+        },
+      ],
+    });
+  });
+
+  it("rejects a duplicate normalized Activity Design No. during edit", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const firstResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, cookie),
+    );
+    const first = await firstResponse.json();
+    const secondResponse = await activityDesignsPost(
+      activityDesignsRequest(
+        "POST",
+        { ...validActivityDesign, activityDesignNo: "AD-2026-002" },
+        cookie,
+      ),
+    );
+    const second = await secondResponse.json();
+
+    const response = await activityDesignPatch(
+      activityDesignRequest(
+        second.activityDesign.id,
+        "PATCH",
+        {
+          activityDesignNo: "  ad-2026-001  ",
+          title: "Should not be saved",
+          officeName: validActivityDesign.officeName,
+          aipReferenceCode: null,
+        },
+        cookie,
+      ),
+      routeParams(second.activityDesign.id),
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: "An Activity Design with that number already exists.",
+      fields: {
+        activityDesignNo: [
+          "An Activity Design with that number already exists.",
+        ],
+      },
+    });
+    await expect(
+      prisma.activityDesign.findUnique({
+        where: { id: second.activityDesign.id },
+      }),
+    ).resolves.toMatchObject({
+      activityDesignNo: "ad-2026-002",
+      title: validActivityDesign.title,
+    });
+    await expect(
+      prisma.activityDesign.findUnique({
+        where: { id: first.activityDesign.id },
+      }),
+    ).resolves.toMatchObject({ activityDesignNo: "ad-2026-001" });
+  });
+
+  it.each([
+    ["a blank Activity Design No.", { activityDesignNo: " " }, "activityDesignNo"],
+    ["a blank title", { title: "\t" }, "title"],
+    ["a blank office", { officeName: "  " }, "officeName"],
+    [
+      "an overlong Activity Design No.",
+      { activityDesignNo: "x".repeat(101) },
+      "activityDesignNo",
+    ],
+    ["an overlong title", { title: "x".repeat(201) }, "title"],
+    ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
+    [
+      "an overlong AIP Reference Code",
+      { aipReferenceCode: "x".repeat(101) },
+      "aipReferenceCode",
+    ],
+  ] as const)(
+    "rejects %s during edit with a clear field error",
+    async (_description, invalidFields, expectedField) => {
+      await createStaffAccount();
+      const cookie = await cookieForStaff();
+      const createResponse = await activityDesignsPost(
+        activityDesignsRequest("POST", validActivityDesign, cookie),
+      );
+      const created = await createResponse.json();
+
+      const response = await activityDesignPatch(
+        activityDesignRequest(
+          created.activityDesign.id,
+          "PATCH",
+          {
+            activityDesignNo: "AD-2026-002",
+            title: "Updated title",
+            officeName: "Updated office",
+            aipReferenceCode: "AIP-2026-002",
+            ...invalidFields,
+          },
+          cookie,
+        ),
+        routeParams(created.activityDesign.id),
+      );
+      const payload = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(payload.error).toBe(
+        "Please correct the highlighted Activity Design fields.",
+      );
+      expect(payload.fields).toHaveProperty(expectedField);
+      await expect(
+        prisma.activityDesign.findUnique({
+          where: { id: created.activityDesign.id },
+        }),
+      ).resolves.toMatchObject({ activityDesignNo: "ad-2026-001" });
+    },
+  );
+
+  it("requires authentication for editing and deleting", async () => {
+    await createStaffAccount();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, await cookieForStaff()),
+    );
+    const created = await createResponse.json();
+
+    const editResponse = await activityDesignPatch(
+      activityDesignRequest(
+        created.activityDesign.id,
+        "PATCH",
+        {
+          activityDesignNo: "AD-2026-002",
+          title: validActivityDesign.title,
+          officeName: validActivityDesign.officeName,
+          aipReferenceCode: null,
+        },
+      ),
+      routeParams(created.activityDesign.id),
+    );
+    const deleteResponse = await activityDesignDelete(
+      activityDesignRequest(created.activityDesign.id, "DELETE"),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(editResponse.status).toBe(401);
+    expect(deleteResponse.status).toBe(401);
+    expect(await prisma.activityDesign.count()).toBe(1);
+  });
+
+  it("deletes an Activity Design without Activities", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, cookie),
+    );
+    const created = await createResponse.json();
+
+    const response = await activityDesignDelete(
+      activityDesignRequest(created.activityDesign.id, "DELETE", undefined, cookie),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(response.status).toBe(204);
+    expect(await response.text()).toBe("");
+    expect(await prisma.activityDesign.count()).toBe(0);
+  });
+
+  it("blocks deleting an Activity Design with Activities and preserves its children", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const createResponse = await activityDesignsPost(
+      activityDesignsRequest("POST", validActivityDesign, cookie),
+    );
+    const created = await createResponse.json();
+    const activity = await prisma.activity.create({
+      data: {
+        id: "blocking-activity",
+        activityDesignId: created.activityDesign.id,
+        name: "Existing activity",
+        scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
+      },
+    });
+
+    const response = await activityDesignDelete(
+      activityDesignRequest(created.activityDesign.id, "DELETE", undefined, cookie),
+      routeParams(created.activityDesign.id),
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error:
+        "This Activity Design cannot be deleted while it has Activities. Remove its Activities first.",
+      activityCount: 1,
+    });
+    await expect(
+      prisma.activity.findUnique({ where: { id: activity.id } }),
+    ).resolves.toMatchObject({ activityDesignId: created.activityDesign.id });
+    expect(await prisma.activityDesign.count()).toBe(1);
   });
 });
