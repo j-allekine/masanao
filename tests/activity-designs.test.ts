@@ -17,7 +17,6 @@ const validActivityDesign = {
   activityDesignNo: "AD-2026-001",
   fiscalYear: 2026,
   title: "Municipal Nutrition Month",
-  officeName: "Municipal Social Welfare and Development Office",
 };
 
 async function createStaffAccount() {
@@ -134,7 +133,6 @@ describe("activity designs API", () => {
           activityDesignNo: "  AD-2026-001  ",
           fiscalYear: 2026,
           title: "  Municipal Nutrition Month  ",
-          officeName: "  Municipal Social Welfare and Development Office ",
           aipReferenceCode: "  AIP-2026-014 ",
         },
         await cookieForStaff(),
@@ -147,7 +145,6 @@ describe("activity designs API", () => {
         activityDesignNo: "ad-2026-001",
         fiscalYear: 2026,
         title: "Municipal Nutrition Month",
-        officeName: "Municipal Social Welfare and Development Office",
         aipReferenceCode: "AIP-2026-014",
         activityCount: 0,
       },
@@ -162,7 +159,6 @@ describe("activity designs API", () => {
       activityDesignNo: "ad-2026-001",
       fiscalYear: 2026,
       title: "Municipal Nutrition Month",
-      officeName: "Municipal Social Welfare and Development Office",
       aipReferenceCode: "AIP-2026-014",
       activities: [],
     });
@@ -203,7 +199,6 @@ describe("activity designs API", () => {
   it.each([
     ["a blank Activity Design No.", { activityDesignNo: " " }, "activityDesignNo"],
     ["a blank title", { title: "\t" }, "title"],
-    ["a blank office", { officeName: "  " }, "officeName"],
     ["a fiscal year before 1900", { fiscalYear: 1899 }, "fiscalYear"],
     ["a fiscal year after 9999", { fiscalYear: 10000 }, "fiscalYear"],
     ["a non-whole fiscal year", { fiscalYear: 2026.5 }, "fiscalYear"],
@@ -213,7 +208,6 @@ describe("activity designs API", () => {
       "activityDesignNo",
     ],
     ["an overlong title", { title: "x".repeat(201) }, "title"],
-    ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
     [
       "an overlong AIP Reference Code",
       { aipReferenceCode: "x".repeat(101) },
@@ -261,7 +255,6 @@ describe("activity designs API", () => {
           activityDesignNo: "ad-2026-001",
           fiscalYear: 2026,
           title: "Municipal Nutrition Month",
-          officeName: "Municipal Social Welfare and Development Office",
           aipReferenceCode: null,
           activityCount: 0,
         },
@@ -283,8 +276,8 @@ describe("activity designs API", () => {
         "PATCH",
         {
           activityDesignNo: "  AD-2026-002  ",
+          fiscalYear: 2027,
           title: "  Updated Nutrition Month  ",
-          officeName: "  Municipal Health Office  ",
           aipReferenceCode: "  AIP-2026-099  ",
         },
         cookie,
@@ -297,9 +290,8 @@ describe("activity designs API", () => {
       activityDesign: {
         id: created.activityDesign.id,
         activityDesignNo: "ad-2026-002",
-        fiscalYear: 2026,
+        fiscalYear: 2027,
         title: "Updated Nutrition Month",
-        officeName: "Municipal Health Office",
         aipReferenceCode: "AIP-2026-099",
         activityCount: 0,
       },
@@ -314,7 +306,6 @@ describe("activity designs API", () => {
         {
           activityDesignNo: "ad-2026-002",
           title: "Updated Nutrition Month",
-          officeName: "Municipal Health Office",
           aipReferenceCode: "AIP-2026-099",
         },
       ],
@@ -339,8 +330,8 @@ describe("activity designs API", () => {
         "PATCH",
         {
           activityDesignNo: "AD-2026-002",
+          fiscalYear: 2026,
           title: "Updated title",
-          officeName: validActivityDesign.officeName,
         },
         cookie,
       ),
@@ -374,8 +365,8 @@ describe("activity designs API", () => {
         "PATCH",
         {
           activityDesignNo: "AD-2026-002",
+          fiscalYear: 2026,
           title: validActivityDesign.title,
-          officeName: validActivityDesign.officeName,
           aipReferenceCode: "  ",
         },
         cookie,
@@ -414,8 +405,8 @@ describe("activity designs API", () => {
         "PATCH",
         {
           activityDesignNo: "  ad-2026-001  ",
+          fiscalYear: 2026,
           title: "Should not be saved",
-          officeName: validActivityDesign.officeName,
           aipReferenceCode: null,
         },
         cookie,
@@ -450,14 +441,12 @@ describe("activity designs API", () => {
   it.each([
     ["a blank Activity Design No.", { activityDesignNo: " " }, "activityDesignNo"],
     ["a blank title", { title: "\t" }, "title"],
-    ["a blank office", { officeName: "  " }, "officeName"],
     [
       "an overlong Activity Design No.",
       { activityDesignNo: "x".repeat(101) },
       "activityDesignNo",
     ],
     ["an overlong title", { title: "x".repeat(201) }, "title"],
-    ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
     [
       "an overlong AIP Reference Code",
       { aipReferenceCode: "x".repeat(101) },
@@ -479,8 +468,8 @@ describe("activity designs API", () => {
           "PATCH",
           {
             activityDesignNo: "AD-2026-002",
+            fiscalYear: 2026,
             title: "Updated title",
-            officeName: "Updated office",
             aipReferenceCode: "AIP-2026-002",
             ...invalidFields,
           },
@@ -516,8 +505,8 @@ describe("activity designs API", () => {
         "PATCH",
         {
           activityDesignNo: "AD-2026-002",
+          fiscalYear: 2026,
           title: validActivityDesign.title,
-          officeName: validActivityDesign.officeName,
           aipReferenceCode: null,
         },
       ),
@@ -563,6 +552,7 @@ describe("activity designs API", () => {
         id: "blocking-activity",
         activityDesignId: created.activityDesign.id,
         name: "Existing activity",
+        officeName: "Municipal Social Welfare and Development Office",
         scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
       },
     });

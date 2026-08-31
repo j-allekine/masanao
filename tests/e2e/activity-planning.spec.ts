@@ -27,20 +27,22 @@ test.describe("Activity planning journey", () => {
     await page.goto("/activity-designs");
     await page.waitForLoadState("networkidle");
 
-    await page
+    await page.locator("#new-activity-design").click();
+    const createDesignDialog = page.getByRole("dialog");
+    await createDesignDialog
       .getByLabel("Activity Design No.", { exact: true })
       .fill("E2E-2026-019");
-    await page.getByLabel("Fiscal year", { exact: true }).fill("2026");
-    await page.getByLabel("Title", { exact: true }).fill("E2E Feeding Plan");
-    await page
-      .getByLabel("Office name", { exact: true })
-      .fill("E2E Kitchen Office");
+    await createDesignDialog
+      .getByLabel("Fiscal Year", { exact: true })
+      .click();
+    await page.getByRole("button", { name: "2026", exact: true }).click();
+    await createDesignDialog
+      .getByLabel("Title", { exact: true })
+      .fill("E2E Feeding Plan");
     await page
       .getByRole("button", { name: "Create Activity Design", exact: true })
       .click();
-    await expect(
-      page.getByRole("alert").filter({ hasText: "Saved" }),
-    ).toContainText("Saved");
+    await expect(createDesignDialog).toHaveCount(0);
 
     await page.reload();
     await page.waitForLoadState("networkidle");
@@ -48,12 +50,23 @@ test.describe("Activity planning journey", () => {
       .getByRole("row")
       .filter({ hasText: "E2E Feeding Plan" });
     await expect(designRow).toContainText("e2e-2026-019");
-    await designRow.getByRole("button", { name: "Open", exact: true }).click();
+    const designActionButton = designRow.getByRole("button", {
+      name: "Actions for E2E Feeding Plan",
+      exact: true,
+    });
+    const designId = (await designActionButton.getAttribute("id"))!.replace(
+      "activity-design-actions-",
+      "",
+    );
+    await page.goto(`/activity-designs/${designId}`);
     await page.waitForLoadState("networkidle");
 
     await page
       .getByLabel("Activity name", { exact: true })
       .fill("E2E Community Feeding");
+    await page
+      .getByLabel("Office", { exact: true })
+      .fill("E2E Kitchen Office");
     await page.getByLabel("Scheduled date", { exact: true }).fill("2026-09-03");
     await page
       .getByRole("button", { name: "Create Activity", exact: true })
@@ -96,20 +109,20 @@ test.describe("Activity planning journey", () => {
       .getByRole("row")
       .filter({ hasText: "E2E Feeding Plan" });
     await savedDesignRow
-      .getByRole("button", { name: "Delete", exact: true })
+      .getByRole("button", {
+        name: "Actions for E2E Feeding Plan",
+        exact: true,
+      })
       .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
     const designDeleteDialog = page.getByRole("alertdialog");
-    await expect(designDeleteDialog).toContainText("Remove it before deleting");
+    await expect(designDeleteDialog).toContainText(
+      "This Activity Design cannot be deleted because it contains 1 Activity.",
+    );
     await designDeleteDialog
-      .getByRole("button", { name: "Delete Activity Design", exact: true })
+      .getByRole("button", { name: "Close", exact: true })
       .click();
-    await expect(designDeleteDialog).toContainText("Deletion blocked");
-    await designDeleteDialog
-      .getByRole("button", { name: "Cancel", exact: true })
-      .click();
-    await savedDesignRow
-      .getByRole("button", { name: "Open", exact: true })
-      .click();
+    await page.goto(`/activity-designs/${designId}`);
     await page.waitForLoadState("networkidle");
 
     await scheduleList
@@ -184,8 +197,12 @@ test.describe("Activity planning journey", () => {
       .getByRole("row")
       .filter({ hasText: "E2E Feeding Plan" });
     await emptyDesignRow
-      .getByRole("button", { name: "Delete", exact: true })
+      .getByRole("button", {
+        name: "Actions for E2E Feeding Plan",
+        exact: true,
+      })
       .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Delete Activity Design", exact: true })
@@ -193,6 +210,158 @@ test.describe("Activity planning journey", () => {
     await expect(
       page.getByRole("heading", { name: "E2E Feeding Plan" }),
     ).toHaveCount(0);
+  });
+
+  test("edits Activity Designs in a shared dialog and blocks a stale delete", async ({
+    page,
+  }) => {
+    await signIn(page);
+    const createResponse = await page.request.post("/api/activity-designs", {
+      data: {
+        activityDesignNo: "E2E-DIALOG-001",
+        fiscalYear: 2026,
+        title: "Dialog Planning Context",
+      },
+    });
+    expect(createResponse.status()).toBe(201);
+    const created = await createResponse.json();
+    const designId = created.activityDesign.id as string;
+
+    await page.goto("/activity-designs");
+    await page.waitForLoadState("networkidle");
+    let designRow = page.getByRole("row").filter({
+      hasText: "Dialog Planning Context",
+    });
+    await designRow
+      .getByRole("button", {
+        name: "Actions for Dialog Planning Context",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+
+    const editDialog = page.getByRole("dialog");
+    await expect(editDialog.getByLabel("Fiscal Year", { exact: true })).toHaveText(
+      "FY 2026",
+    );
+    await editDialog
+      .getByLabel("Title", { exact: true })
+      .fill("Updated Dialog Planning Context");
+    await editDialog
+      .getByLabel("Fiscal Year", { exact: true })
+      .click();
+    await expect(page.getByText("2020–2029", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Next decade", exact: true }).click();
+    await expect(page.getByText("2030–2039", { exact: true })).toBeVisible();
+    await page
+      .getByRole("button", { name: "Previous decade", exact: true })
+      .click();
+    await page.getByRole("button", { name: "2027", exact: true }).click();
+    await editDialog
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(editDialog).toHaveCount(0);
+
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    designRow = page.getByRole("row").filter({
+      hasText: "Updated Dialog Planning Context",
+    });
+    await expect(designRow).toContainText("2027");
+
+    await designRow
+      .getByRole("button", {
+        name: "Actions for Updated Dialog Planning Context",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const dirtyEditDialog = page.getByRole("dialog");
+    await dirtyEditDialog
+      .getByLabel("Title", { exact: true })
+      .fill("Unsaved title");
+    await page.keyboard.press("Escape");
+    const discardDialog = page.getByRole("alertdialog");
+    await expect(discardDialog).toContainText("Discard changes?");
+    await discardDialog
+      .getByRole("button", { name: "Keep editing", exact: true })
+      .click();
+    await expect(dirtyEditDialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Discard changes", exact: true })
+      .click();
+    await expect(dirtyEditDialog).toHaveCount(0);
+
+    await designRow
+      .getByRole("button", {
+        name: "Actions for Updated Dialog Planning Context",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    const deleteDialog = page.getByRole("alertdialog");
+    const activityResponse = await page.request.post(
+      `/api/activity-designs/${designId}/activities`,
+      {
+        data: {
+          name: "Created after table load",
+          officeName: "Municipal Health Office",
+          scheduledDate: "2026-09-03",
+        },
+      },
+    );
+    expect(activityResponse.status()).toBe(201);
+    const secondActivityResponse = await page.request.post(
+      `/api/activity-designs/${designId}/activities`,
+      {
+        data: {
+          name: "Second activity after table load",
+          officeName: "Municipal Health Office",
+          scheduledDate: "2026-09-04",
+        },
+      },
+    );
+    expect(secondActivityResponse.status()).toBe(201);
+    await deleteDialog
+      .getByRole("button", { name: "Delete Activity Design", exact: true })
+      .click();
+    await expect(deleteDialog).toContainText(
+      "This Activity Design cannot be deleted because it contains 2 Activities.",
+    );
+    await expect(
+      deleteDialog.getByRole("button", { name: "Delete Activity Design", exact: true }),
+    ).toHaveCount(0);
+    await deleteDialog.getByRole("button", { name: "Close", exact: true }).click();
+
+    const activity = await activityResponse.json();
+    const cleanupResponse = await page.request.delete(
+      `/api/activity-designs/${designId}/activities/${activity.activity.id}`,
+    );
+    expect(cleanupResponse.status()).toBe(204);
+    const secondActivity = await secondActivityResponse.json();
+    const secondCleanupResponse = await page.request.delete(
+      `/api/activity-designs/${designId}/activities/${secondActivity.activity.id}`,
+    );
+    expect(secondCleanupResponse.status()).toBe(204);
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    designRow = page.getByRole("row").filter({
+      hasText: "Updated Dialog Planning Context",
+    });
+    await designRow
+      .getByRole("button", {
+        name: "Actions for Updated Dialog Planning Context",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Delete Activity Design", exact: true })
+      .click();
+    await expect(designRow).toHaveCount(0);
   });
 
   test("searches and filters the complete Activity Designs table", async ({
@@ -208,19 +377,16 @@ test.describe("Activity planning journey", () => {
         activityDesignNo: "E2E-SEARCH-2026-001",
         fiscalYear: 2026,
         title: "Annual Feeding Program",
-        officeName: "GAD",
       },
       {
         activityDesignNo: "E2E-SEARCH-2025-001",
         fiscalYear: 2025,
         title: "Senior Outreach",
-        officeName: "CSWD",
       },
       {
         activityDesignNo: "E2E-SEARCH-2026-002",
         fiscalYear: 2026,
         title: "Community Nutrition",
-        officeName: "CSWD",
       },
     ]) {
       const response = await page.request.post("/api/activity-designs", {
@@ -231,9 +397,9 @@ test.describe("Activity planning journey", () => {
     }
 
     for (const [index, activity] of [
-      { name: "Annual feeding activity", scheduledDate: "2026-09-01" },
-      { name: "Community nutrition activity one", scheduledDate: "2026-09-02" },
-      { name: "Community nutrition activity two", scheduledDate: "2026-09-03" },
+      { name: "Annual feeding activity", officeName: "GAD", scheduledDate: "2026-09-01" },
+      { name: "Community nutrition activity one", officeName: "CSWD", scheduledDate: "2026-09-02" },
+      { name: "Community nutrition activity two", officeName: "CSWD", scheduledDate: "2026-09-03" },
     ].entries()) {
       const design = createdDesigns[index === 0 ? 0 : 2];
       const response = await page.request.post(
@@ -243,17 +409,29 @@ test.describe("Activity planning journey", () => {
       expect(response.status()).toBe(201);
     }
 
+    for (let index = 1; index <= 8; index += 1) {
+      const response = await page.request.post("/api/activity-designs", {
+        data: {
+          activityDesignNo: `E2E-PAGE-${String(index).padStart(2, "0")}`,
+          fiscalYear: 2024,
+          title: `Pagination design ${index}`,
+        },
+      });
+      expect(response.status()).toBe(201);
+    }
+
     await page.reload();
     await page.waitForLoadState("networkidle");
 
     const table = page.getByRole("table", { name: "Activity Designs" });
     const bodyRows = table.locator("tbody tr");
-    await expect(bodyRows).toHaveCount(3);
-    await expect(table).toContainText("1 Activity");
-    await expect(table).toContainText("2 Activities");
-    await expect(table).toContainText(
-      "Activity view coming in a future update.",
-    );
+    await expect(bodyRows).toHaveCount(10);
+    await expect(table.getByRole("cell", { name: "1 Activity" })).toBeVisible();
+    await expect(table.getByRole("cell", { name: "2 Activities" })).toBeVisible();
+    await expect(page.getByText("Page 1 of 2", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(bodyRows).toHaveCount(1);
+    await expect(page.getByText("Page 2 of 2", { exact: true })).toBeVisible();
 
     await page
       .getByLabel("Search Activity Designs", { exact: true })
@@ -265,13 +443,12 @@ test.describe("Activity planning journey", () => {
       .getByLabel("Search Activity Designs", { exact: true })
       .fill("");
     await page.getByRole("combobox", { name: "Fiscal Year" }).click();
-    await page.getByRole("option", { name: "FY 2026" }).click();
-    await page.getByRole("combobox", { name: "Office" }).click();
-    await page.getByRole("option", { name: "CSWD" }).click();
-    await expect(bodyRows).toHaveCount(1);
-    await expect(bodyRows.first()).toContainText("Community Nutrition");
+    await page.getByRole("option", { name: "2026" }).click();
+    await expect(bodyRows).toHaveCount(2);
+    await expect(table).toContainText("Annual Feeding Program");
+    await expect(table).toContainText("Community Nutrition");
 
     await page.getByRole("button", { name: "Clear filters" }).click();
-    await expect(bodyRows).toHaveCount(3);
+    await expect(bodyRows).toHaveCount(10);
   });
 });

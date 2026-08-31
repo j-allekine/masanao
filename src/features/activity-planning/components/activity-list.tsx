@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CalendarDays, ClipboardCheck, Pencil, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, ClipboardCheck, Pencil, Trash2 } from "lucide-react";
 
 import {
   Alert,
@@ -97,6 +97,10 @@ function ActivityListItemCard({
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarDays aria-hidden="true" />
             <span>{formatScheduledDate(activity.scheduledDate)}</span>
+          </p>
+          <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+            <Building2 aria-hidden="true" />
+            <span>{activity.officeName}</span>
           </p>
         </div>
         <p className="shrink-0 text-sm text-muted-foreground">

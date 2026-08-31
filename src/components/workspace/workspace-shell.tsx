@@ -4,6 +4,7 @@ import { AppSidebar, type AppSidebarUser } from "@/components/workspace/app-side
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorkspaceSectionId } from "@/lib/workspace-navigation";
+import type { CSSProperties } from "react";
 
 export type WorkspaceUser = AppSidebarUser;
 
@@ -18,7 +19,11 @@ export default function WorkspaceShell({
 }) {
   return (
     <TooltipProvider>
-      <SidebarProvider>
+      <SidebarProvider
+        style={{
+          "--sidebar-width": "clamp(12rem, 14vw, 13.25rem)",
+        } as CSSProperties}
+      >
         <AppSidebar user={user} activeSection={activeSection} />
         <SidebarInset>{children}</SidebarInset>
       </SidebarProvider>

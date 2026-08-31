@@ -34,6 +34,7 @@ type ActivityFormValues = Record<ActivityField, string>;
 
 const emptyFormValues: ActivityFormValues = {
   name: "",
+  officeName: "",
   particulars: "",
   scheduledDate: "",
   venue: "",
@@ -164,6 +165,14 @@ export default function ActivityForm({
             value={formValues.name}
             error={fieldErrors.name}
             onChange={(event) => updateField("name", event.target.value)}
+          />
+          <ActivityTextField
+            id="officeName"
+            label="Office"
+            description="Enter the LGU department or office responsible for this Activity."
+            value={formValues.officeName}
+            error={fieldErrors.officeName}
+            onChange={(event) => updateField("officeName", event.target.value)}
           />
           <ActivityTextField
             id="scheduledDate"

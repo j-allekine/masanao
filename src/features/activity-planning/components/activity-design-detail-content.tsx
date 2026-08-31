@@ -26,7 +26,7 @@ export default function ActivityDesignDetailContent({
         <div className="flex min-w-0 items-center gap-3">
           <SidebarTrigger />
           <div className="min-w-0 border-l pl-3">
-            <p className="truncate text-xs text-muted-foreground">Plan</p>
+            <p className="truncate text-xs text-muted-foreground">Planning</p>
             <p className="truncate text-sm font-medium">Activity design</p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function ActivityDesignDetailContent({
             {activityDesign.title}
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-            {activityDesign.officeName} · FY {activityDesign.fiscalYear}
+            Fiscal year {activityDesign.fiscalYear}
           </p>
           {activityDesign.aipReferenceCode ? (
             <p className="mt-2 text-sm text-muted-foreground">

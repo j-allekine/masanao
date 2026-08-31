@@ -30,12 +30,6 @@ const titleSchema = z
     .min(1, "Title is required")
     .max(200, "Title must be 200 characters or fewer");
 
-const officeNameSchema = z
-    .string()
-    .trim()
-    .min(1, "Office name is required")
-    .max(200, "Office name must be 200 characters or fewer");
-
 const aipReferenceCodeSchema = z.preprocess(
     (value) => {
       if (
@@ -77,7 +71,6 @@ export const activityDesignSchema = z.object({
   activityDesignNo: activityDesignNoSchema,
   fiscalYear: fiscalYearSchema,
   title: titleSchema,
-  officeName: officeNameSchema,
   aipReferenceCode: aipReferenceCodeSchema,
 });
 
@@ -85,8 +78,8 @@ export type ActivityDesignInput = z.infer<typeof activityDesignSchema>;
 
 export const activityDesignUpdateSchema = z.object({
   activityDesignNo: activityDesignNoSchema,
+  fiscalYear: fiscalYearSchema,
   title: titleSchema,
-  officeName: officeNameSchema,
   aipReferenceCode: aipReferenceCodeUpdateSchema,
 });
 

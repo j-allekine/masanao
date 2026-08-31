@@ -8,13 +8,6 @@ const localPlanningSections = [
 
 export default function PlanningSectionMenu() {
   return (
-    <section aria-labelledby="planning-title" className="flex flex-col gap-3">
-      <h1
-        id="planning-title"
-        className="text-xs font-medium uppercase tracking-[0.14em] text-primary"
-      >
-        Planning
-      </h1>
       <nav aria-label="Planning sections">
         <ul className="flex flex-wrap gap-2">
           {localPlanningSections.map((section) => (
@@ -40,6 +33,5 @@ export default function PlanningSectionMenu() {
           ))}
         </ul>
       </nav>
-    </section>
   );
 }

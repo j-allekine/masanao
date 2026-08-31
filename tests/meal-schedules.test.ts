@@ -17,10 +17,10 @@ const validActivityDesign = {
   activityDesignNo: "AD-2026-018",
   fiscalYear: 2026,
   title: "Municipal Nutrition Month",
-  officeName: "Municipal Social Welfare and Development Office",
 };
 const validActivity = {
   name: "Community Feeding",
+  officeName: "Municipal Social Welfare and Development Office",
   scheduledDate: "2026-09-01",
 };
 const validMealSchedule = {

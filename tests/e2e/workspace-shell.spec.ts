@@ -49,7 +49,10 @@ test.describe("workspace shell", () => {
     await signIn(page);
     await page.goto("/activity-designs");
 
-    await expect(page.getByRole("heading", { name: "Planning", exact: true })).toBeVisible();
+    await expect(page.getByText("Planning", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Planning", exact: true }),
+    ).toHaveCount(0);
     const planningMenu = page.getByRole("navigation", { name: "Planning sections" });
     const activePlanningLink = planningMenu.getByRole("link", {
       name: "Activity Designs",
