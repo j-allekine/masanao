@@ -1,14 +1,13 @@
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
+import ActivityDesignsWorkspace from "./activity-designs-workspace";
 import ActivityDesignForm from "./forms/activity-design-form";
-import ActivityDesignList from "./activity-design-list";
 import PlanningSectionMenu from "./planning-section-menu";
 import type { ActivityDesignListItem } from "../types";
 
@@ -32,32 +31,32 @@ export default function ActivityDesignsContent({
 
       <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
         <PlanningSectionMenu />
-        <section aria-labelledby="activity-designs-title" className="max-w-3xl">
+        <section aria-labelledby="activity-designs-title">
           <h2
             id="activity-designs-title"
-            className="mt-3 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
+            className="font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
           >
             Activity Designs
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Set the planning context first. Activities and meal schedules can be added as the details become known.
+            Scan planning contexts, find the one you need, and see how many Activities belong to each one.
           </p>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-start">
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>Activity Designs</CardTitle>
-              <CardDescription>
-                {initialActivityDesigns.length === 0
-                  ? "Your saved planning contexts will appear here."
-                  : `${initialActivityDesigns.length} saved planning ${initialActivityDesigns.length === 1 ? "context" : "contexts"}.`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <ActivityDesignList activityDesigns={initialActivityDesigns} />
-            </CardContent>
-          </Card>
+          <section aria-labelledby="activity-designs-table-title" className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h3 id="activity-designs-table-title" className="font-heading text-lg font-medium">
+                  Activity Designs
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {initialActivityDesigns.length} loaded {initialActivityDesigns.length === 1 ? "design" : "designs"}.
+                </p>
+              </div>
+            </div>
+            <ActivityDesignsWorkspace activityDesigns={initialActivityDesigns} />
+          </section>
 
           <Card>
             <CardHeader>
