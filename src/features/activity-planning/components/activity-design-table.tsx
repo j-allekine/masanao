@@ -29,10 +29,12 @@ import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 function ActivityDesignRow({
   activityDesign,
   onEdit,
+  onAddActivity,
   onDeleted,
 }: {
   activityDesign: ActivityDesignListItem;
   onEdit: () => void;
+  onAddActivity: () => void;
   onDeleted: () => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -50,15 +52,21 @@ function ActivityDesignRow({
           {activityDesign.fiscalYear}
         </TableCell>
         <TableCell
-          className="py-3 text-center text-sm font-semibold tabular-nums"
+          className="py-3 text-sm"
           aria-label={`${activityDesign.activityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
-          {activityDesign.activityCount}
+          <span className="block font-semibold tabular-nums">
+            {activityDesign.activityCount} {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
+          </span>
+          <span className="mt-1 block text-xs font-normal text-muted-foreground">
+            Activity view coming in a future update.
+          </span>
         </TableCell>
         <TableCell className="py-3 text-right">
           <ActivityDesignActionsMenu
             activityDesignTitle={activityDesign.title}
             actionButtonId={`activity-design-actions-${activityDesign.id}`}
+            onAddActivity={onAddActivity}
             onEdit={onEdit}
             onDelete={() => setIsDeleteDialogOpen(true)}
           />
@@ -81,12 +89,14 @@ export default function ActivityDesignTable({
   onClearFilters,
   onNew,
   onEdit,
+  onAddActivity,
 }: {
   activityDesigns: ActivityDesignListItem[];
   filters: { search: string; fiscalYear: string };
   onClearFilters: () => void;
   onNew: () => void;
   onEdit: (activityDesign: ActivityDesignListItem) => void;
+  onAddActivity: (activityDesign: ActivityDesignListItem) => void;
 }) {
   const router = useRouter();
   const hasFilters = hasActivityDesignFilters(filters);
@@ -149,8 +159,8 @@ export default function ActivityDesignTable({
           <TableRow>
             <TableHead scope="col" className="h-10 text-xs font-semibold">Design No.</TableHead>
             <TableHead scope="col" className="h-10 text-xs font-semibold">Title</TableHead>
-            <TableHead scope="col" className="h-10 text-xs font-semibold">Year</TableHead>
-            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">Activities</TableHead>
+            <TableHead scope="col" className="h-10 text-xs font-semibold">Fiscal Year</TableHead>
+            <TableHead scope="col" className="h-10 text-xs font-semibold">Activities</TableHead>
             <TableHead scope="col" className="h-10 text-right text-xs font-semibold">
               Actions
             </TableHead>
@@ -162,6 +172,7 @@ export default function ActivityDesignTable({
               key={activityDesign.id}
               activityDesign={activityDesign}
               onEdit={() => onEdit(activityDesign)}
+              onAddActivity={() => onAddActivity(activityDesign)}
               onDeleted={() => handleDeleted(activityDesign.id)}
             />
           ))}

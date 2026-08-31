@@ -53,7 +53,7 @@ export default function ActivityDesignToolbar({
         <Input
           id="activity-design-search"
           type="search"
-          placeholder="Search by design no. or title"
+          placeholder="Search Activity Designs..."
           value={filters.search}
           onChange={(event) =>
             onFiltersChange({ ...filters, search: event.target.value })

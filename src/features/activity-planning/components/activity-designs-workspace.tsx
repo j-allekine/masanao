@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
 import type { ActivityDesignListItem } from "../types";
+import ActivityCreateSheet from "./activity-create-sheet";
 import ActivityDesignDialog, {
   type ActivityDesignDialogState,
 } from "./activity-design-dialog";
@@ -37,6 +39,8 @@ export default function ActivityDesignsWorkspace({
   const [page, setPage] = useState(1);
   const [dialogState, setDialogState] =
     useState<ActivityDesignDialogState | null>(null);
+  const [activityDesignForCreate, setActivityDesignForCreate] =
+    useState<ActivityDesignListItem | null>(null);
   const filterOptions = useMemo(
     () => getActivityDesignFilterOptions(activityDesigns),
     [activityDesigns],
@@ -83,6 +87,19 @@ export default function ActivityDesignsWorkspace({
     }, 0);
   }
 
+  function closeActivityCreateSheet() {
+    const closedActivityDesign = activityDesignForCreate;
+    setActivityDesignForCreate(null);
+
+    window.setTimeout(() => {
+      if (closedActivityDesign) {
+        document
+          .getElementById(`activity-design-actions-${closedActivityDesign.id}`)
+          ?.focus();
+      }
+    }, 0);
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -121,6 +138,7 @@ export default function ActivityDesignsWorkspace({
         onEdit={(activityDesign) =>
           setDialogState({ mode: "edit", activityDesign })
         }
+        onAddActivity={setActivityDesignForCreate}
       />
       <ActivityDesignPagination
         page={currentPage}
@@ -134,6 +152,21 @@ export default function ActivityDesignsWorkspace({
         dialogState={dialogState}
         onClose={closeDialog}
         onSuccess={() => router.refresh()}
+      />
+      <ActivityCreateSheet
+        activityDesign={activityDesignForCreate}
+        open={activityDesignForCreate !== null}
+        onClose={closeActivityCreateSheet}
+        onSuccess={(activity) => {
+          closeActivityCreateSheet();
+          router.refresh();
+          const activityDesign = activityDesigns.find(
+            (design) => design.id === activity.activityDesignId,
+          );
+          if (activityDesign) {
+            toast.success(`Activity added to “${activityDesign.title}”`);
+          }
+        }}
       />
     </div>
   );
