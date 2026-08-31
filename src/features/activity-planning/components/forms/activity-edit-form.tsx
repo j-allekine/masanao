@@ -38,6 +38,7 @@ type ActivityFormValues = Record<ActivityField, string>;
 function initialValues(activity: ActivityListItem): ActivityFormValues {
   return {
     name: activity.name,
+    officeName: activity.officeName,
     particulars: activity.particulars ?? "",
     scheduledDate: activity.scheduledDate.slice(0, 10),
     venue: activity.venue ?? "",
@@ -164,6 +165,14 @@ export default function ActivityEditForm({
             value={formValues.name}
             error={fieldErrors.name}
             onChange={(event) => updateField("name", event.target.value)}
+          />
+          <ActivityEditTextField
+            id="officeName"
+            label="Office"
+            description="Enter the LGU department or office responsible for this Activity."
+            value={formValues.officeName}
+            error={fieldErrors.officeName}
+            onChange={(event) => updateField("officeName", event.target.value)}
           />
           <ActivityEditTextField
             id="scheduledDate"

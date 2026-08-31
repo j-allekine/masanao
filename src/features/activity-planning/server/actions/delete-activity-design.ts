@@ -16,12 +16,17 @@ export async function executeDeleteActivityDesign(
   });
 
   if (!session) {
-    return { status: "error", error: "Authentication required" };
+    return {
+      status: "error",
+      kind: "not-found",
+      error: "Authentication required",
+    };
   }
 
   if (typeof id !== "string" || id.trim() === "") {
     return {
       status: "error",
+      kind: "not-found",
       error: "The Activity Design could not be found.",
     };
   }
@@ -30,7 +35,12 @@ export async function executeDeleteActivityDesign(
     const result = await deleteActivityDesign(id);
 
     if (!result.ok) {
-      return { status: "error", error: result.error };
+      return {
+        status: "error",
+        kind: result.kind,
+        error: result.error,
+        activityCount: result.activityCount,
+      };
     }
 
     revalidatePath("/activity-designs");
@@ -39,6 +49,7 @@ export async function executeDeleteActivityDesign(
   } catch {
     return {
       status: "error",
+      kind: "not-found",
       error:
         "The Activity Design could not be deleted. Check your connection and try again.",
     };

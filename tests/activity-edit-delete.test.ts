@@ -20,10 +20,10 @@ const validActivityDesign = {
   activityDesignNo: "AD-2026-017",
   fiscalYear: 2026,
   title: "Municipal Nutrition Month",
-  officeName: "Municipal Social Welfare and Development Office",
 };
 const validActivity = {
   name: "Community Feeding",
+  officeName: "Municipal Social Welfare and Development Office",
   scheduledDate: "2026-09-01",
 };
 
@@ -142,6 +142,7 @@ describe("Activity edit API", () => {
         "PATCH",
         {
           name: "  Expanded Community Feeding  ",
+          officeName: "  Municipal Health Office  ",
           particulars: "  Nutrition Month launch  ",
           scheduledDate: "2026-09-03",
           venue: "  Municipal Covered Court  ",
@@ -158,6 +159,7 @@ describe("Activity edit API", () => {
       activity: {
         id: activity.id,
         name: "Expanded Community Feeding",
+        officeName: "Municipal Health Office",
         particulars: "Nutrition Month launch",
         scheduledDate: "2026-09-03T00:00:00.000Z",
         venue: "Municipal Covered Court",
@@ -184,6 +186,7 @@ describe("Activity edit API", () => {
           {
             id: activity.id,
             name: "Expanded Community Feeding",
+            officeName: "Municipal Health Office",
             particulars: "Nutrition Month launch",
             scheduledDate: "2026-09-03T00:00:00.000Z",
             venue: "Municipal Covered Court",
@@ -197,6 +200,7 @@ describe("Activity edit API", () => {
 
   it.each([
     ["a blank name", { name: " " }, "name"],
+    ["a blank office", { officeName: " " }, "officeName"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
     ["a negative budget", { plannedBudgetCentavos: -1 }, "plannedBudgetCentavos"],

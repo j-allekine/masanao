@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { prisma } from "@/prisma/client";
 
 const planningMigrationName = "20260829090000_add_activity_planning";
+const officeOwnershipMigrationName = "20260901090000_move_office_to_activity";
 
 describe("activity planning database foundation", () => {
   beforeEach(async () => {
@@ -26,7 +27,6 @@ describe("activity planning database foundation", () => {
         activityDesignNo: "  AD-RAW-001  ",
         fiscalYear: 2026,
         title: "First design",
-        officeName: "Municipal Kitchen",
       },
     });
 
@@ -37,7 +37,6 @@ describe("activity planning database foundation", () => {
           activityDesignNo: "ad-raw-001",
           fiscalYear: 2026,
           title: "Second design",
-          officeName: "Municipal Kitchen",
         },
       }),
     ).rejects.toMatchObject({ code: "P2002" });
@@ -51,7 +50,6 @@ describe("activity planning database foundation", () => {
         activityDesignNo: "schema-design",
         fiscalYear: 2026,
         title: "Schema verification",
-        officeName: "Municipal Kitchen",
       },
       include: { activities: { include: { mealSchedules: true } } },
     });
@@ -65,6 +63,7 @@ describe("activity planning database foundation", () => {
         id: "schema-activity",
         activityDesignId: design.id,
         name: "Schema activity",
+        officeName: "Municipal Kitchen",
         scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
       },
       include: { mealSchedules: true },
@@ -98,7 +97,6 @@ describe("activity planning database foundation", () => {
         activityDesignNo: "timestamp-design",
         fiscalYear: 2026,
         title: "Timestamp verification",
-        officeName: "Municipal Kitchen",
       },
     });
     const activity = await prisma.activity.create({
@@ -106,6 +104,7 @@ describe("activity planning database foundation", () => {
         id: "timestamp-activity",
         activityDesignId: design.id,
         name: "Timestamp activity",
+        officeName: "Municipal Kitchen",
         scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
       },
     });
@@ -198,6 +197,61 @@ describe("activity planning database foundation", () => {
       { name: "activity_design" },
       { name: "meal_schedule" },
     ]);
+
+    database.close();
+    rmSync(directory, { force: true, recursive: true });
+  });
+
+  it("moves each existing design Office onto its Activities without losing planning data", () => {
+    const directory = mkdtempSync(join(tmpdir(), "masanao-office-migration-"));
+    const databasePath = join(directory, "migration.db");
+    const database = new Database(databasePath);
+    const migrationDirectory = join(process.cwd(), "src", "prisma", "migrations");
+
+    database.exec(
+      readFileSync(
+        join(migrationDirectory, planningMigrationName, "migration.sql"),
+        "utf8",
+      ),
+    );
+    database
+      .prepare(
+        `INSERT INTO "activity_design"
+          ("id", "activityDesignNo", "fiscalYear", "title", "officeName", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      )
+      .run("design-one", "ad-001", 2026, "Nutrition Month", "CSWDO");
+    database
+      .prepare(
+        `INSERT INTO "activity"
+          ("id", "activityDesignId", "name", "scheduledDate", "updatedAt")
+         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      )
+      .run("activity-one", "design-one", "Community Feeding", "2026-09-01");
+
+    database.exec(
+      readFileSync(
+        join(
+          migrationDirectory,
+          officeOwnershipMigrationName,
+          "migration.sql",
+        ),
+        "utf8",
+      ),
+    );
+
+    expect(
+      database
+        .prepare('SELECT "officeName" FROM "activity" WHERE "id" = ?')
+        .get("activity-one"),
+    ).toEqual({ officeName: "CSWDO" });
+    expect(
+      database
+        .prepare('PRAGMA table_info("activity_design")')
+        .all()
+        .some((column) => (column as { name: string }).name === "officeName"),
+    ).toBe(false);
+    expect(database.pragma("foreign_key_check")).toEqual([]);
 
     database.close();
     rmSync(directory, { force: true, recursive: true });

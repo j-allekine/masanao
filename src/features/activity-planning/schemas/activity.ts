@@ -66,8 +66,15 @@ const nameSchema = z
   .min(1, "Activity name is required")
   .max(200, "Activity name must be 200 characters or fewer");
 
+const officeNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Office name is required")
+  .max(200, "Office name must be 200 characters or fewer");
+
 export const activitySchema = z.object({
   name: nameSchema,
+  officeName: officeNameSchema,
   particulars: optionalText("Activity particulars", 2_000),
   scheduledDate: scheduledDateSchema,
   venue: optionalText("Venue", 300),

@@ -2,13 +2,13 @@ export type ActivityDesignField =
   | "activityDesignNo"
   | "fiscalYear"
   | "title"
-  | "officeName"
   | "aipReferenceCode";
 
 export type FieldErrors = Partial<Record<ActivityDesignField | "form", string[]>>;
 
 export type ActivityField =
   | "name"
+  | "officeName"
   | "particulars"
   | "scheduledDate"
   | "venue"
@@ -30,7 +30,6 @@ export type ActivityDesignListItem = {
   activityDesignNo: string;
   fiscalYear: number;
   title: string;
-  officeName: string;
   aipReferenceCode: string | null;
   activityCount: number;
 };
@@ -47,6 +46,7 @@ export type ActivityListItem = {
   id: string;
   activityDesignId: string;
   name: string;
+  officeName: string;
   particulars: string | null;
   scheduledDate: string;
   venue: string | null;
@@ -168,7 +168,12 @@ export type ActivityDesignUpdateActionState =
 
 export type ActivityDesignDeleteActionState =
   | { status: "success" }
-  | { status: "error"; error: string };
+  | {
+      status: "error";
+      kind: "not-found" | "has-activities";
+      error: string;
+      activityCount?: number;
+    };
 
 export type ActivityDesignActionState =
   | { status: "idle" }

@@ -10,7 +10,7 @@ Shared language for the Municipal Kitchen's activity planning, food supplies, de
 A planning context that groups related Activities. Multiple Activity Designs can exist independently.
 
 **Activity**:
-A named undertaking within an Activity Design, with its own date and planning particulars. Meal Schedules are added as planning progresses, so an Activity may temporarily have none.
+A named undertaking within an Activity Design, associated with one Office and carrying its own date and planning particulars. Meal Schedules are added as planning progresses, so an Activity may temporarily have none.
 
 **Activity particulars**:
 Free-form descriptive information about an Activity.
@@ -45,7 +45,7 @@ A flat classification assigned to an Item. It does not determine the Item's Unit
 A supplier or organization from which supplies may be procured and received.
 
 **Office**:
-An LGU department or office associated with an activity. It is not a stock location.
+An LGU department or office associated with an Activity, never with the containing Activity Design. It is not a stock location.
 
 ### Food and issuance
 

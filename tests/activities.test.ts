@@ -21,10 +21,10 @@ const validActivityDesign = {
   activityDesignNo: "AD-2026-001",
   fiscalYear: 2026,
   title: "Municipal Nutrition Month",
-  officeName: "Municipal Social Welfare and Development Office",
 };
 const validActivity = {
   name: "Community Feeding",
+  officeName: "Municipal Social Welfare and Development Office",
   scheduledDate: "2026-09-01",
 };
 
@@ -115,6 +115,7 @@ describe("activities API", () => {
         "POST",
         {
           name: "  Community Feeding  ",
+          officeName: "  Municipal Social Welfare and Development Office  ",
           particulars: "  Nutrition Month launch  ",
           scheduledDate: "2026-09-01",
           venue: "  Municipal Covered Court  ",
@@ -132,6 +133,7 @@ describe("activities API", () => {
       activity: {
         activityDesignId: activityDesign.id,
         name: "Community Feeding",
+        officeName: "Municipal Social Welfare and Development Office",
         particulars: "Nutrition Month launch",
         scheduledDate: "2026-09-01T00:00:00.000Z",
         venue: "Municipal Covered Court",
@@ -235,11 +237,13 @@ describe("activities API", () => {
 
   it.each([
     ["a blank name", { name: " " }, "name"],
+    ["a blank office", { officeName: " " }, "officeName"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["an invalid scheduled date", { scheduledDate: "2026-02-30" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
     ["a negative budget", { plannedBudgetCentavos: -1 }, "plannedBudgetCentavos"],
     ["an overlong activity name", { name: "x".repeat(201) }, "name"],
+    ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
     ["overlong activity particulars", { particulars: "x".repeat(2_001) }, "particulars"],
     ["an overlong venue", { venue: "x".repeat(301) }, "venue"],
   ] as const)(

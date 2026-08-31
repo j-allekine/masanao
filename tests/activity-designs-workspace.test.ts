@@ -12,7 +12,6 @@ const activityDesigns: ActivityDesignListItem[] = [
     activityDesignNo: "ad-2026-002",
     fiscalYear: 2026,
     title: "Senior Nutrition Outreach",
-    officeName: "CSWD",
     aipReferenceCode: null,
     activityCount: 2,
   },
@@ -21,7 +20,6 @@ const activityDesigns: ActivityDesignListItem[] = [
     activityDesignNo: "ad-2025-001",
     fiscalYear: 2025,
     title: "Barangay Feeding",
-    officeName: "GAD",
     aipReferenceCode: null,
     activityCount: 1,
   },
@@ -30,26 +28,23 @@ const activityDesigns: ActivityDesignListItem[] = [
     activityDesignNo: "ad-2026-001",
     fiscalYear: 2026,
     title: "Community Feeding",
-    officeName: "CSWD",
     aipReferenceCode: null,
     activityCount: 0,
   },
 ];
 
 describe("Activity Designs workspace filters", () => {
-  it("derives deduplicated sorted Fiscal Year and Office choices from the complete result", () => {
+  it("derives deduplicated sorted Fiscal Year choices from the complete result", () => {
     expect(getActivityDesignFilterOptions(activityDesigns)).toEqual({
       fiscalYears: [2025, 2026],
-      offices: ["CSWD", "GAD"],
     });
   });
 
-  it("trims case-insensitive search and combines it with Fiscal Year and Office using AND logic", () => {
+  it("trims case-insensitive search and combines it with Fiscal Year using AND logic", () => {
     expect(
       filterActivityDesigns(activityDesigns, {
         search: "  COMMUNITY  ",
         fiscalYear: "2026",
-        office: "CSWD",
       }),
     ).toEqual([activityDesigns[2]]);
 
@@ -57,7 +52,6 @@ describe("Activity Designs workspace filters", () => {
       filterActivityDesigns(activityDesigns, {
         search: "AD-2026",
         fiscalYear: "2025",
-        office: "CSWD",
       }),
     ).toEqual([]);
   });

@@ -14,7 +14,6 @@ const activityDesignListSelect = {
   activityDesignNo: true,
   fiscalYear: true,
   title: true,
-  officeName: true,
   aipReferenceCode: true,
   _count: {
     select: { activities: true },
@@ -26,7 +25,6 @@ const activityDesignResponseSelect = {
   activityDesignNo: true,
   fiscalYear: true,
   title: true,
-  officeName: true,
   aipReferenceCode: true,
 } as const;
 
@@ -57,7 +55,6 @@ function toActivityDesignListItem(
     activityDesignNo: string;
     fiscalYear: number;
     title: string;
-    officeName: string;
     aipReferenceCode: string | null;
     _count: { activities: number };
   },
@@ -67,7 +64,6 @@ function toActivityDesignListItem(
     activityDesignNo: activityDesign.activityDesignNo,
     fiscalYear: activityDesign.fiscalYear,
     title: activityDesign.title,
-    officeName: activityDesign.officeName,
     aipReferenceCode: activityDesign.aipReferenceCode,
     activityCount: activityDesign._count.activities,
   };

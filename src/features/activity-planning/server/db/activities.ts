@@ -18,6 +18,7 @@ const activitySelect = {
   id: true,
   activityDesignId: true,
   name: true,
+  officeName: true,
   particulars: true,
   scheduledDate: true,
   venue: true,
@@ -42,7 +43,6 @@ const activityDesignDetailSelect = {
   activityDesignNo: true,
   fiscalYear: true,
   title: true,
-  officeName: true,
   aipReferenceCode: true,
   _count: {
     select: { activities: true },
@@ -78,6 +78,7 @@ function toActivityListItem(activity: {
   id: string;
   activityDesignId: string;
   name: string;
+  officeName: string;
   particulars: string | null;
   scheduledDate: Date;
   venue: string | null;
@@ -90,6 +91,7 @@ function toActivityListItem(activity: {
     id: activity.id,
     activityDesignId: activity.activityDesignId,
     name: activity.name,
+    officeName: activity.officeName,
     particulars: activity.particulars,
     scheduledDate: activity.scheduledDate.toISOString(),
     venue: activity.venue,
@@ -105,7 +107,6 @@ function toActivityDesignDetail(activityDesign: {
   activityDesignNo: string;
   fiscalYear: number;
   title: string;
-  officeName: string;
   aipReferenceCode: string | null;
   _count: { activities: number };
   activities: Array<Parameters<typeof toActivityListItem>[0]>;
@@ -115,7 +116,6 @@ function toActivityDesignDetail(activityDesign: {
     activityDesignNo: activityDesign.activityDesignNo,
     fiscalYear: activityDesign.fiscalYear,
     title: activityDesign.title,
-    officeName: activityDesign.officeName,
     aipReferenceCode: activityDesign.aipReferenceCode,
     activityCount: activityDesign._count.activities,
     activities: activityDesign.activities.map(toActivityListItem),
@@ -155,6 +155,7 @@ export async function createActivityRecord(
         id: crypto.randomUUID(),
         activityDesignId,
         name: input.name,
+        officeName: input.officeName,
         particulars: input.particulars ?? null,
         scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
         venue: input.venue ?? null,
@@ -188,6 +189,7 @@ export async function updateActivityRecord(
       where: { id: activityId },
       data: {
         name: input.name,
+        officeName: input.officeName,
         particulars: input.particulars ?? null,
         scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
         venue: input.venue ?? null,
