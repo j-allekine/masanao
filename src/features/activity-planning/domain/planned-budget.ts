@@ -15,8 +15,14 @@ export function parsePesoStringToCentavos(value: string): PesoStringParseResult 
   }
 
   const [wholePesos, fractionalPesos = ""] = normalized.split(".");
+  const significantWholePesos = wholePesos.replace(/^0+/, "") || "0";
+
+  if (significantWholePesos.length > 17) {
+    return { ok: false, reason: "too-large" };
+  }
+
   const centavos =
-    BigInt(wholePesos) * CENTAVOS_PER_PESO +
+    BigInt(significantWholePesos) * CENTAVOS_PER_PESO +
     BigInt(fractionalPesos.padEnd(2, "0") || "0");
 
   if (centavos > MAX_SIGNED_64_BIT) {
