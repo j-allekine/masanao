@@ -5,17 +5,9 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
-  BarChart3,
-  Boxes,
-  CalendarDays,
   ClipboardList,
-  FileText,
   LayoutDashboard,
   LogOut,
-  PackageCheck,
-  Settings2,
-  Truck,
-  Users,
   ChevronsUpDown,
 } from "lucide-react"
 
@@ -43,7 +35,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  workspaceNavigationGroups,
+  workspaceSections,
   type WorkspaceSectionId,
 } from "@/lib/workspace-navigation"
 
@@ -54,15 +46,7 @@ export type AppSidebarUser = {
 
 const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   overview: LayoutDashboard,
-  activities: ClipboardList,
-  schedule: CalendarDays,
-  inventory: Boxes,
-  deliveries: Truck,
-  issuance: PackageCheck,
-  records: FileText,
-  reports: BarChart3,
-  staff: Users,
-  settings: Settings2,
+  "activity-designs": ClipboardList,
 }
 
 function getInitials(name: string) {
@@ -181,31 +165,29 @@ export function AppSidebar({
         <WorkspaceLink />
       </SidebarHeader>
       <SidebarContent>
-        {workspaceNavigationGroups.map((group) => (
-          <SidebarGroup key={group.label} className="py-2">
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const Icon = iconBySection[item.id]
+        <SidebarGroup className="py-2">
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {workspaceSections.map((item) => {
+                const Icon = iconBySection[item.id]
 
-                  return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        render={<Link href={item.href} />}
-                        isActive={activeSection === item.id}
-                        tooltip={item.label}
-                      >
-                        <Icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={activeSection === item.id}
+                      tooltip={item.label}
+                    >
+                      <Icon />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <AccountMenu user={user} />

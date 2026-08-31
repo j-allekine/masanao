@@ -9,6 +9,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import ActivityDesignForm from "./forms/activity-design-form";
 import ActivityDesignList from "./activity-design-list";
+import PlanningSectionMenu from "./planning-section-menu";
 import type { ActivityDesignListItem } from "../types";
 
 export default function ActivityDesignsContent({
@@ -30,16 +31,14 @@ export default function ActivityDesignsContent({
       </header>
 
       <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
+        <PlanningSectionMenu />
         <section aria-labelledby="activity-designs-title" className="max-w-3xl">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">
-            Plan · Municipal operations
-          </p>
-          <h1
+          <h2
             id="activity-designs-title"
             className="mt-3 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
           >
             Activity Designs
-          </h1>
+          </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
             Set the planning context first. Activities and meal schedules can be added as the details become known.
           </p>
