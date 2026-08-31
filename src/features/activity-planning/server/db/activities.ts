@@ -83,7 +83,7 @@ function toActivityListItem(activity: {
   scheduledDate: Date;
   venue: string | null;
   plannedParticipantCount: number | null;
-  plannedBudgetCentavos: number | null;
+  plannedBudgetCentavos: bigint | null;
   _count: { mealSchedules: number };
   mealSchedules: Array<Parameters<typeof toMealScheduleListItem>[0]>;
 }): ActivityListItem {
@@ -96,7 +96,8 @@ function toActivityListItem(activity: {
     scheduledDate: activity.scheduledDate.toISOString(),
     venue: activity.venue,
     plannedParticipantCount: activity.plannedParticipantCount,
-    plannedBudgetCentavos: activity.plannedBudgetCentavos,
+    plannedBudgetCentavos:
+      activity.plannedBudgetCentavos?.toString() ?? null,
     mealScheduleCount: activity._count.mealSchedules,
     mealSchedules: activity.mealSchedules.map(toMealScheduleListItem),
   };
@@ -160,7 +161,7 @@ export async function createActivityRecord(
         scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
         venue: input.venue ?? null,
         plannedParticipantCount: input.plannedParticipantCount ?? null,
-        plannedBudgetCentavos: input.plannedBudgetCentavos ?? null,
+        plannedBudgetCentavos: input.plannedBudgetPesos ?? null,
       },
       select: activitySelect,
     });
@@ -194,7 +195,7 @@ export async function updateActivityRecord(
         scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
         venue: input.venue ?? null,
         plannedParticipantCount: input.plannedParticipantCount ?? null,
-        plannedBudgetCentavos: input.plannedBudgetCentavos ?? null,
+        plannedBudgetCentavos: input.plannedBudgetPesos ?? null,
       },
       select: activitySelect,
     });

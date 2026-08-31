@@ -120,7 +120,7 @@ describe("activities API", () => {
           scheduledDate: "2026-09-01",
           venue: "  Municipal Covered Court  ",
           plannedParticipantCount: 120,
-          plannedBudgetCentavos: 125000,
+          plannedBudgetPesos: "1250.00",
         },
         cookie,
       ),
@@ -138,7 +138,7 @@ describe("activities API", () => {
         scheduledDate: "2026-09-01T00:00:00.000Z",
         venue: "Municipal Covered Court",
         plannedParticipantCount: 120,
-        plannedBudgetCentavos: 125000,
+        plannedBudgetCentavos: "125000",
         mealScheduleCount: 0,
       },
     });
@@ -176,6 +176,142 @@ describe("activities API", () => {
     });
   });
 
+  it("persists a large peso budget exactly and serializes its centavos as a decimal string", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const activityDesign = await createActivityDesign(cookie);
+
+    const response = await activitiesPost(
+      request(
+        `/api/activity-designs/${activityDesign.id}/activities`,
+        "POST",
+        {
+          ...validActivity,
+          plannedBudgetPesos: "21474836.48",
+        },
+        cookie,
+      ),
+      routeParams(activityDesign.id),
+    );
+
+    expect(response.status).toBe(201);
+    const payload = await response.json();
+    expect(payload.activity.plannedBudgetCentavos).toBe("2147483648");
+    await expect(
+      prisma.activity.findUnique({ where: { id: payload.activity.id } }),
+    ).resolves.toMatchObject({ plannedBudgetCentavos: BigInt(2_147_483_648) });
+  });
+
+  it.each([
+    ["0", "0"],
+    ["12.3", "1230"],
+    ["12.34", "1234"],
+  ] as const)(
+    "converts a peso amount with the accepted decimal precision exactly",
+    async (plannedBudgetPesos, expectedCentavos) => {
+      await createStaffAccount();
+      const cookie = await cookieForStaff();
+      const activityDesign = await createActivityDesign(cookie);
+
+      const response = await activitiesPost(
+        request(
+          `/api/activity-designs/${activityDesign.id}/activities`,
+          "POST",
+          {
+            ...validActivity,
+            plannedBudgetPesos,
+          },
+          cookie,
+        ),
+        routeParams(activityDesign.id),
+      );
+
+      expect(response.status).toBe(201);
+      expect((await response.json()).activity.plannedBudgetCentavos).toBe(
+        expectedCentavos,
+      );
+    },
+  );
+
+  it("maps a blank budget to no persisted budget", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const activityDesign = await createActivityDesign(cookie);
+
+    const response = await activitiesPost(
+      request(
+        `/api/activity-designs/${activityDesign.id}/activities`,
+        "POST",
+        { ...validActivity, plannedBudgetPesos: "   " },
+        cookie,
+      ),
+      routeParams(activityDesign.id),
+    );
+
+    expect(response.status).toBe(201);
+    const activity = (await response.json()).activity;
+    expect(activity.plannedBudgetCentavos).toBeNull();
+    await expect(
+      prisma.activity.findUnique({ where: { id: activity.id } }),
+    ).resolves.toMatchObject({ plannedBudgetCentavos: null });
+  });
+
+  it.each([
+    ["negative", "-1"],
+    ["malformed", "12 pesos"],
+    ["scientific notation", "1e3"],
+    ["grouped", "1,000"],
+    ["over-precision", "12.345"],
+    ["above the signed 64-bit maximum", "92233720368547758.08"],
+  ] as const)(
+    "rejects %s peso budget input without persistence",
+    async (_description, plannedBudgetPesos) => {
+      await createStaffAccount();
+      const cookie = await cookieForStaff();
+      const activityDesign = await createActivityDesign(cookie);
+
+      const response = await activitiesPost(
+        request(
+          `/api/activity-designs/${activityDesign.id}/activities`,
+          "POST",
+          { ...validActivity, plannedBudgetPesos },
+          cookie,
+        ),
+        routeParams(activityDesign.id),
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        fields: { plannedBudgetPesos: expect.any(Array) },
+      });
+      expect(await prisma.activity.count()).toBe(0);
+    },
+  );
+
+  it("accepts the maximum signed 64-bit centavo value", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const activityDesign = await createActivityDesign(cookie);
+
+    const response = await activitiesPost(
+      request(
+        `/api/activity-designs/${activityDesign.id}/activities`,
+        "POST",
+        {
+          ...validActivity,
+          plannedBudgetPesos: "92233720368547758.07",
+        },
+        cookie,
+      ),
+      routeParams(activityDesign.id),
+    );
+
+    expect(response.status).toBe(201);
+    expect((await response.json()).activity.plannedBudgetCentavos).toBe(
+      "9223372036854775807",
+    );
+  });
+
   it("returns an empty Activity collection for a saved Activity Design", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
@@ -201,7 +337,7 @@ describe("activities API", () => {
     });
   });
 
-  it("rejects integers outside the Prisma Int range with field-level errors", async () => {
+  it("rejects participants outside the Prisma Int range while allowing a larger budget range", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
@@ -213,7 +349,7 @@ describe("activities API", () => {
         {
           ...validActivity,
           plannedParticipantCount: 2_147_483_648,
-          plannedBudgetCentavos: 2_147_483_648,
+          plannedBudgetPesos: "21474836.48",
         },
         cookie,
       ),
@@ -227,9 +363,6 @@ describe("activities API", () => {
         plannedParticipantCount: [
           "Planned participant count exceeds the supported maximum",
         ],
-        plannedBudgetCentavos: [
-          "Planned budget exceeds the supported maximum",
-        ],
       },
     });
     expect(await prisma.activity.count()).toBe(0);
@@ -241,7 +374,7 @@ describe("activities API", () => {
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["an invalid scheduled date", { scheduledDate: "2026-02-30" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
-    ["a negative budget", { plannedBudgetCentavos: -1 }, "plannedBudgetCentavos"],
+    ["a negative budget", { plannedBudgetPesos: "-1" }, "plannedBudgetPesos"],
     ["an overlong activity name", { name: "x".repeat(201) }, "name"],
     ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
     ["overlong activity particulars", { particulars: "x".repeat(2_001) }, "particulars"],

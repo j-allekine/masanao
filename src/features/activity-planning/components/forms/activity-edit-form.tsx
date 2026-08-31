@@ -27,6 +27,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 
 import { updateActivityAction } from "../../actions";
+import { formatCentavosAsPesoInput } from "../../domain/planned-budget";
 import type {
   ActivityField,
   ActivityFieldErrors,
@@ -44,7 +45,10 @@ function initialValues(activity: ActivityListItem): ActivityFormValues {
     venue: activity.venue ?? "",
     plannedParticipantCount:
       activity.plannedParticipantCount?.toString() ?? "",
-    plannedBudgetCentavos: activity.plannedBudgetCentavos?.toString() ?? "",
+    plannedBudgetPesos:
+      activity.plannedBudgetCentavos === null
+        ? ""
+        : formatCentavosAsPesoInput(activity.plannedBudgetCentavos),
   };
 }
 
@@ -79,6 +83,7 @@ function ActivityEditTextField({
         value={value}
         min={min}
         step={type === "number" ? 1 : undefined}
+        inputMode={id === "plannedBudgetPesos" ? "decimal" : undefined}
         onChange={onChange}
         aria-invalid={hasError}
       />
@@ -229,15 +234,14 @@ export default function ActivityEditForm({
             }
           />
           <ActivityEditTextField
-            id="plannedBudgetCentavos"
-            label="Planned budget in centavos (optional)"
-            description="Use exact Philippine peso centavos; no decimal values."
-            value={formValues.plannedBudgetCentavos}
-            error={fieldErrors.plannedBudgetCentavos}
-            type="number"
-            min={0}
+            id="plannedBudgetPesos"
+            label="Planned budget (optional)"
+            description="Enter a non-negative amount in Philippine pesos."
+            value={formValues.plannedBudgetPesos}
+            error={fieldErrors.plannedBudgetPesos}
+            type="text"
             onChange={(event) =>
-              updateField("plannedBudgetCentavos", event.target.value)
+              updateField("plannedBudgetPesos", event.target.value)
             }
           />
         </FieldGroup>

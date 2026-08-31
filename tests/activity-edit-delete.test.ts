@@ -147,7 +147,7 @@ describe("Activity edit API", () => {
           scheduledDate: "2026-09-03",
           venue: "  Municipal Covered Court  ",
           plannedParticipantCount: 120,
-          plannedBudgetCentavos: 125000,
+          plannedBudgetPesos: "1250.00",
         },
         cookie,
       ),
@@ -164,7 +164,7 @@ describe("Activity edit API", () => {
         scheduledDate: "2026-09-03T00:00:00.000Z",
         venue: "Municipal Covered Court",
         plannedParticipantCount: 120,
-        plannedBudgetCentavos: 125000,
+        plannedBudgetCentavos: "125000",
         mealScheduleCount: 0,
       },
     });
@@ -191,7 +191,7 @@ describe("Activity edit API", () => {
             scheduledDate: "2026-09-03T00:00:00.000Z",
             venue: "Municipal Covered Court",
             plannedParticipantCount: 120,
-            plannedBudgetCentavos: 125000,
+            plannedBudgetCentavos: "125000",
           },
         ],
       },
@@ -203,7 +203,7 @@ describe("Activity edit API", () => {
     ["a blank office", { officeName: " " }, "officeName"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
-    ["a negative budget", { plannedBudgetCentavos: -1 }, "plannedBudgetCentavos"],
+    ["a negative budget", { plannedBudgetPesos: "-1" }, "plannedBudgetPesos"],
   ] as const)(
     "rejects editing with %s and leaves the saved Activity unchanged",
     async (_description, invalidFields, expectedField) => {

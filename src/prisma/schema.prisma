@@ -107,7 +107,7 @@ model Activity {
   scheduledDate           DateTime
   venue                   String?
   plannedParticipantCount Int?
-  plannedBudgetCentavos   Int?
+  plannedBudgetCentavos   BigInt?
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   activityDesign          ActivityDesign @relation(fields: [activityDesignId], references: [id], onDelete: Restrict)
