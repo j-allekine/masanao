@@ -44,11 +44,11 @@ test.describe("Activity planning journey", () => {
 
     await page.reload();
     await page.waitForLoadState("networkidle");
-    const designCard = page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "E2E Feeding Plan" }) });
-    await expect(designCard).toContainText("e2e-2026-019");
-    await designCard.getByRole("button", { name: "Open", exact: true }).click();
+    const designRow = page
+      .getByRole("row")
+      .filter({ hasText: "E2E Feeding Plan" });
+    await expect(designRow).toContainText("e2e-2026-019");
+    await designRow.getByRole("button", { name: "Open", exact: true }).click();
     await page.waitForLoadState("networkidle");
 
     await page
@@ -92,10 +92,10 @@ test.describe("Activity planning journey", () => {
       .getByRole("button", { name: "Back to Activity Designs", exact: true })
       .click();
     await page.waitForLoadState("networkidle");
-    const savedDesignCard = page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "E2E Feeding Plan" }) });
-    await savedDesignCard
+    const savedDesignRow = page
+      .getByRole("row")
+      .filter({ hasText: "E2E Feeding Plan" });
+    await savedDesignRow
       .getByRole("button", { name: "Delete", exact: true })
       .click();
     const designDeleteDialog = page.getByRole("alertdialog");
@@ -107,7 +107,7 @@ test.describe("Activity planning journey", () => {
     await designDeleteDialog
       .getByRole("button", { name: "Cancel", exact: true })
       .click();
-    await savedDesignCard
+    await savedDesignRow
       .getByRole("button", { name: "Open", exact: true })
       .click();
     await page.waitForLoadState("networkidle");
@@ -180,10 +180,10 @@ test.describe("Activity planning journey", () => {
     await page
       .getByRole("button", { name: "Back to Activity Designs", exact: true })
       .click();
-    const emptyDesignCard = page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "E2E Feeding Plan" }) });
-    await emptyDesignCard
+    const emptyDesignRow = page
+      .getByRole("row")
+      .filter({ hasText: "E2E Feeding Plan" });
+    await emptyDesignRow
       .getByRole("button", { name: "Delete", exact: true })
       .click();
     await page
@@ -193,5 +193,85 @@ test.describe("Activity planning journey", () => {
     await expect(
       page.getByRole("heading", { name: "E2E Feeding Plan" }),
     ).toHaveCount(0);
+  });
+
+  test("searches and filters the complete Activity Designs table", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await page.goto("/activity-designs");
+    await page.waitForLoadState("networkidle");
+
+    const createdDesigns: Array<{ id: string }> = [];
+    for (const activityDesign of [
+      {
+        activityDesignNo: "E2E-SEARCH-2026-001",
+        fiscalYear: 2026,
+        title: "Annual Feeding Program",
+        officeName: "GAD",
+      },
+      {
+        activityDesignNo: "E2E-SEARCH-2025-001",
+        fiscalYear: 2025,
+        title: "Senior Outreach",
+        officeName: "CSWD",
+      },
+      {
+        activityDesignNo: "E2E-SEARCH-2026-002",
+        fiscalYear: 2026,
+        title: "Community Nutrition",
+        officeName: "CSWD",
+      },
+    ]) {
+      const response = await page.request.post("/api/activity-designs", {
+        data: activityDesign,
+      });
+      expect(response.status()).toBe(201);
+      createdDesigns.push((await response.json()).activityDesign);
+    }
+
+    for (const [index, activity] of [
+      { name: "Annual feeding activity", scheduledDate: "2026-09-01" },
+      { name: "Community nutrition activity one", scheduledDate: "2026-09-02" },
+      { name: "Community nutrition activity two", scheduledDate: "2026-09-03" },
+    ].entries()) {
+      const design = createdDesigns[index === 0 ? 0 : 2];
+      const response = await page.request.post(
+        `/api/activity-designs/${design.id}/activities`,
+        { data: activity },
+      );
+      expect(response.status()).toBe(201);
+    }
+
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    const table = page.getByRole("table", { name: "Activity Designs" });
+    const bodyRows = table.locator("tbody tr");
+    await expect(bodyRows).toHaveCount(3);
+    await expect(table).toContainText("1 Activity");
+    await expect(table).toContainText("2 Activities");
+    await expect(table).toContainText(
+      "Activity view coming in a future update.",
+    );
+
+    await page
+      .getByLabel("Search Activity Designs", { exact: true })
+      .fill("  SENIOR  ");
+    await expect(bodyRows).toHaveCount(1);
+    await expect(bodyRows.first()).toContainText("Senior Outreach");
+
+    await page
+      .getByLabel("Search Activity Designs", { exact: true })
+      .fill("");
+    await page.getByRole("combobox", { name: "Fiscal Year" }).click();
+    await page.getByRole("option", { name: "FY 2026" }).click();
+    await page.getByRole("combobox", { name: "Office" }).click();
+    await page.getByRole("option", { name: "CSWD" }).click();
+    await expect(bodyRows).toHaveCount(1);
+    await expect(bodyRows.first()).toContainText("Community Nutrition");
+
+    await page.getByRole("button", { name: "Clear filters" }).click();
+    await expect(bodyRows).toHaveCount(3);
   });
 });
