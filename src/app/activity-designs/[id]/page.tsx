@@ -38,7 +38,7 @@ export default async function ActivityDesignDetailRoute({
         name: session.user.name ?? session.user.username ?? "Municipal staff",
         username: session.user.username ?? "staff account",
       }}
-      activePath="/activity-designs"
+      activeSection="activity-designs"
     >
       <ActivityDesignDetailContent activityDesign={activityDesign} />
     </WorkspaceShell>
