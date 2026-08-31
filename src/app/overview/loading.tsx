@@ -1,5 +1,5 @@
-import WorkspaceLoading from "@/components/workspace/workspace-loading"
+import WorkspaceRouteLoading from "@/components/workspace/workspace-route-loading"
 
 export default function OverviewLoading() {
-  return <WorkspaceLoading />
+  return <WorkspaceRouteLoading activeSection="overview" />
 }
