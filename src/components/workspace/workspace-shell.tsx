@@ -2,6 +2,7 @@
 
 import { AppSidebar, type AppSidebarUser } from "@/components/workspace/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { WorkspaceSectionId } from "@/lib/workspace-navigation";
 import type { CSSProperties } from "react";
@@ -27,6 +28,7 @@ export default function WorkspaceShell({
         <AppSidebar user={user} activeSection={activeSection} />
         <SidebarInset>{children}</SidebarInset>
       </SidebarProvider>
+      <Toaster />
     </TooltipProvider>
   );
 }

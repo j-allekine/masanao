@@ -14,11 +14,13 @@ import {
 export default function ActivityDesignActionsMenu({
   activityDesignTitle,
   actionButtonId,
+  onAddActivity,
   onEdit,
   onDelete,
 }: {
   activityDesignTitle: string;
   actionButtonId: string;
+  onAddActivity: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -42,7 +44,7 @@ export default function ActivityDesignActionsMenu({
         <Ellipsis />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => openAfterMenuCloses(onAddActivity)}>
           <Plus />
           Add Activity
         </DropdownMenuItem>
