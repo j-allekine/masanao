@@ -12,6 +12,8 @@ import { prisma } from "@/prisma/client";
 
 const planningMigrationName = "20260829090000_add_activity_planning";
 const officeOwnershipMigrationName = "20260901090000_move_office_to_activity";
+const budgetMigrationName =
+  "20260831090000_migrate_activity_budget_to_bigint";
 
 describe("activity planning database foundation", () => {
   beforeEach(async () => {
@@ -252,6 +254,94 @@ describe("activity planning database foundation", () => {
         .some((column) => (column as { name: string }).name === "officeName"),
     ).toBe(false);
     expect(database.pragma("foreign_key_check")).toEqual([]);
+
+    database.close();
+    rmSync(directory, { force: true, recursive: true });
+  });
+
+  it("preserves authentication and Activity Planning data through the budget migration", () => {
+    const directory = mkdtempSync(join(tmpdir(), "masanao-budget-migration-"));
+    const databasePath = join(directory, "migration.db");
+    const database = new Database(databasePath);
+    const migrationDirectory = join(process.cwd(), "src", "prisma", "migrations");
+
+    const migrationNames = readdirSync(migrationDirectory, {
+      withFileTypes: true,
+    })
+      .filter(
+        (entry) =>
+          entry.isDirectory() && entry.name < budgetMigrationName,
+      )
+      .map((entry) => entry.name)
+      .sort((left, right) => left.localeCompare(right));
+
+    for (const migrationName of migrationNames) {
+      database.exec(
+        readFileSync(
+          join(migrationDirectory, migrationName, "migration.sql"),
+          "utf8",
+        ),
+      );
+    }
+
+    database
+      .prepare(
+        `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        "budget-migration-user",
+        "Budget Migration User",
+        "budget-migration-user@internal.masanao",
+        0,
+      );
+    database
+      .prepare(
+        `INSERT INTO "activity_design" ("id", "activityDesignNo", "fiscalYear", "title", "officeName", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        "budget-migration-design",
+        "AD-MIGRATION-001",
+        2026,
+        "Budget migration design",
+        "Municipal Kitchen",
+      );
+    database
+      .prepare(
+        `INSERT INTO "activity" ("id", "activityDesignId", "name", "scheduledDate", "plannedBudgetCentavos", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        "budget-migration-activity",
+        "budget-migration-design",
+        "Budget migration activity",
+        "2026-09-01T00:00:00.000Z",
+        2_147_483_648,
+      );
+
+    database.exec(
+      readFileSync(
+        join(migrationDirectory, budgetMigrationName, "migration.sql"),
+        "utf8",
+      ),
+    );
+
+    expect(
+      database
+        .prepare('SELECT "name" FROM "user" WHERE "id" = ?')
+        .get("budget-migration-user"),
+    ).toEqual({ name: "Budget Migration User" });
+    expect(
+      database
+        .prepare(
+          'SELECT "activityDesignId", "plannedBudgetCentavos" FROM "activity" WHERE "id" = ?',
+        )
+        .get("budget-migration-activity"),
+    ).toEqual({
+      activityDesignId: "budget-migration-design",
+      plannedBudgetCentavos: 2_147_483_648,
+    });
 
     database.close();
     rmSync(directory, { force: true, recursive: true });

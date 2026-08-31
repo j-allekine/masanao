@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { parsePesoStringToCentavos } from "../domain/planned-budget";
 import type { ActivityFieldErrors } from "../types";
 
 const optionalText = (label: string, max: number) =>
@@ -72,6 +73,38 @@ const officeNameSchema = z
   .min(1, "Office name is required")
   .max(200, "Office name must be 200 characters or fewer");
 
+const plannedBudgetPesosSchema = z.preprocess(
+  (value) => {
+    if (
+      value === null ||
+      (typeof value === "string" && value.trim() === "")
+    ) {
+      return undefined;
+    }
+
+    return value;
+  },
+  z
+    .string()
+    .trim()
+    .superRefine((value, context) => {
+      const result = parsePesoStringToCentavos(value);
+
+      if (!result.ok) {
+        context.addIssue({
+          code: "custom",
+          message:
+            result.reason === "too-large"
+              ? "Planned budget exceeds the supported maximum"
+              : "Planned budget must be a non-negative peso amount with up to two decimal places",
+        });
+      }
+    })
+    .transform((value) => parsePesoStringToCentavos(value))
+    .transform((result) => (result.ok ? result.centavos : z.NEVER))
+    .optional(),
+);
+
 export const activitySchema = z.object({
   name: nameSchema,
   officeName: officeNameSchema,
@@ -81,7 +114,7 @@ export const activitySchema = z.object({
   plannedParticipantCount: optionalNonNegativeInteger(
     "Planned participant count",
   ),
-  plannedBudgetCentavos: optionalNonNegativeInteger("Planned budget"),
+  plannedBudgetPesos: plannedBudgetPesosSchema,
 });
 
 export type ActivityInput = z.infer<typeof activitySchema>;

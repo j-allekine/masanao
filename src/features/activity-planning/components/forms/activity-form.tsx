@@ -39,7 +39,7 @@ const emptyFormValues: ActivityFormValues = {
   scheduledDate: "",
   venue: "",
   plannedParticipantCount: "",
-  plannedBudgetCentavos: "",
+  plannedBudgetPesos: "",
 };
 
 function ActivityTextField({
@@ -73,6 +73,7 @@ function ActivityTextField({
         value={value}
         min={min}
         step={type === "number" ? 1 : undefined}
+        inputMode={id === "plannedBudgetPesos" ? "decimal" : undefined}
         onChange={onChange}
         aria-invalid={hasError}
       />
@@ -229,15 +230,14 @@ export default function ActivityForm({
             }
           />
           <ActivityTextField
-            id="plannedBudgetCentavos"
-            label="Planned budget in centavos (optional)"
-            description="Use exact Philippine peso centavos; no decimal values."
-            value={formValues.plannedBudgetCentavos}
-            error={fieldErrors.plannedBudgetCentavos}
-            type="number"
-            min={0}
+            id="plannedBudgetPesos"
+            label="Planned budget (optional)"
+            description="Enter a non-negative amount in Philippine pesos."
+            value={formValues.plannedBudgetPesos}
+            error={fieldErrors.plannedBudgetPesos}
+            type="text"
             onChange={(event) =>
-              updateField("plannedBudgetCentavos", event.target.value)
+              updateField("plannedBudgetPesos", event.target.value)
             }
           />
         </FieldGroup>

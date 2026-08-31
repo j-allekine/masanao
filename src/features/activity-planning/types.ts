@@ -13,7 +13,7 @@ export type ActivityField =
   | "scheduledDate"
   | "venue"
   | "plannedParticipantCount"
-  | "plannedBudgetCentavos";
+  | "plannedBudgetPesos";
 
 export type ActivityFieldErrors = Partial<
   Record<ActivityField | "form", string[]>
@@ -51,7 +51,7 @@ export type ActivityListItem = {
   scheduledDate: string;
   venue: string | null;
   plannedParticipantCount: number | null;
-  plannedBudgetCentavos: number | null;
+  plannedBudgetCentavos: string | null;
   mealScheduleCount: number;
   mealSchedules: MealScheduleListItem[];
 };

@@ -39,6 +39,7 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { deleteActivityAction } from "../actions";
+import { formatCentavosAsPesos } from "../domain/planned-budget";
 import type { ActivityListItem } from "../types";
 import ActivityEditForm from "./forms/activity-edit-form";
 import MealScheduleForm from "./forms/meal-schedule-form";
@@ -136,7 +137,7 @@ function ActivityListItemCard({
             <div>
               <dt className="text-xs text-muted-foreground">Planned budget</dt>
               <dd className="mt-1 font-medium">
-                {activity.plannedBudgetCentavos.toLocaleString("en-PH")} centavos
+                {formatCentavosAsPesos(activity.plannedBudgetCentavos)}
               </dd>
             </div>
           ) : null}
