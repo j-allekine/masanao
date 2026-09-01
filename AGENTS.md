@@ -33,6 +33,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### Frontend change workflow
 
+- Treat mockups, screenshots, prototypes, and other visual references as visual
+  direction, not literal production specifications. Extract their hierarchy,
+  grouping, relative density, intended states, and interaction direction, then
+  implement against the current domain contracts, design tokens, existing
+  shadcn primitives, semantic HTML, accessibility requirements, and responsive
+  behavior. Keep illustrative data and unshown behavior as explicit
+  assumptions. If a reference conflicts with a current contract or the user's
+  stated scope, surface the discrepancy; an explicit request for visual
+  reproduction can set a higher visual-fidelity target without weakening those
+  product and accessibility requirements.
 - Before changing layout, styling, typography, tokens, shared UI, or responsive
   behavior, read and follow `./docs/frontend-change-playbook.md`.
 - Treat `src/app/globals.css`, `src/app/layout.tsx`, `src/components/ui`, and the
