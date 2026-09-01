@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -44,22 +45,26 @@ export default function ActivityDesignActionsMenu({
         <Ellipsis />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem onClick={() => openAfterMenuCloses(onAddActivity)}>
-          <Plus />
-          Add Activity
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => openAfterMenuCloses(onAddActivity)}>
+            <Plus />
+            Add Activity
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
-          <Pencil />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={() => openAfterMenuCloses(onDelete)}
-        >
-          <Trash2 />
-          Delete
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
+            <Pencil />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => openAfterMenuCloses(onDelete)}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

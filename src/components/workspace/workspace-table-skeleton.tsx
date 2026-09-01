@@ -1,4 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function WorkspaceTableSkeleton({
   columnLabels,
@@ -9,31 +17,31 @@ export default function WorkspaceTableSkeleton({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <table aria-label="Loading table" className="w-full min-w-[40rem]">
-        <thead className="sr-only">
-          <tr>
+      <Table aria-label="Loading table" className="min-w-[40rem]">
+        <TableHeader className="sr-only">
+          <TableRow>
             {columnLabels.map((label) => (
-              <th key={label} scope="col">
+              <TableHead key={label} scope="col">
                 {label}
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {Array.from({ length: rowCount }, (_, rowIndex) => (
-            <tr key={rowIndex} className="border-b last:border-b-0">
+            <TableRow key={rowIndex}>
               {columnLabels.map((label, columnIndex) => (
-                <td key={label} className="px-4 py-4">
+                <TableCell key={label} className="px-4 py-4">
                   <Skeleton
                     aria-label={`Loading ${label}`}
                     className={columnIndex === 0 ? "h-4 w-24" : "h-4 w-full max-w-40"}
                   />
-                </td>
+                </TableCell>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

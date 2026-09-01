@@ -5,6 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-body-face: var(--font-app-face);
+  --font-heading-face: var(--font-app-face);
   --background: #f3f1eb;
   --foreground: #1a2825;
   --card: #ffffff;
@@ -168,17 +170,19 @@
   --text-heading-1--line-height: 1.1;
   --text-heading-2: 1.5rem;
   --text-heading-2--line-height: 1.2;
-  --text-heading-3: 1.125rem;
+  --text-heading-3: 1rem;
   --text-heading-3--line-height: 1.3;
-  --text-body: 1rem;
+  --text-body: 0.9375rem;
   --text-body--line-height: 1.5;
-  --text-body-sm: 0.875rem;
+  --text-body-sm: 0.8125rem;
   --text-body-sm--line-height: 1.45;
-  --text-label: 0.75rem;
+  --text-label: 0.6875rem;
   --text-label--line-height: 1.3;
-  --text-table: 0.875rem;
+  --text-table: 0.8125rem;
   --text-table--line-height: 1.4;
-  --text-mono: 0.75rem;
+  --text-table-head: 0.8125rem;
+  --text-table-head--line-height: 1.3;
+  --text-mono: 0.6875rem;
   --text-mono--line-height: 1.35;
   --font-weight-display: 500;
   --font-weight-heading-1: 600;
@@ -197,6 +201,7 @@
   --tracking-body-sm: 0px;
   --tracking-label: 0.02625rem;
   --tracking-table: 0px;
+  --tracking-table-head: 0.02625rem;
   --tracking-mono: 0px;
 }
 
