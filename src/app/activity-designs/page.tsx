@@ -33,10 +33,6 @@ export default async function ActivityDesignsRoute() {
     >
       <ActivityDesignsContent
         initialActivityDesigns={activityDesigns}
-        user={{
-          name: session.user.name ?? session.user.username ?? "Municipal staff",
-          username: session.user.username ?? "staff account",
-        }}
       />
     </WorkspaceShell>
   );

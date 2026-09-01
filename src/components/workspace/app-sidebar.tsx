@@ -12,8 +12,6 @@ import {
   ChevronDown,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,17 +118,22 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
-            <Avatar className="size-9 bg-sidebar-primary text-sidebar-primary-foreground after:border-sidebar-primary/20">
-              <AvatarFallback className="bg-sidebar-primary text-body-sm font-medium text-sidebar-primary-foreground">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="grid min-w-0 flex-1 text-left text-body-sm">
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                aria-label={`${user.name} account menu`}
+              />
+            }
+          >
+            <span className="hidden shrink-0 text-label font-semibold group-data-[collapsible=icon]:block">
+              {getInitials(user.name)}
+            </span>
+            <span className="grid min-w-0 flex-1 text-left text-body-sm group-data-[collapsible=icon]:hidden">
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-label text-sidebar-foreground/70 group-hover/menu-button:text-sidebar-accent-foreground group-focus-visible/menu-button:text-sidebar-accent-foreground group-data-active/menu-button:text-sidebar-accent-foreground">{user.username}</span>
             </span>
-            <ChevronDown className="ml-auto" aria-hidden="true" />
+            <ChevronDown className="ml-auto group-data-[collapsible=icon]:hidden" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-56"
