@@ -82,9 +82,6 @@ test.describe("frontend stabilization regression seam", () => {
 
       const search = page.getByLabel("Search Activity Designs", { exact: true });
       await search.fill(title);
-      const row = page.getByRole("row").filter({ hasText: title });
-      await row.getByRole("checkbox", { name: `Select ${title}` }).click();
-      await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
 
       const trigger = page.locator('[data-slot="sidebar-trigger"]');
       await expect(trigger).toBeVisible();
@@ -106,7 +103,6 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(mobileSidebar).toBeHidden();
 
       await expect(search).toHaveValue(title);
-      await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
 
       await trigger.click();
       await expect(mobileSidebar).toBeVisible();
@@ -117,7 +113,7 @@ test.describe("frontend stabilization regression seam", () => {
     }
   });
 
-  test("keeps table results, selection, pagination, and supported actions synchronized", async ({
+  test("keeps table results, pagination, and supported actions synchronized", async ({
     page,
   }) => {
     const prefix = `E2E TABLE ${Date.now()}`;
@@ -154,40 +150,25 @@ test.describe("frontend stabilization regression seam", () => {
         page.getByRole("menuitem", { name: "Archive", exact: true }),
       ).toHaveCount(0);
       await expect(page.getByText("Coming later", { exact: true })).toHaveCount(2);
+      await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "More Activity Design actions", exact: true }),
+      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Filters", exact: true })).toHaveCount(0);
+      await expect(
+        page.getByRole("combobox", { name: "Fiscal Year", exact: true }),
+      ).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Clear", exact: true })).toHaveCount(0);
 
-      const firstTitle = `${prefix} 01`;
-      const firstRow = page.getByRole("row").filter({ hasText: firstTitle });
-      await firstRow.getByRole("checkbox", { name: `Select ${firstTitle}` }).click();
-      await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeEnabled();
-
-      await page
-        .getByRole("checkbox", {
-          name: "Select all Activity Designs on this page",
-        })
-        .click();
-      await expect(page.getByText("10 selected", { exact: true })).toBeVisible();
-      const clearSelection = page.getByRole("button", {
-        name: "Clear Activity Designs selection",
-        exact: true,
-      });
-      await clearSelection.click();
-      await expect(page.getByText(/selected$/, { exact: false })).toHaveCount(0);
-      await expect(clearSelection).toBeDisabled();
-
-      await firstRow.getByRole("checkbox", { name: `Select ${firstTitle}` }).click();
       await search.fill(`${prefix} 11`);
       const secondPageRow = page.getByRole("row").nth(1);
       await expect(secondPageRow).toBeVisible();
-      await expect(secondPageRow).not.toContainText(firstTitle);
-      await expect(page.getByText(/selected$/, { exact: false })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeDisabled();
+      await expect(secondPageRow).not.toContainText(`${prefix} 01`);
 
       await search.fill(prefix);
       await page.getByRole("button", { name: "Next page", exact: true }).click();
       await expect(page.getByText("Showing 11 to 11 of 11 results", { exact: true })).toBeVisible();
       await expect(page.getByRole("row").nth(1)).toBeVisible();
-      await expect(page.getByText(/selected$/, { exact: false })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeDisabled();
 
       await search.fill("no matching Activity Design");
