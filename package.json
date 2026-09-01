@@ -7,7 +7,7 @@
     "predev": "pnpm exec prisma migrate deploy --config prisma7.config.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
     "test:architecture": "node --test tests/architecture-boundaries.test.mjs",

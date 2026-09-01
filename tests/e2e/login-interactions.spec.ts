@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 const signInEndpoint = "**/api/auth/sign-in/username";
-const protectedEndpoint = "**/api/operations";
 
 function loginMain(page: Page) {
   return page.getByRole("main", { name: "Masanao staff sign-in", exact: true });
@@ -16,6 +15,7 @@ async function openLogin(page: Page) {
   await page.goto("/");
   await expect(loginMain(page)).toBeVisible();
   await expect(loginForm(page)).toBeVisible();
+  await expect(loginForm(page)).toHaveAttribute("data-client-ready", "true");
 }
 
 test.describe("production login interactions", () => {
@@ -54,19 +54,14 @@ test.describe("production login interactions", () => {
         },
       });
     });
-    await page.route(protectedEndpoint, async (route) => {
-      if (route.request().method() !== "GET") {
-        await route.continue();
-        return;
-      }
-
-      await route.fulfill({
-        status: 200,
-        json: { authenticated: true },
-      });
-    });
 
     await openLogin(page);
+    let protectedProbeRequested = false;
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/operations") {
+        protectedProbeRequested = true;
+      }
+    });
 
     const username = page.getByLabel("Username", { exact: true });
     const password = page.getByLabel("Password", { exact: true });
@@ -80,11 +75,6 @@ test.describe("production login interactions", () => {
         response.request().method() === "POST" &&
         new URL(response.url()).pathname === "/api/auth/sign-in/username",
     );
-    const protectedResponsePromise = page.waitForResponse(
-      (response) =>
-        response.request().method() === "GET" &&
-        new URL(response.url()).pathname === "/api/operations",
-    );
     const overviewRequestPromise = page.waitForRequest(
       (request) => new URL(request.url()).pathname === "/overview",
     );
@@ -93,14 +83,13 @@ test.describe("production login interactions", () => {
     await password.fill("correct-horse-battery-staple");
     await password.press("Enter");
 
-    const [request, response, protectedResponse, overviewRequest] = await Promise.all([
+    const [request, response, overviewRequest] = await Promise.all([
       requestPromise,
       responsePromise,
-      protectedResponsePromise,
       overviewRequestPromise,
     ]);
     expect(response.status()).toBe(200);
-    expect(protectedResponse.status()).toBe(200);
+    expect(protectedProbeRequested).toBe(false);
     expect(request.postDataJSON()).toMatchObject({
       username: "kitchen.staff",
       password: "correct-horse-battery-staple",

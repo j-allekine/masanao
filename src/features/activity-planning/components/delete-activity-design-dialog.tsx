@@ -78,8 +78,8 @@ export default function DeleteActivityDesignDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>
             {isBlocked
-              ? "Activity Design cannot be deleted"
-              : "Delete Activity Design?"}
+              ? `Activity Design “${activityDesign.title}” cannot be deleted`
+              : `Delete “${activityDesign.title}”?`}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isBlocked

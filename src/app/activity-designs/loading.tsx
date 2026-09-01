@@ -7,7 +7,15 @@ export default function ActivityDesignsLoading() {
     <WorkspaceRouteLoading activeSection="activity-designs">
       <PlanningSectionMenu />
       <WorkspaceTableSkeleton
-        columnLabels={["Design No.", "Title", "Office", "Fiscal Year", "Activities", "Actions"]}
+        columnLabels={[
+          "Selection",
+          "Design No.",
+          "Activity Design",
+          "Fiscal Year",
+          "Activities",
+          "Meal Schedules",
+          "Actions",
+        ]}
       />
     </WorkspaceRouteLoading>
   );

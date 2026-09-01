@@ -17,7 +17,7 @@ export default function WorkspaceTableSkeleton({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <Table aria-label="Loading table" className="min-w-[40rem]">
+      <Table aria-label="Loading table" className="min-w-[68rem]">
         <TableHeader className="sr-only">
           <TableRow>
             {columnLabels.map((label) => (
@@ -34,7 +34,13 @@ export default function WorkspaceTableSkeleton({
                 <TableCell key={label} className="px-4 py-4">
                   <Skeleton
                     aria-label={`Loading ${label}`}
-                    className={columnIndex === 0 ? "h-4 w-24" : "h-4 w-full max-w-40"}
+                    className={
+                      columnIndex === 0
+                        ? "size-4"
+                        : columnIndex === columnLabels.length - 1
+                          ? "h-8 w-8"
+                          : "h-4 w-full max-w-40"
+                    }
                   />
                 </TableCell>
               ))}

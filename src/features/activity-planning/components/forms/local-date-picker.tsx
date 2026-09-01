@@ -73,6 +73,8 @@ export default function LocalDatePicker({
               id={id}
               variant="outline"
               aria-invalid={hasError}
+              aria-required={required || undefined}
+              aria-describedby={hasError ? `${id}-error` : undefined}
               className="w-full justify-between font-normal"
             />
           }
@@ -93,7 +95,7 @@ export default function LocalDatePicker({
       </Popover>
       <input type="hidden" name="scheduledDate" value={value} />
       {hasError ? (
-        <FieldError errors={error?.map((message) => ({ message }))} />
+        <FieldError id={`${id}-error`} errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useRef, useState, useSyncExternalStore } from "react";
 import {
   CircleHelpIcon,
   EyeIcon,
@@ -47,6 +47,11 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -96,22 +101,25 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
       });
 
       if (!response.ok) {
-        setFormError(genericSignInError);
-        return;
-      }
-
-      const protectedResponse = await fetch("/api/operations", {
-        credentials: "include",
-      });
-
-      if (!protectedResponse.ok) {
-        setFormError(genericSignInError);
+        if (response.status === 403) {
+          setFormError(
+            "Your account is not authorized to use this workspace. Contact your system administrator.",
+          );
+        } else if (response.status >= 500) {
+          setFormError(
+            "The sign-in service is unavailable. Try again in a moment.",
+          );
+        } else {
+          setFormError(genericSignInError);
+        }
         return;
       }
 
       router.replace("/overview");
     } catch {
-      setFormError(genericSignInError);
+      setFormError(
+        "We couldn't reach the sign-in service. Check your connection and try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -126,6 +134,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
       className={cn("flex flex-col gap-6", className)}
       aria-label="Masanao staff sign in"
       aria-busy={isSubmitting}
+      data-client-ready={isHydrated ? "true" : undefined}
       noValidate
       onSubmit={handleSubmit}
       {...props}

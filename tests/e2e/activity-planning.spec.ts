@@ -13,18 +13,18 @@ async function signIn(page: Page) {
 
   expect(response.status()).toBe(200);
   await page.goto("/activity-designs");
-  await page.waitForLoadState("networkidle");
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
 
 async function createDesign(page: Page, title: string) {
   await page.locator("#new-activity-design").click();
   const dialog = page.getByRole("dialog");
   await dialog
-    .getByLabel("Activity Design No.", { exact: true })
+    .getByRole("textbox", { name: "Activity Design No.", exact: true })
     .fill(`E2E-${Date.now()}`);
-  await dialog.getByLabel("Fiscal Year", { exact: true }).click();
+  await dialog.getByRole("button", { name: "Fiscal Year", exact: true }).click();
   await page.getByRole("button", { name: "2026", exact: true }).click();
-  await dialog.getByLabel("Title", { exact: true }).fill(title);
+  await dialog.getByRole("textbox", { name: "Title", exact: true }).fill(title);
   await dialog.getByRole("button", { name: "Create Activity Design", exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }
@@ -59,23 +59,33 @@ test.describe("Activity planning journey", () => {
     const sheet = page.getByRole("dialog").filter({ hasText: `Add Activity to “${title}”` });
     await expect(sheet).toContainText("Activity Design No.");
     await expect(sheet).toContainText("FY 2026");
-    await expect(sheet.getByLabel("Activity name", { exact: true })).toBeFocused();
-    await sheet.getByLabel("Activity name", { exact: true }).fill("E2E Community Feeding");
-    await sheet.getByLabel("Office", { exact: true }).fill("E2E Kitchen Office");
-    await sheet.getByLabel("Scheduled date", { exact: true }).click();
+    await expect(
+      sheet.getByRole("textbox", { name: "Activity name", exact: true }),
+    ).toBeFocused();
+    await sheet
+      .getByRole("textbox", { name: "Activity name", exact: true })
+      .fill("E2E Community Feeding");
+    await sheet
+      .getByRole("textbox", { name: "Office", exact: true })
+      .fill("E2E Kitchen Office");
+    await sheet
+      .getByRole("button", { name: "Scheduled date", exact: true })
+      .click();
     const calendar = page.locator('[data-slot="calendar"]');
     await calendar.locator('button[data-day="9/3/2026"]').click();
-    await sheet.getByLabel("Planned budget (optional)", { exact: true }).fill("12345.67");
+    await sheet
+      .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+      .fill("12345.67");
     await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
 
     await expect(sheet).toHaveCount(0);
     await expect(page.getByText(`Activity added to “${title}”`, { exact: true })).toBeVisible();
-    await expect(designRow).toContainText("1 Activity");
+    await expect(designRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
 
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     const savedRow = page.getByRole("row").filter({ hasText: title });
-    await expect(savedRow).toContainText("1 Activity");
+    await expect(savedRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
     const savedResponse = await page.request.get(`/api/activity-designs/${designId}`);
     expect(savedResponse.status()).toBe(200);
     expect(await savedResponse.json()).toMatchObject({
@@ -105,7 +115,9 @@ test.describe("Activity planning journey", () => {
       .click();
     await page.getByRole("menuitem", { name: "Add Activity", exact: true }).click();
     const sheet = page.getByRole("dialog").filter({ hasText: `Add Activity to “${title}”` });
-    await sheet.getByLabel("Activity name", { exact: true }).fill("Unsaved activity");
+    await sheet
+      .getByRole("textbox", { name: "Activity name", exact: true })
+      .fill("Unsaved activity");
     await page.keyboard.press("Escape");
     const discardDialog = page.getByRole("alertdialog");
     await expect(discardDialog).toContainText("Discard changes?");
@@ -161,8 +173,12 @@ test.describe("Activity planning journey", () => {
     const activity = (await activityResponse.json()).activity;
 
     await page.reload();
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await page.waitForLoadState("networkidle");
-    const search = page.getByLabel("Search Activity Designs", { exact: true });
+    const search = page.getByRole("searchbox", {
+      name: "Search Activity Designs",
+      exact: true,
+    });
     await search.fill("  outreach  ");
     await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toBeVisible();
     await expect(page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" })).toHaveCount(0);

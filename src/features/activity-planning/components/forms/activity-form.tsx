@@ -70,6 +70,7 @@ function ActivityTextField({
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   const hasError = Boolean(error?.length);
+  const errorId = `${id}-error`;
 
   return (
     <Field data-invalid={hasError}>
@@ -91,10 +92,12 @@ function ActivityTextField({
         step={type === "number" ? 1 : undefined}
         autoFocus={autoFocus}
         onChange={onChange}
+        required={required}
         aria-invalid={hasError}
+        aria-describedby={hasError ? errorId : undefined}
       />
       {hasError ? (
-        <FieldError errors={error?.map((message) => ({ message }))} />
+        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );
@@ -145,9 +148,13 @@ function ActivityFormFields({
           value={formValues.particulars}
           onChange={(event) => updateField("particulars", event.target.value)}
           aria-invalid={Boolean(fieldErrors.particulars?.length)}
+          aria-describedby={
+            fieldErrors.particulars?.length ? "particulars-error" : undefined
+          }
         />
         {fieldErrors.particulars?.length ? (
           <FieldError
+            id="particulars-error"
             errors={fieldErrors.particulars.map((message) => ({ message }))}
           />
         ) : null}
@@ -205,6 +212,28 @@ export default function ActivityForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    const firstInvalidField = (
+      [
+        "name",
+        "officeName",
+        "scheduledDate",
+        "particulars",
+        "venue",
+        "plannedParticipantCount",
+        "plannedBudgetPesos",
+      ] as ActivityField[]
+    ).find((field) => fieldErrors[field]?.length);
+
+    if (!firstInvalidField) return;
+
+    const timeoutId = window.setTimeout(() => {
+      document.getElementById(firstInvalidField)?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fieldErrors]);
 
   function updateField(field: ActivityField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
@@ -287,6 +316,8 @@ export default function ActivityForm({
     <form
       className={layout === "sheet" ? "flex min-h-0 flex-1 flex-col" : undefined}
       aria-label="Create Activity"
+      aria-busy={isSubmitting}
+      noValidate
       onSubmit={handleSubmit}
     >
       {layout === "sheet" ? (
