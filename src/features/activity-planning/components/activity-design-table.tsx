@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Empty,
   EmptyContent,
@@ -29,15 +28,11 @@ import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 
 function ActivityDesignRow({
   activityDesign,
-  selected,
-  onToggleSelect,
   onEdit,
   onAddActivity,
   onDeleted,
 }: {
   activityDesign: ActivityDesignListItem;
-  selected: boolean;
-  onToggleSelect: () => void;
   onEdit: () => void;
   onAddActivity: () => void;
   onDeleted: () => void;
@@ -46,28 +41,18 @@ function ActivityDesignRow({
 
   return (
     <>
-      <TableRow
-        aria-selected={selected}
-        className="h-14 hover:bg-muted/35 aria-selected:bg-primary/5"
-      >
-        <TableCell className="w-16 px-5 text-center">
-          <Checkbox
-            checked={selected}
-            onCheckedChange={onToggleSelect}
-            aria-label={`Select ${activityDesign.title}`}
-          />
-        </TableCell>
-        <TableCell className="py-2 font-mono text-mono tracking-mono text-primary">
+      <TableRow className="hover:bg-muted/35">
+        <TableCell className="font-mono text-mono tracking-mono text-primary">
           {activityDesign.activityDesignNo}
         </TableCell>
-        <TableCell className="max-w-[28rem] py-2">
+        <TableCell className="max-w-[28rem]">
           <span className="block truncate">{activityDesign.title}</span>
         </TableCell>
-        <TableCell className="py-2 text-center tabular-nums">
+        <TableCell className="text-center tabular-nums">
           {activityDesign.fiscalYear}
         </TableCell>
         <TableCell
-          className="py-2 text-center"
+          className="text-center"
           aria-label={`${activityDesign.activityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
           <span className="block tabular-nums">
@@ -77,10 +62,10 @@ function ActivityDesignRow({
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
           </span>
         </TableCell>
-        <TableCell className="py-2 text-center text-muted-foreground tabular-nums">
+        <TableCell className="text-center text-muted-foreground tabular-nums">
           <span aria-label="Meal schedules coming later">—</span>
         </TableCell>
-        <TableCell className="py-3 text-center">
+        <TableCell className="text-center">
           <ActivityDesignActionsMenu
             activityDesignTitle={activityDesign.title}
             actionButtonId={`activity-design-actions-${activityDesign.id}`}
@@ -108,25 +93,13 @@ export default function ActivityDesignTable({
   onNew,
   onEdit,
   onAddActivity,
-  selectedIds,
-  allCurrentPageSelected,
-  someCurrentPageSelected,
-  onToggleSelect,
-  onToggleSelectAll,
-  onDeleted,
 }: {
   activityDesigns: ActivityDesignListItem[];
-  filters: { search: string; fiscalYear: string };
+  filters: { search: string };
   onClearFilters: () => void;
   onNew: () => void;
   onEdit: (activityDesign: ActivityDesignListItem) => void;
   onAddActivity: (activityDesign: ActivityDesignListItem) => void;
-  selectedIds: ReadonlySet<string>;
-  allCurrentPageSelected: boolean;
-  someCurrentPageSelected: boolean;
-  onToggleSelect: (activityDesignId: string) => void;
-  onToggleSelectAll: () => void;
-  onDeleted?: (activityDesignId: string) => void;
 }) {
   const router = useRouter();
   const hasFilters = hasActivityDesignFilters(filters);
@@ -138,7 +111,6 @@ export default function ActivityDesignTable({
     const nextFocusTarget =
       activityDesigns[deletedIndex + 1] ?? activityDesigns[deletedIndex - 1];
 
-    onDeleted?.(activityDesignId);
     router.refresh();
 
     window.setTimeout(() => {
@@ -183,35 +155,27 @@ export default function ActivityDesignTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
-      <Table className="min-w-[68rem]">
+    <div className="rounded-xl border bg-card shadow-xs">
+      <Table className="min-w-[52rem]">
         <caption className="sr-only">Activity Designs</caption>
         <TableHeader className="bg-muted/60">
           <TableRow>
-            <TableHead scope="col" className="h-12 w-16 px-5 text-center">
-              <Checkbox
-                checked={allCurrentPageSelected}
-                indeterminate={someCurrentPageSelected && !allCurrentPageSelected}
-                onCheckedChange={onToggleSelectAll}
-                aria-label="Select all Activity Designs on this page"
-              />
-            </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-left">
               Design No.
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-left">
               Activity Design
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-center">
               Fiscal Year
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-center">
               Activities
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-center">
               Meal Schedules
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center">
+            <TableHead scope="col" className="text-center">
               Actions
             </TableHead>
           </TableRow>
@@ -221,8 +185,6 @@ export default function ActivityDesignTable({
             <ActivityDesignRow
               key={activityDesign.id}
               activityDesign={activityDesign}
-              selected={selectedIds.has(activityDesign.id)}
-              onToggleSelect={() => onToggleSelect(activityDesign.id)}
               onEdit={() => onEdit(activityDesign)}
               onAddActivity={() => onAddActivity(activityDesign)}
               onDeleted={() => handleDeleted(activityDesign.id)}
