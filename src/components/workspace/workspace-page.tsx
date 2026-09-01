@@ -1,5 +1,3 @@
-"use client";
-
 import type { AppSidebarUser } from "@/components/workspace/app-sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarTrigger } from "@/components/ui/sidebar";

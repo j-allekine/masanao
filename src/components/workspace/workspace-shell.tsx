@@ -22,7 +22,7 @@ export default function WorkspaceShell({
     <TooltipProvider>
       <SidebarProvider
         style={{
-          "--sidebar-width": "clamp(12rem, 14vw, 13.25rem)",
+          "--sidebar-width": "15.5rem",
         } as CSSProperties}
       >
         <AppSidebar user={user} activeSection={activeSection} />

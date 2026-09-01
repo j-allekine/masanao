@@ -2,10 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import {
+  Archive,
+  Copy,
+  Ellipsis,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import type { ActivityDesignListItem } from "../types";
 import ActivityCreateSheet from "./activity-create-sheet";
@@ -21,6 +37,7 @@ import {
 } from "./activity-design-filters";
 import ActivityDesignTable from "./activity-design-table";
 import ActivityDesignToolbar from "./activity-design-toolbar";
+import PlanningSectionMenu from "./planning-section-menu";
 
 const initialFilters: ActivityDesignFilters = {
   search: "",
@@ -28,6 +45,101 @@ const initialFilters: ActivityDesignFilters = {
 };
 
 const PAGE_SIZE = 10;
+
+function ActivityDesignBulkToolbar({
+  selectedCount,
+  onCreate,
+  onEdit,
+  onClearSelection,
+  onRefresh,
+}: {
+  selectedCount: number;
+  onCreate: () => void;
+  onEdit: () => void;
+  onClearSelection: () => void;
+  onRefresh: () => void;
+}) {
+  const hasSelection = selectedCount > 0;
+  const canEdit = selectedCount === 1;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b pb-5">
+      <Button
+        id="new-activity-design"
+        type="button"
+        size="sm"
+        className="h-9 min-w-[12rem] px-3"
+        onClick={() => {
+          onClearSelection();
+          onCreate();
+        }}
+      >
+        <Plus data-icon="inline-start" />
+        Create Activity Design
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9"
+        disabled={!hasSelection}
+        onClick={() => toast.info("Duplicate is not available in the current server contract.")}
+      >
+        <Copy data-icon="inline-start" />
+        Duplicate
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9"
+        disabled={!canEdit}
+        onClick={onEdit}
+      >
+        <Pencil data-icon="inline-start" />
+        Edit
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-9"
+        disabled={!hasSelection}
+        onClick={() => toast.info("Archive is not available in the current server contract.")}
+      >
+        <Archive data-icon="inline-start" />
+        Archive
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="More Activity Design actions"
+            />
+          }
+        >
+          <Ellipsis />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-52">
+          <DropdownMenuGroup>
+            <DropdownMenuItem disabled={!hasSelection} onClick={onClearSelection}>
+              <Trash2 />
+              Clear selection
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onRefresh}>
+              <RefreshCw />
+              Refresh list
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 export default function ActivityDesignsWorkspace({
   activityDesigns,
@@ -37,6 +149,7 @@ export default function ActivityDesignsWorkspace({
   const router = useRouter();
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [dialogState, setDialogState] =
     useState<ActivityDesignDialogState | null>(null);
   const [activityDesignForCreate, setActivityDesignForCreate] =
@@ -70,6 +183,57 @@ export default function ActivityDesignsWorkspace({
     setPage(1);
   }
 
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelection(activityDesignId: string) {
+    setSelectedIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection);
+
+      if (nextSelection.has(activityDesignId)) {
+        nextSelection.delete(activityDesignId);
+      } else {
+        nextSelection.add(activityDesignId);
+      }
+
+      return nextSelection;
+    });
+  }
+
+  function toggleCurrentPageSelection() {
+    const currentPageIds = paginatedActivityDesigns.map(
+      (activityDesign) => activityDesign.id,
+    );
+    const allCurrentPageSelected = currentPageIds.every((id) =>
+      selectedIds.has(id),
+    );
+
+    setSelectedIds((currentSelection) => {
+      const nextSelection = new Set(currentSelection);
+
+      for (const id of currentPageIds) {
+        if (allCurrentPageSelected) {
+          nextSelection.delete(id);
+        } else {
+          nextSelection.add(id);
+        }
+      }
+
+      return nextSelection;
+    });
+  }
+
+  function editSelectedDesign() {
+    const selectedDesign = activityDesigns.find((activityDesign) =>
+      selectedIds.has(activityDesign.id),
+    );
+
+    if (selectedDesign) {
+      setDialogState({ mode: "edit", activityDesign: selectedDesign });
+    }
+  }
+
   function openCreateDialog() {
     setDialogState({ mode: "create" });
   }
@@ -101,30 +265,7 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-labelledby="activity-designs-title">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2
-              id="activity-designs-title"
-              className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
-            >
-              Activity Designs
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Find a planning context and review how many Activities belong to it.
-            </p>
-          </div>
-          <Button
-            id="new-activity-design"
-            type="button"
-            onClick={openCreateDialog}
-          >
-            <Plus data-icon="inline-start" />
-            New Activity Design
-          </Button>
-        </div>
-      </section>
+    <div className="flex flex-col gap-0">
       <ActivityDesignToolbar
         filters={filters}
         options={filterOptions}
@@ -132,6 +273,21 @@ export default function ActivityDesignsWorkspace({
         onClear={clearFilters}
         showClear={hasActivityDesignFilters(filters)}
       />
+      <div className="mt-6">
+        <PlanningSectionMenu
+          selectedCount={selectedIds.size}
+          onClearSelection={clearSelection}
+        />
+      </div>
+      <div className="mt-6">
+        <ActivityDesignBulkToolbar
+          selectedCount={selectedIds.size}
+          onCreate={openCreateDialog}
+          onEdit={editSelectedDesign}
+          onClearSelection={clearSelection}
+          onRefresh={() => router.refresh()}
+        />
+      </div>
       <ActivityDesignTable
         activityDesigns={paginatedActivityDesigns}
         filters={filters}
@@ -141,6 +297,27 @@ export default function ActivityDesignsWorkspace({
           setDialogState({ mode: "edit", activityDesign })
         }
         onAddActivity={setActivityDesignForCreate}
+        selectedIds={selectedIds}
+        allCurrentPageSelected={
+          paginatedActivityDesigns.length > 0 &&
+          paginatedActivityDesigns.every((activityDesign) =>
+            selectedIds.has(activityDesign.id),
+          )
+        }
+        someCurrentPageSelected={
+          paginatedActivityDesigns.some((activityDesign) =>
+            selectedIds.has(activityDesign.id),
+          )
+        }
+        onToggleSelect={toggleSelection}
+        onToggleSelectAll={toggleCurrentPageSelection}
+        onDeleted={(activityDesignId) => {
+          setSelectedIds((currentSelection) => {
+            const nextSelection = new Set(currentSelection);
+            nextSelection.delete(activityDesignId);
+            return nextSelection;
+          });
+        }}
       />
       <ActivityDesignPagination
         page={currentPage}

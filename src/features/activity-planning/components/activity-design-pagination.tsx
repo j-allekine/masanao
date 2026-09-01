@@ -27,10 +27,9 @@ export default function ActivityDesignPagination({
   if (total === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3 border-t pt-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-muted-foreground" aria-live="polite">
-        Showing <span className="font-mono font-medium text-foreground tabular-nums">{start}–{end}</span> of{" "}
-        <span className="font-mono font-medium text-foreground tabular-nums">{total}</span>
+    <div className="flex flex-col gap-3 pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-body-sm text-muted-foreground" aria-live="polite">
+        Showing {start} to {end} of {total} results
       </p>
       <Pagination className="mx-0 w-auto justify-start sm:justify-end">
         <PaginationContent>
@@ -38,29 +37,35 @@ export default function ActivityDesignPagination({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon"
               disabled={page === 1}
+              aria-label="Previous page"
               onClick={() => onPageChange(page - 1)}
             >
-              <ChevronLeft data-icon="inline-start" />
-              Previous
+              <ChevronLeft />
             </Button>
-          </PaginationItem>
-          <PaginationItem>
-            <span className="inline-flex h-8 items-center px-2 font-mono text-xs text-muted-foreground tabular-nums">
-              Page {page} of {pageCount}
-            </span>
           </PaginationItem>
           <PaginationItem>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="icon"
+              aria-label={`Page ${page} of ${pageCount}`}
+              className="border-primary text-primary"
+            >
+              {page}
+            </Button>
+          </PaginationItem>
+          <PaginationItem>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
               disabled={page === pageCount}
+              aria-label="Next page"
               onClick={() => onPageChange(page + 1)}
             >
-              Next
-              <ChevronRight data-icon="inline-end" />
+              <ChevronRight />
             </Button>
           </PaginationItem>
         </PaginationContent>

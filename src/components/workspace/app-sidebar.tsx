@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
-  ClipboardList,
+  CalendarDays,
+  Leaf,
   LayoutDashboard,
   LogOut,
-  ChevronsUpDown,
+  ChevronDown,
 } from "lucide-react"
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 import {
   DropdownMenu,
@@ -46,7 +49,7 @@ export type AppSidebarUser = {
 
 const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   overview: LayoutDashboard,
-  "activity-designs": ClipboardList,
+  "activity-designs": CalendarDays,
 }
 
 function getInitials(name: string) {
@@ -69,13 +72,14 @@ function WorkspaceLink() {
           size="lg"
           render={<Link href="/overview" />}
           tooltip="Masanao municipal operations"
+          className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary font-heading text-xs font-semibold text-sidebar-primary-foreground">
-            M
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
+            <Leaf aria-hidden="true" className="-rotate-12" />
           </span>
-          <span className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold tracking-[0.06em]">MASANAO</span>
-            <span className="truncate text-xs text-sidebar-foreground/65">Operations desk</span>
+          <span className="grid min-w-0 flex-1 text-left leading-tight">
+            <span className="truncate text-body-sm font-semibold tracking-[0.04em]">MASANAO</span>
+            <span className="truncate text-label text-sidebar-foreground/70">Operations Desk</span>
           </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -117,14 +121,16 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
-              {getInitials(user.name)}
-            </span>
-            <span className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+            <Avatar className="size-9 bg-sidebar-primary text-sidebar-primary-foreground after:border-sidebar-primary/20">
+              <AvatarFallback className="bg-sidebar-primary text-body-sm font-medium text-sidebar-primary-foreground">
+                {getInitials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="grid min-w-0 flex-1 text-left text-body-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs text-sidebar-foreground/65">{user.username}</span>
+              <span className="truncate text-label text-sidebar-foreground/65">{user.username}</span>
             </span>
-            <ChevronsUpDown className="ml-auto" aria-hidden="true" />
+            <ChevronDown className="ml-auto" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-56"
@@ -134,9 +140,9 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
-                <span className="flex flex-col gap-1 px-1 py-1.5 text-left text-sm">
+                <span className="flex flex-col gap-1 px-1 py-1.5 text-left text-body-sm">
                   <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{user.username}</span>
+                  <span className="truncate text-label text-muted-foreground">{user.username}</span>
                 </span>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
@@ -160,27 +166,31 @@ export function AppSidebar({
   activeSection?: WorkspaceSectionId
 }) {
   return (
-    <Sidebar collapsible="icon" variant="inset">
-      <SidebarHeader>
+    <Sidebar collapsible="icon" variant="sidebar">
+      <SidebarHeader className="p-4 pt-6 pb-7">
         <WorkspaceLink />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="py-2">
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+        <SidebarGroup className="px-3 py-1">
+          <SidebarGroupLabel className="h-8 px-3 text-xs uppercase tracking-[0.02em] text-sidebar-foreground/70">
+            Workspace
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {workspaceSections.map((item) => {
                 const Icon = iconBySection[item.id]
+                const visibleLabel = item.id === "activity-designs" ? "Planning" : item.label
 
                 return (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      render={<Link href={item.href} />}
+                      render={<Link href={item.href} aria-label={item.label} />}
                       isActive={activeSection === item.id}
                       tooltip={item.label}
+                      className="h-10 rounded-lg px-3 text-body-sm"
                     >
                       <Icon />
-                      <span>{item.label}</span>
+                      <span>{visibleLabel}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -189,7 +199,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="p-4 pt-3 pb-7">
         <AccountMenu user={user} />
       </SidebarFooter>
       <SidebarRail />

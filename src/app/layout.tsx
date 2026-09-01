@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const bodyFont = Inter({
-  variable: "--font-body-face",
-  subsets: ["latin"],
-});
-
-const headingFont = Geist({
-  variable: "--font-heading-face",
+const appFont = Geist({
+  variable: "--font-app-face",
   subsets: ["latin"],
 });
 
@@ -18,8 +13,7 @@ const dataFont = Geist_Mono({
 });
 
 const fontVariables = [
-  bodyFont.variable,
-  headingFont.variable,
+  appFont.variable,
   dataFont.variable,
 ].join(" ");
 
