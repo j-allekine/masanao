@@ -57,17 +57,17 @@ function ActivityDesignRow({
             aria-label={`Select ${activityDesign.title}`}
           />
         </TableCell>
-        <TableCell className="py-2 text-mono font-medium tracking-wide text-primary">
+        <TableCell className="py-2 font-mono text-mono tracking-mono text-primary">
           {activityDesign.activityDesignNo}
         </TableCell>
-        <TableCell className="max-w-[28rem] py-2 text-table font-medium">
+        <TableCell className="max-w-[28rem] py-2">
           <span className="block truncate">{activityDesign.title}</span>
         </TableCell>
-        <TableCell className="py-2 text-center text-table tabular-nums">
+        <TableCell className="py-2 text-center tabular-nums">
           {activityDesign.fiscalYear}
         </TableCell>
         <TableCell
-          className="py-2 text-center text-table"
+          className="py-2 text-center"
           aria-label={`${activityDesign.activityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
           <span className="block tabular-nums">
@@ -77,7 +77,7 @@ function ActivityDesignRow({
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
           </span>
         </TableCell>
-        <TableCell className="py-2 text-center text-table text-muted-foreground tabular-nums">
+        <TableCell className="py-2 text-center text-muted-foreground tabular-nums">
           <span aria-label="Meal schedules coming later">—</span>
         </TableCell>
         <TableCell className="py-3 text-center">
@@ -196,22 +196,22 @@ export default function ActivityDesignTable({
                 aria-label="Select all Activity Designs on this page"
               />
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Design No.
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Activity Design
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Fiscal Year
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Activities
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Meal Schedules
             </TableHead>
-            <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
+            <TableHead scope="col" className="h-12 text-center">
               Actions
             </TableHead>
           </TableRow>

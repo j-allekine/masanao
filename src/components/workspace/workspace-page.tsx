@@ -30,23 +30,23 @@ export default function WorkspacePage({ user, activeSection }: WorkspacePageProp
       <header className="flex min-h-16 items-center gap-3 border-b px-4 sm:px-6">
         <SidebarTrigger />
         <div className="min-w-0 border-l pl-3">
-          <p className="truncate text-xs text-muted-foreground">Masanao municipality</p>
-          <p className="truncate text-sm font-medium">{section.label}</p>
+          <p className="truncate text-label text-muted-foreground">Masanao municipality</p>
+          <p className="truncate text-body-sm font-medium">{section.label}</p>
         </div>
       </header>
 
       <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
         <section aria-labelledby="workspace-page-title" className="max-w-2xl">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">
+          <p className="text-label font-medium uppercase tracking-label text-primary">
             Operations overview
           </p>
           <h1
             id="workspace-page-title"
-            className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl"
+            className="mt-3 font-heading text-heading-1 font-heading-1"
           >
             Welcome, {user.name}
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+          <p className="mt-3 max-w-xl text-body text-muted-foreground">
             Choose a workspace to continue planning municipal kitchen activities.
           </p>
         </section>
@@ -69,7 +69,7 @@ export default function WorkspacePage({ user, activeSection }: WorkspacePageProp
           </EmptyContent>
         </Empty>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-label text-muted-foreground">
           Signed in as <span className="font-medium text-foreground">{user.username}</span>.
         </p>
       </div>

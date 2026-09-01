@@ -41,56 +41,6 @@ color:
   onInfo: "#FFFDF8"
   focusRing: "#164538"
   focusRingInverse: "#FFFDF8"
-typography:
-  display:
-    fontFamily: Geist
-    fontSize: 3rem
-    fontWeight: 500
-    lineHeight: 1
-    letterSpacing: "-0.06em"
-  h1:
-    fontFamily: Geist
-    fontSize: 2rem
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: "-0.035em"
-  h2:
-    fontFamily: Geist
-    fontSize: 1.5rem
-    fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "-0.025em"
-  h3:
-    fontFamily: Geist
-    fontSize: 1.125rem
-    fontWeight: 600
-    lineHeight: 1.3
-  body:
-    fontFamily: Geist
-    fontSize: 1rem
-    fontWeight: 400
-    lineHeight: 1.5
-  bodySm:
-    fontFamily: Geist
-    fontSize: 0.875rem
-    fontWeight: 400
-    lineHeight: 1.45
-  label:
-    fontFamily: Geist
-    fontSize: 0.75rem
-    fontWeight: 600
-    lineHeight: 1.3
-    letterSpacing: "0.035em"
-  table:
-    fontFamily: Geist
-    fontSize: 0.875rem
-    fontWeight: 400
-    lineHeight: 1.4
-  mono:
-    fontFamily: Geist Mono
-    fontSize: 0.75rem
-    fontWeight: 500
-    lineHeight: 1.35
 rounded:
   none: 0px
   sm: 6px
@@ -115,7 +65,6 @@ components:
   app-shell:
     backgroundColor: "{color.canvas}"
     textColor: "{color.ink}"
-    typography: "{typography.body}"
   app-sidebar:
     backgroundColor: "{color.primaryStrong}"
     textColor: "{color.onPrimary}"
@@ -153,7 +102,6 @@ components:
   table-header:
     backgroundColor: "{color.surfaceSubtle}"
     textColor: "{color.inkMuted}"
-    typography: "{typography.label}"
     padding: "{spacing.md}"
   divider:
     backgroundColor: "{color.border}"
@@ -162,7 +110,6 @@ components:
   button-primary:
     backgroundColor: "{color.primary}"
     textColor: "{color.onPrimary}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-primary-hover:
@@ -171,7 +118,6 @@ components:
   button-secondary:
     backgroundColor: "{color.surface}"
     textColor: "{color.primaryStrong}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-secondary-hover:
@@ -180,7 +126,6 @@ components:
   button-accent:
     backgroundColor: "{color.accent}"
     textColor: "{color.onAccent}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   button-accent-hover:
@@ -190,7 +135,6 @@ components:
     backgroundColor: "{color.surface}"
     textColor: "{color.ink}"
     borderColor: "{color.borderControl}"
-    typography: "{typography.bodySm}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   input-focus:
@@ -199,49 +143,41 @@ components:
   status-success:
     backgroundColor: "{color.successSoft}"
     textColor: "{color.successInk}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-warning:
     backgroundColor: "{color.warningSoft}"
     textColor: "{color.warningInk}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-danger:
     backgroundColor: "{color.dangerSoft}"
     textColor: "{color.dangerInk}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   status-info:
     backgroundColor: "{color.infoSoft}"
     textColor: "{color.infoInk}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.sm}"
   success-action:
     backgroundColor: "{color.success}"
     textColor: "{color.onSuccess}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   info-action:
     backgroundColor: "{color.info}"
     textColor: "{color.onInfo}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   warning-action:
     backgroundColor: "{color.warning}"
     textColor: "{color.onWarning}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   danger-action:
     backgroundColor: "{color.danger}"
     textColor: "{color.onDanger}"
-    typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "{spacing.md}"
   danger-action-hover:
@@ -250,13 +186,11 @@ components:
   role-badge-admin:
     backgroundColor: "{color.accentSoft}"
     textColor: "{color.secondaryInk}"
-    typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "{spacing.sm}"
   role-badge-user:
     backgroundColor: "{color.primarySoft}"
     textColor: "{color.primaryStrong}"
-    typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "{spacing.sm}"
   empty-state:
@@ -270,16 +204,13 @@ components:
     outlineOffset: 2px
   workbench-nav-group:
     textColor: "{color.primarySoft}"
-    typography: "{typography.label}"
   workbench-context-tab:
     backgroundColor: "{color.surfaceRaised}"
     textColor: "{color.inkMuted}"
-    typography: "{typography.label}"
     padding: "{spacing.md}"
   workbench-context-tab-active:
     backgroundColor: "{color.primarySoft}"
     textColor: "{color.primaryStrong}"
-    typography: "{typography.label}"
     padding: "{spacing.md}"
   workbench-next-action:
     backgroundColor: "{color.secondarySoft}"
@@ -298,7 +229,7 @@ components:
 
 Use the semantic color roles instead of copying hex values into components. Use `border` for quiet dividers, `borderControl` for form controls, `focusRing` on light surfaces, and `focusRingInverse` on dark surfaces. The clay `accent` is an alias of `secondary` and is reserved for emphasis, role badges, and next-action treatment.
 
-Use semantic utilities such as `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-success-muted`, and `text-heading-1`. Keep component styles on these shared roles so theme changes stay centralized.
+Use shared semantic color and typography roles instead of recreating styles in components. Keep component styles on these shared roles so theme changes stay centralized.
 
 ## Overview
 
@@ -325,9 +256,36 @@ Do not use gradients, neon colors, glass effects, or large decorative color fiel
 
 Use Geist, already configured by the project, as the primary typeface. It is clear at compact sizes and works well for forms, tables, labels, and dense workflows.
 
-Use restrained hierarchy rather than oversized display text. Headings should be short and purposeful. Labels may use slight tracking, but body copy and table content should remain natural and easy to scan. Use Geist Mono only for identifiers, quantities, reference numbers, and other values where alignment or distinction helps.
+The runtime stylesheet owns typography values and semantic role definitions. This document provides usage guidance only; it is not a second typography configuration.
 
-Do not default to all-caps headings, excessive letter spacing, or a different display font on every page. A small amount of editorial warmth may appear in welcome or empty-state copy, but the core application should remain consistent and operational.
+### Operational
+
+Primary interface text used for controls, navigation, table data, tabs, and normal application content. Keep it easy to scan and avoid decorative tracking.
+
+### Supporting
+
+Secondary metadata, captions, helper text, validation details, and compact context. Supporting text should remain clearly readable and should not carry essential instructions by itself.
+
+### Reading
+
+Longer instructions, explanations, notices, and content intended for sustained reading. Give this content enough rhythm and separation from nearby controls.
+
+### Table header
+
+Table headers use the same base size as table data but stronger emphasis. Establish hierarchy with weight, contrast, spacing, and the header surface rather than making headers smaller or larger than the data.
+
+### Monospace
+
+Reserve Geist Mono for identifiers, codes, reference numbers, quantities, and values where comparison or alignment benefits from monospace. Do not style an entire table as code.
+
+### Accessibility and usage
+
+- Keep text and its background sufficiently distinct in normal, muted, selected, disabled, hover, focus, and dark or light states.
+- Pair status color with a text label or icon; never rely on color alone.
+- Preserve readable text when content wraps, names are long, the viewport is narrow, or text is enlarged.
+- Use the operational role for everyday controls and navigation, the supporting role for secondary context, the reading role for longer copy, and the table roles for structured data.
+- Keep restrained heading steps and purposeful hierarchy. Do not default to all-caps headings, excessive letter spacing, or a different display font on every page.
+- Routes under `src/components/prototypes` are exploratory visual references; their display-specific treatments are intentionally isolated from production surfaces.
 
 ## Layout
 

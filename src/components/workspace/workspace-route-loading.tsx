@@ -39,8 +39,8 @@ export default function WorkspaceRouteLoading({
         <header className="flex min-h-16 items-center gap-3 border-b px-4 sm:px-6">
           <SidebarTrigger />
           <div className="min-w-0 border-l pl-3">
-            <p className="truncate text-xs text-muted-foreground">Masanao municipality</p>
-            <p className="truncate text-sm font-medium">{section.label}</p>
+            <p className="truncate text-label text-muted-foreground">Masanao municipality</p>
+            <p className="truncate text-body-sm font-medium">{section.label}</p>
           </div>
         </header>
         <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">

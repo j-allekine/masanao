@@ -86,7 +86,7 @@ export default function FiscalYearPicker({
           >
             <ChevronLeft />
           </Button>
-          <p className="font-mono text-sm font-medium tabular-nums" aria-live="polite">
+          <p className="font-mono text-body-sm font-medium tabular-nums" aria-live="polite">
             {viewStart}–{viewStart + DECADE_SIZE - 1}
           </p>
           <Button

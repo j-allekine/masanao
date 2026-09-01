@@ -14,12 +14,12 @@ function BrandLockup({ inverse = false }: { inverse?: boolean }) {
         <SproutIcon aria-hidden="true" strokeWidth={1.75} />
       </span>
       <span className={cn(inverse ? "text-primary-foreground" : "text-foreground")}>
-        <span className="block text-sm font-semibold tracking-tight">Masanao</span>
+        <span className="block text-body-sm font-semibold">Masanao</span>
         <span
           className={cn(
             inverse
-              ? "block text-xs text-muted"
-              : "block text-xs text-muted-foreground"
+              ? "block text-label text-muted"
+              : "block text-label text-muted-foreground"
           )}
         >
           Municipal kitchen
@@ -58,16 +58,16 @@ export default async function Home() {
           <BrandLockup inverse />
 
           <div className="max-w-lg text-primary-foreground">
-            <p className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">
+            <p className="text-label font-semibold tracking-label text-muted uppercase">
               Municipal kitchen operations
             </p>
             <h1
               id="welcome-title"
-              className="mt-4 max-w-[12ch] text-4xl font-medium leading-[1.04] tracking-[-0.05em] text-balance xl:text-5xl"
+              className="mt-4 max-w-[12ch] text-display font-display tracking-display text-balance"
             >
               A clear start for every service day.
             </h1>
-            <p className="mt-5 max-w-[38ch] text-base leading-7 text-muted text-pretty">
+            <p className="mt-5 max-w-[38ch] text-body text-muted text-pretty">
               Plan activities, track supplies, and keep accountable records close to the work.
             </p>
           </div>

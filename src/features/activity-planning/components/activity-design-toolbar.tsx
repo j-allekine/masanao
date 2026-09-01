@@ -86,7 +86,7 @@ export default function ActivityDesignToolbar({
 
       <div className="flex items-end gap-2">
         <Field orientation="horizontal" className="w-auto items-center gap-2">
-          <FieldLabel className="text-label font-semibold" htmlFor="activity-design-fiscal-year">
+          <FieldLabel htmlFor="activity-design-fiscal-year">
             Fiscal Year
           </FieldLabel>
           <Select

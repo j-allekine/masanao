@@ -77,8 +77,8 @@ function WorkspaceLink() {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
             <Leaf aria-hidden="true" className="-rotate-12" />
           </span>
-          <span className="grid min-w-0 flex-1 text-left leading-tight">
-            <span className="truncate text-body-sm font-semibold tracking-[0.04em]">MASANAO</span>
+          <span className="grid min-w-0 flex-1 text-left">
+            <span className="truncate text-body-sm font-semibold tracking-label">MASANAO</span>
             <span className="truncate text-label text-sidebar-foreground/70">Operations Desk</span>
           </span>
         </SidebarMenuButton>
@@ -126,9 +126,9 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
                 {getInitials(user.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="grid min-w-0 flex-1 text-left text-body-sm leading-tight">
+            <span className="grid min-w-0 flex-1 text-left text-body-sm">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-label text-sidebar-foreground/65">{user.username}</span>
+              <span className="truncate text-label text-sidebar-foreground/70 group-hover/menu-button:text-sidebar-accent-foreground group-focus-visible/menu-button:text-sidebar-accent-foreground group-data-active/menu-button:text-sidebar-accent-foreground">{user.username}</span>
             </span>
             <ChevronDown className="ml-auto" aria-hidden="true" />
           </DropdownMenuTrigger>
@@ -172,7 +172,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="px-3 py-1">
-          <SidebarGroupLabel className="h-8 px-3 text-xs uppercase tracking-[0.02em] text-sidebar-foreground/70">
+          <SidebarGroupLabel className="h-8 px-3 text-label uppercase tracking-label text-sidebar-foreground/70">
             Workspace
           </SidebarGroupLabel>
           <SidebarGroupContent>
