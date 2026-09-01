@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Archive,
-  Copy,
   Ellipsis,
   Pencil,
   Plus,
@@ -82,33 +80,11 @@ function ActivityDesignBulkToolbar({
         variant="outline"
         size="sm"
         className="h-9"
-        disabled={!hasSelection}
-        onClick={() => toast.info("Duplicate is not available in the current server contract.")}
-      >
-        <Copy data-icon="inline-start" />
-        Duplicate
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-9"
         disabled={!canEdit}
         onClick={onEdit}
       >
         <Pencil data-icon="inline-start" />
         Edit
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-9"
-        disabled={!hasSelection}
-        onClick={() => toast.info("Archive is not available in the current server contract.")}
-      >
-        <Archive data-icon="inline-start" />
-        Archive
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -147,9 +123,16 @@ export default function ActivityDesignsWorkspace({
   activityDesigns: ActivityDesignListItem[];
 }) {
   const router = useRouter();
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selectedIdsState, setSelectedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [dialogState, setDialogState] =
     useState<ActivityDesignDialogState | null>(null);
   const [activityDesignForCreate, setActivityDesignForCreate] =
@@ -168,19 +151,43 @@ export default function ActivityDesignsWorkspace({
   );
   const currentPage = Math.min(page, pageCount);
   const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedActivityDesigns = filteredActivityDesigns.slice(
-    firstItemIndex,
-    firstItemIndex + PAGE_SIZE,
+  const paginatedActivityDesigns = useMemo(
+    () =>
+      filteredActivityDesigns.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
+    [filteredActivityDesigns, firstItemIndex],
   );
+  const selectedIds = useMemo(
+    () =>
+      new Set(
+        [...selectedIdsState].filter((id) =>
+          activityDesigns.some((activityDesign) => activityDesign.id === id),
+        ),
+      ),
+    [activityDesigns, selectedIdsState],
+  );
+  const currentPageIds = useMemo(
+    () => paginatedActivityDesigns.map((activityDesign) => activityDesign.id),
+    [paginatedActivityDesigns],
+  );
+  const currentPageSelectedCount = currentPageIds.filter((id) =>
+    selectedIds.has(id),
+  ).length;
 
   function updateFilters(nextFilters: ActivityDesignFilters) {
     setFilters(nextFilters);
     setPage(1);
+    clearSelection();
   }
 
   function clearFilters() {
     setFilters(initialFilters);
     setPage(1);
+    clearSelection();
+  }
+
+  function changePage(nextPage: number) {
+    setPage(Math.min(Math.max(nextPage, 1), pageCount));
+    clearSelection();
   }
 
   function clearSelection() {
@@ -202,9 +209,6 @@ export default function ActivityDesignsWorkspace({
   }
 
   function toggleCurrentPageSelection() {
-    const currentPageIds = paginatedActivityDesigns.map(
-      (activityDesign) => activityDesign.id,
-    );
     const allCurrentPageSelected = currentPageIds.every((id) =>
       selectedIds.has(id),
     );
@@ -225,7 +229,7 @@ export default function ActivityDesignsWorkspace({
   }
 
   function editSelectedDesign() {
-    const selectedDesign = activityDesigns.find((activityDesign) =>
+    const selectedDesign = paginatedActivityDesigns.find((activityDesign) =>
       selectedIds.has(activityDesign.id),
     );
 
@@ -265,7 +269,10 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-0">
+    <div
+      className="flex flex-col gap-0"
+      data-client-ready={isHydrated ? "true" : undefined}
+    >
       <ActivityDesignToolbar
         filters={filters}
         options={filterOptions}
@@ -275,13 +282,13 @@ export default function ActivityDesignsWorkspace({
       />
       <div className="mt-6">
         <PlanningSectionMenu
-          selectedCount={selectedIds.size}
+          selectedCount={currentPageSelectedCount}
           onClearSelection={clearSelection}
         />
       </div>
       <div className="mt-6">
         <ActivityDesignBulkToolbar
-          selectedCount={selectedIds.size}
+          selectedCount={currentPageSelectedCount}
           onCreate={openCreateDialog}
           onEdit={editSelectedDesign}
           onClearSelection={clearSelection}
@@ -325,7 +332,7 @@ export default function ActivityDesignsWorkspace({
         start={firstItemIndex + 1}
         end={Math.min(firstItemIndex + PAGE_SIZE, filteredActivityDesigns.length)}
         total={filteredActivityDesigns.length}
-        onPageChange={setPage}
+        onPageChange={changePage}
       />
       <ActivityDesignDialog
         dialogState={dialogState}

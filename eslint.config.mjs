@@ -32,14 +32,12 @@ const architectureConfig = {
         partialMatch: false,
         capture: ["featureName"],
       },
-      // WDS models each app file as a separate element so only CSS can flow
-      // between app files. Boundaries v7 retains `mode: "full"` as the only
-      // file-level element form; `partialMatch: false` still uses folders.
+      // Treat the app folder as one element. `partialMatch: false` is the
+      // supported v7 form for matching the complete folder path.
       {
         type: "app",
-        pattern: "src/app/**/*",
-        mode: "full",
-        capture: ["_", "fileName"],
+        pattern: "src/app",
+        partialMatch: false,
       },
       {
         type: "feature",
@@ -81,6 +79,7 @@ const architectureConfig = {
       {
         default: "disallow",
         checkUnknownLocals: true,
+        checkInternals: true,
         policies: [
           {
             from: { element: { type: "app" } },
@@ -103,7 +102,7 @@ const architectureConfig = {
               to: {
                 element: {
                   type: "app",
-                  captured: { fileName: "*.css" },
+                  fileInternalPath: ["*.css"],
                 },
               },
             },
@@ -119,6 +118,10 @@ const architectureConfig = {
           },
           {
             from: { element: { type: "feature-db" } },
+            allow: { to: { element: { type: "prisma" } } },
+          },
+          {
+            from: { element: { type: "prisma" } },
             allow: { to: { element: { type: "prisma" } } },
           },
           {
@@ -151,6 +154,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-e2e-*/**",
+    ".next-debug-login/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

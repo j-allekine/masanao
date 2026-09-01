@@ -22,11 +22,13 @@ export default function FiscalYearPicker({
   id,
   value,
   onChange,
+  required = false,
   hasError = false,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
+  required?: boolean;
   hasError?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -61,6 +63,8 @@ export default function FiscalYearPicker({
             id={id}
             variant="outline"
             aria-invalid={hasError}
+            aria-required={required || undefined}
+            aria-describedby={hasError ? `${id}-error` : undefined}
             className="w-full justify-between font-mono font-normal tabular-nums"
           />
         }

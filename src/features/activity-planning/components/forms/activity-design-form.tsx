@@ -73,6 +73,7 @@ function ActivityDesignFieldInput({
 }) {
   const hasError = Boolean(error?.length);
   const inputId = `${mode}-activity-design-${id}`;
+  const errorId = `${inputId}-error`;
 
   return (
     <Field data-invalid={hasError}>
@@ -89,10 +90,12 @@ function ActivityDesignFieldInput({
         name={id}
         value={value}
         onChange={onChange}
+        required={required}
         aria-invalid={hasError}
+        aria-describedby={hasError ? errorId : undefined}
       />
       {hasError ? (
-        <FieldError errors={error?.map((message) => ({ message }))} />
+        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );
@@ -123,6 +126,29 @@ export default function ActivityDesignForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    const firstInvalidField = (
+      [
+        "activityDesignNo",
+        "fiscalYear",
+        "title",
+        "aipReferenceCode",
+      ] as ActivityDesignField[]
+    ).find((field) => fieldErrors[field]?.length);
+
+    if (!firstInvalidField) return;
+
+    const targetId =
+      firstInvalidField === "fiscalYear"
+        ? `${mode}-activity-design-fiscalYear`
+        : `${mode}-activity-design-${firstInvalidField}`;
+    const timeoutId = window.setTimeout(() => {
+      document.getElementById(targetId)?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [fieldErrors, mode]);
 
   function updateField(field: ActivityDesignField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
@@ -173,6 +199,8 @@ export default function ActivityDesignForm({
   return (
     <form
       aria-label={`${mode === "create" ? "Create" : "Edit"} Activity Design`}
+      aria-busy={isSubmitting}
+      noValidate
       onSubmit={handleSubmit}
     >
       <div className="max-h-[min(62vh,34rem)] overflow-y-auto px-1 py-2">
@@ -205,11 +233,13 @@ export default function ActivityDesignForm({
             <FiscalYearPicker
               id={`${mode}-activity-design-fiscalYear`}
               value={formValues.fiscalYear}
+              required
               hasError={Boolean(fieldErrors.fiscalYear?.length)}
               onChange={(value) => updateField("fiscalYear", value)}
             />
             {fieldErrors.fiscalYear?.length ? (
               <FieldError
+                id={`${mode}-activity-design-fiscalYear-error`}
                 errors={fieldErrors.fiscalYear.map((message) => ({ message }))}
               />
             ) : null}

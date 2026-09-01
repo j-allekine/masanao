@@ -12,10 +12,10 @@
 
 .skipLink {
   position: fixed;
-  top: var(--spacing-lg);
-  left: var(--spacing-lg);
+  top: var(--space-lg);
+  left: var(--space-lg);
   z-index: 2;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   background: var(--primary);
   color: var(--primary-foreground);
@@ -34,7 +34,7 @@
 .brandMark {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--space-md);
   color: var(--primary);
 }
 
@@ -56,7 +56,7 @@
 
 .brandWords {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: var(--space-xs);
 }
 
 .brandWords strong {
@@ -88,7 +88,7 @@
 }
 
 .railLabel {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid color-mix(in srgb, var(--primary-foreground) 30%, transparent);
   border-radius: var(--radius-pill);
   color: var(--muted);
@@ -101,15 +101,15 @@
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--space-xl);
 }
 
 .formFields {
-  gap: var(--spacing-xl);
+  gap: var(--space-xl);
 }
 
 .field {
-  gap: var(--spacing-sm);
+  gap: var(--space-sm);
 }
 
 .fieldLabel {
@@ -140,7 +140,7 @@
 
 .inputGroup :global([data-slot="input-group-control"]) {
   min-height: 3.15rem;
-  padding-inline: var(--spacing-sm);
+  padding-inline: var(--space-sm);
   color: var(--foreground);
   font-family: var(--font-body-face), sans-serif;
   font-size: var(--text-body);
@@ -152,7 +152,7 @@
 }
 
 .inputAddon {
-  padding-inline: var(--spacing-md);
+  padding-inline: var(--space-md);
   color: var(--muted-foreground);
 }
 
@@ -163,7 +163,7 @@
 }
 
 .inputAction {
-  padding-inline-end: var(--spacing-sm);
+  padding-inline-end: var(--space-sm);
 }
 
 .inputAction :global(button) {
@@ -192,9 +192,9 @@
 .successMessage {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-sm);
+  gap: var(--space-sm);
   margin: 0;
-  padding: var(--spacing-md);
+  padding: var(--space-md);
   border: 1px solid var(--success);
   border-radius: var(--radius-md);
   background: var(--success-muted);
@@ -240,7 +240,7 @@
   min-height: 100dvh;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  padding: clamp(var(--space-xl), 5vw, var(--space-4xl));
   background: var(--primary);
   color: var(--primary-foreground);
 }
@@ -249,18 +249,18 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-lg);
+  gap: var(--space-lg);
 }
 
 .aCopy {
   max-width: 31rem;
   margin: auto 0;
-  padding: var(--spacing-4xl) 0;
+  padding: var(--space-4xl) 0;
 }
 
 .aCopy h1 {
   max-width: 25rem;
-  margin: var(--spacing-lg) 0 var(--spacing-xl);
+  margin: var(--space-lg) 0 var(--space-xl);
   font-size: clamp(2.8rem, 5.3vw, 5.3rem);
   font-weight: 500;
   letter-spacing: -0.075em;
@@ -284,7 +284,7 @@
 .cPromise {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-sm);
+  gap: var(--space-sm);
 }
 
 .aSignal {
@@ -302,7 +302,7 @@
 }
 
 .aSeparator {
-  margin: var(--spacing-lg) 0;
+  margin: var(--space-lg) 0;
   background: var(--primary);
 }
 
@@ -316,7 +316,7 @@
 .aFormPanel {
   display: flex;
   align-items: center;
-  padding: clamp(var(--spacing-2xl), 7vw, var(--spacing-4xl));
+  padding: clamp(var(--space-2xl), 7vw, var(--space-4xl));
 }
 
 .aFormContent {
@@ -329,17 +329,17 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-xl);
+  gap: var(--space-xl);
 }
 
 .aFormHeader {
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--space-3xl);
 }
 
 .aFormHeader h2,
 .bSheetTop h2,
 .cFormHeader h2 {
-  margin: var(--spacing-sm) 0 var(--spacing-md);
+  margin: var(--space-sm) 0 var(--space-md);
   color: var(--foreground);
   font-size: clamp(1.9rem, 3vw, 2.6rem);
   font-weight: 600;
@@ -360,8 +360,8 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   color: var(--primary);
@@ -377,9 +377,9 @@
 
 .aFormFooter {
   display: grid;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-3xl);
-  padding-top: var(--spacing-lg);
+  gap: var(--space-sm);
+  margin-top: var(--space-3xl);
+  padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
 }
 
@@ -408,8 +408,8 @@
   min-height: 5.25rem;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-xl);
-  padding: var(--spacing-lg) clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  gap: var(--space-xl);
+  padding: var(--space-lg) clamp(var(--space-xl), 5vw, var(--space-4xl));
   border-bottom: 1px solid var(--border);
 }
 
@@ -428,14 +428,14 @@
   flex: 1;
   grid-template-columns: minmax(16rem, 1.1fr) minmax(22rem, 28rem) minmax(13rem, 0.72fr);
   align-items: center;
-  gap: clamp(var(--spacing-2xl), 6vw, var(--spacing-4xl));
+  gap: clamp(var(--space-2xl), 6vw, var(--space-4xl));
   margin: 0 auto;
-  padding: var(--spacing-2xl) clamp(var(--spacing-2xl), 5vw, var(--spacing-4xl));
+  padding: var(--space-2xl) clamp(var(--space-2xl), 5vw, var(--space-4xl));
 }
 
 .bContext h1 {
   max-width: 30rem;
-  margin: var(--spacing-lg) 0 var(--spacing-xl);
+  margin: var(--space-lg) 0 var(--space-xl);
   font-size: clamp(2.5rem, 4vw, 4.25rem);
   font-weight: 500;
   letter-spacing: -0.075em;
@@ -452,7 +452,7 @@
 }
 
 .bSheet {
-  padding: var(--spacing-2xl);
+  padding: var(--space-2xl);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card);
@@ -461,7 +461,7 @@
 
 .bSheetTop {
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .bSheetTop h2 {
@@ -476,8 +476,8 @@
 }
 
 .bSheetNote {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
 }
 
@@ -487,27 +487,27 @@
 }
 
 .bAsideSeparator {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--space-xl);
   background: var(--secondary);
 }
 
 .bAsideList {
   display: grid;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-2xl);
+  gap: var(--space-md);
+  margin-top: var(--space-2xl);
 }
 
 .bSheet .loginForm,
 .bSheet .formFields {
-  gap: var(--spacing-lg);
+  gap: var(--space-lg);
 }
 
 .bAsideList > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
   border-bottom: 1px solid var(--border);
 }
 
@@ -526,8 +526,8 @@
 .bFooter {
   display: flex;
   justify-content: space-between;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg) clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  gap: var(--space-lg);
+  padding: var(--space-lg) clamp(var(--space-xl), 5vw, var(--space-4xl));
   border-top: 1px solid var(--border);
   font-size: 0.68rem;
   text-transform: none;
@@ -566,24 +566,24 @@
   min-height: 100dvh;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  padding: clamp(var(--space-xl), 5vw, var(--space-4xl));
 }
 
 .cBrandBar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-lg);
+  gap: var(--space-lg);
 }
 
 .cCopy {
   max-width: 34rem;
-  padding: var(--spacing-4xl) 0 var(--spacing-3xl);
+  padding: var(--space-4xl) 0 var(--space-3xl);
 }
 
 .cCopy h1 {
   max-width: 28rem;
-  margin: var(--spacing-lg) 0 var(--spacing-xl);
+  margin: var(--space-lg) 0 var(--space-xl);
   font-size: clamp(3rem, 6vw, 6.2rem);
   font-weight: 500;
   letter-spacing: -0.08em;
@@ -604,7 +604,7 @@
 
 .cPromise {
   max-width: 28rem;
-  padding-top: var(--spacing-lg);
+  padding-top: var(--space-lg);
   border-top: 1px solid color-mix(in srgb, var(--primary-foreground) 40%, transparent);
 }
 
@@ -614,7 +614,7 @@
 
 .cPromise div {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: var(--space-xs);
 }
 
 .cPromise strong {
@@ -632,7 +632,7 @@
 .cFormPanel {
   display: flex;
   align-items: center;
-  padding: clamp(var(--spacing-2xl), 7vw, var(--spacing-4xl));
+  padding: clamp(var(--space-2xl), 7vw, var(--space-4xl));
 }
 
 .cFormContent {
@@ -641,15 +641,15 @@
 }
 
 .cFormHeader {
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--space-3xl);
 }
 
 .cAccessNote {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-3xl);
-  padding-top: var(--spacing-lg);
+  gap: var(--space-sm);
+  margin-top: var(--space-3xl);
+  padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
   color: var(--muted-foreground);
   font-size: var(--text-body-sm);
@@ -668,12 +668,12 @@
 .switcher {
   position: fixed;
   right: 50%;
-  bottom: var(--spacing-lg);
+  bottom: var(--space-lg);
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  gap: var(--space-sm);
+  padding: var(--space-sm);
   border: 1px solid var(--primary);
   border-radius: var(--radius-pill);
   background: var(--primary);
@@ -698,7 +698,7 @@
   display: grid;
   min-width: 9.5rem;
   gap: 0.1rem;
-  padding: 0 var(--spacing-xs);
+  padding: 0 var(--space-xs);
 }
 
 .switcherLabel span,
@@ -719,7 +719,7 @@
 }
 
 .switcherHint {
-  padding: 0 var(--spacing-sm);
+  padding: 0 var(--space-sm);
   color: var(--muted);
   text-transform: none;
   white-space: nowrap;
@@ -735,8 +735,8 @@
   }
 
   .bMain {
-    gap: var(--spacing-2xl);
-    padding-inline: var(--spacing-2xl);
+    gap: var(--space-2xl);
+    padding-inline: var(--space-2xl);
   }
 }
 
@@ -753,12 +753,12 @@
 
   .aRail,
   .cStageContent {
-    padding: var(--spacing-xl);
+    padding: var(--space-xl);
   }
 
   .aCopy,
   .cCopy {
-    padding: var(--spacing-3xl) 0;
+    padding: var(--space-3xl) 0;
   }
 
   .aCopy h1,
@@ -769,7 +769,7 @@
 
   .aFormPanel,
   .cFormPanel {
-    padding: var(--spacing-3xl) var(--spacing-xl) 7rem;
+    padding: var(--space-3xl) var(--space-xl) 7rem;
   }
 
   .aFormHeader,
@@ -778,7 +778,7 @@
   }
 
   .aFormHeader {
-    margin-bottom: var(--spacing-2xl);
+    margin-bottom: var(--space-2xl);
   }
 
   .secureBadge {
@@ -787,7 +787,7 @@
 
   .bHeader {
     min-height: 4.75rem;
-    padding-inline: var(--spacing-xl);
+    padding-inline: var(--space-xl);
   }
 
   .bHeaderMeta {
@@ -797,8 +797,8 @@
   .bMain {
     grid-template-columns: 1fr;
     align-items: start;
-    gap: var(--spacing-3xl);
-    padding: var(--spacing-3xl) var(--spacing-xl) 7rem;
+    gap: var(--space-3xl);
+    padding: var(--space-3xl) var(--space-xl) 7rem;
   }
 
   .bSheet {
@@ -818,7 +818,7 @@
 
   .bFooter {
     display: grid;
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--space-lg) var(--space-xl);
   }
 
   .cImageStage {
@@ -826,8 +826,8 @@
   }
 
   .switcher {
-    right: var(--spacing-md);
-    left: var(--spacing-md);
+    right: var(--space-md);
+    left: var(--space-md);
     justify-content: space-between;
     transform: none;
   }

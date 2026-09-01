@@ -129,6 +129,7 @@ export default function ActivityDesignToolbar({
           variant="outline"
           size="sm"
           className={showClear ? "h-9" : "h-9 text-muted-foreground"}
+          disabled={!showClear}
           onClick={onClear}
         >
           Clear

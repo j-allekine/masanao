@@ -51,6 +51,8 @@ export default function ActivityDesignPagination({
               variant="outline"
               size="icon"
               aria-label={`Page ${page} of ${pageCount}`}
+              aria-current="page"
+              disabled
               className="border-primary text-primary"
             >
               {page}

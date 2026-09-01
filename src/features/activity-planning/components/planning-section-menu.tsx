@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const localPlanningSections = [
   { label: "Activity Designs", href: "/activity-designs", active: true, icon: ClipboardList },
@@ -58,14 +59,17 @@ export default function PlanningSectionMenu({
                       {selectedCount} selected
                     </Badge>
                   ) : null}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     aria-label="Clear Activity Designs selection"
-                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring"
+                    disabled={selectedCount === 0}
+                    className="shrink-0 rounded-md text-primary hover:bg-primary/10"
                     onClick={onClearSelection}
                   >
                     <X aria-hidden="true" />
-                  </button>
+                  </Button>
                   <span className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" aria-hidden="true" />
                 </div>
               ) : (
@@ -77,9 +81,9 @@ export default function PlanningSectionMenu({
                   <span className="min-w-0 flex-1 truncate text-body-sm font-semibold">
                     {section.label}
                   </span>
-                  <span className="inline-flex h-6 items-center rounded-full border bg-card px-2 text-label text-muted-foreground">
-                    Select
-                  </span>
+                  <Badge variant="outline" className="h-6 bg-card px-2 text-label text-muted-foreground">
+                    Coming later
+                  </Badge>
                   <X aria-hidden="true" className="shrink-0 text-foreground" />
                 </span>
               )}

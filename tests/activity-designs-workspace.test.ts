@@ -12,7 +12,7 @@ const activityDesigns: ActivityDesignListItem[] = [
     activityDesignNo: "ad-2026-002",
     fiscalYear: 2026,
     title: "Senior Nutrition Outreach",
-    aipReferenceCode: null,
+    aipReferenceCode: "AIP-2026-002",
     activityCount: 2,
   },
   {
@@ -54,5 +54,14 @@ describe("Activity Designs workspace filters", () => {
         fiscalYear: "2025",
       }),
     ).toEqual([]);
+  });
+
+  it("searches the supported AIP Reference Code field", () => {
+    expect(
+      filterActivityDesigns(activityDesigns, {
+        search: "aip-2026-002",
+        fiscalYear: "",
+      }),
+    ).toEqual([activityDesigns[0]]);
   });
 });

@@ -2,6 +2,7 @@ import { Bell, CalendarDays } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import ActivityDesignsWorkspace from "./activity-designs-workspace";
 import type { ActivityDesignListItem } from "../types";
@@ -15,8 +16,9 @@ export default function ActivityDesignsContent({
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b px-8">
+      <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
+          <SidebarTrigger />
           <CalendarDays className="shrink-0" aria-hidden="true" />
           <p className="truncate text-heading-3 font-semibold">Planning</p>
           <span className="h-5 w-px bg-border" aria-hidden="true" />
@@ -50,9 +52,9 @@ export default function ActivityDesignsContent({
         </div>
       </header>
 
-      <main className="flex w-full flex-1 flex-col px-8 py-6">
+      <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-6">
         <ActivityDesignsWorkspace activityDesigns={initialActivityDesigns} />
-      </main>
+      </div>
     </div>
   );
 }

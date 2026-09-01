@@ -32,7 +32,8 @@ export function filterActivityDesigns(
     const matchesSearch =
       search === "" ||
       activityDesign.activityDesignNo.toLowerCase().includes(search) ||
-      activityDesign.title.toLowerCase().includes(search);
+      activityDesign.title.toLowerCase().includes(search) ||
+      activityDesign.aipReferenceCode?.toLowerCase().includes(search) === true;
     const matchesFiscalYear =
       fiscalYear === "" || String(activityDesign.fiscalYear) === fiscalYear;
     return matchesSearch && matchesFiscalYear;

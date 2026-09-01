@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,7 +78,7 @@ function ActivityDesignRow({
           </span>
         </TableCell>
         <TableCell className="py-2 text-center text-table text-muted-foreground tabular-nums">
-          <span aria-label="Meal schedule count unavailable">—</span>
+          <span aria-label="Meal schedules coming later">—</span>
         </TableCell>
         <TableCell className="py-3 text-center">
           <ActivityDesignActionsMenu
@@ -213,17 +212,7 @@ export default function ActivityDesignTable({
               Meal Schedules
             </TableHead>
             <TableHead scope="col" className="h-12 text-center text-table-head font-semibold tracking-table-head">
-              <span className="inline-flex items-center gap-3">
-                Actions
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Configure Activity Designs columns"
-                >
-                  <Settings2 />
-                </Button>
-              </span>
+              Actions
             </TableHead>
           </TableRow>
         </TableHeader>

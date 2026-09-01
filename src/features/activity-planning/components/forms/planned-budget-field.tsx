@@ -38,11 +38,12 @@ export default function PlannedBudgetField({
           inputMode="decimal"
           value={value}
           aria-invalid={hasError}
+          aria-describedby={hasError ? "plannedBudgetPesos-error" : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
       </InputGroup>
       {hasError ? (
-        <FieldError errors={error?.map((message) => ({ message }))} />
+        <FieldError id="plannedBudgetPesos-error" errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );

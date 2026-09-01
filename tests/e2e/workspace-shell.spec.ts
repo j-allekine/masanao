@@ -20,6 +20,7 @@ test.describe("workspace shell", () => {
   }) => {
     await signIn(page);
     await page.goto("/overview");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
     await expect(page.getByRole("link", { name: "Overview", exact: true })).toBeVisible();
     await expect(
@@ -48,8 +49,11 @@ test.describe("workspace shell", () => {
   test("shows the local Planning sections with future views disabled", async ({ page }) => {
     await signIn(page);
     await page.goto("/activity-designs");
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 
-    await expect(page.getByText("Planning", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("main").getByText("Planning", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Planning", exact: true }),
     ).toHaveCount(0);

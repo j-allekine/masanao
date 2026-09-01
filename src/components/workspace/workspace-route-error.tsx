@@ -38,7 +38,7 @@ export default function WorkspaceRouteError({
             <p className="truncate text-sm font-medium">{section.label}</p>
           </div>
         </header>
-        <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
+        <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
           {children}
           <Alert variant="destructive" role="alert">
             <AlertTitle>Unable to load {section.label}</AlertTitle>
@@ -50,7 +50,7 @@ export default function WorkspaceRouteError({
               </Button>
             </AlertDescription>
           </Alert>
-        </main>
+        </div>
       </div>
     </WorkspaceShell>
   );
