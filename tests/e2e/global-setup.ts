@@ -1,7 +1,6 @@
 import Database from "better-sqlite3";
 import { readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { hashPassword } from "better-auth/crypto";
 
 export default async function globalSetup() {
@@ -11,20 +10,8 @@ export default async function globalSetup() {
   }
   const resolvedDatabasePath = databasePath;
 
-  for (const entry of readdirSync(process.cwd(), { withFileTypes: true })) {
-    if (
-      entry.isDirectory() &&
-      entry.name !== process.env.NEXT_DIST_DIR &&
-      /^\.next-e2e-[a-f0-9-]+$/.test(entry.name)
-    ) {
-      rmSync(join(process.cwd(), entry.name), { force: true, recursive: true });
-    }
-  }
-  for (const entry of readdirSync(tmpdir(), { withFileTypes: true })) {
-    if (entry.isFile() && /^masanao-e2e-[a-f0-9-]+\.db$/.test(entry.name)) {
-      rmSync(join(tmpdir(), entry.name), { force: true });
-    }
-  }
+  // Each invocation owns a fresh UUID-based database path. Only remove that
+  // path; sibling Playwright runs may be using their own artifacts.
   rmSync(resolvedDatabasePath, { force: true });
 
   const migrationDirectory = join(process.cwd(), "src", "prisma", "migrations");
