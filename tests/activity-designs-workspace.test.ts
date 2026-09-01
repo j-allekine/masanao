@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  filterActivityDesigns,
-  getActivityDesignFilterOptions,
-} from "@/features/activity-planning/components/activity-design-filters";
+import { filterActivityDesigns } from "@/features/activity-planning/components/activity-design-filters";
 import type { ActivityDesignListItem } from "@/features/activity-planning/types";
 
 const activityDesigns: ActivityDesignListItem[] = [
@@ -34,33 +31,24 @@ const activityDesigns: ActivityDesignListItem[] = [
 ];
 
 describe("Activity Designs workspace filters", () => {
-  it("derives deduplicated sorted Fiscal Year choices from the complete result", () => {
-    expect(getActivityDesignFilterOptions(activityDesigns)).toEqual({
-      fiscalYears: [2025, 2026],
-    });
-  });
-
-  it("trims case-insensitive search and combines it with Fiscal Year using AND logic", () => {
+  it("trims and matches search case-insensitively across supported fields", () => {
     expect(
       filterActivityDesigns(activityDesigns, {
         search: "  COMMUNITY  ",
-        fiscalYear: "2026",
       }),
     ).toEqual([activityDesigns[2]]);
 
     expect(
       filterActivityDesigns(activityDesigns, {
         search: "AD-2026",
-        fiscalYear: "2025",
       }),
-    ).toEqual([]);
+    ).toEqual([activityDesigns[0], activityDesigns[2]]);
   });
 
   it("searches the supported AIP Reference Code field", () => {
     expect(
       filterActivityDesigns(activityDesigns, {
         search: "aip-2026-002",
-        fiscalYear: "",
       }),
     ).toEqual([activityDesigns[0]]);
   });

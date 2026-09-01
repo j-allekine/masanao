@@ -183,10 +183,8 @@ test.describe("Activity planning journey", () => {
     await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toBeVisible();
     await expect(page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" })).toHaveCount(0);
     await search.fill("");
-    await page.getByRole("combobox", { name: "Fiscal Year" }).click();
-    await page.getByRole("option", { name: "2026" }).click();
     await expect(page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" })).toBeVisible();
-    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toHaveCount(0);
+    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toBeVisible();
 
     const row = page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" });
     await row.getByRole("button", { name: /Actions for E2E Regression Feeding Plan/ }).click();
@@ -200,6 +198,7 @@ test.describe("Activity planning journey", () => {
     );
     await page.request.delete(`/api/activity-designs/${secondDesign.id}`);
     await page.reload();
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     const refreshedRow = page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" });
     await refreshedRow.getByRole("button", { name: /Actions for E2E Regression Feeding Plan/ }).click();
     await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
