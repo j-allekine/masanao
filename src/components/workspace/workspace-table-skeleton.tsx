@@ -16,8 +16,8 @@ export default function WorkspaceTableSkeleton({
   rowCount?: number;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table aria-label="Loading table" className="min-w-[68rem]">
+    <div className="rounded-lg border">
+      <Table aria-label="Loading table" className="min-w-[52rem]">
         <TableHeader className="sr-only">
           <TableRow>
             {columnLabels.map((label) => (

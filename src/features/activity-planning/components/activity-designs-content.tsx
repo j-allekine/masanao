@@ -1,6 +1,7 @@
 import { Bell } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import ActivityDesignsWorkspace from "./activity-designs-workspace";
@@ -16,7 +17,8 @@ export default function ActivityDesignsContent({
       <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <SidebarTrigger />
-          <div className="min-w-0 border-l pl-3">
+          <Separator orientation="vertical" className="h-8" aria-hidden="true" />
+          <div className="min-w-0">
             <p className="truncate text-heading-3 font-semibold">Planning</p>
             <p className="truncate text-body-sm text-muted-foreground">
               Plan upcoming municipal activities.
