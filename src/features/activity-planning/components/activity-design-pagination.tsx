@@ -29,8 +29,8 @@ export default function ActivityDesignPagination({
   return (
     <div className="flex flex-col gap-3 border-t pt-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <p className="text-muted-foreground" aria-live="polite">
-        Showing <span className="font-medium text-foreground">{start}–{end}</span> of{" "}
-        <span className="font-medium text-foreground">{total}</span>
+        Showing <span className="font-mono font-medium text-foreground tabular-nums">{start}–{end}</span> of{" "}
+        <span className="font-mono font-medium text-foreground tabular-nums">{total}</span>
       </p>
       <Pagination className="mx-0 w-auto justify-start sm:justify-end">
         <PaginationContent>
@@ -47,7 +47,7 @@ export default function ActivityDesignPagination({
             </Button>
           </PaginationItem>
           <PaginationItem>
-            <span className="inline-flex h-8 items-center px-2 text-xs text-muted-foreground tabular-nums">
+            <span className="inline-flex h-8 items-center px-2 font-mono text-xs text-muted-foreground tabular-nums">
               Page {page} of {pageCount}
             </span>
           </PaginationItem>

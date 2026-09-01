@@ -24,18 +24,6 @@ export default function ActivityDesignsContent({
 
       <main className="mx-auto flex w-full max-w-[72rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <PlanningSectionMenu />
-        <section aria-labelledby="activity-designs-title">
-          <h2
-            id="activity-designs-title"
-            className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
-          >
-            Activity Designs
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Find a planning context and review how many Activities belong to it.
-          </p>
-        </section>
-
         <ActivityDesignsWorkspace activityDesigns={initialActivityDesigns} />
       </main>
     </div>

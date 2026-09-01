@@ -43,11 +43,11 @@ export default function ActivityDesignToolbar({
   return (
     <div
       aria-label="Activity Design filters"
-      className="flex flex-wrap items-end gap-2"
+      className="flex flex-wrap items-end gap-3"
       role="search"
     >
-      <div className="min-w-56 flex-1">
-        <label className="sr-only" htmlFor="activity-design-search">
+      <div className="flex min-w-56 flex-1 flex-col gap-1.5">
+        <label className="text-sm font-medium" htmlFor="activity-design-search">
           Search Activity Designs
         </label>
         <Input
@@ -61,8 +61,8 @@ export default function ActivityDesignToolbar({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="sr-only" htmlFor="activity-design-fiscal-year">
+      <div className="flex min-w-36 flex-col gap-1.5">
+        <label className="text-sm font-medium" htmlFor="activity-design-fiscal-year">
           Fiscal Year
         </label>
         <Select
@@ -81,7 +81,7 @@ export default function ActivityDesignToolbar({
           <SelectTrigger
             id="activity-design-fiscal-year"
             aria-label="Fiscal Year"
-            className="w-full min-w-32 sm:w-36"
+            className="w-full"
           >
             <SelectValue placeholder="All years" />
           </SelectTrigger>

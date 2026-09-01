@@ -46,7 +46,7 @@ export default function WorkspacePage({ user, activeSection }: WorkspacePageProp
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
+      <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
         <section aria-labelledby="workspace-page-title" className="max-w-2xl">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">
             Workspace placeholder

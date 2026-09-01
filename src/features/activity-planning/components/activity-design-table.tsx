@@ -48,21 +48,18 @@ function ActivityDesignRow({
         <TableCell className="max-w-[28rem] py-3 text-sm font-medium">
           <span className="block truncate">{activityDesign.title}</span>
         </TableCell>
-        <TableCell className="py-3 text-sm tabular-nums">
+        <TableCell className="py-3 text-center font-mono text-sm tabular-nums">
           {activityDesign.fiscalYear}
         </TableCell>
         <TableCell
-          className="py-3 text-sm"
+          className="py-3 text-center text-sm"
           aria-label={`${activityDesign.activityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
-          <span className="block font-semibold tabular-nums">
-            {activityDesign.activityCount} {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
-          </span>
-          <span className="mt-1 block text-xs font-normal text-muted-foreground">
-            Activity view coming in a future update.
+          <span className="block font-mono font-semibold tabular-nums">
+            {activityDesign.activityCount}
           </span>
         </TableCell>
-        <TableCell className="py-3 text-right">
+        <TableCell className="py-3 text-center">
           <ActivityDesignActionsMenu
             activityDesignTitle={activityDesign.title}
             actionButtonId={`activity-design-actions-${activityDesign.id}`}
@@ -157,11 +154,11 @@ export default function ActivityDesignTable({
         <caption className="sr-only">Activity Designs</caption>
         <TableHeader className="bg-muted/60">
           <TableRow>
-            <TableHead scope="col" className="h-10 text-xs font-semibold">Design No.</TableHead>
-            <TableHead scope="col" className="h-10 text-xs font-semibold">Title</TableHead>
-            <TableHead scope="col" className="h-10 text-xs font-semibold">Fiscal Year</TableHead>
-            <TableHead scope="col" className="h-10 text-xs font-semibold">Activities</TableHead>
-            <TableHead scope="col" className="h-10 text-right text-xs font-semibold">
+            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">Design No.</TableHead>
+            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">Title</TableHead>
+            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">Fiscal Year</TableHead>
+            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">Activities</TableHead>
+            <TableHead scope="col" className="h-10 text-center text-xs font-semibold">
               Actions
             </TableHead>
           </TableRow>

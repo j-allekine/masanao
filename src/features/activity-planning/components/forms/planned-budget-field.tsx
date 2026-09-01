@@ -2,7 +2,6 @@
 
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
@@ -34,6 +33,7 @@ export default function PlannedBudgetField({
         <InputGroupInput
           id="plannedBudgetPesos"
           name="plannedBudgetPesos"
+          className="font-mono tabular-nums"
           type="text"
           inputMode="decimal"
           value={value}
@@ -43,9 +43,7 @@ export default function PlannedBudgetField({
       </InputGroup>
       {hasError ? (
         <FieldError errors={error?.map((message) => ({ message }))} />
-      ) : (
-        <FieldDescription>Enter a non-negative amount in Philippine pesos.</FieldDescription>
-      )}
+      ) : null}
     </Field>
   );
 }

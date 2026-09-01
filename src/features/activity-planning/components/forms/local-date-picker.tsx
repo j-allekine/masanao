@@ -4,7 +4,7 @@ import { CalendarDays } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import {
   Popover,
   PopoverContent,
@@ -43,11 +43,13 @@ export default function LocalDatePicker({
   id,
   value,
   error,
+  required = false,
   onChange,
 }: {
   id: string;
   value: string;
   error?: string[];
+  required?: boolean;
   onChange: (value: string) => void;
 }) {
   const selectedDate = parseLocalDate(value);
@@ -55,7 +57,14 @@ export default function LocalDatePicker({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={id}>Scheduled date</FieldLabel>
+      <FieldLabel htmlFor={id}>
+        Scheduled date
+        {required ? (
+          <span className="text-destructive" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </FieldLabel>
       <Popover>
         <PopoverTrigger
           render={
@@ -85,9 +94,7 @@ export default function LocalDatePicker({
       <input type="hidden" name="scheduledDate" value={value} />
       {hasError ? (
         <FieldError errors={error?.map((message) => ({ message }))} />
-      ) : (
-        <FieldDescription>The date is saved as a municipal local date.</FieldDescription>
-      )}
+      ) : null}
     </Field>
   );
 }

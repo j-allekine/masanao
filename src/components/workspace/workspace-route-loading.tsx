@@ -43,7 +43,7 @@ export default function WorkspaceRouteLoading({
             <p className="truncate text-sm font-medium">{section.label}</p>
           </div>
         </header>
-        <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
+        <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
           {children ?? <DefaultLoadingLayout />}
         </main>
       </div>

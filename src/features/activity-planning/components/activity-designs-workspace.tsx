@@ -87,7 +87,7 @@ export default function ActivityDesignsWorkspace({
     }, 0);
   }
 
-  function closeActivityCreateSheet() {
+  function closeActivityCreateDialog() {
     const closedActivityDesign = activityDesignForCreate;
     setActivityDesignForCreate(null);
 
@@ -101,28 +101,30 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3
-            id="activity-designs-table-title"
-            className="font-heading text-base font-semibold"
+    <div className="flex flex-col gap-6">
+      <section aria-labelledby="activity-designs-title">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2
+              id="activity-designs-title"
+              className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl"
+            >
+              Activity Designs
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Find a planning context and review how many Activities belong to it.
+            </p>
+          </div>
+          <Button
+            id="new-activity-design"
+            type="button"
+            onClick={openCreateDialog}
           >
-            Activity Designs
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {activityDesigns.length} loaded {activityDesigns.length === 1 ? "design" : "designs"}.
-          </p>
+            <Plus data-icon="inline-start" />
+            New Activity Design
+          </Button>
         </div>
-        <Button
-          id="new-activity-design"
-          type="button"
-          onClick={openCreateDialog}
-        >
-          <Plus data-icon="inline-start" />
-          New Activity Design
-        </Button>
-      </div>
+      </section>
       <ActivityDesignToolbar
         filters={filters}
         options={filterOptions}
@@ -156,9 +158,9 @@ export default function ActivityDesignsWorkspace({
       <ActivityCreateSheet
         activityDesign={activityDesignForCreate}
         open={activityDesignForCreate !== null}
-        onClose={closeActivityCreateSheet}
+        onClose={closeActivityCreateDialog}
         onSuccess={(activity) => {
-          closeActivityCreateSheet();
+          closeActivityCreateDialog();
           router.refresh();
           const activityDesign = activityDesigns.find(
             (design) => design.id === activity.activityDesignId,

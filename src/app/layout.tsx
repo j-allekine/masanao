@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bodyFont = Inter({
+  variable: "--font-body-face",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const headingFont = Geist({
+  variable: "--font-heading-face",
   subsets: ["latin"],
 });
+
+const dataFont = Geist_Mono({
+  variable: "--font-data-face",
+  subsets: ["latin"],
+});
+
+const fontVariables = [
+  bodyFont.variable,
+  headingFont.variable,
+  dataFont.variable,
+].join(" ");
 
 export const metadata: Metadata = {
   title: "Masanao | Municipal operations",
@@ -19,10 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${fontVariables} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

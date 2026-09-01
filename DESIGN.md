@@ -292,13 +292,13 @@ components:
     width: 100%
 ---
 
-## Token source and themes
+## Theme source
 
-`tokens.json` is the machine-readable source for this design system. The `color.*` group is the light theme. Dark-mode overrides live under `theme.dark.*` and are consumed by the `.dark` class in `src/app/globals.css`.
+`src/app/globals.css` is the single source of truth for the design system. The shadcn semantic variables (`--background`, `--primary`, `--muted`, and so on) live in its `:root` and `.dark` blocks, alongside the common status roles (`--success`, `--warning`, and `--info`).
 
 Use the semantic color roles instead of copying hex values into components. Use `border` for quiet dividers, `borderControl` for form controls, `focusRing` on light surfaces, and `focusRingInverse` on dark surfaces. The clay `accent` is an alias of `secondary` and is reserved for emphasis, role badges, and next-action treatment.
 
-Tailwind consumes the generated `src/app/tokens.css` layer through `src/app/globals.css`. Use shadcn-compatible roles such as `bg-background`, `text-foreground`, `bg-primary`, and `text-primary-foreground`, or use Masanao-specific utilities such as `bg-masanao-primary-soft`, `text-masanao-ink-muted`, `p-masanao-xl`, and `text-masanao-h1`.
+Use semantic utilities such as `bg-background`, `text-foreground`, `bg-primary`, `text-primary-foreground`, `bg-success-muted`, and `text-heading-1`. Keep component styles on these shared roles so theme changes stay centralized.
 
 ## Overview
 

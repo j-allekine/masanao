@@ -61,7 +61,7 @@ export default function FiscalYearPicker({
             id={id}
             variant="outline"
             aria-invalid={hasError}
-            className="w-full justify-between font-normal"
+            className="w-full justify-between font-mono font-normal tabular-nums"
           />
         }
       >
@@ -82,7 +82,7 @@ export default function FiscalYearPicker({
           >
             <ChevronLeft />
           </Button>
-          <p className="text-sm font-medium" aria-live="polite">
+          <p className="font-mono text-sm font-medium tabular-nums" aria-live="polite">
             {viewStart}–{viewStart + DECADE_SIZE - 1}
           </p>
           <Button
@@ -102,7 +102,7 @@ export default function FiscalYearPicker({
               key={year}
               type="button"
               variant={String(year) === value ? "default" : "ghost"}
-              className="w-full"
+              className="w-full font-mono tabular-nums"
               aria-pressed={String(year) === value}
               onClick={() => selectYear(year)}
             >
