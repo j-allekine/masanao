@@ -82,6 +82,8 @@ test.describe("frontend stabilization regression seam", () => {
 
       const search = page.getByLabel("Search Activity Designs", { exact: true });
       await search.fill(title);
+      await search.focus();
+      await expect(search).toBeFocused();
 
       const trigger = page.locator('[data-slot="sidebar-trigger"]');
       await expect(trigger).toBeVisible();
@@ -98,6 +100,17 @@ test.describe("frontend stabilization regression seam", () => {
           exact: true,
         }),
       ).toBeVisible();
+      const accountTrigger = mobileSidebar.getByRole("button", {
+        name: "Kitchen Staff account menu",
+        exact: true,
+      });
+      await accountTrigger.focus();
+      await expect(accountTrigger).toBeFocused();
+      await accountTrigger.click();
+      await expect(
+        page.getByRole("menuitem", { name: "Log out", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
       await mobileSidebar.getByRole("button", { name: "Close", exact: true }).focus();
       await page.keyboard.press("Enter");
       await expect(mobileSidebar).toBeHidden();
@@ -117,13 +130,15 @@ test.describe("frontend stabilization regression seam", () => {
     page,
   }) => {
     let design: ActivityDesign | undefined;
+    const designNo = "E2E-COMPACT-LAYOUT";
+    const title = "E2E Compact Layout";
 
     await authenticate(page);
     try {
       design = await createDesign(
         page,
-        `E2E-COMPACT-${Date.now()}`,
-        `E2E Compact Layout ${Date.now()}`,
+        designNo,
+        title,
       );
 
       for (const viewport of [
@@ -136,12 +151,11 @@ test.describe("frontend stabilization regression seam", () => {
         await expect(
           page.getByText("Plan upcoming municipal activities.", { exact: true }),
         ).toBeVisible();
-        await expect(
-          page.getByRole("searchbox", {
-            name: "Search Activity Designs",
-            exact: true,
-          }),
-        ).toBeVisible();
+        const search = page.getByRole("searchbox", {
+          name: "Search Activity Designs",
+          exact: true,
+        });
+        await expect(search).toBeVisible();
         await expect(
           page.getByRole("button", {
             name: "Create Activity Design",
@@ -150,6 +164,24 @@ test.describe("frontend stabilization regression seam", () => {
         ).toBeVisible();
         await expect(page.getByText("Coming later", { exact: true })).toHaveCount(2);
         await expect(page.getByRole("checkbox")).toHaveCount(0);
+
+        await search.fill(title);
+        const row = page.getByRole("row").filter({ hasText: title });
+        await expect(row).toBeVisible();
+        await search.focus();
+        await expect(search).toBeFocused();
+        const create = page.getByRole("button", {
+          name: "Create Activity Design",
+          exact: true,
+        });
+        await create.focus();
+        await expect(create).toBeFocused();
+        const rowActions = row.getByRole("button", {
+          name: `Actions for ${title}`,
+          exact: true,
+        });
+        await rowActions.focus();
+        await expect(rowActions).toBeFocused();
 
         const metrics = await page.evaluate(() => {
           const table = document.querySelector('[data-slot="table-container"]');
@@ -179,6 +211,22 @@ test.describe("frontend stabilization regression seam", () => {
           expect(metrics.tableScrollWidth).toBeGreaterThan(metrics.tableClientWidth);
           expect(metrics.planningScrollWidth).toBeGreaterThan(metrics.planningClientWidth);
         }
+
+        await page.addStyleTag({
+          content: "nextjs-portal { display: none !important; }",
+        });
+        await page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        });
+        await page.locator('[data-slot="table-container"]').evaluate((element) => {
+          element.scrollLeft = 0;
+        });
+        await expect(page).toHaveScreenshot(
+          `activity-designs-${viewport.name}.png`,
+          { animations: "disabled", fullPage: true },
+        );
       }
     } finally {
       if (design) await deleteDesigns(page, [design]);
@@ -238,7 +286,10 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(secondPageRow).not.toContainText(`${prefix} 01`);
 
       await search.fill(prefix);
-      await page.getByRole("button", { name: "Next page", exact: true }).click();
+      const nextPage = page.getByRole("button", { name: "Next page", exact: true });
+      await nextPage.focus();
+      await expect(nextPage).toBeFocused();
+      await nextPage.click();
       await expect(page.getByText("Showing 11 to 11 of 11 results", { exact: true })).toBeVisible();
       await expect(page.getByRole("row").nth(1)).toBeVisible();
       await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeDisabled();
@@ -252,6 +303,28 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
     } finally {
       await deleteDesigns(page, designs);
+    }
+  });
+
+  test("captures the Overview workspace sentinel at desktop and mobile widths", async ({
+    page,
+  }) => {
+    await authenticate(page);
+
+    for (const viewport of [
+      { width: 1458, height: 986, name: "desktop" },
+      { width: 390, height: 844, name: "mobile" },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/overview");
+      await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await expect(page).toHaveScreenshot(`overview-${viewport.name}.png`, {
+        animations: "disabled",
+        fullPage: true,
+      });
     }
   });
 
