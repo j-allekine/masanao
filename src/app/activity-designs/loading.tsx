@@ -8,7 +8,6 @@ export default function ActivityDesignsLoading() {
       <PlanningSectionMenu />
       <WorkspaceTableSkeleton
         columnLabels={[
-          "Selection",
           "Design No.",
           "Activity Design",
           "Fiscal Year",
