@@ -134,7 +134,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
         <div className="flex flex-col gap-2">
           <h1
             id={headingId}
-            className="text-masanao-h1 font-semibold tracking-masanao-h1 text-balance"
+            className="text-heading-1 font-semibold tracking-heading-1 text-balance"
           >
             Welcome back
           </h1>

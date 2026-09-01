@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -49,7 +48,7 @@ const emptyFormValues: ActivityFormValues = {
 function ActivityTextField({
   id,
   label,
-  description,
+  required = false,
   value,
   error,
   type = "text",
@@ -62,7 +61,7 @@ function ActivityTextField({
     "particulars" | "scheduledDate" | "plannedBudgetPesos"
   >;
   label: string;
-  description: string;
+  required?: boolean;
   value: string;
   error?: string[];
   type?: "text" | "number";
@@ -74,10 +73,18 @@ function ActivityTextField({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required ? (
+          <span className="text-destructive" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </FieldLabel>
       <Input
         id={id}
         name={id}
+        className={type === "number" ? "font-mono tabular-nums" : undefined}
         type={type}
         value={value}
         min={min}
@@ -88,9 +95,7 @@ function ActivityTextField({
       />
       {hasError ? (
         <FieldError errors={error?.map((message) => ({ message }))} />
-      ) : (
-        <FieldDescription>{description}</FieldDescription>
-      )}
+      ) : null}
     </Field>
   );
 }
@@ -111,7 +116,7 @@ function ActivityFormFields({
       <ActivityTextField
         id="name"
         label="Activity name"
-        description="Use the operational name staff will recognize."
+        required
         value={formValues.name}
         error={fieldErrors.name}
         autoFocus={layout === "sheet"}
@@ -120,7 +125,7 @@ function ActivityFormFields({
       <ActivityTextField
         id="officeName"
         label="Office"
-        description="Enter the LGU department or office responsible for this Activity."
+        required
         value={formValues.officeName}
         error={fieldErrors.officeName}
         onChange={(event) => updateField("officeName", event.target.value)}
@@ -129,6 +134,7 @@ function ActivityFormFields({
         id="scheduledDate"
         value={formValues.scheduledDate}
         error={fieldErrors.scheduledDate}
+        required
         onChange={(value) => updateField("scheduledDate", value)}
       />
       <Field data-invalid={Boolean(fieldErrors.particulars?.length)}>
@@ -144,16 +150,11 @@ function ActivityFormFields({
           <FieldError
             errors={fieldErrors.particulars.map((message) => ({ message }))}
           />
-        ) : (
-          <FieldDescription>
-            Add context that helps the kitchen understand the undertaking.
-          </FieldDescription>
-        )}
+        ) : null}
       </Field>
       <ActivityTextField
         id="venue"
         label="Venue (optional)"
-        description="Record where the Activity will take place."
         value={formValues.venue}
         error={fieldErrors.venue}
         onChange={(event) => updateField("venue", event.target.value)}
@@ -161,7 +162,6 @@ function ActivityFormFields({
       <ActivityTextField
         id="plannedParticipantCount"
         label="Planned participant count (optional)"
-        description="Enter zero or a whole-number estimate."
         value={formValues.plannedParticipantCount}
         error={fieldErrors.plannedParticipantCount}
         type="number"

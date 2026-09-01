@@ -1,8 +1,8 @@
 .prototypeShell {
   min-height: 100dvh;
-  background: var(--masanao-canvas);
-  color: var(--masanao-ink);
-  font-family: var(--masanao-type-body-family), sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body-face), sans-serif;
 }
 
 .variant {
@@ -12,21 +12,21 @@
 
 .skipLink {
   position: fixed;
-  top: var(--masanao-space-lg);
-  left: var(--masanao-space-lg);
+  top: var(--spacing-lg);
+  left: var(--spacing-lg);
   z-index: 2;
-  padding: var(--masanao-space-sm) var(--masanao-space-md);
-  border-radius: var(--masanao-radius-sm);
-  background: var(--masanao-primary-strong);
-  color: var(--masanao-on-primary);
-  font-size: var(--masanao-type-body-sm-size);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: var(--text-body-sm);
   font-weight: 600;
   text-decoration: none;
   transform: translateY(-200%);
 }
 
 .skipLink:focus-visible {
-  outline: 3px solid var(--masanao-focus-ring-inverse);
+  outline: 3px solid var(--ring);
   outline-offset: 3px;
   transform: translateY(0);
 }
@@ -34,12 +34,12 @@
 .brandMark {
   display: inline-flex;
   align-items: center;
-  gap: var(--masanao-space-md);
-  color: var(--masanao-primary-strong);
+  gap: var(--spacing-md);
+  color: var(--primary);
 }
 
 .brandMarkInverted {
-  color: var(--masanao-on-primary);
+  color: var(--primary-foreground);
 }
 
 .brandGlyph {
@@ -48,7 +48,7 @@
   height: 2.5rem;
   place-items: center;
   border: 1px solid currentColor;
-  border-radius: var(--masanao-radius-md);
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: -0.08em;
@@ -56,7 +56,7 @@
 
 .brandWords {
   display: grid;
-  gap: var(--masanao-space-xs);
+  gap: var(--spacing-xs);
 }
 
 .brandWords strong {
@@ -75,8 +75,8 @@
 .eyebrow,
 .eyebrowLight {
   margin: 0;
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-label-size);
+  color: var(--muted-foreground);
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1.3;
@@ -84,14 +84,14 @@
 }
 
 .eyebrowLight {
-  color: var(--masanao-primary-soft);
+  color: var(--muted);
 }
 
 .railLabel {
-  padding: var(--masanao-space-xs) var(--masanao-space-sm);
-  border: 1px solid color-mix(in srgb, var(--masanao-on-primary) 30%, transparent);
-  border-radius: var(--masanao-radius-pill);
-  color: var(--masanao-primary-soft);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid color-mix(in srgb, var(--primary-foreground) 30%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -101,20 +101,20 @@
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: var(--masanao-space-xl);
+  gap: var(--spacing-xl);
 }
 
 .formFields {
-  gap: var(--masanao-space-xl);
+  gap: var(--spacing-xl);
 }
 
 .field {
-  gap: var(--masanao-space-sm);
+  gap: var(--spacing-sm);
 }
 
 .fieldLabel {
-  color: var(--masanao-ink);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--foreground);
+  font-size: var(--text-body-sm);
   font-weight: 600;
   line-height: 1.3;
 }
@@ -122,38 +122,38 @@
 .inputGroup {
   min-height: 3.25rem;
   height: auto;
-  border-color: var(--masanao-border-control);
-  border-radius: var(--masanao-radius-md);
-  background: var(--masanao-surface-raised);
+  border-color: var(--input);
+  border-radius: var(--radius-md);
+  background: var(--card);
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
 .inputGroup:focus-within {
-  border-color: var(--masanao-focus-ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--masanao-focus-ring) 18%, transparent);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
 }
 
 .inputGroup:has([aria-invalid="true"]) {
-  border-color: var(--masanao-danger);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--masanao-danger) 14%, transparent);
+  border-color: var(--destructive);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 14%, transparent);
 }
 
 .inputGroup :global([data-slot="input-group-control"]) {
   min-height: 3.15rem;
-  padding-inline: var(--masanao-space-sm);
-  color: var(--masanao-ink);
-  font-family: var(--masanao-type-body-family), sans-serif;
-  font-size: var(--masanao-type-body-size);
+  padding-inline: var(--spacing-sm);
+  color: var(--foreground);
+  font-family: var(--font-body-face), sans-serif;
+  font-size: var(--text-body);
 }
 
 .inputGroup :global([data-slot="input-group-control"]::placeholder) {
-  color: var(--masanao-ink-muted);
+  color: var(--muted-foreground);
   opacity: 0.85;
 }
 
 .inputAddon {
-  padding-inline: var(--masanao-space-md);
-  color: var(--masanao-ink-muted);
+  padding-inline: var(--spacing-md);
+  color: var(--muted-foreground);
 }
 
 .inputAddon :global(svg),
@@ -163,44 +163,44 @@
 }
 
 .inputAction {
-  padding-inline-end: var(--masanao-space-sm);
+  padding-inline-end: var(--spacing-sm);
 }
 
 .inputAction :global(button) {
-  color: var(--masanao-ink-muted);
+  color: var(--muted-foreground);
 }
 
 .inputAction :global(button:hover) {
-  color: var(--masanao-primary-strong);
+  color: var(--primary);
 }
 
 .fieldDescription,
 .fieldError {
   margin: 0;
-  font-size: var(--masanao-type-body-sm-size);
-  line-height: var(--masanao-type-body-sm-line-height);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
 }
 
 .fieldDescription {
-  color: var(--masanao-ink-muted);
+  color: var(--muted-foreground);
 }
 
 .fieldError {
-  color: var(--masanao-danger-ink);
+  color: var(--destructive-foreground);
 }
 
 .successMessage {
   display: flex;
   align-items: flex-start;
-  gap: var(--masanao-space-sm);
+  gap: var(--spacing-sm);
   margin: 0;
-  padding: var(--masanao-space-md);
-  border: 1px solid var(--masanao-success);
-  border-radius: var(--masanao-radius-md);
-  background: var(--masanao-success-soft);
-  color: var(--masanao-success-ink);
-  font-size: var(--masanao-type-body-sm-size);
-  line-height: var(--masanao-type-body-sm-line-height);
+  padding: var(--spacing-md);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  background: var(--success-muted);
+  color: var(--success-foreground);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm--line-height);
 }
 
 .successMessage :global(svg) {
@@ -214,8 +214,8 @@
   width: 100%;
   min-height: 3.35rem;
   justify-content: space-between;
-  border-radius: var(--masanao-radius-md);
-  font-size: var(--masanao-type-body-size);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
 }
 
 .loadingIcon {
@@ -232,7 +232,7 @@
 .variantA {
   display: grid;
   grid-template-columns: minmax(21rem, 0.85fr) minmax(29rem, 1.15fr);
-  background: var(--masanao-canvas);
+  background: var(--background);
 }
 
 .aRail {
@@ -240,27 +240,27 @@
   min-height: 100dvh;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(var(--masanao-space-xl), 5vw, var(--masanao-space-4xl));
-  background: var(--masanao-primary-strong);
-  color: var(--masanao-on-primary);
+  padding: clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .aRailTop {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--masanao-space-lg);
+  gap: var(--spacing-lg);
 }
 
 .aCopy {
   max-width: 31rem;
   margin: auto 0;
-  padding: var(--masanao-space-4xl) 0;
+  padding: var(--spacing-4xl) 0;
 }
 
 .aCopy h1 {
   max-width: 25rem;
-  margin: var(--masanao-space-lg) 0 var(--masanao-space-xl);
+  margin: var(--spacing-lg) 0 var(--spacing-xl);
   font-size: clamp(2.8rem, 5.3vw, 5.3rem);
   font-weight: 500;
   letter-spacing: -0.075em;
@@ -270,8 +270,8 @@
 .aCopy > p:last-child {
   max-width: 24rem;
   margin: 0;
-  color: var(--masanao-primary-soft);
-  font-size: var(--masanao-type-body-size);
+  color: var(--muted);
+  font-size: var(--text-body);
   line-height: 1.6;
 }
 
@@ -284,12 +284,12 @@
 .cPromise {
   display: flex;
   align-items: flex-start;
-  gap: var(--masanao-space-sm);
+  gap: var(--spacing-sm);
 }
 
 .aSignal {
-  color: var(--masanao-primary-soft);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--muted);
+  font-size: var(--text-body-sm);
 }
 
 .aSignal :global(svg),
@@ -302,21 +302,21 @@
 }
 
 .aSeparator {
-  margin: var(--masanao-space-lg) 0;
-  background: var(--masanao-primary);
+  margin: var(--spacing-lg) 0;
+  background: var(--primary);
 }
 
 .aRailFooter > p {
   margin: 0;
-  color: var(--masanao-primary-soft);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--muted);
+  font-size: var(--text-body-sm);
   line-height: 1.5;
 }
 
 .aFormPanel {
   display: flex;
   align-items: center;
-  padding: clamp(var(--masanao-space-2xl), 7vw, var(--masanao-space-4xl));
+  padding: clamp(var(--spacing-2xl), 7vw, var(--spacing-4xl));
 }
 
 .aFormContent {
@@ -329,18 +329,18 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--masanao-space-xl);
+  gap: var(--spacing-xl);
 }
 
 .aFormHeader {
-  margin-bottom: var(--masanao-space-3xl);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .aFormHeader h2,
 .bSheetTop h2,
 .cFormHeader h2 {
-  margin: var(--masanao-space-sm) 0 var(--masanao-space-md);
-  color: var(--masanao-ink);
+  margin: var(--spacing-sm) 0 var(--spacing-md);
+  color: var(--foreground);
   font-size: clamp(1.9rem, 3vw, 2.6rem);
   font-weight: 600;
   letter-spacing: -0.055em;
@@ -351,8 +351,8 @@
 .cFormHeader p:last-child {
   max-width: 25rem;
   margin: 0;
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-body-size);
+  color: var(--muted-foreground);
+  font-size: var(--text-body);
   line-height: 1.55;
 }
 
@@ -360,11 +360,11 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: var(--masanao-space-xs);
-  padding: var(--masanao-space-sm) var(--masanao-space-md);
-  border: 1px solid var(--masanao-border);
-  border-radius: var(--masanao-radius-pill);
-  color: var(--masanao-primary-strong);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--primary);
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
@@ -377,22 +377,22 @@
 
 .aFormFooter {
   display: grid;
-  gap: var(--masanao-space-sm);
-  margin-top: var(--masanao-space-3xl);
-  padding-top: var(--masanao-space-lg);
-  border-top: 1px solid var(--masanao-border);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-3xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border);
 }
 
 .footerNote {
-  color: var(--masanao-success-ink);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--success-foreground);
+  font-size: var(--text-body-sm);
 }
 
 .aFormFooter > p,
 .bSheetNote {
   margin: 0;
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--muted-foreground);
+  font-size: var(--text-body-sm);
   line-height: 1.5;
 }
 
@@ -400,7 +400,7 @@
 .variantB {
   display: flex;
   flex-direction: column;
-  background: var(--masanao-canvas);
+  background: var(--background);
 }
 
 .bHeader {
@@ -408,15 +408,15 @@
   min-height: 5.25rem;
   align-items: center;
   justify-content: space-between;
-  gap: var(--masanao-space-xl);
-  padding: var(--masanao-space-lg) clamp(var(--masanao-space-xl), 5vw, var(--masanao-space-4xl));
-  border-bottom: 1px solid var(--masanao-border);
+  gap: var(--spacing-xl);
+  padding: var(--spacing-lg) clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  border-bottom: 1px solid var(--border);
 }
 
 .bHeaderMeta,
 .bFooter {
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-label-size);
+  color: var(--muted-foreground);
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -428,14 +428,14 @@
   flex: 1;
   grid-template-columns: minmax(16rem, 1.1fr) minmax(22rem, 28rem) minmax(13rem, 0.72fr);
   align-items: center;
-  gap: clamp(var(--masanao-space-2xl), 6vw, var(--masanao-space-4xl));
+  gap: clamp(var(--spacing-2xl), 6vw, var(--spacing-4xl));
   margin: 0 auto;
-  padding: var(--masanao-space-2xl) clamp(var(--masanao-space-2xl), 5vw, var(--masanao-space-4xl));
+  padding: var(--spacing-2xl) clamp(var(--spacing-2xl), 5vw, var(--spacing-4xl));
 }
 
 .bContext h1 {
   max-width: 30rem;
-  margin: var(--masanao-space-lg) 0 var(--masanao-space-xl);
+  margin: var(--spacing-lg) 0 var(--spacing-xl);
   font-size: clamp(2.5rem, 4vw, 4.25rem);
   font-weight: 500;
   letter-spacing: -0.075em;
@@ -446,22 +446,22 @@
 .bAside > p:nth-of-type(2) {
   max-width: 21rem;
   margin: 0;
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-body-size);
+  color: var(--muted-foreground);
+  font-size: var(--text-body);
   line-height: 1.6;
 }
 
 .bSheet {
-  padding: var(--masanao-space-2xl);
-  border: 1px solid var(--masanao-border);
-  border-radius: var(--masanao-radius-lg);
-  background: var(--masanao-surface-raised);
-  box-shadow: 0 1.25rem 3.5rem color-mix(in srgb, var(--masanao-primary-strong) 15%, transparent);
+  padding: var(--spacing-2xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: 0 1.25rem 3.5rem color-mix(in srgb, var(--primary) 15%, transparent);
 }
 
 .bSheetTop {
   align-items: center;
-  margin-bottom: var(--masanao-space-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .bSheetTop h2 {
@@ -472,13 +472,13 @@
 .bSheetTop > :global(svg) {
   width: 1.35rem;
   height: 1.35rem;
-  color: var(--masanao-secondary);
+  color: var(--secondary);
 }
 
 .bSheetNote {
-  margin-top: var(--masanao-space-lg);
-  padding-top: var(--masanao-space-lg);
-  border-top: 1px solid var(--masanao-border);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border);
 }
 
 .bAside {
@@ -487,48 +487,48 @@
 }
 
 .bAsideSeparator {
-  margin-bottom: var(--masanao-space-xl);
-  background: var(--masanao-secondary);
+  margin-bottom: var(--spacing-xl);
+  background: var(--secondary);
 }
 
 .bAsideList {
   display: grid;
-  gap: var(--masanao-space-md);
-  margin-top: var(--masanao-space-2xl);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-2xl);
 }
 
 .bSheet .loginForm,
 .bSheet .formFields {
-  gap: var(--masanao-space-lg);
+  gap: var(--spacing-lg);
 }
 
 .bAsideList > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--masanao-space-md);
-  padding-bottom: var(--masanao-space-sm);
-  border-bottom: 1px solid var(--masanao-border);
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
 }
 
 .bAsideList span {
-  color: var(--masanao-secondary);
-  font-family: var(--masanao-type-mono-family), monospace;
-  font-size: var(--masanao-type-mono-size);
+  color: var(--secondary);
+  font-family: var(--font-data-face), monospace;
+  font-size: var(--text-mono);
 }
 
 .bAsideList strong {
-  color: var(--masanao-ink);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--foreground);
+  font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
 .bFooter {
   display: flex;
   justify-content: space-between;
-  gap: var(--masanao-space-lg);
-  padding: var(--masanao-space-lg) clamp(var(--masanao-space-xl), 5vw, var(--masanao-space-4xl));
-  border-top: 1px solid var(--masanao-border);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
+  border-top: 1px solid var(--border);
   font-size: 0.68rem;
   text-transform: none;
 }
@@ -537,15 +537,15 @@
 .variantC {
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(25rem, 0.88fr);
-  background: var(--masanao-surface);
+  background: var(--card);
 }
 
 .cImageStage {
   position: relative;
   min-height: 100dvh;
   overflow: hidden;
-  background: var(--masanao-primary-strong);
-  color: var(--masanao-on-primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .cImage {
@@ -556,7 +556,7 @@
 .cImageScrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--masanao-primary-strong) 15%, transparent) 20%, var(--masanao-primary-strong) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 15%, transparent) 20%, var(--primary) 100%);
 }
 
 .cStageContent {
@@ -566,24 +566,24 @@
   min-height: 100dvh;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(var(--masanao-space-xl), 5vw, var(--masanao-space-4xl));
+  padding: clamp(var(--spacing-xl), 5vw, var(--spacing-4xl));
 }
 
 .cBrandBar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--masanao-space-lg);
+  gap: var(--spacing-lg);
 }
 
 .cCopy {
   max-width: 34rem;
-  padding: var(--masanao-space-4xl) 0 var(--masanao-space-3xl);
+  padding: var(--spacing-4xl) 0 var(--spacing-3xl);
 }
 
 .cCopy h1 {
   max-width: 28rem;
-  margin: var(--masanao-space-lg) 0 var(--masanao-space-xl);
+  margin: var(--spacing-lg) 0 var(--spacing-xl);
   font-size: clamp(3rem, 6vw, 6.2rem);
   font-weight: 500;
   letter-spacing: -0.08em;
@@ -591,48 +591,48 @@
 }
 
 .cCopy h1 span {
-  color: var(--masanao-secondary-soft);
+  color: var(--muted);
 }
 
 .cCopy > p:last-child {
   max-width: 25rem;
   margin: 0;
-  color: var(--masanao-primary-soft);
-  font-size: var(--masanao-type-body-size);
+  color: var(--muted);
+  font-size: var(--text-body);
   line-height: 1.6;
 }
 
 .cPromise {
   max-width: 28rem;
-  padding-top: var(--masanao-space-lg);
-  border-top: 1px solid color-mix(in srgb, var(--masanao-on-primary) 40%, transparent);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid color-mix(in srgb, var(--primary-foreground) 40%, transparent);
 }
 
 .cPromise > :global(svg) {
-  color: var(--masanao-secondary-soft);
+  color: var(--muted);
 }
 
 .cPromise div {
   display: grid;
-  gap: var(--masanao-space-xs);
+  gap: var(--spacing-xs);
 }
 
 .cPromise strong {
-  color: var(--masanao-on-primary);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--primary-foreground);
+  font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
 .cPromise span {
-  color: var(--masanao-primary-soft);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--muted);
+  font-size: var(--text-body-sm);
   line-height: 1.5;
 }
 
 .cFormPanel {
   display: flex;
   align-items: center;
-  padding: clamp(var(--masanao-space-2xl), 7vw, var(--masanao-space-4xl));
+  padding: clamp(var(--spacing-2xl), 7vw, var(--spacing-4xl));
 }
 
 .cFormContent {
@@ -641,18 +641,18 @@
 }
 
 .cFormHeader {
-  margin-bottom: var(--masanao-space-3xl);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .cAccessNote {
   display: flex;
   align-items: flex-start;
-  gap: var(--masanao-space-sm);
-  margin-top: var(--masanao-space-3xl);
-  padding-top: var(--masanao-space-lg);
-  border-top: 1px solid var(--masanao-border);
-  color: var(--masanao-ink-muted);
-  font-size: var(--masanao-type-body-sm-size);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-3xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: var(--text-body-sm);
   line-height: 1.5;
 }
 
@@ -661,49 +661,49 @@
   width: 1.1rem;
   height: 1.1rem;
   margin-top: 0.1rem;
-  color: var(--masanao-primary-strong);
+  color: var(--primary);
 }
 
 /* The bottom switcher is development-only and intentionally distinct from the page. */
 .switcher {
   position: fixed;
   right: 50%;
-  bottom: var(--masanao-space-lg);
+  bottom: var(--spacing-lg);
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: var(--masanao-space-sm);
-  padding: var(--masanao-space-sm);
-  border: 1px solid var(--masanao-primary-strong);
-  border-radius: var(--masanao-radius-pill);
-  background: var(--masanao-primary-strong);
-  color: var(--masanao-on-primary);
-  box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--masanao-primary-strong) 22%, transparent);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--primary) 22%, transparent);
   transform: translateX(50%);
 }
 
 .switcher :global(button) {
-  border-color: color-mix(in srgb, var(--masanao-on-primary) 36%, transparent);
+  border-color: color-mix(in srgb, var(--primary-foreground) 36%, transparent);
   background: transparent;
-  color: var(--masanao-on-primary);
+  color: var(--primary-foreground);
 }
 
 .switcher :global(button:hover) {
-  border-color: var(--masanao-on-primary);
-  background: var(--masanao-primary);
-  color: var(--masanao-on-primary);
+  border-color: var(--primary-foreground);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .switcherLabel {
   display: grid;
   min-width: 9.5rem;
   gap: 0.1rem;
-  padding: 0 var(--masanao-space-xs);
+  padding: 0 var(--spacing-xs);
 }
 
 .switcherLabel span,
 .switcherHint {
-  color: var(--masanao-primary-soft);
+  color: var(--muted);
   font-size: 0.58rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -712,15 +712,15 @@
 }
 
 .switcherLabel strong {
-  color: var(--masanao-on-primary);
-  font-size: var(--masanao-type-body-sm-size);
+  color: var(--primary-foreground);
+  font-size: var(--text-body-sm);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .switcherHint {
-  padding: 0 var(--masanao-space-sm);
-  color: var(--masanao-primary-soft);
+  padding: 0 var(--spacing-sm);
+  color: var(--muted);
   text-transform: none;
   white-space: nowrap;
 }
@@ -735,8 +735,8 @@
   }
 
   .bMain {
-    gap: var(--masanao-space-2xl);
-    padding-inline: var(--masanao-space-2xl);
+    gap: var(--spacing-2xl);
+    padding-inline: var(--spacing-2xl);
   }
 }
 
@@ -753,12 +753,12 @@
 
   .aRail,
   .cStageContent {
-    padding: var(--masanao-space-xl);
+    padding: var(--spacing-xl);
   }
 
   .aCopy,
   .cCopy {
-    padding: var(--masanao-space-3xl) 0;
+    padding: var(--spacing-3xl) 0;
   }
 
   .aCopy h1,
@@ -769,7 +769,7 @@
 
   .aFormPanel,
   .cFormPanel {
-    padding: var(--masanao-space-3xl) var(--masanao-space-xl) 7rem;
+    padding: var(--spacing-3xl) var(--spacing-xl) 7rem;
   }
 
   .aFormHeader,
@@ -778,7 +778,7 @@
   }
 
   .aFormHeader {
-    margin-bottom: var(--masanao-space-2xl);
+    margin-bottom: var(--spacing-2xl);
   }
 
   .secureBadge {
@@ -787,7 +787,7 @@
 
   .bHeader {
     min-height: 4.75rem;
-    padding-inline: var(--masanao-space-xl);
+    padding-inline: var(--spacing-xl);
   }
 
   .bHeaderMeta {
@@ -797,8 +797,8 @@
   .bMain {
     grid-template-columns: 1fr;
     align-items: start;
-    gap: var(--masanao-space-3xl);
-    padding: var(--masanao-space-3xl) var(--masanao-space-xl) 7rem;
+    gap: var(--spacing-3xl);
+    padding: var(--spacing-3xl) var(--spacing-xl) 7rem;
   }
 
   .bSheet {
@@ -818,7 +818,7 @@
 
   .bFooter {
     display: grid;
-    padding: var(--masanao-space-lg) var(--masanao-space-xl);
+    padding: var(--spacing-lg) var(--spacing-xl);
   }
 
   .cImageStage {
@@ -826,8 +826,8 @@
   }
 
   .switcher {
-    right: var(--masanao-space-md);
-    left: var(--masanao-space-md);
+    right: var(--spacing-md);
+    left: var(--spacing-md);
     justify-content: space-between;
     transform: none;
   }

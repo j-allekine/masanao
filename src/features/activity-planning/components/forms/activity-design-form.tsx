@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -58,7 +57,7 @@ function initialValues(
 function ActivityDesignFieldInput({
   id,
   label,
-  description,
+  required = false,
   value,
   error,
   onChange,
@@ -66,7 +65,7 @@ function ActivityDesignFieldInput({
 }: {
   id: Exclude<ActivityDesignField, "fiscalYear">;
   label: string;
-  description: string;
+  required?: boolean;
   value: string;
   error?: string[];
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -77,7 +76,14 @@ function ActivityDesignFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <FieldLabel htmlFor={inputId}>
+        {label}
+        {required ? (
+          <span className="text-destructive" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </FieldLabel>
       <Input
         id={inputId}
         name={id}
@@ -87,9 +93,7 @@ function ActivityDesignFieldInput({
       />
       {hasError ? (
         <FieldError errors={error?.map((message) => ({ message }))} />
-      ) : (
-        <FieldDescription>{description}</FieldDescription>
-      )}
+      ) : null}
     </Field>
   );
 }
@@ -183,7 +187,7 @@ export default function ActivityDesignForm({
           <ActivityDesignFieldInput
             id="activityDesignNo"
             label="Activity Design No."
-            description="Leading/trailing spaces are removed and case differences are treated as the same number."
+            required
             value={formValues.activityDesignNo}
             error={fieldErrors.activityDesignNo}
             onChange={(event) =>
@@ -194,6 +198,9 @@ export default function ActivityDesignForm({
           <Field data-invalid={Boolean(fieldErrors.fiscalYear?.length)}>
             <FieldLabel htmlFor={`${mode}-activity-design-fiscalYear`}>
               Fiscal Year
+              <span className="text-destructive" aria-hidden="true">
+                *
+              </span>
             </FieldLabel>
             <FiscalYearPicker
               id={`${mode}-activity-design-fiscalYear`}
@@ -205,11 +212,7 @@ export default function ActivityDesignForm({
               <FieldError
                 errors={fieldErrors.fiscalYear.map((message) => ({ message }))}
               />
-            ) : (
-              <FieldDescription>
-                Choose a four-digit fiscal year from 1900 to 9999.
-              </FieldDescription>
-            )}
+            ) : null}
             <input
               type="hidden"
               name="fiscalYear"
@@ -219,7 +222,7 @@ export default function ActivityDesignForm({
           <ActivityDesignFieldInput
             id="title"
             label="Title"
-            description="Use the name staff will recognize during planning."
+            required
             value={formValues.title}
             error={fieldErrors.title}
             onChange={(event) => updateField("title", event.target.value)}
@@ -228,7 +231,6 @@ export default function ActivityDesignForm({
           <ActivityDesignFieldInput
             id="aipReferenceCode"
             label="AIP Reference Code"
-            description="Optional. Keep the external LGU planning reference if one is available."
             value={formValues.aipReferenceCode}
             error={fieldErrors.aipReferenceCode}
             onChange={(event) =>

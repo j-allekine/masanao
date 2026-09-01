@@ -13,12 +13,12 @@ function BrandLockup({ inverse = false }: { inverse?: boolean }) {
       <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
         <SproutIcon aria-hidden="true" strokeWidth={1.75} />
       </span>
-      <span className={cn(inverse ? "text-masanao-on-primary" : "text-foreground")}>
+      <span className={cn(inverse ? "text-primary-foreground" : "text-foreground")}>
         <span className="block text-sm font-semibold tracking-tight">Masanao</span>
         <span
           className={cn(
             inverse
-              ? "block text-xs text-masanao-primary-soft"
+              ? "block text-xs text-muted"
               : "block text-xs text-muted-foreground"
           )}
         >
@@ -51,14 +51,14 @@ export default async function Home() {
           className="object-cover object-center"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-b from-masanao-primary-strong/65 via-masanao-primary-strong/10 to-masanao-primary-strong/90"
+          className="absolute inset-0 bg-gradient-to-b from-primary/65 via-primary/10 to-primary/90"
           aria-hidden="true"
         />
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <BrandLockup inverse />
 
-          <div className="max-w-lg text-masanao-on-primary">
-            <p className="text-xs font-semibold tracking-[0.14em] text-masanao-primary-soft uppercase">
+          <div className="max-w-lg text-primary-foreground">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">
               Municipal kitchen operations
             </p>
             <h1
@@ -67,7 +67,7 @@ export default async function Home() {
             >
               A clear start for every service day.
             </h1>
-            <p className="mt-5 max-w-[38ch] text-base leading-7 text-masanao-primary-soft text-pretty">
+            <p className="mt-5 max-w-[38ch] text-base leading-7 text-muted text-pretty">
               Plan activities, track supplies, and keep accountable records close to the work.
             </p>
           </div>

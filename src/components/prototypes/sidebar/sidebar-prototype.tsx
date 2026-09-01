@@ -316,7 +316,7 @@ function WorkflowSidebar({ activeSection }: { activeSection: SectionId }) {
       </SidebarContent>
       <SidebarFooter className="gap-3 p-4">
         <div className="flex items-center gap-2 text-xs text-sidebar-foreground/65">
-          <span className="size-2 rounded-full bg-masanao-success" aria-hidden="true" />
+          <span className="size-2 rounded-full bg-success" aria-hidden="true" />
           All records synced
         </div>
         <UserSummary />
@@ -379,7 +379,7 @@ function PagePlaceholder({ activeSection }: { activeSection: SectionId }) {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-masanao-content flex-1 flex-col gap-8 px-6 py-8">
+      <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8">
         <div className="max-w-2xl">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-primary">Page placeholder</p>
           <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">

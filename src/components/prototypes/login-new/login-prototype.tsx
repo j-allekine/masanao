@@ -55,19 +55,19 @@ function BrandLockup({ inverse = false }: { inverse?: boolean }) {
       <span
         className={
           inverse
-            ? "flex size-10 items-center justify-center rounded-md bg-masanao-primary-soft text-masanao-primary-strong"
-            : "flex size-10 items-center justify-center rounded-md bg-masanao-primary text-masanao-on-primary"
+            ? "flex size-10 items-center justify-center rounded-md bg-muted text-primary"
+            : "flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground"
         }
       >
         <ShieldCheck aria-hidden="true" size={20} strokeWidth={1.7} />
       </span>
-      <span className={inverse ? "text-masanao-on-primary" : "text-masanao-ink"}>
+      <span className={inverse ? "text-primary-foreground" : "text-foreground"}>
         <span className="block text-sm font-semibold tracking-tight">Masanao</span>
         <span
           className={
             inverse
-              ? "block text-xs text-masanao-primary-soft"
-              : "block text-xs text-masanao-ink-muted"
+              ? "block text-xs text-muted"
+              : "block text-xs text-muted-foreground"
           }
         >
           Municipal Kitchen
@@ -82,8 +82,8 @@ function PrototypeMark({ inverse = false }: { inverse?: boolean }) {
     <span
       className={
         inverse
-          ? "rounded-pill border border-masanao-primary-soft/30 px-2.5 py-1 text-xs font-medium text-masanao-primary-soft"
-          : "rounded-pill border border-masanao-border bg-masanao-surface px-2.5 py-1 text-xs font-medium text-masanao-ink-muted"
+          ? "rounded-pill border border-muted/30 px-2.5 py-1 text-xs font-medium text-muted"
+          : "rounded-pill border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground"
       }
     >
       Prototype
@@ -136,16 +136,16 @@ function LoginForm({ heading, description, headingId, className, compact = false
   return (
     <form className={className} onSubmit={handleSubmit} aria-busy={isLoading}>
       <div className="flex flex-col gap-2">
-        <h2 id={headingId} className="text-masanao-h1 font-semibold tracking-masanao-h1">
+        <h2 id={headingId} className="text-heading-1 font-semibold tracking-heading-1">
           {heading}
         </h2>
-        <p className="max-w-[42ch] text-sm leading-6 text-masanao-ink-muted">{description}</p>
+        <p className="max-w-[42ch] text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
 
       <FieldGroup className={compact ? "mt-7 gap-4" : "mt-8 gap-5"}>
         <Field data-invalid={usernameInvalid ? "true" : undefined}>
           <FieldLabel htmlFor="prototype-username">Username</FieldLabel>
-          <InputGroup className="h-11 bg-masanao-surface">
+          <InputGroup className="h-11 bg-card">
             <InputGroupAddon>
               <LockKeyhole aria-hidden="true" size={16} strokeWidth={1.7} />
             </InputGroupAddon>
@@ -172,7 +172,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
         <Field data-invalid={passwordInvalid ? "true" : undefined}>
           <FieldLabel htmlFor="prototype-password">Password</FieldLabel>
-          <InputGroup className="h-11 bg-masanao-surface">
+          <InputGroup className="h-11 bg-card">
             <InputGroupAddon>
               <LockKeyhole aria-hidden="true" size={16} strokeWidth={1.7} />
             </InputGroupAddon>
@@ -213,7 +213,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
       {status === "success" ? (
         <div
-          className="mt-6 flex items-start gap-3 rounded-md border border-masanao-success bg-masanao-success-soft p-3 text-sm text-masanao-success-ink"
+          className="mt-6 flex items-start gap-3 rounded-md border border-success bg-success-muted p-3 text-sm text-success-foreground"
           role="status"
         >
           <Check aria-hidden="true" className="mt-0.5 shrink-0" size={16} strokeWidth={2} />
@@ -226,7 +226,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
       {supportOpen ? (
         <p
-          className="mt-6 flex items-start gap-2 rounded-md border border-masanao-info bg-masanao-info-soft p-3 text-sm leading-5 text-masanao-info-ink"
+          className="mt-6 flex items-start gap-2 rounded-md border border-info bg-info-muted p-3 text-sm leading-5 text-info-foreground"
           role="status"
         >
           <CircleHelp aria-hidden="true" className="mt-0.5 shrink-0" size={16} strokeWidth={1.7} />
@@ -251,7 +251,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
       </div>
 
       <div className="mt-5 flex items-center justify-between gap-4 text-sm">
-        <span className="text-masanao-ink-muted">Need help with access?</span>
+        <span className="text-muted-foreground">Need help with access?</span>
         <Button
           type="button"
           variant="link"
@@ -268,9 +268,9 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
 function VariantA() {
   return (
-    <main className="min-h-[100dvh] bg-masanao-canvas text-masanao-ink">
+    <main className="min-h-[100dvh] bg-background text-foreground">
       <div className="grid min-h-[100dvh] lg:grid-cols-[minmax(0,1.1fr)_minmax(28rem,0.9fr)]">
-        <section className="relative min-h-[20rem] overflow-hidden bg-masanao-primary-strong sm:min-h-[24rem] lg:min-h-[100dvh]">
+        <section className="relative min-h-[20rem] overflow-hidden bg-primary sm:min-h-[24rem] lg:min-h-[100dvh]">
           <Image
             src="/images/login-prototype-kitchen.png"
             alt="A municipal kitchen worktable prepared for the day"
@@ -279,35 +279,35 @@ function VariantA() {
             sizes="(min-width: 1024px) 55vw, 100vw"
             className="object-cover object-center opacity-60"
           />
-          <div className="absolute inset-0 bg-masanao-primary-strong/75" aria-hidden="true" />
+          <div className="absolute inset-0 bg-primary/75" aria-hidden="true" />
           <div className="relative flex min-h-[20rem] flex-col justify-between gap-6 p-6 sm:min-h-[24rem] sm:gap-12 sm:p-10 lg:min-h-[100dvh] lg:p-12">
             <div className="flex items-start justify-between gap-6">
               <BrandLockup inverse />
               <PrototypeMark inverse />
             </div>
-            <div className="max-w-xl text-masanao-on-primary">
+            <div className="max-w-xl text-primary-foreground">
               <p className="max-w-[18ch] text-4xl font-medium leading-[1.05] tracking-[-0.06em] sm:text-5xl">
                 Start with a clear view of today.
               </p>
-              <p className="mt-5 max-w-[38ch] text-base leading-7 text-masanao-primary-soft">
+              <p className="mt-5 max-w-[38ch] text-base leading-7 text-muted">
                 Activities, supplies, deliveries, and issuances stay close to the work.
               </p>
-              <div className="mt-10 grid max-w-sm grid-cols-2 gap-5 border-t border-masanao-primary-soft/30 pt-5">
+              <div className="mt-10 grid max-w-sm grid-cols-2 gap-5 border-t border-muted/30 pt-5">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-masanao-primary-soft">For</span>
+                  <span className="text-xs font-medium text-muted">For</span>
                   <span className="text-sm font-medium">Municipal kitchen staff</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-masanao-primary-soft">Access</span>
+                  <span className="text-xs font-medium text-muted">Access</span>
                   <span className="text-sm font-medium">Assigned accounts</span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-masanao-primary-soft">Masanao Municipal Kitchen</p>
+            <p className="text-xs text-muted">Masanao Municipal Kitchen</p>
           </div>
         </section>
 
-        <section className="flex items-center bg-masanao-surface px-6 py-12 sm:px-10 lg:px-16">
+        <section className="flex items-center bg-card px-6 py-12 sm:px-10 lg:px-16">
           <div className="mx-auto w-full max-w-md">
             <LoginForm
               heading="Sign in to Masanao"
@@ -322,9 +322,9 @@ function VariantA() {
 
 function VariantB() {
   return (
-    <main className="min-h-[100dvh] bg-masanao-canvas text-masanao-ink">
+    <main className="min-h-[100dvh] bg-background text-foreground">
       <div className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-6 py-6 sm:px-10 sm:py-8">
-        <header className="flex items-center justify-between border-b border-masanao-border pb-5">
+        <header className="flex items-center justify-between border-b border-border pb-5">
           <BrandLockup />
           <PrototypeMark />
         </header>
@@ -337,38 +337,38 @@ function VariantB() {
             >
               Start with today&apos;s work.
             </h1>
-            <p className="mt-6 max-w-[42ch] text-base leading-7 text-masanao-ink-muted">
+            <p className="mt-6 max-w-[42ch] text-base leading-7 text-muted-foreground">
               One account for the daily records that keep a municipal kitchen moving.
             </p>
 
             <div className="mt-10 max-w-md" aria-label="What staff can access">
               <div className="flex items-start gap-4 py-3">
-                <span className="font-mono text-xs text-masanao-secondary-ink">01</span>
+                <span className="font-mono text-xs text-secondary-foreground">01</span>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-semibold">Today&apos;s activities</span>
-                  <span className="text-sm leading-6 text-masanao-ink-muted">See what needs attention now.</span>
+                  <span className="text-sm leading-6 text-muted-foreground">See what needs attention now.</span>
                 </div>
               </div>
               <Separator />
               <div className="flex items-start gap-4 py-3">
-                <span className="font-mono text-xs text-masanao-secondary-ink">02</span>
+                <span className="font-mono text-xs text-secondary-foreground">02</span>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-semibold">Supply records</span>
-                  <span className="text-sm leading-6 text-masanao-ink-muted">Review deliveries and current stock.</span>
+                  <span className="text-sm leading-6 text-muted-foreground">Review deliveries and current stock.</span>
                 </div>
               </div>
               <Separator />
               <div className="flex items-start gap-4 py-3">
-                <span className="font-mono text-xs text-masanao-secondary-ink">03</span>
+                <span className="font-mono text-xs text-secondary-foreground">03</span>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-semibold">Accountability</span>
-                  <span className="text-sm leading-6 text-masanao-ink-muted">Keep posted records easy to trace.</span>
+                  <span className="text-sm leading-6 text-muted-foreground">Keep posted records easy to trace.</span>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="border-l border-masanao-border pl-0 lg:pl-12" aria-labelledby="desk-form-heading">
+          <section className="border-l border-border pl-0 lg:pl-12" aria-labelledby="desk-form-heading">
             <LoginForm
               heading="Welcome back"
               description="Sign in with the account assigned to your role."
@@ -378,7 +378,7 @@ function VariantB() {
           </section>
         </div>
 
-        <footer className="flex flex-col gap-2 border-t border-masanao-border pt-5 text-xs text-masanao-ink-muted sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-2 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span>Access is limited to assigned municipal accounts.</span>
           <span className="font-mono">Local operations access</span>
         </footer>
@@ -389,23 +389,23 @@ function VariantB() {
 
 function VariantC() {
   return (
-    <main className="min-h-[100dvh] bg-masanao-primary-strong p-4 text-masanao-ink sm:p-8 lg:p-12">
-      <div className="grid min-h-[calc(100dvh-2rem)] overflow-hidden rounded-lg bg-masanao-surface lg:min-h-[calc(100dvh-6rem)] lg:grid-cols-[minmax(15rem,0.68fr)_minmax(26rem,1fr)]">
-        <section className="flex flex-col justify-between gap-12 bg-masanao-primary-strong p-6 text-masanao-on-primary sm:p-10 lg:p-12">
+    <main className="min-h-[100dvh] bg-primary p-4 text-foreground sm:p-8 lg:p-12">
+      <div className="grid min-h-[calc(100dvh-2rem)] overflow-hidden rounded-lg bg-card lg:min-h-[calc(100dvh-6rem)] lg:grid-cols-[minmax(15rem,0.68fr)_minmax(26rem,1fr)]">
+        <section className="flex flex-col justify-between gap-12 bg-primary p-6 text-primary-foreground sm:p-10 lg:p-12">
           <div className="flex items-start justify-between gap-6">
             <BrandLockup inverse />
             <PrototypeMark inverse />
           </div>
           <div>
-            <LockKeyhole aria-hidden="true" size={28} strokeWidth={1.5} className="text-masanao-primary-soft" />
+            <LockKeyhole aria-hidden="true" size={28} strokeWidth={1.5} className="text-muted" />
             <h1 className="mt-7 max-w-[12ch] text-4xl font-medium leading-[1.05] tracking-[-0.06em]">
               Sign in to keep work moving.
             </h1>
-            <p className="mt-5 max-w-[31ch] text-base leading-7 text-masanao-primary-soft">
+            <p className="mt-5 max-w-[31ch] text-base leading-7 text-muted">
               A focused entry point for the people who plan, receive, issue, and account for food supplies.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-masanao-primary-soft">
+          <div className="flex items-center gap-2 text-xs text-muted">
             <Check aria-hidden="true" size={15} strokeWidth={2} />
             <span>Secure account access</span>
           </div>
@@ -481,7 +481,7 @@ function PrototypeSwitcher({ current }: { current: LoginVariant }) {
   return (
     <nav
       aria-label="Login prototype variants"
-      className="fixed bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-pill border border-masanao-primary-strong bg-masanao-surface-raised p-1.5 text-masanao-ink shadow-[0_10px_30px_rgba(22,69,56,0.16)]"
+      className="fixed bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary bg-card p-1.5 text-foreground shadow-[0_10px_30px_rgba(22,69,56,0.16)]"
     >
       <Button
         type="button"
@@ -493,7 +493,7 @@ function PrototypeSwitcher({ current }: { current: LoginVariant }) {
         <ChevronLeft aria-hidden="true" />
       </Button>
       <span className="min-w-32 px-2 text-center text-xs font-medium">
-        {activeVariant.key} <span className="text-masanao-ink-muted">{activeVariant.name}</span>
+        {activeVariant.key} <span className="text-muted-foreground">{activeVariant.name}</span>
       </span>
       <Button
         type="button"
