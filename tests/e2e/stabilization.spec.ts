@@ -113,6 +113,78 @@ test.describe("frontend stabilization regression seam", () => {
     }
   });
 
+  test("keeps the compact Activity Designs layout within desktop and mobile viewports", async ({
+    page,
+  }) => {
+    let design: ActivityDesign | undefined;
+
+    await authenticate(page);
+    try {
+      design = await createDesign(
+        page,
+        `E2E-COMPACT-${Date.now()}`,
+        `E2E Compact Layout ${Date.now()}`,
+      );
+
+      for (const viewport of [
+        { width: 1458, height: 986, name: "desktop" },
+        { width: 390, height: 844, name: "mobile" },
+      ]) {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await openActivityDesigns(page);
+
+        await expect(
+          page.getByText("Plan upcoming municipal activities.", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("searchbox", {
+            name: "Search Activity Designs",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", {
+            name: "Create Activity Design",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(page.getByText("Coming later", { exact: true })).toHaveCount(2);
+        await expect(page.getByRole("checkbox")).toHaveCount(0);
+
+        const metrics = await page.evaluate(() => {
+          const table = document.querySelector('[data-slot="table-container"]');
+          const tableParent = table?.parentElement;
+          const tableParentStyles = tableParent
+            ? getComputedStyle(tableParent)
+            : null;
+
+          return {
+            bodyScrollWidth: document.body.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+            tableRegions: document.querySelectorAll('[data-slot="table-container"]').length,
+            tableScrollWidth: table?.scrollWidth ?? 0,
+            tableClientWidth: table?.clientWidth ?? 0,
+            tableParentOverflowX: tableParentStyles?.overflowX ?? "missing",
+            planningScrollWidth:
+              document.querySelector('nav[aria-label="Planning sections"]')?.scrollWidth ?? 0,
+            planningClientWidth:
+              document.querySelector('nav[aria-label="Planning sections"]')?.clientWidth ?? 0,
+          };
+        });
+
+        expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+        expect(metrics.tableRegions).toBe(1);
+        expect(metrics.tableParentOverflowX).toBe("visible");
+        if (viewport.name === "mobile") {
+          expect(metrics.tableScrollWidth).toBeGreaterThan(metrics.tableClientWidth);
+          expect(metrics.planningScrollWidth).toBeGreaterThan(metrics.planningClientWidth);
+        }
+      }
+    } finally {
+      if (design) await deleteDesigns(page, [design]);
+    }
+  });
+
   test("keeps table results, pagination, and supported actions synchronized", async ({
     page,
   }) => {
