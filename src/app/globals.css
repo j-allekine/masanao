@@ -174,18 +174,27 @@
   --text-heading-2--line-height: 1.2;
   --text-heading-3: 1.125rem;
   --text-heading-3--line-height: 1.3;
+  /*
+   * Canonical typography roles. These are the runtime source of truth for
+   * the semantic utilities consumed by shared primitives and feature UI.
+   *
+   * body-sm is the 14/20 operational role. body is reserved for 16/24
+   * reading-heavy content. label and mono are 12/16 supporting roles.
+   * Table headers and cells deliberately share 14/20 sizing; their hierarchy
+   * comes from weight, tracking, contrast, and the table header surface.
+   */
   --text-body: 1rem;
   --text-body--line-height: 1.5;
   --text-body-sm: 0.875rem;
-  --text-body-sm--line-height: 1.45;
+  --text-body-sm--line-height: 1.4285714286;
   --text-label: 0.75rem;
-  --text-label--line-height: 1.3;
+  --text-label--line-height: 1.3333333333;
   --text-table: 0.875rem;
-  --text-table--line-height: 1.4;
-  --text-table-head: 0.75rem;
-  --text-table-head--line-height: 1.3;
+  --text-table--line-height: 1.4285714286;
+  --text-table-head: 0.875rem;
+  --text-table-head--line-height: 1.4285714286;
   --text-mono: 0.75rem;
-  --text-mono--line-height: 1.35;
+  --text-mono--line-height: 1.3333333333;
   --font-weight-display: 500;
   --font-weight-heading-1: 600;
   --font-weight-heading-2: 600;
@@ -194,6 +203,7 @@
   --font-weight-body-sm: 400;
   --font-weight-label: 600;
   --font-weight-table: 400;
+  --font-weight-table-head: 600;
   --font-weight-mono: 500;
   --tracking-display: -0.18rem;
   --tracking-heading-1: -0.07rem;
@@ -213,9 +223,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-body-sm text-foreground;
     font-family: var(--font-body-face), sans-serif;
-    line-height: 1.5;
   }
 
   html {

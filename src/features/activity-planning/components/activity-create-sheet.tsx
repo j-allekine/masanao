@@ -68,14 +68,14 @@ export default function ActivityCreateSheet({
                 Add an undertaking under this Activity Design. The Activity Design
                 context is fixed for this workflow.
               </SheetDescription>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-xs">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">
                 <div>
                   <dt className="text-muted-foreground">Activity Design No.</dt>
-                  <dd className="mt-1 font-mono font-medium">{activityDesign.activityDesignNo}</dd>
+                  <dd className="mt-1 font-mono text-mono font-medium">{activityDesign.activityDesignNo}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Fiscal Year</dt>
-                  <dd className="mt-1 font-mono font-medium tabular-nums">FY {activityDesign.fiscalYear}</dd>
+                  <dd className="mt-1 font-mono text-mono font-medium tabular-nums">FY {activityDesign.fiscalYear}</dd>
                 </div>
               </dl>
             </SheetHeader>

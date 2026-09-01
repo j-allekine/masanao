@@ -147,7 +147,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
           >
             Welcome back
           </h1>
-          <p className="text-sm leading-6 text-muted-foreground text-pretty">
+          <p className="text-body text-muted-foreground text-pretty">
             Sign in with the account assigned by your municipal administrator.
           </p>
         </div>

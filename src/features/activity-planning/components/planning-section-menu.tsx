@@ -75,10 +75,10 @@ export default function PlanningSectionMenu({
               ) : (
                 <span
                   aria-disabled="true"
-                  className={`${tabClassName} border-border bg-muted/20 text-foreground`}
+                  className={`${tabClassName} border-border bg-muted/20 text-muted-foreground`}
                 >
                   <Icon aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate text-body-sm font-semibold">
+                  <span className="min-w-0 flex-1 truncate text-body-sm font-medium">
                     {section.label}
                   </span>
                   <Badge variant="outline" className="h-6 bg-card px-2 text-label text-muted-foreground">
