@@ -31,7 +31,9 @@ describe("planned budget input presentation", () => {
     ["1234.5", "1,234.5"],
     ["1234.567", "1234.567"],
     ["-1234", "-1234"],
-    ["not a budget", "not a budget"],
+    ["1234abc", "1,234"],
+    ["1234.5abc", "1,234.5"],
+    ["not a budget", ""],
   ])("keeps editable input %j as %j", (value, expected) => {
     expect(formatPesoInputChange(value, value.length)).toMatchObject({
       value: expected,

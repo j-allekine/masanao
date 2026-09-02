@@ -41,6 +41,14 @@ describe("participant count formatting", () => {
     },
   );
 
+  it("removes non-numeric characters from edited input", () => {
+    expect(formatParticipantCountInput("2,000dsadsa", 10, 10)).toEqual({
+      value: "2,000",
+      selectionStart: 5,
+      selectionEnd: 5,
+    });
+  });
+
   it("preserves a null selection for an unfocused input", () => {
     expect(formatParticipantCountInput("1234", null, null)).toEqual({
       value: "1,234",
