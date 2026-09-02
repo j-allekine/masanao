@@ -35,7 +35,7 @@ function mapSelectionPosition(
 
   const digitsBeforePosition = rawValue
     .slice(signLength, clampedPosition)
-    .replaceAll(",", "").length;
+    .replace(/[^\d]/g, "").length;
   let formattedPosition = signLength;
   let digitsSeen = 0;
 
@@ -55,7 +55,9 @@ export function formatParticipantCountInput(
   selectionStart: number | null,
   selectionEnd: number | null = selectionStart,
 ): ParticipantCountInputResult {
-  const formattedValue = formatParticipantCount(value);
+  const sign = value.startsWith("-") ? "-" : "";
+  const sanitizedValue = sign + value.replace(/[^\d]/g, "");
+  const formattedValue = formatParticipantCount(sanitizedValue);
 
   if (formattedValue === value) {
     return { value, selectionStart, selectionEnd };

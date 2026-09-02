@@ -26,7 +26,7 @@ function mapPesoInputPosition(
   const clampedPosition = Math.max(0, Math.min(position, rawValue.length));
   const logicalCharactersBeforePosition = rawValue
     .slice(0, clampedPosition)
-    .replaceAll(",", "").length;
+    .replace(/[^\d.]/g, "").length;
   let formattedPosition = 0;
   let logicalCharactersSeen = 0;
 
@@ -76,7 +76,16 @@ export function formatPesoInputChange(
   selectionStart: number | null,
   selectionEnd: number | null = selectionStart,
 ): PesoInputResult {
-  const formattedValue = formatPesoInputWhileEditing(value);
+  const sign = value.startsWith("-") ? "-" : "";
+  const sanitizedValue = sign + value.replace(/[^\d.]/g, "");
+  const decimalIndex = sanitizedValue.indexOf(".");
+  const singleDecimalValue =
+    decimalIndex === -1
+      ? sanitizedValue
+      : `${sanitizedValue.slice(0, decimalIndex)}.${sanitizedValue
+          .slice(decimalIndex + 1)
+          .replaceAll(".", "")}`;
+  const formattedValue = formatPesoInputWhileEditing(singleDecimalValue);
 
   if (formattedValue === value) {
     return { value, selectionStart, selectionEnd };
