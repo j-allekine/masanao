@@ -7,7 +7,10 @@ import {
   normalizePesoInput,
   parsePesoStringToCentavos,
 } from "@/features/activity-planning/domain/planned-budget";
-import { activitySchema } from "@/features/activity-planning/schemas/activity";
+import {
+  activitySchema,
+  normalizeActivityFormInput,
+} from "@/features/activity-planning/schemas/activity";
 
 describe("planned budget input presentation", () => {
   it.each([
@@ -71,13 +74,16 @@ describe("planned budget input presentation", () => {
     );
   });
 
-  it("canonicalizes grouped values at the schema boundary", () => {
+  it("canonicalizes grouped values before the existing schema validation", () => {
+    const normalized = normalizeActivityFormInput({
+      plannedParticipantCount: "1,221,121",
+      plannedBudgetPesos: "₱1,212,121.50",
+    });
     const result = activitySchema.safeParse({
       name: "Community feeding",
       officeName: "Municipal kitchen",
       scheduledDate: "2026-09-03",
-      plannedParticipantCount: "1,221,121",
-      plannedBudgetPesos: "₱1,212,121.50",
+      ...normalized,
     });
 
     expect(result.success).toBe(true);

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/server/auth";
 
+import { normalizeActivityFormInput } from "../../schemas/activity";
 import { createActivity } from "../../server";
 import type { ActivityActionState } from "../../types";
 
@@ -36,7 +37,7 @@ export async function executeCreateActivity(
   }
 
   try {
-    const input = Object.fromEntries(formData.entries());
+    const input = normalizeActivityFormInput(Object.fromEntries(formData.entries()));
     delete input.activityDesignId;
 
     const result = await createActivity(activityDesignId, input);
