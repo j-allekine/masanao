@@ -77,22 +77,38 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         designs.push(await createDesign(page, `${prefix} ${index}`));
       }
 
-      await page.goto("/activity-designs");
-      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "Notifications", exact: true }),
-      ).toHaveCount(0);
-      await expect(page.getByLabel("Unread notifications", { exact: true })).toHaveCount(0);
+      for (const viewport of [
+        { width: 1458, height: 986 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto("/activity-designs");
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Notifications", exact: true }),
+        ).toHaveCount(0);
+        await expect(page.getByLabel("Unread notifications", { exact: true })).toHaveCount(0);
+        const viewportSearch = page.getByRole("searchbox", {
+          name: "Search Activity Designs",
+          exact: true,
+        });
+        await viewportSearch.fill(prefix);
+        await expect(
+          page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
+        ).toBeVisible();
+        const nextPage = page.getByRole("button", {
+          name: "Next page",
+          exact: true,
+        });
+        const nextBox = await nextPage.boundingBox();
+        expect(nextBox).not.toBeNull();
+        expect(nextBox!.x + nextBox!.width).toBeLessThanOrEqual(viewport.width);
+      }
 
       const search = page.getByRole("searchbox", {
         name: "Search Activity Designs",
         exact: true,
       });
-      await search.fill(prefix);
-      await expect(
-        page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
-      ).toBeVisible();
-
       await search.fill(`${prefix} 2`);
       await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
       await search.fill(prefix);
@@ -135,8 +151,24 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(1458);
       expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - 1458 / 2)).toBeLessThanOrEqual(1);
       expect(Math.abs(desktopBox!.y + desktopBox!.height / 2 - 986 / 2)).toBeLessThanOrEqual(1);
-      await desktopDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      const desktopOrigin = page.getByRole("button", {
+        name: `Actions for ${title}`,
+        exact: true,
+      });
+      await desktopDialog
+        .getByRole("textbox", { name: "Activity name", exact: true })
+        .fill("Unsaved activity");
+      await page.keyboard.press("Escape");
+      const discardDialog = page.getByRole("alertdialog");
+      await expect(discardDialog).toContainText("Discard changes?");
+      await discardDialog.getByRole("button", { name: "Keep editing", exact: true }).click();
+      await page.keyboard.press("Escape");
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Discard changes", exact: true })
+        .click();
       await expect(desktopDialog).toHaveCount(0);
+      await expect(desktopOrigin).toBeFocused();
 
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto("/activity-designs");
@@ -158,6 +190,10 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(box!.x + box!.width).toBeLessThanOrEqual(390);
       expect(Math.abs(box!.x + box!.width / 2 - 390 / 2)).toBeLessThanOrEqual(1);
       expect(Math.abs(box!.y + box!.height / 2 - 844 / 2)).toBeLessThanOrEqual(1);
+      await expect(dialog.locator('[data-slot="dialog-footer"]')).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: "Create Activity", exact: true }),
+      ).toBeVisible();
 
       const activityName = dialog.getByRole("textbox", {
         name: "Activity name",
