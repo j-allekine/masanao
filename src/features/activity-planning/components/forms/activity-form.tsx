@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useRef,
   useState,
   useTransition,
   type ChangeEvent,
@@ -33,11 +32,8 @@ import type {
 } from "../../types";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
-import {
-  formatParticipantCountInput,
-  normalizeParticipantCount,
-} from "./participant-count-formatting";
-import { normalizePesoInput } from "../../domain/planned-budget";
+import { formatParticipantCountInput } from "./participant-count-formatting";
+import { useFormattedInputSelection } from "./use-formatted-input-selection";
 
 type ActivityFormValues = Record<ActivityField, string>;
 
@@ -118,23 +114,9 @@ function ActivityParticipantCountField({
   error?: string[];
   onChange: (value: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const pendingSelection = useRef<{
-    start: number;
-    end: number;
-  } | null>(null);
+  const { inputRef, queueSelection } = useFormattedInputSelection(value);
   const hasError = Boolean(error?.length);
   const errorId = "plannedParticipantCount-error";
-
-  useEffect(() => {
-    const input = inputRef.current;
-    const selection = pendingSelection.current;
-
-    if (!input || !selection || document.activeElement !== input) return;
-
-    input.setSelectionRange(selection.start, selection.end);
-    pendingSelection.current = null;
-  }, [value]);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const formatted = formatParticipantCountInput(
@@ -143,14 +125,7 @@ function ActivityParticipantCountField({
       event.currentTarget.selectionEnd,
     );
 
-    if (formatted.selectionStart !== null && formatted.selectionEnd !== null) {
-      pendingSelection.current = {
-        start: formatted.selectionStart,
-        end: formatted.selectionEnd,
-      };
-    } else {
-      pendingSelection.current = null;
-    }
+    queueSelection(formatted.selectionStart, formatted.selectionEnd);
 
     onChange(formatted.value);
   }
@@ -328,21 +303,6 @@ export default function ActivityForm({
     setSuccessMessage(null);
 
     const formData = new FormData(event.currentTarget);
-    const participantCount = formData.get("plannedParticipantCount");
-
-    if (typeof participantCount === "string") {
-      formData.set(
-        "plannedParticipantCount",
-        normalizeParticipantCount(participantCount),
-      );
-    }
-
-    const plannedBudget = formData.get("plannedBudgetPesos");
-
-    if (typeof plannedBudget === "string") {
-      formData.set("plannedBudgetPesos", normalizePesoInput(plannedBudget));
-    }
-
     startTransition(async () => {
       try {
         const result = await createActivityAction(formData);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 
 import {
   Field,
@@ -18,6 +18,7 @@ import {
   formatPesoInputChange,
   formatPesoInputOnBlur,
 } from "../../domain/planned-budget";
+import { useFormattedInputSelection } from "./use-formatted-input-selection";
 
 export default function PlannedBudgetField({
   value,
@@ -28,22 +29,8 @@ export default function PlannedBudgetField({
   error?: string[];
   onChange: (value: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const pendingSelection = useRef<{
-    start: number;
-    end: number;
-  } | null>(null);
+  const { inputRef, queueSelection } = useFormattedInputSelection(value);
   const hasError = Boolean(error?.length);
-
-  useEffect(() => {
-    const input = inputRef.current;
-    const selection = pendingSelection.current;
-
-    if (!input || !selection || document.activeElement !== input) return;
-
-    input.setSelectionRange(selection.start, selection.end);
-    pendingSelection.current = null;
-  }, [value]);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const formatted = formatPesoInputChange(
@@ -52,14 +39,7 @@ export default function PlannedBudgetField({
       event.currentTarget.selectionEnd,
     );
 
-    if (formatted.selectionStart !== null && formatted.selectionEnd !== null) {
-      pendingSelection.current = {
-        start: formatted.selectionStart,
-        end: formatted.selectionEnd,
-      };
-    } else {
-      pendingSelection.current = null;
-    }
+    queueSelection(formatted.selectionStart, formatted.selectionEnd);
 
     onChange(formatted.value);
   }

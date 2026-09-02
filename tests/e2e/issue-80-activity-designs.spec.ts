@@ -34,7 +34,23 @@ async function createDesign(page: Page, title: string) {
 
 async function deleteDesigns(page: Page, designs: ActivityDesign[]) {
   for (const design of designs) {
-    await page.request.delete(`/api/activity-designs/${design.id}`);
+    const detailResponse = await page.request.get(
+      `/api/activity-designs/${design.id}`,
+    );
+    expect(detailResponse.status()).toBe(200);
+    const detail = await detailResponse.json();
+
+    for (const activity of detail.activityDesign.activities) {
+      const activityResponse = await page.request.delete(
+        `/api/activity-designs/${design.id}/activities/${activity.id}`,
+      );
+      expect(activityResponse.status()).toBe(204);
+    }
+
+    const designResponse = await page.request.delete(
+      `/api/activity-designs/${design.id}`,
+    );
+    expect(designResponse.status()).toBe(204);
   }
 }
 
@@ -77,6 +93,10 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
       ).toBeVisible();
 
+      await search.fill(`${prefix} 2`);
+      await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
+      await search.fill(prefix);
+
       await page.getByRole("button", { name: "Next page", exact: true }).click();
       await expect(
         page.getByText("Showing 11 to 11 of 11 results", { exact: true }),
@@ -103,6 +123,19 @@ test.describe("issue 80 Activity Designs cleanup", () => {
     await authenticate(page);
     try {
       designs.push(await createDesign(page, title));
+
+      await page.setViewportSize({ width: 1458, height: 986 });
+      await page.goto("/activity-designs");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const desktopDialog = await openActivityDialog(page, title);
+      const desktopBox = await desktopDialog.boundingBox();
+      expect(desktopBox).not.toBeNull();
+      expect(desktopBox!.x).toBeGreaterThan(0);
+      expect(desktopBox!.y).toBeGreaterThan(0);
+      expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(1458);
+      await desktopDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(desktopDialog).toHaveCount(0);
+
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto("/activity-designs");
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();

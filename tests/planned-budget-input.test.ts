@@ -7,6 +7,7 @@ import {
   normalizePesoInput,
   parsePesoStringToCentavos,
 } from "@/features/activity-planning/domain/planned-budget";
+import { activitySchema } from "@/features/activity-planning/schemas/activity";
 
 describe("planned budget input presentation", () => {
   it.each([
@@ -22,6 +23,7 @@ describe("planned budget input presentation", () => {
 
   it.each([
     ["1234", "1,234"],
+    [",234", "234"],
     ["1234.", "1,234."],
     ["1234.5", "1,234.5"],
     ["1234.567", "1234.567"],
@@ -38,6 +40,14 @@ describe("planned budget input presentation", () => {
       value: "1,234",
       selectionStart: 5,
       selectionEnd: 5,
+    });
+  });
+
+  it("keeps the logical caret position after the leading digit is deleted", () => {
+    expect(formatPesoInputChange(",234", 4, 4)).toEqual({
+      value: "234",
+      selectionStart: 3,
+      selectionEnd: 3,
     });
   });
 
@@ -59,5 +69,21 @@ describe("planned budget input presentation", () => {
     expect(result.ok && formatCentavosAsPesos(result.centavos)).toBe(
       "₱1,212,121.50",
     );
+  });
+
+  it("canonicalizes grouped values at the schema boundary", () => {
+    const result = activitySchema.safeParse({
+      name: "Community feeding",
+      officeName: "Municipal kitchen",
+      scheduledDate: "2026-09-03",
+      plannedParticipantCount: "1,221,121",
+      plannedBudgetPesos: "₱1,212,121.50",
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.data.plannedParticipantCount).toBe(1_221_121);
+    expect(result.data.plannedBudgetPesos).toBe(BigInt("121212150"));
   });
 });

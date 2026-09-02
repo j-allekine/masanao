@@ -1,5 +1,5 @@
 const PESO_AMOUNT_PATTERN = /^\d+(?:\.\d{1,2})?$/;
-const PESO_INPUT_PATTERN = /^\d[\d,]*(?:\.\d{0,2})?$/;
+const PESO_INPUT_PATTERN = /^[\d,]*(?:\.\d{0,2})?$/;
 const CENTAVOS_PER_PESO = BigInt(100);
 
 export const MAX_SIGNED_64_BIT = BigInt("9223372036854775807");
@@ -7,11 +7,6 @@ export const MAX_SIGNED_64_BIT = BigInt("9223372036854775807");
 export type PesoStringParseResult =
   | { ok: true; centavos: bigint }
   | { ok: false; reason: "invalid" | "too-large" };
-
-export type PesoInputSelection = {
-  start: number;
-  end: number;
-};
 
 export type PesoInputResult = {
   value: string;

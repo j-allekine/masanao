@@ -32,7 +32,9 @@ const optionalNonNegativeInteger = (label: string) =>
         return undefined;
       }
 
-      if (typeof value === "string") return Number(value);
+      if (typeof value === "string") {
+        return Number(value.replaceAll(",", ""));
+      }
       return value;
     },
     z
@@ -80,6 +82,10 @@ const plannedBudgetPesosSchema = z.preprocess(
       (typeof value === "string" && value.trim() === "")
     ) {
       return undefined;
+    }
+
+    if (typeof value === "string") {
+      return value.trim().replace(/^₱\s*/, "").replaceAll(",", "");
     }
 
     return value;

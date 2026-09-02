@@ -1,9 +1,4 @@
-const participantCountPattern = /^-?\d[\d,]*$/;
-
-export type ParticipantCountSelection = {
-  start: number;
-  end: number;
-};
+const participantCountPattern = /^-?[\d,]*$/;
 
 export type ParticipantCountInputResult = {
   value: string;
@@ -25,11 +20,7 @@ export function formatParticipantCount(value: string) {
   const sign = value.startsWith("-") ? "-" : "";
   const digits = value.slice(sign.length).replaceAll(",", "");
 
-  return `${sign}${formatDigits(digits)}`;
-}
-
-export function normalizeParticipantCount(value: string) {
-  return value.replaceAll(",", "");
+  return digits === "" ? sign : `${sign}${formatDigits(digits)}`;
 }
 
 function mapSelectionPosition(
