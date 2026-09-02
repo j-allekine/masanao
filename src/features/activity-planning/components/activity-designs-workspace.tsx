@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import type { ActivityDesignListItem } from "../types";
-import ActivityCreateSheet from "./activity-create-sheet";
+import ActivityCreateDialog from "./activity-create-dialog";
 import ActivityDesignDialog, {
   type ActivityDesignDialogState,
 } from "./activity-design-dialog";
@@ -139,7 +139,7 @@ export default function ActivityDesignsWorkspace({
         onClose={closeDialog}
         onSuccess={() => router.refresh()}
       />
-      <ActivityCreateSheet
+      <ActivityCreateDialog
         activityDesign={activityDesignForCreate}
         open={activityDesignForCreate !== null}
         onClose={closeActivityCreateDialog}

@@ -23,7 +23,7 @@ import {
 import type { ActivityDesignListItem, ActivityListItem } from "../types";
 import ActivityForm from "./forms/activity-form";
 
-export default function ActivityCreateSheet({
+export default function ActivityCreateDialog({
   activityDesign,
   open,
   onClose,
@@ -61,7 +61,7 @@ export default function ActivityCreateSheet({
         }}
       >
         {activityDesign ? (
-          <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-4 overflow-hidden sm:max-w-lg">
+            <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Add Activity to “{activityDesign.title}”</DialogTitle>
               <DialogDescription>
