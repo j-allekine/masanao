@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef, type ChangeEvent } from "react";
+
 import {
   Field,
   FieldError,
@@ -12,6 +14,11 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 
+import {
+  formatPesoInputChange,
+  formatPesoInputOnBlur,
+} from "../../domain/planned-budget";
+
 export default function PlannedBudgetField({
   value,
   error,
@@ -21,7 +28,47 @@ export default function PlannedBudgetField({
   error?: string[];
   onChange: (value: string) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pendingSelection = useRef<{
+    start: number;
+    end: number;
+  } | null>(null);
   const hasError = Boolean(error?.length);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    const selection = pendingSelection.current;
+
+    if (!input || !selection || document.activeElement !== input) return;
+
+    input.setSelectionRange(selection.start, selection.end);
+    pendingSelection.current = null;
+  }, [value]);
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const formatted = formatPesoInputChange(
+      event.currentTarget.value,
+      event.currentTarget.selectionStart,
+      event.currentTarget.selectionEnd,
+    );
+
+    if (formatted.selectionStart !== null && formatted.selectionEnd !== null) {
+      pendingSelection.current = {
+        start: formatted.selectionStart,
+        end: formatted.selectionEnd,
+      };
+    } else {
+      pendingSelection.current = null;
+    }
+
+    onChange(formatted.value);
+  }
+
+  function handleBlur() {
+    const formatted = formatPesoInputOnBlur(value);
+
+    if (formatted !== value) onChange(formatted);
+  }
 
   return (
     <Field data-invalid={hasError}>
@@ -31,6 +78,7 @@ export default function PlannedBudgetField({
           <InputGroupText>₱</InputGroupText>
         </InputGroupAddon>
         <InputGroupInput
+          ref={inputRef}
           id="plannedBudgetPesos"
           name="plannedBudgetPesos"
           className="font-mono tabular-nums"
@@ -39,7 +87,8 @@ export default function PlannedBudgetField({
           value={value}
           aria-invalid={hasError}
           aria-describedby={hasError ? "plannedBudgetPesos-error" : undefined}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={handleChange}
+          onBlur={handleBlur}
         />
       </InputGroup>
       {hasError ? (
