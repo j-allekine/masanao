@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 
 import { auth } from "@/server/auth";
 
+import { normalizeActivityFormInput } from "../../schemas/activity";
 import { updateActivity } from "../../server";
 import type { ActivityUpdateActionState } from "../../types";
 
@@ -40,7 +41,7 @@ export async function executeUpdateActivity(
   }
 
   try {
-    const input = Object.fromEntries(formData.entries());
+    const input = normalizeActivityFormInput(Object.fromEntries(formData.entries()));
     delete input.activityDesignId;
     delete input.activityId;
 

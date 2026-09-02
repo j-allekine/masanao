@@ -133,6 +133,8 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(desktopBox!.x).toBeGreaterThan(0);
       expect(desktopBox!.y).toBeGreaterThan(0);
       expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(1458);
+      expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - 1458 / 2)).toBeLessThanOrEqual(1);
+      expect(Math.abs(desktopBox!.y + desktopBox!.height / 2 - 986 / 2)).toBeLessThanOrEqual(1);
       await desktopDialog.getByRole("button", { name: "Cancel", exact: true }).click();
       await expect(desktopDialog).toHaveCount(0);
 
@@ -154,6 +156,8 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(box!.x).toBeGreaterThan(0);
       expect(box!.y).toBeGreaterThan(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+      expect(Math.abs(box!.x + box!.width / 2 - 390 / 2)).toBeLessThanOrEqual(1);
+      expect(Math.abs(box!.y + box!.height / 2 - 844 / 2)).toBeLessThanOrEqual(1);
 
       const activityName = dialog.getByRole("textbox", {
         name: "Activity name",
@@ -173,15 +177,24 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       await office.fill("E2E exact Office");
       await participantCount.fill("1221121");
       await expect(participantCount).toHaveValue("1,221,121");
+      await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
+      await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
+
+      await plannedBudget.fill("1234.567");
+      await dialog.getByRole("button", { name: "Create Activity", exact: true }).click();
+      await expect(dialog).toBeVisible();
+      await expect(plannedBudget).toHaveAttribute("aria-invalid", "true");
+      await expect(dialog).toContainText("up to two decimal places");
+
       await plannedBudget.fill("1212121");
       await expect(plannedBudget).toHaveValue("1,212,121");
       await plannedBudget.blur();
       await expect(plannedBudget).toHaveValue("1,212,121.00");
-
-      await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
-      await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
       await dialog.getByRole("button", { name: "Create Activity", exact: true }).click();
       await expect(dialog).toHaveCount(0);
+      await expect(
+        page.getByText(`Activity added to “${title}”`, { exact: true }),
+      ).toBeVisible();
 
       const detailResponse = await page.request.get(
         `/api/activity-designs/${designs[0]!.id}`,

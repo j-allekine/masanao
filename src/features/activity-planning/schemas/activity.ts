@@ -32,9 +32,7 @@ const optionalNonNegativeInteger = (label: string) =>
         return undefined;
       }
 
-      if (typeof value === "string") {
-        return Number(value.replaceAll(",", ""));
-      }
+      if (typeof value === "string") return Number(value);
       return value;
     },
     z
@@ -84,10 +82,6 @@ const plannedBudgetPesosSchema = z.preprocess(
       return undefined;
     }
 
-    if (typeof value === "string") {
-      return value.trim().replace(/^₱\s*/, "").replaceAll(",", "");
-    }
-
     return value;
   },
   z
@@ -122,6 +116,23 @@ export const activitySchema = z.object({
   ),
   plannedBudgetPesos: plannedBudgetPesosSchema,
 });
+
+export function normalizeActivityFormInput(input: Record<string, unknown>) {
+  const normalized = { ...input };
+
+  if (typeof normalized.plannedParticipantCount === "string") {
+    normalized.plannedParticipantCount = normalized.plannedParticipantCount.replaceAll(",", "");
+  }
+
+  if (typeof normalized.plannedBudgetPesos === "string") {
+    normalized.plannedBudgetPesos = normalized.plannedBudgetPesos
+      .trim()
+      .replace(/^₱\s*/, "")
+      .replaceAll(",", "");
+  }
+
+  return normalized;
+}
 
 export type ActivityInput = z.infer<typeof activitySchema>;
 

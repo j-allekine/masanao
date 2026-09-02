@@ -287,29 +287,6 @@ describe("activities API", () => {
     },
   );
 
-  it("accepts grouped peso budget input without precision loss", async () => {
-    await createStaffAccount();
-    const cookie = await cookieForStaff();
-    const activityDesign = await createActivityDesign(cookie);
-
-    const response = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        { ...validActivity, plannedBudgetPesos: "1,000" },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
-
-    expect(response.status).toBe(201);
-    const activity = (await response.json()).activity;
-    expect(activity.plannedBudgetCentavos).toBe("100000");
-    await expect(
-      prisma.activity.findUnique({ where: { id: activity.id } }),
-    ).resolves.toMatchObject({ plannedBudgetCentavos: BigInt(100_000) });
-  });
-
   it("accepts the maximum signed 64-bit centavo value", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
