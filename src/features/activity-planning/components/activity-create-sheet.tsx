@@ -13,12 +13,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import type { ActivityDesignListItem, ActivityListItem } from "../types";
 import ActivityForm from "./forms/activity-form";
@@ -37,7 +37,7 @@ export default function ActivityCreateSheet({
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
-  const closeSheet = useCallback(() => {
+  const closeDialog = useCallback(() => {
     setIsDiscardDialogOpen(false);
     setIsDirty(false);
     onClose();
@@ -49,25 +49,25 @@ export default function ActivityCreateSheet({
       return;
     }
 
-    closeSheet();
+    closeDialog();
   }
 
   return (
     <>
-      <Sheet
+      <Dialog
         open={open}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) requestClose();
         }}
       >
         {activityDesign ? (
-          <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-            <SheetHeader>
-              <SheetTitle>Add Activity to “{activityDesign.title}”</SheetTitle>
-              <SheetDescription>
+          <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-4 overflow-hidden sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add Activity to “{activityDesign.title}”</DialogTitle>
+              <DialogDescription>
                 Add an undertaking under this Activity Design. The Activity Design
                 context is fixed for this workflow.
-              </SheetDescription>
+              </DialogDescription>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">
                 <div>
                   <dt className="text-muted-foreground">Activity Design No.</dt>
@@ -78,11 +78,11 @@ export default function ActivityCreateSheet({
                   <dd className="mt-1 font-mono text-mono font-medium tabular-nums">FY {activityDesign.fiscalYear}</dd>
                 </div>
               </dl>
-            </SheetHeader>
+            </DialogHeader>
             <ActivityForm
               key={activityDesign.id}
               activityDesignId={activityDesign.id}
-              layout="sheet"
+              layout="dialog"
               onCancel={requestClose}
               onDirtyChange={setIsDirty}
               onSuccess={(activity) => {
@@ -90,9 +90,9 @@ export default function ActivityCreateSheet({
                 onSuccess(activity);
               }}
             />
-          </SheetContent>
+          </DialogContent>
         ) : null}
-      </Sheet>
+      </Dialog>
 
       <AlertDialog
         open={isDiscardDialogOpen}
@@ -107,7 +107,7 @@ export default function ActivityCreateSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={closeSheet}>
+            <AlertDialogAction variant="destructive" onClick={closeDialog}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
