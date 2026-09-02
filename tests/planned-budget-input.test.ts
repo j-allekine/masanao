@@ -92,4 +92,19 @@ describe("planned budget input presentation", () => {
     expect(result.data.plannedParticipantCount).toBe(1_221_121);
     expect(result.data.plannedBudgetPesos).toBe(BigInt("121212150"));
   });
+
+  it.each([
+    ["participant count", { plannedParticipantCount: "1,,234" }],
+    ["planned budget", { plannedBudgetPesos: "1,2,34" }],
+  ])("keeps malformed grouped %s invalid", (_label, input) => {
+    const normalized = normalizeActivityFormInput(input);
+    const result = activitySchema.safeParse({
+      name: "Community feeding",
+      officeName: "Municipal kitchen",
+      scheduledDate: "2026-09-03",
+      ...normalized,
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

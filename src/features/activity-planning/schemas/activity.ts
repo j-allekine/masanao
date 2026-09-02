@@ -117,18 +117,45 @@ export const activitySchema = z.object({
   plannedBudgetPesos: plannedBudgetPesosSchema,
 });
 
+function normalizeGroupedInteger(value: string) {
+  const trimmed = value.trim();
+
+  if (
+    trimmed.includes(",") &&
+    !/^-?(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  return trimmed.replaceAll(",", "");
+}
+
+function normalizeGroupedPeso(value: string) {
+  const trimmed = value.trim().replace(/^₱\s*/, "");
+
+  if (
+    trimmed.includes(",") &&
+    !/^\d{1,3}(?:,\d{3})+(?:\.\d{0,2})?$/.test(trimmed)
+  ) {
+    return trimmed;
+  }
+
+  return trimmed.replaceAll(",", "");
+}
+
 export function normalizeActivityFormInput(input: Record<string, unknown>) {
   const normalized = { ...input };
 
   if (typeof normalized.plannedParticipantCount === "string") {
-    normalized.plannedParticipantCount = normalized.plannedParticipantCount.replaceAll(",", "");
+    normalized.plannedParticipantCount = normalizeGroupedInteger(
+      normalized.plannedParticipantCount,
+    );
   }
 
   if (typeof normalized.plannedBudgetPesos === "string") {
-    normalized.plannedBudgetPesos = normalized.plannedBudgetPesos
-      .trim()
-      .replace(/^₱\s*/, "")
-      .replaceAll(",", "");
+    normalized.plannedBudgetPesos = normalizeGroupedPeso(
+      normalized.plannedBudgetPesos,
+    );
   }
 
   return normalized;
