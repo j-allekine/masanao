@@ -56,6 +56,9 @@ export default function ActivityDesignsWorkspace({
       filteredActivityDesigns.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredActivityDesigns, firstItemIndex],
   );
+  const resultStart =
+    paginatedActivityDesigns.length === 0 ? 0 : firstItemIndex + 1;
+  const resultEnd = firstItemIndex + paginatedActivityDesigns.length;
   function updateSearch(search: string) {
     setFilters({ search });
     setPage(1);
@@ -126,8 +129,8 @@ export default function ActivityDesignsWorkspace({
       <ActivityDesignPagination
         page={currentPage}
         pageCount={pageCount}
-        start={firstItemIndex + 1}
-        end={Math.min(firstItemIndex + PAGE_SIZE, filteredActivityDesigns.length)}
+        start={resultStart}
+        end={resultEnd}
         total={filteredActivityDesigns.length}
         onPageChange={changePage}
       />
