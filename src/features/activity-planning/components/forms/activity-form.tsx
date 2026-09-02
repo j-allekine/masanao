@@ -37,6 +37,7 @@ import {
   formatParticipantCountInput,
   normalizeParticipantCount,
 } from "./participant-count-formatting";
+import { normalizePesoInput } from "../../domain/planned-budget";
 
 type ActivityFormValues = Record<ActivityField, string>;
 
@@ -334,6 +335,12 @@ export default function ActivityForm({
         "plannedParticipantCount",
         normalizeParticipantCount(participantCount),
       );
+    }
+
+    const plannedBudget = formData.get("plannedBudgetPesos");
+
+    if (typeof plannedBudget === "string") {
+      formData.set("plannedBudgetPesos", normalizePesoInput(plannedBudget));
     }
 
     startTransition(async () => {
