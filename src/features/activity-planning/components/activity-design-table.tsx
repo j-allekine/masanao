@@ -26,6 +26,8 @@ import { hasActivityDesignFilters } from "./activity-design-filters";
 import ActivityDesignActionsMenu from "./activity-design-actions-menu";
 import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 
+const activityCountFormatter = new Intl.NumberFormat("en-US");
+
 function ActivityDesignRow({
   activityDesign,
   onEdit,
@@ -38,6 +40,9 @@ function ActivityDesignRow({
   onDeleted: () => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const formattedActivityCount = activityCountFormatter.format(
+    activityDesign.activityCount,
+  );
 
   return (
     <>
@@ -53,10 +58,10 @@ function ActivityDesignRow({
         </TableCell>
         <TableCell
           className="text-center"
-          aria-label={`${activityDesign.activityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
+          aria-label={`${formattedActivityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
           <span className="block tabular-nums">
-            {activityDesign.activityCount}
+            {formattedActivityCount}
           </span>
           <span className="sr-only">
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}

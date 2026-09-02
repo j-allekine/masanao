@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   useTransition,
   type ChangeEvent,
@@ -32,6 +33,10 @@ import type {
 } from "../../types";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
+import {
+  formatParticipantCountInput,
+  normalizeParticipantCount,
+} from "./participant-count-formatting";
 
 type ActivityFormValues = Record<ActivityField, string>;
 
@@ -103,6 +108,79 @@ function ActivityTextField({
   );
 }
 
+function ActivityParticipantCountField({
+  value,
+  error,
+  onChange,
+}: {
+  value: string;
+  error?: string[];
+  onChange: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pendingSelection = useRef<{
+    start: number;
+    end: number;
+  } | null>(null);
+  const hasError = Boolean(error?.length);
+  const errorId = "plannedParticipantCount-error";
+
+  useEffect(() => {
+    const input = inputRef.current;
+    const selection = pendingSelection.current;
+
+    if (!input || !selection || document.activeElement !== input) return;
+
+    input.setSelectionRange(selection.start, selection.end);
+    pendingSelection.current = null;
+  }, [value]);
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const formatted = formatParticipantCountInput(
+      event.currentTarget.value,
+      event.currentTarget.selectionStart,
+      event.currentTarget.selectionEnd,
+    );
+
+    if (formatted.selectionStart !== null && formatted.selectionEnd !== null) {
+      pendingSelection.current = {
+        start: formatted.selectionStart,
+        end: formatted.selectionEnd,
+      };
+    } else {
+      pendingSelection.current = null;
+    }
+
+    onChange(formatted.value);
+  }
+
+  return (
+    <Field data-invalid={hasError}>
+      <FieldLabel htmlFor="plannedParticipantCount">
+        Planned participant count (optional)
+      </FieldLabel>
+      <Input
+        ref={inputRef}
+        id="plannedParticipantCount"
+        name="plannedParticipantCount"
+        className="font-mono tabular-nums"
+        type="text"
+        inputMode="numeric"
+        value={value}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? errorId : undefined}
+        onChange={handleChange}
+      />
+      {hasError ? (
+        <FieldError
+          id={errorId}
+          errors={error?.map((message) => ({ message }))}
+        />
+      ) : null}
+    </Field>
+  );
+}
+
 function ActivityFormFields({
   formValues,
   fieldErrors,
@@ -166,16 +244,10 @@ function ActivityFormFields({
         error={fieldErrors.venue}
         onChange={(event) => updateField("venue", event.target.value)}
       />
-      <ActivityTextField
-        id="plannedParticipantCount"
-        label="Planned participant count (optional)"
+      <ActivityParticipantCountField
         value={formValues.plannedParticipantCount}
         error={fieldErrors.plannedParticipantCount}
-        type="number"
-        min={0}
-        onChange={(event) =>
-          updateField("plannedParticipantCount", event.target.value)
-        }
+        onChange={(value) => updateField("plannedParticipantCount", value)}
       />
       <PlannedBudgetField
         value={formValues.plannedBudgetPesos}
@@ -255,6 +327,14 @@ export default function ActivityForm({
     setSuccessMessage(null);
 
     const formData = new FormData(event.currentTarget);
+    const participantCount = formData.get("plannedParticipantCount");
+
+    if (typeof participantCount === "string") {
+      formData.set(
+        "plannedParticipantCount",
+        normalizeParticipantCount(participantCount),
+      );
+    }
 
     startTransition(async () => {
       try {
