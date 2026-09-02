@@ -1,6 +1,3 @@
-import { Bell } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -25,19 +22,6 @@ export default function ActivityDesignsContent({
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Notifications"
-          className="relative"
-        >
-          <Bell aria-hidden="true" />
-          <span
-            className="absolute right-1.5 top-1.5 size-2 rounded-full bg-secondary"
-            aria-label="Unread notifications"
-          />
-        </Button>
       </header>
 
       <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-6">
