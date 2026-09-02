@@ -7,6 +7,7 @@ import type { ActivityInput } from "../../schemas/activity";
 import type {
   ActivityDesignDetail,
   ActivityListItem,
+  ActivityWorkspaceListItem,
 } from "../../types";
 import {
   mealScheduleOrderBy,
@@ -32,6 +33,23 @@ const activitySelect = {
     orderBy: mealScheduleOrderBy,
   },
 } as const;
+
+const activityWorkspaceListSelect = {
+  id: true,
+  activityDesignId: true,
+  name: true,
+  activityDesign: {
+    select: { title: true },
+  },
+  _count: {
+    select: { mealSchedules: true },
+  },
+} as const;
+
+const activityWorkspaceListOrderBy = [
+  { createdAt: "desc" },
+  { id: "desc" },
+] satisfies Prisma.ActivityOrderByWithRelationInput[];
 
 const activityOrderBy = [
   { scheduledDate: "asc" },
@@ -103,6 +121,22 @@ function toActivityListItem(activity: {
   };
 }
 
+function toActivityWorkspaceListItem(activity: {
+  id: string;
+  activityDesignId: string;
+  name: string;
+  activityDesign: { title: string };
+  _count: { mealSchedules: number };
+}): ActivityWorkspaceListItem {
+  return {
+    id: activity.id,
+    activityDesignId: activity.activityDesignId,
+    name: activity.name,
+    activityDesignTitle: activity.activityDesign.title,
+    mealScheduleCount: activity._count.mealSchedules,
+  };
+}
+
 function toActivityDesignDetail(activityDesign: {
   id: string;
   activityDesignNo: string;
@@ -137,6 +171,17 @@ export async function getActivityDesignRecord(
   });
 
   return activityDesign ? toActivityDesignDetail(activityDesign) : null;
+}
+
+export async function listActivityWorkspaceRecords(): Promise<
+  ActivityWorkspaceListItem[]
+> {
+  const activities = await prisma.activity.findMany({
+    select: activityWorkspaceListSelect,
+    orderBy: activityWorkspaceListOrderBy,
+  });
+
+  return activities.map(toActivityWorkspaceListItem);
 }
 
 export async function createActivityRecord(

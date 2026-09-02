@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { toast } from "sonner";
 
 import type { ActivityDesignListItem } from "../types";
@@ -17,10 +21,10 @@ import {
 import ActivityDesignTable from "./activity-design-table";
 import ActivityDesignToolbar from "./activity-design-toolbar";
 import PlanningSectionMenu from "./planning-section-menu";
-
-const initialFilters: ActivityDesignFilters = {
-  search: "",
-};
+import {
+  getPlanningListState,
+  getPlanningListUrl,
+} from "./planning-list-state";
 
 const PAGE_SIZE = 10;
 
@@ -30,26 +34,30 @@ export default function ActivityDesignsWorkspace({
   activityDesigns: ActivityDesignListItem[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
-  const [filters, setFilters] = useState(initialFilters);
-  const [page, setPage] = useState(1);
+  const listState = getPlanningListState(searchParams, "activity-designs");
+  const search = listState.search;
   const [dialogState, setDialogState] =
     useState<ActivityDesignDialogState | null>(null);
   const [activityDesignForCreate, setActivityDesignForCreate] =
     useState<ActivityDesignListItem | null>(null);
+
+  const filters: ActivityDesignFilters = { search };
   const filteredActivityDesigns = useMemo(
-    () => filterActivityDesigns(activityDesigns, filters),
-    [activityDesigns, filters],
+    () => filterActivityDesigns(activityDesigns, { search }),
+    [activityDesigns, search],
   );
   const pageCount = Math.max(
     1,
     Math.ceil(filteredActivityDesigns.length / PAGE_SIZE),
   );
-  const currentPage = Math.min(page, pageCount);
+  const currentPage = Math.min(listState.page, pageCount);
   const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedActivityDesigns = useMemo(
     () =>
@@ -60,17 +68,31 @@ export default function ActivityDesignsWorkspace({
     paginatedActivityDesigns.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedActivityDesigns.length;
   function updateSearch(search: string) {
-    setFilters({ search });
-    setPage(1);
+    router.replace(
+      getPlanningListUrl(
+        pathname,
+        searchParams.toString(),
+        "activity-designs",
+        { search, page: 1 },
+      ),
+      { scroll: false },
+    );
   }
 
   function clearFilters() {
-    setFilters(initialFilters);
-    setPage(1);
+    updateSearch("");
   }
 
   function changePage(nextPage: number) {
-    setPage(Math.min(Math.max(nextPage, 1), pageCount));
+    router.replace(
+      getPlanningListUrl(
+        pathname,
+        searchParams.toString(),
+        "activity-designs",
+        { page: Math.min(Math.max(nextPage, 1), pageCount) },
+      ),
+      { scroll: false },
+    );
   }
 
   function openCreateDialog() {
@@ -114,7 +136,7 @@ export default function ActivityDesignsWorkspace({
         onCreate={openCreateDialog}
       />
       <div className="mt-6">
-        <PlanningSectionMenu />
+        <PlanningSectionMenu activeSection="activity-designs" />
       </div>
       <ActivityDesignTable
         activityDesigns={paginatedActivityDesigns}

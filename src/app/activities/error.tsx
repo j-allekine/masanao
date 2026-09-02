@@ -3,7 +3,7 @@
 import { PlanningSectionMenu } from "@/features/activity-planning/ui";
 import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 
-export default function ActivityDesignsError({
+export default function ActivitiesError({
   error,
   reset,
 }: {
@@ -16,7 +16,7 @@ export default function ActivityDesignsError({
       error={error}
       reset={reset}
     >
-      <PlanningSectionMenu activeSection="activity-designs" />
+      <PlanningSectionMenu activeSection="activities" />
     </WorkspaceRouteError>
   );
 }
