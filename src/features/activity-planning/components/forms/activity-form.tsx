@@ -20,7 +20,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { SheetFooter } from "@/components/ui/sheet";
+import { DialogFooter } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -111,7 +111,7 @@ function ActivityFormFields({
 }: {
   formValues: ActivityFormValues;
   fieldErrors: ActivityFieldErrors;
-  layout: "card" | "sheet";
+  layout: "card" | "dialog";
   updateField: (field: ActivityField, value: string) => void;
 }) {
   return (
@@ -122,7 +122,7 @@ function ActivityFormFields({
         required
         value={formValues.name}
         error={fieldErrors.name}
-        autoFocus={layout === "sheet"}
+        autoFocus={layout === "dialog"}
         onChange={(event) => updateField("name", event.target.value)}
       />
       <ActivityTextField
@@ -194,7 +194,7 @@ export default function ActivityForm({
   onDirtyChange,
 }: {
   activityDesignId: string;
-  layout?: "card" | "sheet";
+  layout?: "card" | "dialog";
   onCancel?: () => void;
   onSuccess?: (activity: ActivityListItem) => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -314,14 +314,18 @@ export default function ActivityForm({
 
   return (
     <form
-      className={layout === "sheet" ? "flex min-h-0 flex-1 flex-col" : undefined}
+      className={
+        layout === "dialog"
+          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+          : undefined
+      }
       aria-label="Create Activity"
       aria-busy={isSubmitting}
       noValidate
       onSubmit={handleSubmit}
     >
-      {layout === "sheet" ? (
-        <div className="flex-1 overflow-y-auto p-4">
+      {layout === "dialog" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
           {feedback}
           <ActivityFormFields
             formValues={formValues}
@@ -343,8 +347,8 @@ export default function ActivityForm({
           <input type="hidden" name="activityDesignId" value={activityDesignId} />
         </CardContent>
       )}
-      {layout === "sheet" ? (
-        <SheetFooter className="border-t sm:flex-row sm:justify-end">
+      {layout === "dialog" ? (
+        <DialogFooter className="shrink-0">
           {onCancel ? (
             <Button
               type="button"
@@ -356,7 +360,7 @@ export default function ActivityForm({
             </Button>
           ) : null}
           {submitButton}
-        </SheetFooter>
+        </DialogFooter>
       ) : (
         <CardFooter className="justify-end gap-2">{submitButton}</CardFooter>
       )}
