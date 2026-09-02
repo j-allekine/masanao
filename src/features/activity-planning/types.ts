@@ -56,6 +56,14 @@ export type ActivityListItem = {
   mealSchedules: MealScheduleListItem[];
 };
 
+export type ActivityWorkspaceListItem = {
+  id: string;
+  activityDesignId: string;
+  name: string;
+  activityDesignTitle: string;
+  mealScheduleCount: number;
+};
+
 export type ActivityDesignDetail = ActivityDesignListItem & {
   activities: ActivityListItem[];
 };

@@ -11,6 +11,7 @@ import { updateActivityCommand } from "./server/commands/update-activity";
 import { updateActivityDesignCommand } from "./server/commands/update-activity-design";
 import { getActivityDesign as getActivityDesignQuery } from "./server/queries/get-activity-design";
 import { listActivityDesigns as listActivityDesignQuery } from "./server/queries/list-activity-designs";
+import { listActivities as listActivitiesQuery } from "./server/queries/list-activities";
 import type {
   MealScheduleCreateResult,
   MealScheduleDeleteResult,
@@ -26,6 +27,7 @@ export type {
   ActivityDesignListItem,
   ActivityUpdateResult,
   ActivityDesignUpdateResult,
+  ActivityWorkspaceListItem,
   MealScheduleCreateResult,
   MealScheduleDeleteResult,
   MealScheduleUpdateResult,
@@ -33,6 +35,10 @@ export type {
 
 export async function listActivityDesigns() {
   return listActivityDesignQuery();
+}
+
+export async function listActivities() {
+  return listActivitiesQuery();
 }
 
 export async function createActivityDesign(input: unknown) {
