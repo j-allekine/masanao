@@ -20,18 +20,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import type { ActivityDesignListItem, ActivityListItem } from "../types";
+import type {
+  ActivityDesignListItem,
+  ActivityEditableListItem,
+  ActivityListItem,
+} from "../types";
+import type { ActivityFormMode } from "./forms/activity-form";
 import ActivityForm from "./forms/activity-form";
 
 export default function ActivityCreateDialog({
   activityDesign,
   activityDesigns = [],
+  activity,
+  mode = "create",
   open,
   onClose,
   onSuccess,
 }: {
   activityDesign: ActivityDesignListItem | null;
   activityDesigns?: ActivityDesignListItem[];
+  activity?: ActivityEditableListItem;
+  mode?: ActivityFormMode;
   open: boolean;
   onClose: () => void;
   onSuccess: (activity: ActivityListItem) => void;
@@ -39,7 +48,9 @@ export default function ActivityCreateDialog({
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const hasActivityDesigns =
-    activityDesign !== null || activityDesigns.length > 0;
+    mode === "edit"
+      ? activity !== undefined
+      : activityDesign !== null || activityDesigns.length > 0;
   const showNoDesignsDialog = open && !hasActivityDesigns;
 
   const closeDialog = useCallback(() => {
@@ -69,16 +80,20 @@ export default function ActivityCreateDialog({
           <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>
-                {activityDesign
+                {mode === "edit"
+                  ? `Edit Activity “${activity?.name ?? ""}”`
+                  : activityDesign
                   ? `Add Activity to “${activityDesign.title}”`
                   : "Add Activity"}
               </DialogTitle>
               <DialogDescription>
-                {activityDesign
+                {mode === "edit"
+                  ? "Update the saved Activity details. Its Activity Design cannot be changed here."
+                  : activityDesign
                   ? "Add an undertaking under this Activity Design. The Activity Design context is fixed for this workflow."
                   : "Add an undertaking under an existing Activity Design."}
               </DialogDescription>
-              {activityDesign ? (
+              {activityDesign && mode === "create" ? (
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">
                   <div>
                     <dt className="text-muted-foreground">Activity Design No.</dt>
@@ -96,9 +111,12 @@ export default function ActivityCreateDialog({
               ) : null}
             </DialogHeader>
             <ActivityForm
-              key={activityDesign?.id ?? "global"}
+              key={`${mode}-${activity?.id ?? activityDesign?.id ?? "global"}`}
               activityDesignId={activityDesign?.id}
               activityDesigns={activityDesigns}
+              activity={activity}
+              activityDesign={activityDesign ?? undefined}
+              mode={mode}
               layout="dialog"
               onCancel={requestClose}
               onDirtyChange={setIsDirty}

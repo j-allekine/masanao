@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,20 +24,26 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createActivityAction } from "../../actions";
+import { createActivityAction, updateActivityAction } from "../../actions";
 import type {
   ActivityField,
   ActivityFieldErrors,
   ActivityDesignListItem,
+  ActivityEditableListItem,
   ActivityListItem,
 } from "../../types";
 import ActivityDesignPicker from "../activity-design-picker";
+import { formatCentavosAsPesoInput } from "../../domain/planned-budget";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
-import { formatParticipantCountInput } from "./participant-count-formatting";
+import {
+  formatParticipantCount,
+  formatParticipantCountInput,
+} from "./participant-count-formatting";
 import { useFormattedInputSelection } from "./use-formatted-input-selection";
 
 type ActivityFormValues = Record<ActivityField, string>;
+export type ActivityFormMode = "create" | "edit";
 
 const emptyFormValues: ActivityFormValues = {
   activityDesignId: "",
@@ -59,6 +65,35 @@ const activityValueFields: ActivityField[] = [
   "plannedParticipantCount",
   "plannedBudgetPesos",
 ];
+
+function getInitialFormValues(
+  activityDesignId: string | undefined,
+  activity: ActivityEditableListItem | undefined,
+): ActivityFormValues {
+  if (!activity) {
+    return {
+      ...emptyFormValues,
+      activityDesignId: activityDesignId ?? "",
+    };
+  }
+
+  return {
+    activityDesignId: activity.activityDesignId,
+    name: activity.name,
+    officeName: activity.officeName,
+    particulars: activity.particulars ?? "",
+    scheduledDate: activity.scheduledDate.slice(0, 10),
+    venue: activity.venue ?? "",
+    plannedParticipantCount:
+      activity.plannedParticipantCount === null
+        ? ""
+        : formatParticipantCount(String(activity.plannedParticipantCount)),
+    plannedBudgetPesos:
+      activity.plannedBudgetCentavos === null
+        ? ""
+        : formatCentavosAsPesoInput(activity.plannedBudgetCentavos),
+  };
+}
 
 function ActivityTextField({
   id,
@@ -177,6 +212,8 @@ function ActivityFormFields({
   updateField,
   activityDesigns,
   activityDesignId,
+  mode,
+  activityDesign,
 }: {
   formValues: ActivityFormValues;
   fieldErrors: ActivityFieldErrors;
@@ -184,10 +221,28 @@ function ActivityFormFields({
   updateField: (field: ActivityField, value: string) => void;
   activityDesigns: ActivityDesignListItem[];
   activityDesignId?: string;
+  mode: ActivityFormMode;
+  activityDesign?: ActivityDesignListItem;
 }) {
   return (
     <FieldGroup>
-      {activityDesignId === undefined ? (
+      {mode === "edit" ? (
+        <Field>
+          <FieldLabel htmlFor="activityDesignReadonly">
+            Activity Design
+          </FieldLabel>
+          <Input
+            id="activityDesignReadonly"
+            value={
+              activityDesign
+                ? `${activityDesign.title} · ${activityDesign.activityDesignNo}`
+                : "Activity Design"
+            }
+            readOnly
+            aria-readonly="true"
+          />
+        </Field>
+      ) : activityDesignId === undefined ? (
         <ActivityDesignPicker
           activityDesigns={activityDesigns}
           value={formValues.activityDesignId}
@@ -262,6 +317,9 @@ function ActivityFormFields({
 export default function ActivityForm({
   activityDesignId,
   activityDesigns = [],
+  activity,
+  activityDesign,
+  mode = "create",
   layout = "card",
   onCancel,
   onSuccess,
@@ -269,23 +327,30 @@ export default function ActivityForm({
 }: {
   activityDesignId?: string;
   activityDesigns?: ActivityDesignListItem[];
+  activity?: ActivityEditableListItem;
+  activityDesign?: ActivityDesignListItem;
+  mode?: ActivityFormMode;
   layout?: "card" | "dialog";
   onCancel?: () => void;
   onSuccess?: (activity: ActivityListItem) => void;
   onDirtyChange?: (isDirty: boolean) => void;
 }) {
   const router = useRouter();
-  const [formValues, setFormValues] = useState<ActivityFormValues>(() => ({
-    ...emptyFormValues,
-    activityDesignId: activityDesignId ?? "",
-  }));
+  const initialFormValues = getInitialFormValues(activityDesignId, activity);
+  const [formValues, setFormValues] = useState<ActivityFormValues>(
+    initialFormValues,
+  );
   const [fieldErrors, setFieldErrors] = useState<ActivityFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty =
-    activityValueFields.some((field) => formValues[field] !== "") ||
-    (activityDesignId === undefined && formValues.activityDesignId !== "");
+    mode === "edit"
+      ? activityValueFields.some(
+          (field) => formValues[field] !== initialFormValues[field],
+        )
+      : activityValueFields.some((field) => formValues[field] !== "") ||
+        (activityDesignId === undefined && formValues.activityDesignId !== "");
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -336,7 +401,14 @@ export default function ActivityForm({
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       try {
-        const result = await createActivityAction(formData);
+        if (mode === "edit" && activity) {
+          formData.set("activityId", activity.id);
+        }
+
+        const result =
+          mode === "edit"
+            ? await updateActivityAction(formData)
+            : await createActivityAction(formData);
 
         if (result.status === "error") {
           setFormError(result.error);
@@ -349,10 +421,14 @@ export default function ActivityForm({
           return;
         }
 
-        setFormValues(emptyFormValues);
-        setSuccessMessage(
-          "Activity created. Add Meal Schedules when the details are ready.",
-        );
+        if (mode === "create") {
+          setFormValues(emptyFormValues);
+          setSuccessMessage(
+            "Activity created. Add Meal Schedules when the details are ready.",
+          );
+        } else {
+          setSuccessMessage("Activity updated.");
+        }
         router.refresh();
       } catch {
         setFormError(
@@ -383,10 +459,18 @@ export default function ActivityForm({
     <Button type="submit" disabled={isSubmitting}>
       {isSubmitting ? (
         <Spinner data-icon="inline-start" />
+      ) : mode === "edit" ? (
+        <Pencil data-icon="inline-start" />
       ) : (
         <Plus data-icon="inline-start" />
       )}
-      {isSubmitting ? "Creating…" : "Create Activity"}
+      {isSubmitting
+        ? mode === "edit"
+          ? "Saving…"
+          : "Creating…"
+        : mode === "edit"
+          ? "Save changes"
+          : "Create Activity"}
     </Button>
   );
 
@@ -397,7 +481,7 @@ export default function ActivityForm({
           ? "flex min-h-0 flex-1 flex-col overflow-hidden"
           : undefined
       }
-      aria-label="Create Activity"
+      aria-label={mode === "edit" ? "Edit Activity" : "Create Activity"}
       aria-busy={isSubmitting}
       noValidate
       onSubmit={handleSubmit}
@@ -412,12 +496,17 @@ export default function ActivityForm({
             updateField={updateField}
             activityDesigns={activityDesigns}
             activityDesignId={activityDesignId}
+            mode={mode}
+            activityDesign={activityDesign}
           />
           <input
             type="hidden"
             name="activityDesignId"
             value={formValues.activityDesignId}
           />
+          {mode === "edit" && activity ? (
+            <input type="hidden" name="activityId" value={activity.id} />
+          ) : null}
         </div>
       ) : (
         <CardContent>
@@ -429,12 +518,17 @@ export default function ActivityForm({
             updateField={updateField}
             activityDesigns={activityDesigns}
             activityDesignId={activityDesignId}
+            mode={mode}
+            activityDesign={activityDesign}
           />
           <input
             type="hidden"
             name="activityDesignId"
             value={formValues.activityDesignId}
           />
+          {mode === "edit" && activity ? (
+            <input type="hidden" name="activityId" value={activity.id} />
+          ) : null}
         </CardContent>
       )}
       {layout === "dialog" ? (
