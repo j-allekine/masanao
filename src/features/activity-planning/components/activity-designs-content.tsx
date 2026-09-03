@@ -6,8 +6,10 @@ import type { ActivityDesignListItem } from "../types";
 
 export default function ActivityDesignsContent({
   initialActivityDesigns,
+  initialQuery = "",
 }: {
   initialActivityDesigns: ActivityDesignListItem[];
+  initialQuery?: string;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -25,7 +27,10 @@ export default function ActivityDesignsContent({
       </header>
 
       <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-6">
-        <ActivityDesignsWorkspace activityDesigns={initialActivityDesigns} />
+        <ActivityDesignsWorkspace
+          activityDesigns={initialActivityDesigns}
+          initialQuery={initialQuery}
+        />
       </div>
     </div>
   );

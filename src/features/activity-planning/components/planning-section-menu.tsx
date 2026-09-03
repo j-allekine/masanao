@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
@@ -40,12 +39,11 @@ export type PlanningSectionId = (typeof localPlanningSections)[number]["id"];
 
 export default function PlanningSectionMenu({
   activeSection,
+  query = "",
 }: {
   activeSection: Exclude<PlanningSectionId, "meal-schedules">;
+  query?: string;
 }) {
-  const searchParams = useSearchParams();
-  const query = searchParams.toString();
-
   return (
     <nav aria-label="Planning sections" className="overflow-x-auto border-b">
       <ul className="flex min-w-max items-end gap-1">
