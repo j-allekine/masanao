@@ -85,6 +85,19 @@ model Verification {
   @@map("verification")
 }
 
+model Unit {
+  id                     String   @id
+  name                   String
+  abbreviation           String
+  normalizedName         String   @unique
+  normalizedAbbreviation String   @unique
+  active                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("unit")
+}
+
 model ActivityDesign {
   id               String     @id
   activityDesignNo String     @unique

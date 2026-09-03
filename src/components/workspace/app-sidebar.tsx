@@ -6,6 +6,7 @@ import { useState } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
   CalendarDays,
+  Database,
   Leaf,
   LayoutDashboard,
   LogOut,
@@ -48,6 +49,7 @@ export type AppSidebarUser = {
 const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   overview: LayoutDashboard,
   "activity-designs": CalendarDays,
+  "master-data": Database,
 }
 
 function getInitials(name: string) {
