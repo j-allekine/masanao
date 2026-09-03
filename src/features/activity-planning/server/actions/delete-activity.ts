@@ -33,11 +33,19 @@ export async function executeDeleteActivity(
     const result = await deleteActivity(activityDesignId, activityId);
 
     if (!result.ok) {
-      return { status: "error", error: result.error };
+      return {
+        status: "error",
+        kind: result.kind,
+        error: result.error,
+        ...(result.kind === "has-meal-schedules"
+          ? { mealScheduleCount: result.mealScheduleCount }
+          : {}),
+      };
     }
 
     revalidatePath(`/activity-designs/${activityDesignId}`);
     revalidatePath("/activity-designs");
+    revalidatePath("/activities");
 
     return { status: "success" };
   } catch {

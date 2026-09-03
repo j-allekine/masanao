@@ -54,6 +54,7 @@ export async function executeCreateActivity(
 
     revalidatePath(`/activity-designs/${activityDesignId}`);
     revalidatePath("/activity-designs");
+    revalidatePath("/activities");
 
     return { status: "success", activity: result.activity };
   } catch {

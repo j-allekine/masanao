@@ -138,11 +138,12 @@ export type ActivityUpdateResult =
 
 export type ActivityDeleteResult =
   | { ok: true }
+  | { ok: false; kind: "not-found"; error: string }
   | {
       ok: false;
-      kind: "not-found" | "has-meal-schedules";
+      kind: "has-meal-schedules";
       error: string;
-      mealScheduleCount?: number;
+      mealScheduleCount: number;
     };
 
 export type MealScheduleCreateResult =
@@ -221,7 +222,14 @@ export type ActivityUpdateActionState =
 
 export type ActivityDeleteActionState =
   | { status: "success" }
-  | { status: "error"; error: string };
+  | { status: "error"; error: string }
+  | { status: "error"; kind: "not-found"; error: string }
+  | {
+      status: "error";
+      kind: "has-meal-schedules";
+      error: string;
+      mealScheduleCount: number;
+    };
 
 export type MealScheduleActionState =
   | { status: "success"; mealSchedule: MealScheduleListItem }
