@@ -46,7 +46,7 @@ test.describe("workspace shell", () => {
     await expect(page.getByRole("menuitem", { name: "Log out", exact: true })).toBeVisible();
   });
 
-  test("shows the local Planning sections with future views disabled", async ({ page }) => {
+  test("shows the local Planning sections with Activities enabled", async ({ page }) => {
     await signIn(page);
     await page.goto("/activity-designs");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -66,19 +66,25 @@ test.describe("workspace shell", () => {
     await expect(activePlanningLink).toHaveAttribute("aria-current", "page");
     await expect(planningMenu.getByText("Activities", { exact: true })).toBeVisible();
     await expect(planningMenu.getByText("Meal Schedules", { exact: true })).toBeVisible();
-    await expect(planningMenu.getByText("Coming later", { exact: true })).toHaveCount(2);
+    await expect(planningMenu.getByText("Coming later", { exact: true })).toHaveCount(1);
     await expect(
       planningMenu.getByRole("link", { name: "Activities", exact: true }),
-    ).toHaveCount(0);
+    ).toBeVisible();
     await expect(
       planningMenu.getByRole("link", { name: "Meal Schedules", exact: true }),
     ).toHaveCount(0);
   });
 
-  test("redirects the old Activities destination to Activity Designs", async ({ page }) => {
+  test("opens the Activities workspace from its dedicated destination", async ({ page }) => {
     await signIn(page);
     await page.goto("/activities");
 
-    await expect(page).toHaveURL(/\/activity-designs$/);
+    await expect(page).toHaveURL(/\/activities$/);
+    await expect(page.getByRole("searchbox", { name: "Search Activities", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Activities", exact: true })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
   });
 });
