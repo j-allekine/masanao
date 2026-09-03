@@ -4,7 +4,6 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   usePathname,
   useRouter,
-  useSearchParams,
 } from "next/navigation";
 
 import type {
@@ -23,6 +22,7 @@ import PlanningSectionMenu from "./planning-section-menu";
 import { toast } from "sonner";
 import {
   getPlanningListState,
+  getPlanningListQuery,
   getPlanningListUrl,
 } from "./planning-list-state";
 
@@ -31,19 +31,22 @@ const PAGE_SIZE = 10;
 export default function ActivitiesWorkspace({
   activities,
   activityDesigns,
+  initialQuery = "",
 }: {
   activities: ActivityWorkspaceListItem[];
   activityDesigns: ActivityDesignListItem[];
+  initialQuery?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false,
   );
-  const listState = getPlanningListState(searchParams, "activities");
+  const [listState, setListState] = useState(() =>
+    getPlanningListState(new URLSearchParams(initialQuery), "activities"),
+  );
   const search = listState.search;
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activityForEdit, setActivityForEdit] =
@@ -67,12 +70,17 @@ export default function ActivitiesWorkspace({
   const resultStart =
     paginatedActivities.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedActivities.length;
+  const currentQuery = getPlanningListQuery(initialQuery, "activities", {
+    search,
+    page: currentPage,
+  });
 
   function updateSearch(nextSearch: string) {
+    setListState({ search: nextSearch, page: 1 });
     router.replace(
       getPlanningListUrl(
         pathname,
-        searchParams.toString(),
+        currentQuery,
         "activities",
         { search: nextSearch, page: 1 },
       ),
@@ -81,12 +89,14 @@ export default function ActivitiesWorkspace({
   }
 
   function changePage(nextPage: number) {
+    const page = Math.min(Math.max(nextPage, 1), pageCount);
+    setListState({ search, page });
     router.replace(
       getPlanningListUrl(
         pathname,
-        searchParams.toString(),
+        currentQuery,
         "activities",
-        { page: Math.min(Math.max(nextPage, 1), pageCount) },
+        { page },
       ),
       { scroll: false },
     );
@@ -117,10 +127,11 @@ export default function ActivitiesWorkspace({
     activityDesignId: string;
   }) {
     closeCreateDialog();
+    setListState({ search: "", page: 1 });
     router.replace(
       getPlanningListUrl(
         pathname,
-        searchParams.toString(),
+        currentQuery,
         "activities",
         { search: "", page: 1 },
       ),
@@ -172,7 +183,10 @@ export default function ActivitiesWorkspace({
         onCreate={() => setIsCreateDialogOpen(true)}
       />
       <div className="mt-6">
-        <PlanningSectionMenu activeSection="activities" />
+        <PlanningSectionMenu
+          activeSection="activities"
+          query={currentQuery}
+        />
       </div>
       <ActivitiesTable
         activities={paginatedActivities}

@@ -46,6 +46,15 @@ export function getPlanningListUrl(
   section: PlanningListSection,
   updates: { search?: string; page?: number },
 ) {
+  const query = getPlanningListQuery(currentQuery, section, updates);
+  return `${pathname}${query ? `?${query}` : ""}`;
+}
+
+export function getPlanningListQuery(
+  currentQuery: string,
+  section: PlanningListSection,
+  updates: { search?: string; page?: number },
+) {
   const params = new URLSearchParams(currentQuery);
   const keys = planningListStateKeys[section];
 
@@ -65,6 +74,5 @@ export function getPlanningListUrl(
     }
   }
 
-  const query = params.toString();
-  return `${pathname}${query ? `?${query}` : ""}`;
+  return params.toString();
 }

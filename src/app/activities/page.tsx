@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { ActivitiesContent } from "@/features/activity-planning/ui";
@@ -15,7 +16,29 @@ export const metadata: Metadata = {
   description: "Browse municipal kitchen activities across planning contexts.",
 };
 
-export default async function ActivitiesRoute() {
+type PageSearchParams = Record<string, string | string[] | undefined>;
+
+function toQueryString(searchParams: PageSearchParams) {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) {
+      for (const item of value) query.append(key, item);
+    } else if (value !== undefined) {
+      query.set(key, value);
+    }
+  }
+
+  return query.toString();
+}
+
+export default async function ActivitiesRoute({
+  searchParams,
+}: {
+  searchParams: Promise<PageSearchParams>;
+}) {
+  await connection();
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -28,6 +51,7 @@ export default async function ActivitiesRoute() {
     listActivities(),
     listActivityDesigns(),
   ]);
+  const initialQuery = toQueryString(await searchParams);
 
   return (
     <WorkspaceShell
@@ -40,6 +64,7 @@ export default async function ActivitiesRoute() {
       <ActivitiesContent
         initialActivities={activities}
         initialActivityDesigns={activityDesigns}
+        initialQuery={initialQuery}
       />
     </WorkspaceShell>
   );

@@ -10,9 +10,11 @@ import type {
 export default function ActivitiesContent({
   initialActivities,
   initialActivityDesigns,
+  initialQuery = "",
 }: {
   initialActivities: ActivityWorkspaceListItem[];
   initialActivityDesigns: ActivityDesignListItem[];
+  initialQuery?: string;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -33,6 +35,7 @@ export default function ActivitiesContent({
         <ActivitiesWorkspace
           activities={initialActivities}
           activityDesigns={initialActivityDesigns}
+          initialQuery={initialQuery}
         />
       </div>
     </div>
