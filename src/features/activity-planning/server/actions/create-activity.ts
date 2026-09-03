@@ -31,8 +31,10 @@ export async function executeCreateActivity(
   ) {
     return {
       status: "error",
-      error: "The Activity Design could not be found.",
-      fields: {},
+      error: "Please select an Activity Design.",
+      fields: {
+        activityDesignId: ["Activity Design is required."],
+      },
     };
   }
 

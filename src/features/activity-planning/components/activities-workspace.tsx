@@ -1,21 +1,27 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   usePathname,
   useRouter,
   useSearchParams,
 } from "next/navigation";
 
-import type { ActivityWorkspaceListItem } from "../types";
+import type {
+  ActivityDesignListItem,
+  ActivityListItem,
+  ActivityWorkspaceListItem,
+} from "../types";
 import ActivitiesTable from "./activities-table";
 import ActivitiesToolbar from "./activities-toolbar";
 import ActivityPagination from "./activity-pagination";
+import ActivityCreateDialog from "./activity-create-dialog";
 import {
   filterActivities,
   type ActivityFilters,
 } from "./activity-filters";
 import PlanningSectionMenu from "./planning-section-menu";
+import { toast } from "sonner";
 import {
   getPlanningListState,
   getPlanningListUrl,
@@ -25,8 +31,10 @@ const PAGE_SIZE = 10;
 
 export default function ActivitiesWorkspace({
   activities,
+  activityDesigns,
 }: {
   activities: ActivityWorkspaceListItem[];
+  activityDesigns: ActivityDesignListItem[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,6 +46,7 @@ export default function ActivitiesWorkspace({
   );
   const listState = getPlanningListState(searchParams, "activities");
   const search = listState.search;
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const filters: ActivityFilters = { search };
   const filteredActivities = useMemo(
@@ -82,12 +91,46 @@ export default function ActivitiesWorkspace({
     );
   }
 
+  function closeCreateDialog() {
+    setIsCreateDialogOpen(false);
+
+    window.setTimeout(() => {
+      document.getElementById("new-activity")?.focus();
+    }, 0);
+  }
+
+  function handleCreateSuccess(activity: ActivityListItem) {
+    closeCreateDialog();
+    router.replace(
+      getPlanningListUrl(
+        pathname,
+        searchParams.toString(),
+        "activities",
+        { search: "", page: 1 },
+      ),
+      { scroll: false },
+    );
+    router.refresh();
+    const activityDesign = activityDesigns.find(
+      (design) => design.id === activity.activityDesignId,
+    );
+    toast.success(
+      activityDesign
+        ? `Activity added to “${activityDesign.title}”`
+        : "Activity created",
+    );
+  }
+
   return (
     <div
       className="flex flex-col gap-0"
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <ActivitiesToolbar search={search} onSearchChange={updateSearch} />
+      <ActivitiesToolbar
+        search={search}
+        onSearchChange={updateSearch}
+        onCreate={() => setIsCreateDialogOpen(true)}
+      />
       <div className="mt-6">
         <PlanningSectionMenu activeSection="activities" />
       </div>
@@ -103,6 +146,13 @@ export default function ActivitiesWorkspace({
         end={resultEnd}
         total={filteredActivities.length}
         onPageChange={changePage}
+      />
+      <ActivityCreateDialog
+        activityDesign={null}
+        activityDesigns={activityDesigns}
+        open={isCreateDialogOpen}
+        onClose={closeCreateDialog}
+        onSuccess={handleCreateSuccess}
       />
     </div>
   );

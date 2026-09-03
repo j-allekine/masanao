@@ -28,8 +28,10 @@ import { createActivityAction } from "../../actions";
 import type {
   ActivityField,
   ActivityFieldErrors,
+  ActivityDesignListItem,
   ActivityListItem,
 } from "../../types";
+import ActivityDesignPicker from "../activity-design-picker";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
 import { formatParticipantCountInput } from "./participant-count-formatting";
@@ -38,6 +40,7 @@ import { useFormattedInputSelection } from "./use-formatted-input-selection";
 type ActivityFormValues = Record<ActivityField, string>;
 
 const emptyFormValues: ActivityFormValues = {
+  activityDesignId: "",
   name: "",
   officeName: "",
   particulars: "",
@@ -46,6 +49,16 @@ const emptyFormValues: ActivityFormValues = {
   plannedParticipantCount: "",
   plannedBudgetPesos: "",
 };
+
+const activityValueFields: ActivityField[] = [
+  "name",
+  "officeName",
+  "particulars",
+  "scheduledDate",
+  "venue",
+  "plannedParticipantCount",
+  "plannedBudgetPesos",
+];
 
 function ActivityTextField({
   id,
@@ -162,14 +175,26 @@ function ActivityFormFields({
   fieldErrors,
   layout,
   updateField,
+  activityDesigns,
+  activityDesignId,
 }: {
   formValues: ActivityFormValues;
   fieldErrors: ActivityFieldErrors;
   layout: "card" | "dialog";
   updateField: (field: ActivityField, value: string) => void;
+  activityDesigns: ActivityDesignListItem[];
+  activityDesignId?: string;
 }) {
   return (
     <FieldGroup>
+      {activityDesignId === undefined ? (
+        <ActivityDesignPicker
+          activityDesigns={activityDesigns}
+          value={formValues.activityDesignId}
+          error={fieldErrors.activityDesignId}
+          onChange={(value) => updateField("activityDesignId", value)}
+        />
+      ) : null}
       <ActivityTextField
         id="name"
         label="Activity name"
@@ -236,26 +261,31 @@ function ActivityFormFields({
 
 export default function ActivityForm({
   activityDesignId,
+  activityDesigns = [],
   layout = "card",
   onCancel,
   onSuccess,
   onDirtyChange,
 }: {
-  activityDesignId: string;
+  activityDesignId?: string;
+  activityDesigns?: ActivityDesignListItem[];
   layout?: "card" | "dialog";
   onCancel?: () => void;
   onSuccess?: (activity: ActivityListItem) => void;
   onDirtyChange?: (isDirty: boolean) => void;
 }) {
   const router = useRouter();
-  const [formValues, setFormValues] = useState(emptyFormValues);
+  const [formValues, setFormValues] = useState<ActivityFormValues>(() => ({
+    ...emptyFormValues,
+    activityDesignId: activityDesignId ?? "",
+  }));
   const [fieldErrors, setFieldErrors] = useState<ActivityFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
-  const isDirty = Object.keys(emptyFormValues).some(
-    (field) => formValues[field as ActivityField] !== "",
-  );
+  const isDirty =
+    activityValueFields.some((field) => formValues[field] !== "") ||
+    (activityDesignId === undefined && formValues.activityDesignId !== "");
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -264,13 +294,14 @@ export default function ActivityForm({
   useEffect(() => {
     const firstInvalidField = (
       [
+        "activityDesignId",
         "name",
         "officeName",
         "scheduledDate",
         "particulars",
         "venue",
         "plannedParticipantCount",
-        "plannedBudgetPesos",
+      "plannedBudgetPesos",
       ] as ActivityField[]
     ).find((field) => fieldErrors[field]?.length);
 
@@ -379,8 +410,14 @@ export default function ActivityForm({
             fieldErrors={fieldErrors}
             layout={layout}
             updateField={updateField}
+            activityDesigns={activityDesigns}
+            activityDesignId={activityDesignId}
           />
-          <input type="hidden" name="activityDesignId" value={activityDesignId} />
+          <input
+            type="hidden"
+            name="activityDesignId"
+            value={formValues.activityDesignId}
+          />
         </div>
       ) : (
         <CardContent>
@@ -390,8 +427,14 @@ export default function ActivityForm({
             fieldErrors={fieldErrors}
             layout={layout}
             updateField={updateField}
+            activityDesigns={activityDesigns}
+            activityDesignId={activityDesignId}
           />
-          <input type="hidden" name="activityDesignId" value={activityDesignId} />
+          <input
+            type="hidden"
+            name="activityDesignId"
+            value={formValues.activityDesignId}
+          />
         </CardContent>
       )}
       {layout === "dialog" ? (

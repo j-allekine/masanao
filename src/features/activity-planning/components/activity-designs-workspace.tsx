@@ -163,6 +163,7 @@ export default function ActivityDesignsWorkspace({
       />
       <ActivityCreateDialog
         activityDesign={activityDesignForCreate}
+        activityDesigns={activityDesigns}
         open={activityDesignForCreate !== null}
         onClose={closeActivityCreateDialog}
         onSuccess={(activity) => {

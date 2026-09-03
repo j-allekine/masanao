@@ -7,6 +7,7 @@ export type ActivityDesignField =
 export type FieldErrors = Partial<Record<ActivityDesignField | "form", string[]>>;
 
 export type ActivityField =
+  | "activityDesignId"
   | "name"
   | "officeName"
   | "particulars"

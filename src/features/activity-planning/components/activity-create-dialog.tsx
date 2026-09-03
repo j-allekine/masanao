@@ -25,17 +25,22 @@ import ActivityForm from "./forms/activity-form";
 
 export default function ActivityCreateDialog({
   activityDesign,
+  activityDesigns = [],
   open,
   onClose,
   onSuccess,
 }: {
   activityDesign: ActivityDesignListItem | null;
+  activityDesigns?: ActivityDesignListItem[];
   open: boolean;
   onClose: () => void;
   onSuccess: (activity: ActivityListItem) => void;
 }) {
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
+  const hasActivityDesigns =
+    activityDesign !== null || activityDesigns.length > 0;
+  const showNoDesignsDialog = open && !hasActivityDesigns;
 
   const closeDialog = useCallback(() => {
     setIsDiscardDialogOpen(false);
@@ -55,33 +60,45 @@ export default function ActivityCreateDialog({
   return (
     <>
       <Dialog
-        open={open}
+        open={open && hasActivityDesigns}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) requestClose();
         }}
       >
-        {activityDesign ? (
-            <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden sm:max-w-lg">
+        {open && hasActivityDesigns ? (
+          <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Add Activity to “{activityDesign.title}”</DialogTitle>
+              <DialogTitle>
+                {activityDesign
+                  ? `Add Activity to “${activityDesign.title}”`
+                  : "Add Activity"}
+              </DialogTitle>
               <DialogDescription>
-                Add an undertaking under this Activity Design. The Activity Design
-                context is fixed for this workflow.
+                {activityDesign
+                  ? "Add an undertaking under this Activity Design. The Activity Design context is fixed for this workflow."
+                  : "Add an undertaking under an existing Activity Design."}
               </DialogDescription>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">
-                <div>
-                  <dt className="text-muted-foreground">Activity Design No.</dt>
-                  <dd className="mt-1 font-mono text-mono font-medium">{activityDesign.activityDesignNo}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Fiscal Year</dt>
-                  <dd className="mt-1 font-mono text-mono font-medium tabular-nums">FY {activityDesign.fiscalYear}</dd>
-                </div>
-              </dl>
+              {activityDesign ? (
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">
+                  <div>
+                    <dt className="text-muted-foreground">Activity Design No.</dt>
+                    <dd className="mt-1 font-mono text-mono font-medium">
+                      {activityDesign.activityDesignNo}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Fiscal Year</dt>
+                    <dd className="mt-1 font-mono text-mono font-medium tabular-nums">
+                      FY {activityDesign.fiscalYear}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
             </DialogHeader>
             <ActivityForm
-              key={activityDesign.id}
-              activityDesignId={activityDesign.id}
+              key={activityDesign?.id ?? "global"}
+              activityDesignId={activityDesign?.id}
+              activityDesigns={activityDesigns}
               layout="dialog"
               onCancel={requestClose}
               onDirtyChange={setIsDirty}
@@ -95,7 +112,7 @@ export default function ActivityCreateDialog({
       </Dialog>
 
       <AlertDialog
-        open={isDiscardDialogOpen}
+        open={isDiscardDialogOpen && !showNoDesignsDialog}
         onOpenChange={setIsDiscardDialogOpen}
       >
         <AlertDialogContent>
@@ -110,6 +127,25 @@ export default function ActivityCreateDialog({
             <AlertDialogAction variant="destructive" onClick={closeDialog}>
               Discard changes
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showNoDesignsDialog}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) onClose();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No Activity Designs yet</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create an Activity Design before adding an Activity.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={onClose}>Close</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

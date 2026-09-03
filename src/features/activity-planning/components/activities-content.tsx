@@ -2,12 +2,17 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import ActivitiesWorkspace from "./activities-workspace";
-import type { ActivityWorkspaceListItem } from "../types";
+import type {
+  ActivityDesignListItem,
+  ActivityWorkspaceListItem,
+} from "../types";
 
 export default function ActivitiesContent({
   initialActivities,
+  initialActivityDesigns,
 }: {
   initialActivities: ActivityWorkspaceListItem[];
+  initialActivityDesigns: ActivityDesignListItem[];
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -25,7 +30,10 @@ export default function ActivitiesContent({
       </header>
 
       <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-6">
-        <ActivitiesWorkspace activities={initialActivities} />
+        <ActivitiesWorkspace
+          activities={initialActivities}
+          activityDesigns={initialActivityDesigns}
+        />
       </div>
     </div>
   );

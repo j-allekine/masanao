@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { ActivitiesContent } from "@/features/activity-planning/ui";
-import { listActivities } from "@/features/activity-planning/server";
+import {
+  listActivities,
+  listActivityDesigns,
+} from "@/features/activity-planning/server";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {
@@ -21,7 +24,10 @@ export default async function ActivitiesRoute() {
     redirect("/");
   }
 
-  const activities = await listActivities();
+  const [activities, activityDesigns] = await Promise.all([
+    listActivities(),
+    listActivityDesigns(),
+  ]);
 
   return (
     <WorkspaceShell
@@ -31,7 +37,10 @@ export default async function ActivitiesRoute() {
       }}
       activeSection="activity-designs"
     >
-      <ActivitiesContent initialActivities={activities} />
+      <ActivitiesContent
+        initialActivities={activities}
+        initialActivityDesigns={activityDesigns}
+      />
     </WorkspaceShell>
   );
 }
