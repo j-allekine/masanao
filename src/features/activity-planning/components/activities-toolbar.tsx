@@ -1,7 +1,8 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -12,14 +13,16 @@ import {
 export default function ActivitiesToolbar({
   search,
   onSearchChange,
+  onCreate,
 }: {
   search: string;
   onSearchChange: (search: string) => void;
+  onCreate: () => void;
 }) {
   return (
     <div
       aria-label="Activity search"
-      className="flex flex-col gap-3 border-b pb-5"
+      className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between"
       role="search"
     >
       <Field className="min-w-0 flex-1 sm:max-w-[27rem]">
@@ -40,6 +43,16 @@ export default function ActivitiesToolbar({
           />
         </InputGroup>
       </Field>
+      <Button
+        id="new-activity"
+        type="button"
+        size="sm"
+        className="h-9 w-full sm:w-auto sm:min-w-[12rem]"
+        onClick={onCreate}
+      >
+        <Plus data-icon="inline-start" />
+        Add Activity
+      </Button>
     </div>
   );
 }
