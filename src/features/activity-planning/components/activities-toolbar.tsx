@@ -51,7 +51,7 @@ export default function ActivitiesToolbar({
         onClick={onCreate}
       >
         <Plus data-icon="inline-start" />
-        Add Activity
+        Create Activity
       </Button>
     </div>
   );

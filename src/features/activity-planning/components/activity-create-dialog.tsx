@@ -84,14 +84,14 @@ export default function ActivityCreateDialog({
                   ? `Edit Activity “${activity?.name ?? ""}”`
                   : activityDesign
                   ? `Add Activity to “${activityDesign.title}”`
-                  : "Add Activity"}
+                  : "Create Activity"}
               </DialogTitle>
               <DialogDescription>
                 {mode === "edit"
                   ? "Update the saved Activity details. Its Activity Design cannot be changed here."
                   : activityDesign
                   ? "Add an undertaking under this Activity Design. The Activity Design context is fixed for this workflow."
-                  : "Add an undertaking under an existing Activity Design."}
+                  : "Create an undertaking under an existing Activity Design."}
               </DialogDescription>
               {activityDesign && mode === "create" ? (
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 pt-3 text-label">

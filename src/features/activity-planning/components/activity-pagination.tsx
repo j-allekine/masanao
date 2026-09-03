@@ -67,7 +67,7 @@ export default function ActivityPagination({
               aria-label="Previous page"
               onClick={() => onPageChange(page - 1)}
             >
-              <ChevronLeft aria-hidden="true" />
+              <ChevronLeft data-icon="inline-start" aria-hidden="true" />
             </Button>
           </PaginationItem>
           <PaginationItem>
@@ -92,7 +92,7 @@ export default function ActivityPagination({
               aria-label="Next page"
               onClick={() => onPageChange(page + 1)}
             >
-              <ChevronRight aria-hidden="true" />
+              <ChevronRight data-icon="inline-end" aria-hidden="true" />
             </Button>
           </PaginationItem>
         </PaginationContent>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { connection } from "next/server";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { ActivitiesContent } from "@/features/activity-planning/ui";
@@ -10,35 +9,18 @@ import {
   listActivityDesigns,
 } from "@/features/activity-planning/server";
 import { auth } from "@/server/auth";
+import { serializeSearchParams } from "@/lib/search-params";
 
 export const metadata: Metadata = {
   title: "Activities | Masanao",
   description: "Browse municipal kitchen activities across planning contexts.",
 };
 
-type PageSearchParams = Record<string, string | string[] | undefined>;
-
-function toQueryString(searchParams: PageSearchParams) {
-  const query = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (Array.isArray(value)) {
-      for (const item of value) query.append(key, item);
-    } else if (value !== undefined) {
-      query.set(key, value);
-    }
-  }
-
-  return query.toString();
-}
-
 export default async function ActivitiesRoute({
   searchParams,
 }: {
-  searchParams: Promise<PageSearchParams>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await connection();
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -51,7 +33,7 @@ export default async function ActivitiesRoute({
     listActivities(),
     listActivityDesigns(),
   ]);
-  const initialQuery = toQueryString(await searchParams);
+  const initialQuery = serializeSearchParams(await searchParams);
 
   return (
     <WorkspaceShell

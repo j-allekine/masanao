@@ -29,7 +29,323 @@ async function createDesign(page: Page, title: string) {
   await expect(dialog).toHaveCount(0);
 }
 
+async function createDesignViaApi(page: Page, title: string) {
+  const response = await page.request.post("/api/activity-designs", {
+    data: {
+      activityDesignNo: `E2E-GLOBAL-${Date.now()}`,
+      fiscalYear: 2026,
+      title,
+    },
+  });
+
+  expect(response.status()).toBe(201);
+  return (await response.json()).activityDesign;
+}
+
 test.describe("Activity planning journey", () => {
+  test("manages Activities globally with parent selection, editing, and protected deletion", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+
+    await signIn(page);
+    await page.goto("/activities");
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Create Activity", exact: true }).click();
+    const noDesignsDialog = page.getByRole("alertdialog");
+    await expect(noDesignsDialog).toContainText("No Activity Designs yet");
+    await expect(noDesignsDialog).toContainText(
+      "Create an Activity Design before adding an Activity.",
+    );
+    await expect(noDesignsDialog.getByRole("button")).toHaveCount(1);
+    await noDesignsDialog.getByRole("button", { name: "Close", exact: true }).click();
+
+    let activityDesign: {
+      id: string;
+      activityDesignNo: string;
+      title: string;
+    } | undefined;
+    let activityId: string | undefined;
+    let mealScheduleId: string | undefined;
+
+    try {
+      const createdDesign = await createDesignViaApi(page, "E2E Global Activity Plan");
+      activityDesign = createdDesign;
+      const design = createdDesign;
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+
+      await page.getByRole("button", { name: "Create Activity", exact: true }).click();
+      const creationDialog = page.getByRole("dialog");
+      const createRequests: string[] = [];
+      const requestListener = (request: import("@playwright/test").Request) => {
+        if (
+          request.method() === "POST" &&
+          new URL(request.url()).pathname === "/activities"
+        ) {
+          createRequests.push(request.url());
+        }
+      };
+      page.on("request", requestListener);
+
+      await creationDialog.getByRole("button", { name: "Create Activity", exact: true }).click();
+      await expect(
+        creationDialog.getByText("Activity Design is required.", { exact: true }),
+      ).toBeVisible();
+      expect(createRequests).toHaveLength(0);
+      page.off("request", requestListener);
+
+      const picker = creationDialog.getByRole("combobox");
+      await picker.click();
+      const pickerSearch = page.getByRole("textbox", {
+        name: "Search Activity Designs",
+        exact: true,
+      });
+      await pickerSearch.fill(design.activityDesignNo);
+      const option = page
+        .getByRole("option")
+        .filter({ hasText: design.title });
+      await expect(option).toContainText(design.activityDesignNo);
+      await option.click();
+      await expect(picker).toContainText(design.title);
+      await expect(picker).toContainText(design.activityDesignNo);
+
+      const activityName = "E2E Global Activity";
+      await creationDialog
+        .getByRole("textbox", { name: "Activity name", exact: true })
+        .fill(activityName);
+      await creationDialog
+        .getByRole("textbox", { name: "Office", exact: true })
+        .fill("E2E Global Office");
+      await creationDialog
+        .getByRole("button", { name: "Scheduled date", exact: true })
+        .click();
+      await page
+        .locator('[data-slot="calendar"]')
+        .locator('button[data-day="9/15/2026"]')
+        .click();
+      await creationDialog
+        .getByRole("textbox", {
+          name: "Activity particulars (optional)",
+          exact: true,
+        })
+        .fill("E2E global particulars");
+      await creationDialog
+        .getByRole("textbox", { name: "Venue (optional)", exact: true })
+        .fill("E2E global venue");
+      await creationDialog
+        .getByRole("textbox", {
+          name: "Planned participant count (optional)",
+          exact: true,
+        })
+        .fill("1250");
+      await creationDialog
+        .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+        .fill("1250.00");
+      await creationDialog
+        .getByRole("button", { name: "Create Activity", exact: true })
+        .click();
+
+      await expect(creationDialog).toHaveCount(0);
+      await expect(
+        page.getByText(`Activity added to “${design.title}”`, { exact: true }),
+      ).toBeVisible();
+      const activitySearch = page.getByRole("searchbox", {
+        name: "Search Activities",
+        exact: true,
+      });
+      await expect(activitySearch).toBeEmpty();
+      const createdRow = page.getByRole("row").filter({ hasText: activityName });
+      await expect(createdRow).toBeVisible();
+
+      const detailResponse = await page.request.get(
+        `/api/activity-designs/${design.id}`,
+      );
+      expect(detailResponse.status()).toBe(200);
+      const detail = await detailResponse.json();
+      const savedActivity = detail.activityDesign.activities.find(
+        (activity: { name: string }) => activity.name === activityName,
+      );
+      expect(savedActivity).toMatchObject({
+        officeName: "E2E Global Office",
+        particulars: "E2E global particulars",
+        venue: "E2E global venue",
+        plannedParticipantCount: 1250,
+        plannedBudgetCentavos: "125000",
+      });
+      activityId = savedActivity.id;
+
+      await createdRow
+        .getByRole("button", { name: `Actions for ${activityName}`, exact: true })
+        .click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const editDialog = page.getByRole("dialog");
+      await expect(
+        editDialog.getByRole("textbox", { name: "Activity name", exact: true }),
+      ).toHaveValue(activityName);
+      await expect(
+        editDialog.getByRole("textbox", { name: "Office", exact: true }),
+      ).toHaveValue("E2E Global Office");
+      await expect(editDialog.locator("#activityDesignReadonly")).toHaveAttribute(
+        "readonly",
+        "",
+      );
+      await expect(
+        editDialog.getByRole("textbox", {
+          name: "Planned participant count (optional)",
+          exact: true,
+        }),
+      ).toHaveValue("1,250");
+      await expect(
+        editDialog.getByRole("textbox", { name: "Planned budget (optional)", exact: true }),
+      ).toHaveValue("1250.00");
+
+      const updatedActivityName = "E2E Global Activity Updated";
+      await editDialog
+        .getByRole("textbox", { name: "Activity name", exact: true })
+        .fill(updatedActivityName);
+      await editDialog
+        .getByRole("textbox", { name: "Activity particulars (optional)", exact: true })
+        .fill("");
+      await editDialog
+        .getByRole("textbox", { name: "Venue (optional)", exact: true })
+        .fill("");
+      await editDialog
+        .getByRole("textbox", {
+          name: "Planned participant count (optional)",
+          exact: true,
+        })
+        .fill("");
+      await editDialog
+        .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+        .fill("");
+      await editDialog.getByRole("button", { name: "Save changes", exact: true }).click();
+
+      await expect(editDialog).toHaveCount(0);
+      await expect(page.getByText("Activity updated", { exact: true })).toBeVisible();
+      const updatedRow = page
+        .getByRole("row")
+        .filter({ hasText: updatedActivityName });
+      await expect(updatedRow).toBeVisible();
+      await expect(
+        updatedRow.getByRole("button", {
+          name: `Actions for ${updatedActivityName}`,
+          exact: true,
+        }),
+      ).toBeFocused();
+
+      const updatedDetailResponse = await page.request.get(
+        `/api/activity-designs/${design.id}`,
+      );
+      const updatedDetail = await updatedDetailResponse.json();
+      expect(updatedDetail.activityDesign.activities).toContainEqual(
+        expect.objectContaining({
+          id: activityId,
+          name: updatedActivityName,
+          particulars: null,
+          venue: null,
+          plannedParticipantCount: null,
+          plannedBudgetCentavos: null,
+        }),
+      );
+
+      await activitySearch.fill("Global Activity Updated");
+      await expect(updatedRow).toBeVisible();
+      const planningMenu = page.getByRole("navigation", { name: "Planning sections" });
+      await planningMenu
+        .getByRole("link", { name: "Activity Designs", exact: true })
+        .click();
+      await expect(page).toHaveURL(/\/activity-designs/);
+      await planningMenu.getByRole("link", { name: "Activities", exact: true }).click();
+      await expect(page).toHaveURL(/\/activities/);
+      await expect(
+        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
+      ).toHaveValue("Global Activity Updated");
+      await page.goBack();
+      await expect(page).toHaveURL(/\/activity-designs/);
+      await page.goForward();
+      await expect(page).toHaveURL(/\/activities/);
+      await expect(
+        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
+      ).toHaveValue("Global Activity Updated");
+
+      const staleRow = page
+        .getByRole("row")
+        .filter({ hasText: updatedActivityName });
+      await staleRow
+        .getByRole("button", {
+          name: `Actions for ${updatedActivityName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const deleteDialog = page.getByRole("alertdialog");
+      await expect(deleteDialog).toContainText(`Delete “${updatedActivityName}”?`);
+
+      const scheduleResponse = await page.request.post(
+        `/api/activity-designs/${design.id}/activities/${activityId}/meal-schedules`,
+        {
+          data: {
+            label: "Lunch",
+            mealTime: "12:00",
+            plannedServings: 1250,
+          },
+        },
+      );
+      expect(scheduleResponse.status()).toBe(201);
+      mealScheduleId = (await scheduleResponse.json()).mealSchedule.id;
+
+      await deleteDialog
+        .getByRole("button", { name: "Delete Activity", exact: true })
+        .click();
+      await expect(deleteDialog).toContainText(
+        "This Activity cannot be deleted while it has 1 Meal Schedule.",
+      );
+      await expect(
+        deleteDialog.getByRole("button", { name: "Delete Activity", exact: true }),
+      ).toHaveCount(0);
+      await expect(deleteDialog.getByRole("button", { name: "Close", exact: true })).toHaveCount(1);
+      await deleteDialog.getByRole("button", { name: "Close", exact: true }).click();
+
+      const scheduleDeleteResponse = await page.request.delete(
+        `/api/activity-designs/${design.id}/activities/${activityId}/meal-schedules/${mealScheduleId}`,
+      );
+      expect(scheduleDeleteResponse.status()).toBe(204);
+      mealScheduleId = undefined;
+
+      await staleRow
+        .getByRole("button", {
+          name: `Actions for ${updatedActivityName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const eligibleDeleteDialog = page.getByRole("alertdialog");
+      await eligibleDeleteDialog
+        .getByRole("button", { name: "Delete Activity", exact: true })
+        .click();
+      await expect(staleRow).toHaveCount(0);
+      await expect(
+        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
+      ).toBeFocused();
+    } finally {
+      if (mealScheduleId && activityDesign && activityId) {
+        await page.request.delete(
+          `/api/activity-designs/${activityDesign.id}/activities/${activityId}/meal-schedules/${mealScheduleId}`,
+        );
+      }
+      if (activityDesign && activityId) {
+        await page.request.delete(
+          `/api/activity-designs/${activityDesign.id}/activities/${activityId}`,
+        );
+      }
+      if (activityDesign) {
+        await page.request.delete(`/api/activity-designs/${activityDesign.id}`);
+      }
+    }
+  });
+
   test("creates an Activity, reloads it, and redirects retired detail routes", async ({
     page,
   }) => {

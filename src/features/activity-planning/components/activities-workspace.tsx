@@ -8,6 +8,7 @@ import {
 
 import type {
   ActivityDesignListItem,
+  ActivityListItem,
   ActivityWorkspaceListItem,
 } from "../types";
 import ActivitiesTable from "./activities-table";
@@ -110,16 +111,17 @@ export default function ActivitiesWorkspace({
     }, 0);
   }
 
-  function closeEditDialog() {
+  function closeEditDialog(focusActivityId?: string | null) {
     const closedActivity = activityForEdit;
     setActivityForEdit(null);
 
     window.setTimeout(() => {
-      if (closedActivity) {
-        document
-          .getElementById(`activity-actions-${closedActivity.id}`)
-          ?.focus();
-      }
+      const targetActivityId =
+        focusActivityId === undefined ? closedActivity?.id : focusActivityId;
+      const target = targetActivityId
+        ? document.getElementById(`activity-actions-${targetActivityId}`)
+        : null;
+      (target ?? document.getElementById("activity-search"))?.focus();
     }, 0);
   }
 
@@ -148,27 +150,70 @@ export default function ActivitiesWorkspace({
     );
   }
 
-  function handleEditSuccess() {
-    closeEditDialog();
+  function handleEditSuccess(activity: ActivityListItem) {
+    const previousActivity = activityForEdit;
+    const editedActivity = previousActivity
+      ? { ...previousActivity, ...activity }
+      : null;
+    const staysInResults = Boolean(
+      editedActivity &&
+        filterActivities([editedActivity], { search }).length > 0,
+    );
+    const nextTotal = staysInResults
+      ? filteredActivities.length
+      : Math.max(0, filteredActivities.length - 1);
+    const nextPageCount = Math.max(1, Math.ceil(nextTotal / PAGE_SIZE));
+    const nextPage = Math.min(currentPage, nextPageCount);
+
+    closeEditDialog(staysInResults ? activity.id : null);
+    if (nextPage !== currentPage) {
+      setListState({ search, page: nextPage });
+      router.replace(
+        getPlanningListUrl(
+          pathname,
+          currentQuery,
+          "activities",
+          { page: nextPage },
+        ),
+        { scroll: false },
+      );
+    }
     router.refresh();
     toast.success("Activity updated");
   }
 
   function handleActivityDeleted(activityId: string) {
-    const deletedIndex = filteredActivities.findIndex(
+    const deletedIndex = paginatedActivities.findIndex(
       (activity) => activity.id === activityId,
     );
     const nextFocusTarget =
-      filteredActivities[deletedIndex + 1] ??
-      filteredActivities[deletedIndex - 1];
+      deletedIndex < 0
+        ? null
+        : paginatedActivities[deletedIndex + 1] ??
+          paginatedActivities[deletedIndex - 1];
+    const nextTotal = Math.max(0, filteredActivities.length - 1);
+    const nextPageCount = Math.max(1, Math.ceil(nextTotal / PAGE_SIZE));
+    const nextPage = Math.min(currentPage, nextPageCount);
 
+    if (nextPage !== currentPage) {
+      setListState({ search, page: nextPage });
+      router.replace(
+        getPlanningListUrl(
+          pathname,
+          currentQuery,
+          "activities",
+          { page: nextPage },
+        ),
+        { scroll: false },
+      );
+    }
     router.refresh();
 
     window.setTimeout(() => {
-      const targetId = nextFocusTarget
-        ? `activity-actions-${nextFocusTarget.id}`
-        : "new-activity";
-      document.getElementById(targetId)?.focus();
+      const target = nextFocusTarget
+        ? document.getElementById(`activity-actions-${nextFocusTarget.id}`)
+        : null;
+      (target ?? document.getElementById("activity-search"))?.focus();
     }, 0);
   }
 
