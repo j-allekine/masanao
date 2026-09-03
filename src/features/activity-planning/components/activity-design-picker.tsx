@@ -120,6 +120,7 @@ export default function ActivityDesignPicker({
             </span>
           )}
           <ChevronsUpDown
+            data-icon="inline-end"
             aria-hidden="true"
             className="shrink-0 text-muted-foreground"
           />
@@ -160,6 +161,7 @@ export default function ActivityDesignPicker({
                   }}
                 >
                   <Check
+                    data-icon="inline-start"
                     aria-hidden="true"
                     className={cn(
                       "shrink-0",

@@ -33,7 +33,10 @@ import type {
   ActivityListItem,
 } from "../../types";
 import ActivityDesignPicker from "../activity-design-picker";
-import { formatCentavosAsPesoInput } from "../../domain/planned-budget";
+import {
+  formatCentavosAsPesoInput,
+  normalizePesoInput,
+} from "../../domain/planned-budget";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
 import {
@@ -65,6 +68,13 @@ const activityValueFields: ActivityField[] = [
   "plannedParticipantCount",
   "plannedBudgetPesos",
 ];
+
+function comparableActivityValue(field: ActivityField, value: string) {
+  if (field === "plannedBudgetPesos") return normalizePesoInput(value);
+  if (field === "plannedParticipantCount") return value.replaceAll(",", "");
+
+  return value;
+}
 
 function getInitialFormValues(
   activityDesignId: string | undefined,
@@ -347,7 +357,9 @@ export default function ActivityForm({
   const isDirty =
     mode === "edit"
       ? activityValueFields.some(
-          (field) => formValues[field] !== initialFormValues[field],
+          (field) =>
+            comparableActivityValue(field, formValues[field]) !==
+            comparableActivityValue(field, initialFormValues[field]),
         )
       : activityValueFields.some((field) => formValues[field] !== "") ||
         (activityDesignId === undefined && formValues.activityDesignId !== "");
@@ -399,6 +411,18 @@ export default function ActivityForm({
     setSuccessMessage(null);
 
     const formData = new FormData(event.currentTarget);
+
+    if (
+      mode === "create" &&
+      activityDesignId === undefined &&
+      formValues.activityDesignId.trim() === ""
+    ) {
+      setFieldErrors({
+        activityDesignId: ["Activity Design is required."],
+      });
+      return;
+    }
+
     startTransition(async () => {
       try {
         if (mode === "edit" && activity) {

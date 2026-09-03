@@ -21,11 +21,11 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 
 import { deleteActivityAction } from "../actions";
+import {
+  getActivityDeletionBlockMessage,
+  isActivityDeletionBlocked,
+} from "../domain/activity-deletion";
 import type { ActivityWorkspaceListItem } from "../types";
-
-function blockedMessage(mealScheduleCount: number) {
-  return `This Activity cannot be deleted while it has ${mealScheduleCount} ${mealScheduleCount === 1 ? "Meal Schedule" : "Meal Schedules"}. Remove its Meal Schedules first.`;
-}
 
 export default function DeleteActivityDialog({
   activity,
@@ -46,7 +46,7 @@ export default function DeleteActivityDialog({
   const [isDeleting, startDeleteTransition] = useTransition();
   const mealScheduleCount =
     serverMealScheduleCount ?? activity.mealScheduleCount;
-  const isBlocked = isServerBlocked || mealScheduleCount > 0;
+  const isBlocked = isServerBlocked || isActivityDeletionBlocked(mealScheduleCount);
 
   function handleDelete(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -90,7 +90,7 @@ export default function DeleteActivityDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isBlocked
-              ? blockedMessage(mealScheduleCount)
+              ? getActivityDeletionBlockMessage(mealScheduleCount)
               : "This permanently removes the Activity and its planning details. It can only be deleted while it has no Meal Schedules."}
           </AlertDialogDescription>
         </AlertDialogHeader>

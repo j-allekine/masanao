@@ -39,19 +39,19 @@ export default function ActivityActionsMenu({
           />
         }
       >
-        <Ellipsis />
+        <Ellipsis data-icon="inline-start" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-36">
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
-            <Pencil />
+            <Pencil data-icon="inline-start" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={() => openAfterMenuCloses(onDelete)}
           >
-            <Trash2 />
+            <Trash2 data-icon="inline-start" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuGroup>

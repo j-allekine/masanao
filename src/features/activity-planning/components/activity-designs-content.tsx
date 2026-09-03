@@ -26,7 +26,7 @@ export default function ActivityDesignsContent({
         </div>
       </header>
 
-      <div className="flex w-full flex-1 flex-col px-4 py-6 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
         <ActivityDesignsWorkspace
           activityDesigns={initialActivityDesigns}
           initialQuery={initialQuery}
