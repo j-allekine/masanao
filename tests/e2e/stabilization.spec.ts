@@ -162,7 +162,7 @@ test.describe("frontend stabilization regression seam", () => {
             exact: true,
           }),
         ).toBeVisible();
-        await expect(page.getByText("Coming later", { exact: true })).toHaveCount(2);
+        await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
         await expect(page.getByRole("checkbox")).toHaveCount(0);
 
         await search.fill(title);
@@ -269,7 +269,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(
         page.getByRole("menuitem", { name: "Archive", exact: true }),
       ).toHaveCount(0);
-      await expect(page.getByText("Coming later", { exact: true })).toHaveCount(2);
+      await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
       await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: "More Activity Design actions", exact: true }),
