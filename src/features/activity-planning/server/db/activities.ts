@@ -38,6 +38,12 @@ const activityWorkspaceListSelect = {
   id: true,
   activityDesignId: true,
   name: true,
+  officeName: true,
+  particulars: true,
+  scheduledDate: true,
+  venue: true,
+  plannedParticipantCount: true,
+  plannedBudgetCentavos: true,
   activityDesign: {
     select: { title: true },
   },
@@ -125,6 +131,12 @@ function toActivityWorkspaceListItem(activity: {
   id: string;
   activityDesignId: string;
   name: string;
+  officeName: string;
+  particulars: string | null;
+  scheduledDate: Date;
+  venue: string | null;
+  plannedParticipantCount: number | null;
+  plannedBudgetCentavos: bigint | null;
   activityDesign: { title: string };
   _count: { mealSchedules: number };
 }): ActivityWorkspaceListItem {
@@ -132,6 +144,13 @@ function toActivityWorkspaceListItem(activity: {
     id: activity.id,
     activityDesignId: activity.activityDesignId,
     name: activity.name,
+    officeName: activity.officeName,
+    particulars: activity.particulars,
+    scheduledDate: activity.scheduledDate.toISOString(),
+    venue: activity.venue,
+    plannedParticipantCount: activity.plannedParticipantCount,
+    plannedBudgetCentavos:
+      activity.plannedBudgetCentavos?.toString() ?? null,
     activityDesignTitle: activity.activityDesign.title,
     mealScheduleCount: activity._count.mealSchedules,
   };

@@ -27,7 +27,13 @@ import ActivityActionsMenu from "./activity-actions-menu";
 
 const mealScheduleCountFormatter = new Intl.NumberFormat("en-US");
 
-function ActivityRow({ activity }: { activity: ActivityWorkspaceListItem }) {
+function ActivityRow({
+  activity,
+  onEdit,
+}: {
+  activity: ActivityWorkspaceListItem;
+  onEdit: () => void;
+}) {
   const formattedMealScheduleCount = mealScheduleCountFormatter.format(
     activity.mealScheduleCount,
   );
@@ -50,6 +56,7 @@ function ActivityRow({ activity }: { activity: ActivityWorkspaceListItem }) {
         <ActivityActionsMenu
           activityName={activity.name}
           actionButtonId={`activity-actions-${activity.id}`}
+          onEdit={onEdit}
         />
       </TableCell>
     </TableRow>
@@ -60,10 +67,12 @@ export default function ActivitiesTable({
   activities,
   filters,
   onClearSearch,
+  onEdit,
 }: {
   activities: ActivityWorkspaceListItem[];
   filters: ActivityFilters;
   onClearSearch: () => void;
+  onEdit: (activity: ActivityWorkspaceListItem) => void;
 }) {
   const hasFilters = hasActivityFilters(filters);
 
@@ -118,7 +127,11 @@ export default function ActivitiesTable({
         </TableHeader>
         <TableBody>
           {activities.map((activity) => (
-            <ActivityRow key={activity.id} activity={activity} />
+            <ActivityRow
+              key={activity.id}
+              activity={activity}
+              onEdit={() => onEdit(activity)}
+            />
           ))}
         </TableBody>
       </Table>
