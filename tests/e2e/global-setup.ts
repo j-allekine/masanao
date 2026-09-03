@@ -33,6 +33,7 @@ export default async function globalSetup() {
   }
 
   const password = await hashPassword("correct-horse-battery-staple");
+  const adminPassword = await hashPassword("administrator-password");
 
   database
     .prepare(
@@ -61,7 +62,36 @@ export default async function globalSetup() {
       "e2e-staff-user",
       "credential",
       "e2e-staff-user",
-      password,
+    password,
+  );
+  database
+    .prepare(
+      `INSERT INTO "user"
+       ("id", "name", "email", "username", "role", "disabled", "emailVerified", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-admin-user",
+      "Municipal Administrator",
+      "municipal.admin@internal.masanao",
+      "municipal.admin",
+      "admin",
+      0,
+      0,
+    );
+  database
+    .prepare(
+      `INSERT INTO "account"
+       ("id", "issuer", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-admin-credential-account",
+      "local:credential",
+      "e2e-admin-user",
+      "credential",
+      "e2e-admin-user",
+      adminPassword,
     );
   database.close();
 }
