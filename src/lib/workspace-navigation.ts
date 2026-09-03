@@ -1,6 +1,7 @@
 export type WorkspaceSectionId =
   | "overview"
   | "activity-designs"
+  | "master-data"
 
 export type WorkspaceSection = {
   id: WorkspaceSectionId
@@ -15,6 +16,7 @@ export const workspaceSections: WorkspaceSection[] = [
     label: "Activity Designs",
     href: "/activity-designs",
   },
+  { id: "master-data", label: "Master Data", href: "/master-data" },
 ]
 
 export function getWorkspaceSection(value: string): WorkspaceSectionId | undefined {

@@ -21,6 +21,12 @@ test("allowed architecture dependencies pass", async () => {
         'import { listActivityDesigns } from "@/features/activity-planning/server";',
     },
     {
+      name: "app to the Master Data public gateway",
+      filePath: "src/app/architecture-fixture.ts",
+      source:
+        'import { listUnits } from "@/features/master-data/server";',
+    },
+    {
       name: "app to shared code",
       filePath: "src/app/architecture-fixture.ts",
       source: 'import { Button } from "@/components/ui/button";',
@@ -64,6 +70,12 @@ test("allowed architecture dependencies pass", async () => {
         "src/features/activity-planning/server/db/architecture-fixture.ts",
       source: 'import { prisma } from "@/prisma/client";',
     },
+    {
+      name: "Master Data database Prisma access",
+      filePath:
+        "src/features/master-data/server/db/architecture-fixture.ts",
+      source: 'import { prisma } from "@/prisma/client";',
+    },
   ];
 
   for (const testCase of cases) {
@@ -97,6 +109,13 @@ test("forbidden architecture dependencies are rejected", async () => {
       ruleId: "boundaries/dependencies",
     },
     {
+      name: "app deep import into Master Data",
+      filePath: "src/app/architecture-fixture.ts",
+      source:
+        'import { listUnitRecords } from "@/features/master-data/server/db/units";',
+      ruleId: "boundaries/dependencies",
+    },
+    {
       name: "app code importing app code",
       filePath: "src/app/architecture-fixture.ts",
       source: 'import HomePage from "@/app/page";',
@@ -107,6 +126,20 @@ test("forbidden architecture dependencies are rejected", async () => {
       filePath:
         "src/features/activity-planning/server/commands/architecture-fixture.ts",
       source: 'import { prisma } from "@/prisma/client";',
+      ruleId: "boundaries/dependencies",
+    },
+    {
+      name: "Master Data command importing Prisma",
+      filePath:
+        "src/features/master-data/server/commands/architecture-fixture.ts",
+      source: 'import { prisma } from "@/prisma/client";',
+      ruleId: "boundaries/dependencies",
+    },
+    {
+      name: "Master Data cross-feature import",
+      filePath: "src/features/master-data/architecture-fixture.ts",
+      source:
+        'import { listActivityDesigns } from "@/features/activity-planning/server";',
       ruleId: "boundaries/dependencies",
     },
     {
