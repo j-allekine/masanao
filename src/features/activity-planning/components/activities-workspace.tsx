@@ -9,7 +9,6 @@ import {
 
 import type {
   ActivityDesignListItem,
-  ActivityListItem,
   ActivityWorkspaceListItem,
 } from "../types";
 import ActivitiesTable from "./activities-table";
@@ -47,6 +46,8 @@ export default function ActivitiesWorkspace({
   const listState = getPlanningListState(searchParams, "activities");
   const search = listState.search;
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [activityForEdit, setActivityForEdit] =
+    useState<ActivityWorkspaceListItem | null>(null);
 
   const filters: ActivityFilters = { search };
   const filteredActivities = useMemo(
@@ -99,7 +100,22 @@ export default function ActivitiesWorkspace({
     }, 0);
   }
 
-  function handleCreateSuccess(activity: ActivityListItem) {
+  function closeEditDialog() {
+    const closedActivity = activityForEdit;
+    setActivityForEdit(null);
+
+    window.setTimeout(() => {
+      if (closedActivity) {
+        document
+          .getElementById(`activity-actions-${closedActivity.id}`)
+          ?.focus();
+      }
+    }, 0);
+  }
+
+  function handleCreateSuccess(activity: {
+    activityDesignId: string;
+  }) {
     closeCreateDialog();
     router.replace(
       getPlanningListUrl(
@@ -121,6 +137,30 @@ export default function ActivitiesWorkspace({
     );
   }
 
+  function handleEditSuccess() {
+    closeEditDialog();
+    router.refresh();
+    toast.success("Activity updated");
+  }
+
+  function handleActivityDeleted(activityId: string) {
+    const deletedIndex = filteredActivities.findIndex(
+      (activity) => activity.id === activityId,
+    );
+    const nextFocusTarget =
+      filteredActivities[deletedIndex + 1] ??
+      filteredActivities[deletedIndex - 1];
+
+    router.refresh();
+
+    window.setTimeout(() => {
+      const targetId = nextFocusTarget
+        ? `activity-actions-${nextFocusTarget.id}`
+        : "new-activity";
+      document.getElementById(targetId)?.focus();
+    }, 0);
+  }
+
   return (
     <div
       className="flex flex-col gap-0"
@@ -138,6 +178,8 @@ export default function ActivitiesWorkspace({
         activities={paginatedActivities}
         filters={filters}
         onClearSearch={() => updateSearch("")}
+        onEdit={setActivityForEdit}
+        onDeleted={handleActivityDeleted}
       />
       <ActivityPagination
         page={currentPage}
@@ -153,6 +195,20 @@ export default function ActivitiesWorkspace({
         open={isCreateDialogOpen}
         onClose={closeCreateDialog}
         onSuccess={handleCreateSuccess}
+      />
+      <ActivityCreateDialog
+        activityDesign={
+          activityForEdit
+            ? activityDesigns.find(
+                (design) => design.id === activityForEdit.activityDesignId,
+              ) ?? null
+            : null
+        }
+        activity={activityForEdit ?? undefined}
+        mode="edit"
+        open={activityForEdit !== null}
+        onClose={closeEditDialog}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

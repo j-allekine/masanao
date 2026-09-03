@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, Pencil } from "lucide-react";
+import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +15,12 @@ export default function ActivityActionsMenu({
   activityName,
   actionButtonId,
   onEdit,
+  onDelete,
 }: {
   activityName: string;
   actionButtonId: string;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   function openAfterMenuCloses(action: () => void) {
     window.setTimeout(action, 0);
@@ -44,6 +46,13 @@ export default function ActivityActionsMenu({
           <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
             <Pencil />
             Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => openAfterMenuCloses(onDelete)}
+          >
+            <Trash2 />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

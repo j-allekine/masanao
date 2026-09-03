@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -24,22 +26,27 @@ import {
   type ActivityFilters,
 } from "./activity-filters";
 import ActivityActionsMenu from "./activity-actions-menu";
+import DeleteActivityDialog from "./delete-activity-dialog";
 
 const mealScheduleCountFormatter = new Intl.NumberFormat("en-US");
 
 function ActivityRow({
   activity,
   onEdit,
+  onDelete,
 }: {
   activity: ActivityWorkspaceListItem;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const formattedMealScheduleCount = mealScheduleCountFormatter.format(
     activity.mealScheduleCount,
   );
 
   return (
-    <TableRow className="hover:bg-muted/35">
+    <>
+      <TableRow className="hover:bg-muted/35">
       <TableCell className="max-w-[28rem]">
         <span className="block truncate">{activity.name}</span>
       </TableCell>
@@ -57,9 +64,18 @@ function ActivityRow({
           activityName={activity.name}
           actionButtonId={`activity-actions-${activity.id}`}
           onEdit={onEdit}
+          onDelete={() => setIsDeleteDialogOpen(true)}
         />
       </TableCell>
-    </TableRow>
+      </TableRow>
+      <DeleteActivityDialog
+        key={`${activity.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
+        activity={activity}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={onDelete}
+      />
+    </>
   );
 }
 
@@ -68,11 +84,13 @@ export default function ActivitiesTable({
   filters,
   onClearSearch,
   onEdit,
+  onDeleted,
 }: {
   activities: ActivityWorkspaceListItem[];
   filters: ActivityFilters;
   onClearSearch: () => void;
   onEdit: (activity: ActivityWorkspaceListItem) => void;
+  onDeleted: (activityId: string) => void;
 }) {
   const hasFilters = hasActivityFilters(filters);
 
@@ -131,6 +149,7 @@ export default function ActivitiesTable({
               key={activity.id}
               activity={activity}
               onEdit={() => onEdit(activity)}
+              onDelete={() => onDeleted(activity.id)}
             />
           ))}
         </TableBody>

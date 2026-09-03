@@ -63,9 +63,9 @@ export async function DELETE(
     return Response.json(
       {
         error: result.error,
-        ...(result.mealScheduleCount === undefined
-          ? {}
-          : { mealScheduleCount: result.mealScheduleCount }),
+        ...(result.kind === "has-meal-schedules"
+          ? { mealScheduleCount: result.mealScheduleCount }
+          : {}),
       },
       { status: result.kind === "not-found" ? 404 : 409 },
     );
