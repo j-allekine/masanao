@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "pnpm exec prisma migrate deploy --config prisma7.config.ts",
+    "predev": "pnpm exec prisma generate --generator client --config prisma7.config.ts && pnpm exec prisma migrate deploy --config prisma7.config.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src",
