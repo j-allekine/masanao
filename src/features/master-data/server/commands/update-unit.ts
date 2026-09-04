@@ -4,21 +4,26 @@ import { unitFieldErrors, unitSchema } from "../../schemas/unit";
 import type { UnitUpdateResult } from "../../types";
 import {
   findUnitConflictRecord,
+  getUnitDuplicateField,
   isRecordNotFound,
   isUniqueConstraintViolation,
   updateUnitRecord,
 } from "../db/units";
 
-function duplicateResult(field: "name" | "abbreviation"): UnitUpdateResult {
+function duplicateResult(
+  field: "name" | "abbreviation" | "form",
+): UnitUpdateResult {
   const label = field === "name" ? "name" : "abbreviation";
+  const message =
+    field === "form"
+      ? "A Unit with that name or abbreviation already exists."
+      : `A Unit with that ${label} already exists.`;
 
   return {
     ok: false,
     kind: "duplicate",
-    error: `A Unit with that ${label} already exists.`,
-    fields: {
-      [field]: [`A Unit with that ${label} already exists.`],
-    },
+    error: message,
+    fields: field === "form" ? { form: [message] } : { [field]: [message] },
   };
 }
 
@@ -47,7 +52,7 @@ export async function updateUnitCommand(
     };
   } catch (error) {
     if (isUniqueConstraintViolation(error)) {
-      return duplicateResult("name");
+      return duplicateResult(getUnitDuplicateField(error) ?? "form");
     }
 
     if (isRecordNotFound(error)) {
