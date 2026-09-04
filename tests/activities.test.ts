@@ -1,18 +1,28 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 
+const mocks = vi.hoisted(() => ({
+  actionHeaders: new Headers(),
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: mocks.revalidatePath,
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => mocks.actionHeaders),
+}));
+
 import {
-  GET as activityDesignGet,
-} from "@/app/api/activity-designs/[id]/route";
+  createActivityAction,
+  createActivityDesignAction,
+  deleteActivityDesignAction,
+} from "@/features/activity-planning/actions";
 import {
-  POST as activitiesPost,
-} from "@/app/api/activity-designs/[id]/activities/route";
-import {
-  DELETE as activityDesignDelete,
-} from "@/app/api/activity-designs/[id]/route";
-import {
-  POST as activityDesignsPost,
-} from "@/app/api/activity-designs/route";
+  listActivities,
+  listActivityDesigns,
+} from "@/features/activity-planning/server";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { prisma } from "@/prisma/client";
 
@@ -66,107 +76,100 @@ async function cookieForStaff() {
   return response.headers.get("set-cookie")?.split(";")[0] ?? "";
 }
 
-function request(
-  url: string,
-  method: "GET" | "POST" | "DELETE",
-  body?: Record<string, unknown>,
-  cookie = "",
+function setActionCookie(cookie = "") {
+  mocks.actionHeaders = new Headers(cookie ? { cookie } : {});
+}
+
+function toFormData(values: Record<string, unknown>) {
+  const formData = new FormData();
+
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && value !== null) {
+      formData.set(key, String(value));
+    }
+  }
+
+  return formData;
+}
+
+async function createActivityDesign(cookie: string) {
+  setActionCookie(cookie);
+  await expect(
+    createActivityDesignAction(toFormData(validActivityDesign)),
+  ).resolves.toEqual({ status: "success" });
+
+  const activityDesign = (await listActivityDesigns()).find(
+    (design) => design.activityDesignNo === "ad-2026-001",
+  );
+  expect(activityDesign).toBeDefined();
+  return activityDesign!;
+}
+
+async function createActivity(
+  cookie: string,
+  activityDesignId: string,
+  values: Record<string, unknown> = validActivity,
 ) {
-  return new Request(`http://localhost:3000${url}`, {
-    method,
-    headers: {
-      ...(body ? { "content-type": "application/json" } : {}),
-      ...(cookie ? { cookie } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  setActionCookie(cookie);
+  const result = await createActivityAction(
+    toFormData({ activityDesignId, ...values }),
+  );
+
+  if (result.status !== "success") {
+    throw new Error(result.error);
+  }
+
+  return result.activity;
 }
 
-function routeParams(id: string) {
-  return { params: Promise.resolve({ id }) };
-}
-
-describe("activities API", () => {
+describe("Activity feature seams", () => {
   beforeEach(async () => {
     await prisma.session.deleteMany();
     await prisma.mealSchedule.deleteMany();
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    setActionCookie();
+    mocks.revalidatePath.mockClear();
   });
 
-  async function createActivityDesign(cookie: string) {
-    const response = await activityDesignsPost(
-      request("/api/activity-designs", "POST", validActivityDesign, cookie),
-    );
-
-    expect(response.status).toBe(201);
-    return (await response.json()).activityDesign;
-  }
-
-  it("creates an Activity with optional planning values and lists it under its parent without Meal Schedules", async () => {
+  it("creates an Activity with optional planning values and lists it in the workspace gateway without Meal Schedules", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
 
-    const createResponse = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        {
-          name: "  Community Feeding  ",
-          officeName: "  Municipal Social Welfare and Development Office  ",
-          particulars: "  Nutrition Month launch  ",
-          scheduledDate: "2026-09-01",
-          venue: "  Municipal Covered Court  ",
-          plannedParticipantCount: 120,
-          plannedBudgetPesos: "1250.00",
-        },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
+    const activity = await createActivity(cookie, activityDesign.id, {
+      name: "  Community Feeding  ",
+      officeName: "  Municipal Social Welfare and Development Office  ",
+      particulars: "  Nutrition Month launch  ",
+      scheduledDate: "2026-09-01",
+      venue: "  Municipal Covered Court  ",
+      plannedParticipantCount: 120,
+      plannedBudgetPesos: "1250.00",
+    });
 
-    expect(createResponse.status).toBe(201);
-    const created = await createResponse.json();
-    expect(created).toMatchObject({
-      activity: {
+    expect(activity).toMatchObject({
+      activityDesignId: activityDesign.id,
+      name: "Community Feeding",
+      officeName: "Municipal Social Welfare and Development Office",
+      particulars: "Nutrition Month launch",
+      scheduledDate: "2026-09-01T00:00:00.000Z",
+      venue: "Municipal Covered Court",
+      plannedParticipantCount: 120,
+      plannedBudgetCentavos: "125000",
+      mealScheduleCount: 0,
+    });
+    await expect(listActivities()).resolves.toMatchObject([
+      {
+        id: activity.id,
         activityDesignId: activityDesign.id,
         name: "Community Feeding",
-        officeName: "Municipal Social Welfare and Development Office",
-        particulars: "Nutrition Month launch",
-        scheduledDate: "2026-09-01T00:00:00.000Z",
-        venue: "Municipal Covered Court",
-        plannedParticipantCount: 120,
-        plannedBudgetCentavos: "125000",
         mealScheduleCount: 0,
       },
-    });
-
-    const detailResponse = await activityDesignGet(
-      request(`/api/activity-designs/${activityDesign.id}`, "GET", undefined, cookie),
-      routeParams(activityDesign.id),
-    );
-
-    expect(detailResponse.status).toBe(200);
-    expect(await detailResponse.json()).toMatchObject({
-      activityDesign: {
-        id: activityDesign.id,
-        activityCount: 1,
-        activities: [
-          {
-            id: created.activity.id,
-            name: "Community Feeding",
-            scheduledDate: "2026-09-01T00:00:00.000Z",
-            mealScheduleCount: 0,
-          },
-        ],
-      },
-    });
-
+    ]);
     await expect(
       prisma.activity.findUnique({
-        where: { id: created.activity.id },
+        where: { id: activity.id },
         include: { mealSchedules: true },
       }),
     ).resolves.toMatchObject({
@@ -176,29 +179,19 @@ describe("activities API", () => {
     });
   });
 
-  it("persists a large peso budget exactly and serializes its centavos as a decimal string", async () => {
+  it("persists a large peso budget exactly as centavos", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
 
-    const response = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        {
-          ...validActivity,
-          plannedBudgetPesos: "21474836.48",
-        },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
+    const activity = await createActivity(cookie, activityDesign.id, {
+      ...validActivity,
+      plannedBudgetPesos: "21474836.48",
+    });
 
-    expect(response.status).toBe(201);
-    const payload = await response.json();
-    expect(payload.activity.plannedBudgetCentavos).toBe("2147483648");
+    expect(activity.plannedBudgetCentavos).toBe("2147483648");
     await expect(
-      prisma.activity.findUnique({ where: { id: payload.activity.id } }),
+      prisma.activity.findUnique({ where: { id: activity.id } }),
     ).resolves.toMatchObject({ plannedBudgetCentavos: BigInt(2_147_483_648) });
   });
 
@@ -213,23 +206,12 @@ describe("activities API", () => {
       const cookie = await cookieForStaff();
       const activityDesign = await createActivityDesign(cookie);
 
-      const response = await activitiesPost(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities`,
-          "POST",
-          {
-            ...validActivity,
-            plannedBudgetPesos,
-          },
-          cookie,
-        ),
-        routeParams(activityDesign.id),
-      );
+      const activity = await createActivity(cookie, activityDesign.id, {
+        ...validActivity,
+        plannedBudgetPesos,
+      });
 
-      expect(response.status).toBe(201);
-      expect((await response.json()).activity.plannedBudgetCentavos).toBe(
-        expectedCentavos,
-      );
+      expect(activity.plannedBudgetCentavos).toBe(expectedCentavos);
     },
   );
 
@@ -238,18 +220,11 @@ describe("activities API", () => {
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
 
-    const response = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        { ...validActivity, plannedBudgetPesos: "   " },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
+    const activity = await createActivity(cookie, activityDesign.id, {
+      ...validActivity,
+      plannedBudgetPesos: "   ",
+    });
 
-    expect(response.status).toBe(201);
-    const activity = (await response.json()).activity;
     expect(activity.plannedBudgetCentavos).toBeNull();
     await expect(
       prisma.activity.findUnique({ where: { id: activity.id } }),
@@ -268,19 +243,14 @@ describe("activities API", () => {
       await createStaffAccount();
       const cookie = await cookieForStaff();
       const activityDesign = await createActivityDesign(cookie);
+      setActionCookie(cookie);
 
-      const response = await activitiesPost(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities`,
-          "POST",
-          { ...validActivity, plannedBudgetPesos },
-          cookie,
-        ),
-        routeParams(activityDesign.id),
+      const result = await createActivityAction(
+        toFormData({ ...validActivity, activityDesignId: activityDesign.id, plannedBudgetPesos }),
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
+      expect(result).toMatchObject({
+        status: "error",
         fields: { plannedBudgetPesos: expect.any(Array) },
       });
       expect(await prisma.activity.count()).toBe(0);
@@ -292,71 +262,39 @@ describe("activities API", () => {
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
 
-    const response = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        {
-          ...validActivity,
-          plannedBudgetPesos: "92233720368547758.07",
-        },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
+    const activity = await createActivity(cookie, activityDesign.id, {
+      ...validActivity,
+      plannedBudgetPesos: "92233720368547758.07",
+    });
 
-    expect(response.status).toBe(201);
-    expect((await response.json()).activity.plannedBudgetCentavos).toBe(
-      "9223372036854775807",
-    );
+    expect(activity.plannedBudgetCentavos).toBe("9223372036854775807");
   });
 
-  it("returns an empty Activity collection for a saved Activity Design", async () => {
+  it("returns an empty Activity collection through the public server gateway for a saved Activity Design", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
-    const activityDesign = await createActivityDesign(cookie);
+    await createActivityDesign(cookie);
 
-    const response = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      activityDesign: {
-        id: activityDesign.id,
-        activityCount: 0,
-        activities: [],
-      },
-    });
+    await expect(listActivities()).resolves.toEqual([]);
   });
 
   it("rejects participants outside the Prisma Int range while allowing a larger budget range", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
+    setActionCookie(cookie);
 
-    const response = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        {
-          ...validActivity,
-          plannedParticipantCount: 2_147_483_648,
-          plannedBudgetPesos: "21474836.48",
-        },
-        cookie,
-      ),
-      routeParams(activityDesign.id),
+    const result = await createActivityAction(
+      toFormData({
+        ...validActivity,
+        activityDesignId: activityDesign.id,
+        plannedParticipantCount: 2_147_483_648,
+        plannedBudgetPesos: "21474836.48",
+      }),
     );
 
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
+    expect(result).toMatchObject({
+      status: "error",
       error: "Please correct the highlighted Activity fields.",
       fields: {
         plannedParticipantCount: [
@@ -384,23 +322,21 @@ describe("activities API", () => {
       await createStaffAccount();
       const cookie = await cookieForStaff();
       const activityDesign = await createActivityDesign(cookie);
+      setActionCookie(cookie);
 
-      const response = await activitiesPost(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities`,
-          "POST",
-          { ...validActivity, ...invalidFields },
-          cookie,
-        ),
-        routeParams(activityDesign.id),
+      const result = await createActivityAction(
+        toFormData({
+          ...validActivity,
+          ...invalidFields,
+          activityDesignId: activityDesign.id,
+        }),
       );
 
-      expect(response.status).toBe(400);
-      const payload = await response.json();
-      expect(payload.error).toBe(
-        "Please correct the highlighted Activity fields.",
-      );
-      expect(payload.fields).toHaveProperty(expectedField);
+      expect(result).toMatchObject({
+        status: "error",
+        error: "Please correct the highlighted Activity fields.",
+        fields: { [expectedField]: expect.any(Array) },
+      });
       expect(await prisma.activity.count()).toBe(0);
     },
   );
@@ -408,65 +344,44 @@ describe("activities API", () => {
   it("rejects an invalid parent Activity Design before persistence", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
+    setActionCookie(cookie);
 
-    const response = await activitiesPost(
-      request(
-        "/api/activity-designs/missing-design/activities",
-        "POST",
-        validActivity,
-        cookie,
+    await expect(
+      createActivityAction(
+        toFormData({ ...validActivity, activityDesignId: "missing-design" }),
       ),
-      routeParams("missing-design"),
-    );
-
-    expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({
+    ).resolves.toEqual({
+      status: "error",
       error: "The Activity Design could not be found.",
       fields: {},
     });
     expect(await prisma.activity.count()).toBe(0);
   });
 
-  it("requires authentication for Activity detail and creation", async () => {
-    const detailResponse = await activityDesignGet(
-      request("/api/activity-designs/missing-design", "GET"),
-      routeParams("missing-design"),
-    );
-    const createResponse = await activitiesPost(
-      request(
-        "/api/activity-designs/missing-design/activities",
-        "POST",
-        validActivity,
+  it("requires authentication for Activity creation", async () => {
+    await expect(
+      createActivityAction(
+        toFormData({ ...validActivity, activityDesignId: "missing-design" }),
       ),
-      routeParams("missing-design"),
-    );
-
-    expect(detailResponse.status).toBe(401);
-    expect(createResponse.status).toBe(401);
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+      fields: {},
+    });
   });
 
   it("blocks deleting an Activity Design after an Activity is created under it", async () => {
     await createStaffAccount();
     const cookie = await cookieForStaff();
     const activityDesign = await createActivityDesign(cookie);
+    await createActivity(cookie, activityDesign.id);
 
-    await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        validActivity,
-        cookie,
-      ),
-      routeParams(activityDesign.id),
-    );
-
-    const response = await activityDesignDelete(
-      request(`/api/activity-designs/${activityDesign.id}`, "DELETE", undefined, cookie),
-      routeParams(activityDesign.id),
-    );
-
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
+    setActionCookie(cookie);
+    await expect(
+      deleteActivityDesignAction(activityDesign.id),
+    ).resolves.toEqual({
+      status: "error",
+      kind: "has-activities",
       error:
         "This Activity Design cannot be deleted while it has Activities. Remove its Activities first.",
       activityCount: 1,

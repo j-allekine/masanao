@@ -9,9 +9,8 @@ import {
   POST as adminAccountsPost,
 } from "@/app/api/admin/accounts/route";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
-import { GET as operationsGet } from "@/app/api/operations/route";
 import { prisma } from "@/prisma/client";
-import type { CurrentActor } from "@/server/auth";
+import { getCurrentActor, type CurrentActor } from "@/server/auth";
 
 const adminPassword = "administrator-password";
 const originalStaffPassword = "original-staff-password";
@@ -252,12 +251,16 @@ describe("administrator account management", () => {
     ).toBe(true);
     expect(await prisma.session.count()).toBe(2);
 
-    const existingSessionResponse = await operationsGet(
-      new Request("http://localhost:3000/api/operations", {
+    const existingSessionActor = await getCurrentActor(
+      new Request("http://localhost:3000/overview", {
         headers: { cookie: staffCookie },
       }),
     );
-    expect(existingSessionResponse.status).toBe(200);
+    expect(existingSessionActor).toEqual({
+      id: "staff-user",
+      name: "kitchen.staff",
+      username: "kitchen.staff",
+    });
 
     const invalidPasswordResponse = await signInWithUsername(
       "kitchen.staff",

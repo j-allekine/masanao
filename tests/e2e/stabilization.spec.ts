@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -26,29 +28,63 @@ async function openActivityDesigns(page: Page) {
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
 
-async function createDesign(
-  page: Page,
+function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
+  const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
+  if (!databasePath) {
+    throw new Error("MASANAO_E2E_DATABASE_PATH is not set");
+  }
+
+  const database = new Database(databasePath);
+  try {
+    return callback(database);
+  } finally {
+    database.close();
+  }
+}
+
+function createDesign(
   activityDesignNo: string,
   title: string,
   aipReferenceCode?: string,
 ) {
-  const response = await page.request.post("/api/activity-designs", {
-    data: {
-      activityDesignNo,
-      fiscalYear: 2026,
-      title,
-      aipReferenceCode,
-    },
+  const activityDesign = {
+    id: randomUUID(),
+    activityDesignNo,
+    title,
+  };
+
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "activity_design"
+         ("id", "activityDesignNo", "fiscalYear", "title", "aipReferenceCode", "createdAt", "updatedAt")
+         VALUES (?, ?, 2026, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(activityDesign.id, activityDesignNo, title, aipReferenceCode ?? null);
   });
 
-  expect(response.status()).toBe(201);
-  return (await response.json()).activityDesign as ActivityDesign;
+  return activityDesign;
 }
 
-async function deleteDesigns(page: Page, designs: ActivityDesign[]) {
-  for (const design of designs) {
-    await page.request.delete(`/api/activity-designs/${design.id}`);
-  }
+function deleteDesigns(designs: ActivityDesign[]) {
+  withE2eDatabase((database) => {
+    const remove = database.transaction(() => {
+      for (const design of designs) {
+        database
+          .prepare(
+            'DELETE FROM "meal_schedule" WHERE "activityId" IN (SELECT "id" FROM "activity" WHERE "activityDesignId" = ?)',
+          )
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity" WHERE "activityDesignId" = ?')
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity_design" WHERE "id" = ?')
+          .run(design.id);
+      }
+    });
+    remove();
+  });
 }
 
 test.describe("frontend stabilization regression seam", () => {
@@ -71,8 +107,7 @@ test.describe("frontend stabilization regression seam", () => {
         page.getByRole("button", { name: "Open Activity Designs", exact: true }),
       ).toBeVisible();
 
-      design = await createDesign(
-        page,
+      design = createDesign(
         `E2E-MOBILE-${Date.now()}`,
         title,
         `AIP-${Date.now()}`,
@@ -122,7 +157,7 @@ test.describe("frontend stabilization regression seam", () => {
       await mobileSidebar.getByRole("button", { name: "Close", exact: true }).click();
       await expect(mobileSidebar).toBeHidden();
     } finally {
-      if (design) await deleteDesigns(page, [design]);
+      if (design) deleteDesigns([design]);
     }
   });
 
@@ -135,11 +170,7 @@ test.describe("frontend stabilization regression seam", () => {
 
     await authenticate(page);
     try {
-      design = await createDesign(
-        page,
-        designNo,
-        title,
-      );
+      design = createDesign(designNo, title);
 
       for (const viewport of [
         { width: 1458, height: 986, name: "desktop" },
@@ -229,7 +260,7 @@ test.describe("frontend stabilization regression seam", () => {
         );
       }
     } finally {
-      if (design) await deleteDesigns(page, [design]);
+      if (design) deleteDesigns([design]);
     }
   });
 
@@ -243,8 +274,7 @@ test.describe("frontend stabilization regression seam", () => {
     try {
       for (let index = 1; index <= 11; index += 1) {
         designs.push(
-          await createDesign(
-            page,
+          createDesign(
             `${prefix}-${index}`,
             `${prefix} ${String(index).padStart(2, "0")}`,
           ),
@@ -302,7 +332,7 @@ test.describe("frontend stabilization regression seam", () => {
       ).toBeVisible();
       await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
     } finally {
-      await deleteDesigns(page, designs);
+      deleteDesigns(designs);
     }
   });
 
@@ -332,8 +362,7 @@ test.describe("frontend stabilization regression seam", () => {
     page,
   }) => {
     await authenticate(page);
-    const design = await createDesign(
-      page,
+    const design = createDesign(
       `E2E-FORM-${Date.now()}`,
       `E2E Form Target ${Date.now()}`,
     );
@@ -427,7 +456,7 @@ test.describe("frontend stabilization regression seam", () => {
         duplicateDialog.getByRole("textbox", { name: "Title", exact: true }),
       ).toHaveValue("E2E duplicate submission");
     } finally {
-      await deleteDesigns(page, [design]);
+      deleteDesigns([design]);
     }
   });
 

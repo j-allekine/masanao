@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -19,39 +21,82 @@ async function authenticate(page: Page) {
   expect(response.status()).toBe(200);
 }
 
-async function createDesign(page: Page, title: string) {
-  const response = await page.request.post("/api/activity-designs", {
-    data: {
-      activityDesignNo: `E2E-80-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      fiscalYear: 2026,
-      title,
-    },
-  });
+function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
+  const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
+  if (!databasePath) {
+    throw new Error("MASANAO_E2E_DATABASE_PATH is not set");
+  }
 
-  expect(response.status()).toBe(201);
-  return (await response.json()).activityDesign as ActivityDesign;
+  const database = new Database(databasePath);
+  try {
+    return callback(database);
+  } finally {
+    database.close();
+  }
 }
 
-async function deleteDesigns(page: Page, designs: ActivityDesign[]) {
-  for (const design of designs) {
-    const detailResponse = await page.request.get(
-      `/api/activity-designs/${design.id}`,
-    );
-    expect(detailResponse.status()).toBe(200);
-    const detail = await detailResponse.json();
+function createDesign(title: string): ActivityDesign {
+  const activityDesign = {
+    id: randomUUID(),
+    activityDesignNo: `E2E-80-${randomUUID()}`,
+    title,
+  };
 
-    for (const activity of detail.activityDesign.activities) {
-      const activityResponse = await page.request.delete(
-        `/api/activity-designs/${design.id}/activities/${activity.id}`,
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "activity_design"
+         ("id", "activityDesignNo", "fiscalYear", "title", "aipReferenceCode", "createdAt", "updatedAt")
+         VALUES (?, ?, 2026, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        activityDesign.id,
+        activityDesign.activityDesignNo,
+        activityDesign.title,
       );
-      expect(activityResponse.status()).toBe(204);
-    }
+  });
 
-    const designResponse = await page.request.delete(
-      `/api/activity-designs/${design.id}`,
-    );
-    expect(designResponse.status()).toBe(204);
-  }
+  return activityDesign;
+}
+
+function readActivity(activityDesignId: string, name: string) {
+  return withE2eDatabase((database) =>
+    database
+      .prepare(
+        `SELECT "name", "officeName", "plannedParticipantCount", "plannedBudgetCentavos"
+         FROM "activity"
+         WHERE "activityDesignId" = ? AND "name" = ?`,
+      )
+      .get(activityDesignId, name) as
+      | {
+          name: string;
+          officeName: string;
+          plannedParticipantCount: number | null;
+          plannedBudgetCentavos: number | null;
+        }
+      | undefined,
+  );
+}
+
+function deleteDesigns(designs: ActivityDesign[]) {
+  withE2eDatabase((database) => {
+    const remove = database.transaction(() => {
+      for (const design of designs) {
+        database
+          .prepare(
+            'DELETE FROM "meal_schedule" WHERE "activityId" IN (SELECT "id" FROM "activity" WHERE "activityDesignId" = ?)',
+          )
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity" WHERE "activityDesignId" = ?')
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity_design" WHERE "id" = ?')
+          .run(design.id);
+      }
+    });
+    remove();
+  });
 }
 
 async function openActivityDialog(page: Page, title: string) {
@@ -74,7 +119,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
     await authenticate(page);
     try {
       for (let index = 1; index <= 11; index += 1) {
-        designs.push(await createDesign(page, `${prefix} ${index}`));
+        designs.push(createDesign(`${prefix} ${index}`));
       }
 
       for (const viewport of [
@@ -126,7 +171,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         }),
       ).toBeVisible();
     } finally {
-      await deleteDesigns(page, designs);
+      deleteDesigns(designs);
     }
   });
 
@@ -138,7 +183,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
 
     await authenticate(page);
     try {
-      designs.push(await createDesign(page, title));
+      designs.push(createDesign(title));
 
       await page.setViewportSize({ width: 1458, height: 986 });
       await page.goto("/activity-designs");
@@ -232,23 +277,13 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         page.getByText(`Activity added to “${title}”`, { exact: true }),
       ).toBeVisible();
 
-      const detailResponse = await page.request.get(
-        `/api/activity-designs/${designs[0]!.id}`,
-      );
-      expect(detailResponse.status()).toBe(200);
-      expect(await detailResponse.json()).toMatchObject({
-        activityDesign: {
-          activities: [
-            expect.objectContaining({
-              name: "E2E exact Activity",
-              plannedParticipantCount: 1_221_121,
-              plannedBudgetCentavos: "121212100",
-            }),
-          ],
-        },
+      expect(readActivity(designs[0]!.id, "E2E exact Activity")).toMatchObject({
+        name: "E2E exact Activity",
+        plannedParticipantCount: 1_221_121,
+        plannedBudgetCentavos: 121212100,
       });
     } finally {
-      await deleteDesigns(page, designs);
+      deleteDesigns(designs);
     }
   });
 });
