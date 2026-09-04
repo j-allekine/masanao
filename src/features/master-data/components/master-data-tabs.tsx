@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
-  isMasterDataTab,
+  isEnabledMasterDataTab,
   masterDataTabs,
   type MasterDataTab,
 } from "./master-data-list-state";
@@ -23,7 +23,7 @@ export default function MasterDataTabs({
     <Tabs
       value={activeTab}
       onValueChange={(value) => {
-        if (value && isMasterDataTab(value)) onTabChange(value);
+        if (value && isEnabledMasterDataTab(value)) onTabChange(value);
       }}
       className="gap-6"
     >
