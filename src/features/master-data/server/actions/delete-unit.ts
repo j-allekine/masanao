@@ -7,7 +7,7 @@ import type { UnitDeleteActionState } from "../../types";
 import { getCurrentUnitActor } from "./current-actor";
 
 export async function executeDeleteUnit(
-  id: string,
+  id: unknown,
 ): Promise<UnitDeleteActionState> {
   const actor = await getCurrentUnitActor();
 
@@ -19,7 +19,7 @@ export async function executeDeleteUnit(
     };
   }
 
-  if (!id.trim()) {
+  if (typeof id !== "string" || !id.trim()) {
     return {
       status: "error",
       kind: "not-found",

@@ -7,8 +7,8 @@ import type { UnitLifecycleActionState } from "../../types";
 import { getCurrentUnitActor } from "./current-actor";
 
 export async function executeSetUnitActive(
-  id: string,
-  active: boolean,
+  id: unknown,
+  active: unknown,
 ): Promise<UnitLifecycleActionState> {
   const actor = await getCurrentUnitActor();
 
@@ -20,11 +20,11 @@ export async function executeSetUnitActive(
     };
   }
 
-  if (!id.trim()) {
+  if (typeof id !== "string" || !id.trim() || typeof active !== "boolean") {
     return {
       status: "error",
-      kind: "not-found",
-      error: "The Unit could not be found.",
+      kind: "server",
+      error: "The Unit status request is invalid.",
     };
   }
 

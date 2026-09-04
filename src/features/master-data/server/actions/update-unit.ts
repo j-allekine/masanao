@@ -50,7 +50,7 @@ export async function executeUpdateUnit(
   } catch {
     return {
       status: "error",
-      kind: "validation",
+      kind: "server",
       error: "The Unit could not be saved. Check your connection and try again.",
       fields: {},
     };
