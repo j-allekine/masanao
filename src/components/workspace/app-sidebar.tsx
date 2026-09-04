@@ -189,7 +189,15 @@ export function AppSidebar({
                 return (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
-                      render={<Link href={item.href} aria-label={item.label} />}
+                      render={
+                        <Link
+                          href={item.href}
+                          aria-label={item.label}
+                          aria-current={
+                            activeSection === item.id ? "page" : undefined
+                          }
+                        />
+                      }
                       isActive={activeSection === item.id}
                       tooltip={item.label}
                       className="h-10 rounded-lg px-3 text-body-sm"
