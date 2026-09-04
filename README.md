@@ -1,22 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Masanao
 
 ## Getting Started
 
-First, run the development server:
+Masanao is a Next.js application for municipal-kitchen operations. Use the
+repository's supported Node.js and pnpm versions when setting up a clone or
+worktree.
+
+### Supported development runtimes
+
+- Node.js 22.x is the Linux CI baseline.
+- Node.js 24.x is supported and is the Windows verification target.
+- pnpm 11.13.1 is the supported package manager (`package.json` is
+  authoritative).
+
+For the Windows native-module setup, including the normal prebuilt path and
+the optional source-build fallback, see
+[Development setup](docs/development-setup.md).
+
+### Install and run
+
+From the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install --frozen-lockfile
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see
+the result.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
