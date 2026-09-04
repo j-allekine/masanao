@@ -146,10 +146,10 @@ export default function UnitTable({
             unit={unit}
             onEdit={() => onEdit(unit)}
             onToggle={() => onToggle(unit)}
-              onDeleted={() => onDeleted(unit)}
-              actionDisabled={actionDisabled}
-              canManage={canManage}
-            />
+            onDeleted={() => onDeleted(unit)}
+            actionDisabled={actionDisabled}
+            canManage={canManage}
+          />
         ))}
       </TableBody>
     </MasterDataTableFrame>

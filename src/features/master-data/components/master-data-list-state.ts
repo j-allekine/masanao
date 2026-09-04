@@ -7,12 +7,15 @@ export const masterDataTabs = [
 
 export type MasterDataTab = (typeof masterDataTabs)[number]["id"];
 
-export function isMasterDataTab(value: string): value is MasterDataTab {
-  return masterDataTabs.some((tab) => tab.id === value);
+export function isEnabledMasterDataTab(value: string): value is MasterDataTab {
+  return masterDataTabs.some((tab) => tab.id === value && !tab.disabled);
 }
 
 export function parseMasterDataTab(value: string | null): MasterDataTab {
-  return value === "units" ? "units" : "units";
+  return (
+    masterDataTabs.find((tab) => tab.id === value && !tab.disabled)?.id ??
+    "units"
+  );
 }
 
 export function parseMasterDataPage(value: string | null) {
