@@ -3,6 +3,8 @@ import "server-only";
 import type { CurrentActor } from "@/server/auth";
 
 import { createUnitCommand } from "./server/commands/create-unit";
+import { deleteUnitCommand } from "./server/commands/delete-unit";
+import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { isAdministrator } from "./server/policies/authorization";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
@@ -12,12 +14,6 @@ import type {
   UnitLifecycleResult,
   UnitUpdateResult,
 } from "./types";
-
-import {
-  deleteUnitRecord,
-  isRecordNotFound,
-  setUnitActiveRecord,
-} from "./server/db/units";
 
 export type {
   UnitCreateResult,
@@ -80,19 +76,7 @@ export async function setUnitActive(
   const authorizationFailure = await authorizeAdministrator(actor);
   if (authorizationFailure) return authorizationFailure;
 
-  try {
-    return { ok: true, unit: await setUnitActiveRecord(id, active) };
-  } catch (error) {
-    if (isRecordNotFound(error)) {
-      return {
-        ok: false,
-        kind: "not-found",
-        error: "The Unit could not be found.",
-      };
-    }
-
-    throw error;
-  }
+  return setUnitActiveCommand(id, active);
 }
 
 export async function deleteUnit(
@@ -102,23 +86,5 @@ export async function deleteUnit(
   const authorizationFailure = await authorizeAdministrator(actor);
   if (authorizationFailure) return authorizationFailure;
 
-  const result = await deleteUnitRecord(id);
-  if (!result) {
-    return {
-      ok: false,
-      kind: "not-found",
-      error: "The Unit could not be found.",
-    };
-  }
-
-  if (!result.deleted) {
-    return {
-      ok: false,
-      kind: "referenced",
-      error:
-        "This Unit cannot be deleted because it is already referenced by other records.",
-    };
-  }
-
-  return { ok: true };
+  return deleteUnitCommand(id);
 }
