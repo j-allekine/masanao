@@ -43,7 +43,6 @@ export async function executeDeleteActivity(
       };
     }
 
-    revalidatePath(`/activity-designs/${activityDesignId}`);
     revalidatePath("/activity-designs");
     revalidatePath("/activities");
 

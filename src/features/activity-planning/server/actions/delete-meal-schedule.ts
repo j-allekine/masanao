@@ -1,6 +1,5 @@
 import "server-only";
 
-import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { auth } from "@/server/auth";
@@ -42,8 +41,6 @@ export async function executeDeleteMealSchedule(
     if (!result.ok) {
       return { status: "error", error: result.error };
     }
-
-    revalidatePath(`/activity-designs/${activityDesignId}`);
 
     return { status: "success" };
   } catch {
