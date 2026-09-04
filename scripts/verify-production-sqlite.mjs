@@ -48,6 +48,18 @@ function nativeRuntimeError(stage, error) {
   );
 }
 
+function sqliteVerificationError(stage, error) {
+  return new Error(
+    [
+      `Production SQLite runtime verification failed while ${stage}.`,
+      "The SQLite adapter or query verification did not produce the expected result.",
+      "This failure is not classified as a native-binding failure; inspect the SQL, adapter behavior, and result validation instead.",
+      `Node ${process.versions.node} on ${process.platform}-${process.arch}. Original error: ${errorDetail(error)}`,
+    ].join("\n"),
+    { cause: error },
+  );
+}
+
 function generatedClientError(error) {
   return new Error(
     [
@@ -85,6 +97,17 @@ async function main() {
 
   let prisma;
   try {
+    const adapter = new PrismaBetterSqlite3({ url: ":memory:" });
+    const connection = await adapter.connect();
+    await connection.dispose();
+  } catch (error) {
+    throw nativeRuntimeError(
+      "initializing the production SQLite adapter",
+      error,
+    );
+  }
+
+  try {
     prisma = new PrismaClient({
       adapter: new PrismaBetterSqlite3({ url: ":memory:" }),
     });
@@ -104,7 +127,10 @@ async function main() {
       throw new Error(`Unexpected SQLite query result: ${JSON.stringify(rows)}`);
     }
   } catch (error) {
-    throw nativeRuntimeError("executing a Prisma query through SQLite", error);
+    throw sqliteVerificationError(
+      "executing a Prisma query through SQLite",
+      error,
+    );
   } finally {
     await prisma?.$disconnect();
   }

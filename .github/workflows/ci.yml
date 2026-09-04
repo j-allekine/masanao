@@ -98,3 +98,39 @@ jobs:
 
       - name: Run native SQLite runtime smoke test
         run: pnpm exec vitest run tests/native-sqlite-runtime.test.ts --reporter=verbose
+
+  production-runtime:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:./ci-production.db
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out fresh repository
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          architecture: x64
+          cache: pnpm
+
+      - name: Install full dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate application Prisma Client
+        run: pnpm exec prisma generate --generator client --config prisma7.config.ts
+
+      - name: Prune to production dependencies
+        run: pnpm install --prod --frozen-lockfile
+
+      - name: Verify production SQLite runtime
+        run: pnpm run verify:production-sqlite
