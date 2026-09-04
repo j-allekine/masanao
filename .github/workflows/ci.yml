@@ -56,3 +56,45 @@ jobs:
 
       - name: Build application
         run: pnpm build
+
+  native-windows:
+    runs-on: windows-latest
+    env:
+      DATABASE_URL: file:./ci-windows.db
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out fresh repository
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          architecture: x64
+          cache: pnpm
+
+      - name: Verify Windows x64 runtime
+        shell: pwsh
+        run: |
+          if ($env:PROCESSOR_ARCHITECTURE -ne "AMD64") {
+            throw "Expected a Windows x64 runner, got $env:PROCESSOR_ARCHITECTURE"
+          }
+          node --version
+          pnpm --version
+
+      - name: Install dependencies with repository lifecycle policy
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client for native runtime test
+        run: pnpm exec prisma generate --generator client
+
+      - name: Run native SQLite runtime smoke test
+        run: pnpm exec vitest run tests/native-sqlite-runtime.test.ts --reporter=verbose
