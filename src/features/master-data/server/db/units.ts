@@ -22,11 +22,35 @@ function toUnitListItem(unit: {
   return unit;
 }
 
-export function isUniqueConstraintViolation(error: unknown) {
+export function isUniqueConstraintViolation(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   );
+}
+
+export function getUnitDuplicateField(error: unknown) {
+  if (!isUniqueConstraintViolation(error)) return null;
+
+  const target = error.meta?.target;
+  const fields = Array.isArray(target)
+    ? target.filter((field): field is string => typeof field === "string")
+    : typeof target === "string"
+      ? [target]
+      : [];
+  const normalizedFields = fields.map((field) => field.toLowerCase());
+
+  if (normalizedFields.some((field) => field.includes("abbreviation"))) {
+    return "abbreviation" as const;
+  }
+
+  if (normalizedFields.some((field) => field.includes("name"))) {
+    return "name" as const;
+  }
+
+  return null;
 }
 
 export function isRecordNotFound(error: unknown) {
