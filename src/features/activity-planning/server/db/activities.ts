@@ -5,7 +5,6 @@ import { prisma } from "@/prisma/client";
 
 import type { ActivityInput } from "../../schemas/activity";
 import type {
-  ActivityDesignDetail,
   ActivityListItem,
   ActivityWorkspaceListItem,
 } from "../../types";
@@ -56,26 +55,6 @@ const activityWorkspaceListOrderBy = [
   { createdAt: "desc" },
   { id: "desc" },
 ] satisfies Prisma.ActivityOrderByWithRelationInput[];
-
-const activityOrderBy = [
-  { scheduledDate: "asc" },
-  { name: "asc" },
-] satisfies Prisma.ActivityOrderByWithRelationInput[];
-
-const activityDesignDetailSelect = {
-  id: true,
-  activityDesignNo: true,
-  fiscalYear: true,
-  title: true,
-  aipReferenceCode: true,
-  _count: {
-    select: { activities: true },
-  },
-  activities: {
-    select: activitySelect,
-    orderBy: activityOrderBy,
-  },
-} as const;
 
 export function isForeignKeyConstraintViolation(error: unknown) {
   return (
@@ -156,40 +135,9 @@ function toActivityWorkspaceListItem(activity: {
   };
 }
 
-function toActivityDesignDetail(activityDesign: {
-  id: string;
-  activityDesignNo: string;
-  fiscalYear: number;
-  title: string;
-  aipReferenceCode: string | null;
-  _count: { activities: number };
-  activities: Array<Parameters<typeof toActivityListItem>[0]>;
-}): ActivityDesignDetail {
-  return {
-    id: activityDesign.id,
-    activityDesignNo: activityDesign.activityDesignNo,
-    fiscalYear: activityDesign.fiscalYear,
-    title: activityDesign.title,
-    aipReferenceCode: activityDesign.aipReferenceCode,
-    activityCount: activityDesign._count.activities,
-    activities: activityDesign.activities.map(toActivityListItem),
-  };
-}
-
 function dateOnlyToUtcDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));
-}
-
-export async function getActivityDesignRecord(
-  id: string,
-): Promise<ActivityDesignDetail | null> {
-  const activityDesign = await prisma.activityDesign.findUnique({
-    where: { id },
-    select: activityDesignDetailSelect,
-  });
-
-  return activityDesign ? toActivityDesignDetail(activityDesign) : null;
 }
 
 export async function listActivityWorkspaceRecords(): Promise<

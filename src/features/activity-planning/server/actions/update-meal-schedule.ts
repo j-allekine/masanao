@@ -1,6 +1,5 @@
 import "server-only";
 
-import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { auth } from "@/server/auth";
@@ -61,8 +60,6 @@ export async function executeUpdateMealSchedule(
         fields: result.fields,
       };
     }
-
-    revalidatePath(`/activity-designs/${activityDesignId}`);
 
     return { status: "success", mealSchedule: result.mealSchedule };
   } catch {

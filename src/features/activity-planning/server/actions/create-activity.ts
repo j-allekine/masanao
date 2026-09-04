@@ -52,7 +52,6 @@ export async function executeCreateActivity(
       };
     }
 
-    revalidatePath(`/activity-designs/${activityDesignId}`);
     revalidatePath("/activity-designs");
     revalidatePath("/activities");
 

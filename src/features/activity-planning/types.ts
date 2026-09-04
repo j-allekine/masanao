@@ -75,10 +75,6 @@ export type ActivityWorkspaceListItem = ActivityEditableListItem & {
   mealScheduleCount: number;
 };
 
-export type ActivityDesignDetail = ActivityDesignListItem & {
-  activities: ActivityListItem[];
-};
-
 export type ActivityDesignCreateResult =
   | {
       ok: true;
