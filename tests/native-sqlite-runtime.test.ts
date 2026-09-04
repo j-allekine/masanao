@@ -52,11 +52,11 @@ describe("native SQLite runtime", () => {
           INSERT INTO native_runtime_smoke (value) VALUES (42)
         `;
 
-        await expect(
-          prisma.$queryRaw<Array<{ value: number }>>`
-            SELECT value FROM native_runtime_smoke
-          `,
-        ).resolves.toEqual([{ value: 42 }]);
+        const rows = await prisma.$queryRaw<Array<{ value: number | bigint }>>`
+          SELECT value FROM native_runtime_smoke
+        `;
+
+        expect(rows.map(({ value }) => Number(value))).toEqual([42]);
       } catch (error) {
         throw nativeRuntimeFailure("Prisma SQLite driver adapter", error);
       }
