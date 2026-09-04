@@ -149,6 +149,21 @@ export default function UnitsWorkspace({
     );
     const nextFocusTarget =
       paginatedUnits[deletedIndex + 1] ?? paginatedUnits[deletedIndex - 1];
+    const remainingUnitCount = Math.max(filteredUnits.length - 1, 0);
+    const nextPageCount = Math.max(
+      1,
+      Math.ceil(remainingUnitCount / PAGE_SIZE),
+    );
+    const nextPage = Math.min(currentPage, nextPageCount);
+
+    setListState((current) => ({ ...current, page: nextPage }));
+    router.replace(
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: "units",
+        page: nextPage,
+      }),
+      { scroll: false },
+    );
 
     router.refresh();
     toast.success(`Unit “${unit.name}” deleted`);
