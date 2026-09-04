@@ -20,7 +20,7 @@ Examples:
 - Sack (`sack`)
 - Tray (`tray`)
 
-Default Units are protected from deletion and deactivation. Users may add custom Units. Default names and abbreviations do not change; descriptions may be updated. Unit names and abbreviations must be unique without regard to capitalization.
+Unit names and abbreviations must be unique without regard to capitalization.
 
 ### Item Base Unit
 
