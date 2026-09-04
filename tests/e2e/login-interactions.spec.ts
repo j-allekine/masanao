@@ -56,12 +56,6 @@ test.describe("production login interactions", () => {
     });
 
     await openLogin(page);
-    let protectedProbeRequested = false;
-    page.on("request", (request) => {
-      if (new URL(request.url()).pathname === "/api/operations") {
-        protectedProbeRequested = true;
-      }
-    });
 
     const username = page.getByLabel("Username", { exact: true });
     const password = page.getByLabel("Password", { exact: true });
@@ -89,7 +83,6 @@ test.describe("production login interactions", () => {
       overviewRequestPromise,
     ]);
     expect(response.status()).toBe(200);
-    expect(protectedProbeRequested).toBe(false);
     expect(request.postDataJSON()).toMatchObject({
       username: "kitchen.staff",
       password: "correct-horse-battery-staple",

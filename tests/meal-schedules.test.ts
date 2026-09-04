@@ -1,14 +1,27 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 
-import { GET as activityDesignGet } from "@/app/api/activity-designs/[id]/route";
-import { POST as activitiesPost } from "@/app/api/activity-designs/[id]/activities/route";
+const mocks = vi.hoisted(() => ({
+  actionHeaders: new Headers(),
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: mocks.revalidatePath,
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => mocks.actionHeaders),
+}));
+
 import {
-  DELETE as mealScheduleDelete,
-  PATCH as mealSchedulePatch,
-} from "@/app/api/activity-designs/[id]/activities/[activityId]/meal-schedules/[scheduleId]/route";
-import { POST as mealSchedulesPost } from "@/app/api/activity-designs/[id]/activities/[activityId]/meal-schedules/route";
-import { POST as activityDesignsPost } from "@/app/api/activity-designs/route";
+  createActivityAction,
+  createActivityDesignAction,
+  createMealScheduleAction,
+  deleteMealScheduleAction,
+  updateMealScheduleAction,
+} from "@/features/activity-planning/actions";
+import { listActivities, listActivityDesigns } from "@/features/activity-planning/server";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { prisma } from "@/prisma/client";
 
@@ -66,92 +79,95 @@ async function cookieForStaff() {
   return response.headers.get("set-cookie")?.split(";")[0] ?? "";
 }
 
-function request(
-  url: string,
-  method: "GET" | "POST" | "PATCH" | "DELETE",
-  body?: Record<string, unknown>,
-  cookie = "",
-) {
-  return new Request(`http://localhost:3000${url}`, {
-    method,
-    headers: {
-      ...(body ? { "content-type": "application/json" } : {}),
-      ...(cookie ? { cookie } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+function setActionCookie(cookie = "") {
+  mocks.actionHeaders = new Headers(cookie ? { cookie } : {});
 }
 
-function routeParams(id: string, activityId: string) {
-  return { params: Promise.resolve({ id, activityId }) };
+function toFormData(values: Record<string, unknown>) {
+  const formData = new FormData();
+
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && value !== null) {
+      formData.set(key, String(value));
+    }
+  }
+
+  return formData;
 }
 
-function mealScheduleRouteParams(
-  id: string,
-  activityId: string,
-  scheduleId: string,
+async function createActivityDesign(
+  cookie: string,
+  values: Record<string, unknown> = validActivityDesign,
 ) {
-  return { params: Promise.resolve({ id, activityId, scheduleId }) };
+  setActionCookie(cookie);
+  await expect(
+    createActivityDesignAction(toFormData(values)),
+  ).resolves.toEqual({ status: "success" });
+
+  const activityDesignNo = String(values.activityDesignNo).trim().toLowerCase();
+  const activityDesign = (await listActivityDesigns()).find(
+    (design) => design.activityDesignNo === activityDesignNo,
+  );
+  expect(activityDesign).toBeDefined();
+  return activityDesign!;
+}
+
+async function createActivity(cookie: string, activityDesignId: string) {
+  setActionCookie(cookie);
+  const result = await createActivityAction(
+    toFormData({ activityDesignId, ...validActivity }),
+  );
+
+  if (result.status !== "success") {
+    throw new Error(result.error);
+  }
+
+  return result.activity;
 }
 
 async function createActivityScenario() {
   await createStaffAccount();
   const cookie = await cookieForStaff();
-  const designResponse = await activityDesignsPost(
-    request("/api/activity-designs", "POST", validActivityDesign, cookie),
-  );
-  const activityDesign = (await designResponse.json()).activityDesign;
-  const activityResponse = await activitiesPost(
-    request(
-      `/api/activity-designs/${activityDesign.id}/activities`,
-      "POST",
-      validActivity,
-      cookie,
-    ),
-    { params: Promise.resolve({ id: activityDesign.id }) },
-  );
+  const activityDesign = await createActivityDesign(cookie);
+  const activity = await createActivity(cookie, activityDesign.id);
 
-  return {
-    cookie,
-    activityDesign,
-    activity: (await activityResponse.json()).activity,
-  };
+  return { cookie, activityDesign, activity };
 }
 
-describe("Meal Schedule API", () => {
+async function readMealSchedules(activityId: string) {
+  return prisma.mealSchedule.findMany({
+    where: { activityId },
+    orderBy: [{ mealTime: "asc" }, { label: "asc" }],
+  });
+}
+
+describe("Meal Schedule Server Action adapters", () => {
   beforeEach(async () => {
     await prisma.session.deleteMany();
     await prisma.mealSchedule.deleteMany();
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    setActionCookie();
+    mocks.revalidatePath.mockClear();
   });
 
-  it("creates multiple Meal Schedules and lists them under the Activity after rereading", async () => {
-    const { cookie, activityDesign, activity } =
-      await createActivityScenario();
+  it("creates multiple Meal Schedules and rereads them from the isolated database", async () => {
+    const { cookie, activity } = await createActivityScenario();
 
-    const lunchResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        { label: "  Lunch  ", mealTime: "12:00", plannedServings: 120 },
-        cookie,
+    setActionCookie(cookie);
+    await expect(
+      createMealScheduleAction(
+        toFormData({
+          activityDesignId: activity.activityDesignId,
+          activityId: activity.id,
+          label: "  Lunch  ",
+          mealTime: "12:00",
+          plannedServings: 120,
+        }),
       ),
-      routeParams(activityDesign.id, activity.id),
-    );
-    const snackResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        { label: "Snack", mealTime: "15:30" },
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
-    );
-
-    expect(lunchResponse.status).toBe(201);
-    expect(await lunchResponse.json()).toMatchObject({
+    ).resolves.toMatchObject({
+      status: "success",
       mealSchedule: {
         activityId: activity.id,
         label: "Lunch",
@@ -159,8 +175,17 @@ describe("Meal Schedule API", () => {
         plannedServings: 120,
       },
     });
-    expect(snackResponse.status).toBe(201);
-    expect(await snackResponse.json()).toMatchObject({
+    await expect(
+      createMealScheduleAction(
+        toFormData({
+          activityDesignId: activity.activityDesignId,
+          activityId: activity.id,
+          label: "Snack",
+          mealTime: "15:30",
+        }),
+      ),
+    ).resolves.toMatchObject({
+      status: "success",
       mealSchedule: {
         activityId: activity.id,
         label: "Snack",
@@ -169,136 +194,75 @@ describe("Meal Schedule API", () => {
       },
     });
 
-    const rereadResponse = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
-      ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-
-    expect(rereadResponse.status).toBe(200);
-    expect(await rereadResponse.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          {
-            id: activity.id,
-            mealScheduleCount: 2,
-            mealSchedules: [
-              {
-                activityId: activity.id,
-                label: "Lunch",
-                mealTime: "12:00",
-                plannedServings: 120,
-              },
-              {
-                activityId: activity.id,
-                label: "Snack",
-                mealTime: "15:30",
-                plannedServings: null,
-              },
-            ],
-          },
-        ],
+    await expect(readMealSchedules(activity.id)).resolves.toMatchObject([
+      {
+        activityId: activity.id,
+        label: "Lunch",
+        mealTime: "12:00",
+        plannedServings: 120,
       },
-    });
+      {
+        activityId: activity.id,
+        label: "Snack",
+        mealTime: "15:30",
+        plannedServings: null,
+      },
+    ]);
   });
 
   it("keeps an Activity without Meal Schedules valid and presents an empty collection", async () => {
-    const { cookie, activityDesign, activity } =
-      await createActivityScenario();
+    const { activity } = await createActivityScenario();
 
-    const response = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
-      ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          {
-            id: activity.id,
-            mealScheduleCount: 0,
-            mealSchedules: [],
-          },
-        ],
-      },
-    });
+    await expect(listActivities()).resolves.toMatchObject([
+      { id: activity.id, mealScheduleCount: 0 },
+    ]);
+    await expect(readMealSchedules(activity.id)).resolves.toEqual([]);
   });
 
   it("edits a Meal Schedule and persists the saved values after rereading", async () => {
-    const { cookie, activityDesign, activity } =
-      await createActivityScenario();
-    const createResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        { label: "Lunch", mealTime: "12:00", plannedServings: 120 },
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
+    const { cookie, activity } = await createActivityScenario();
+    setActionCookie(cookie);
+    const createResult = await createMealScheduleAction(
+      toFormData({
+        activityDesignId: activity.activityDesignId,
+        activityId: activity.id,
+        ...validMealSchedule,
+        plannedServings: 120,
+      }),
     );
-    const created = (await createResponse.json()).mealSchedule;
+    if (createResult.status !== "success") {
+      throw new Error(createResult.error);
+    }
 
-    const updateResponse = await mealSchedulePatch(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules/${created.id}`,
-        "PATCH",
-        {
-          label: "  Dinner  ",
-          mealTime: "18:45",
-          plannedServings: 240,
-        },
-        cookie,
-      ),
-      mealScheduleRouteParams(activityDesign.id, activity.id, created.id),
+    const updateResult = await updateMealScheduleAction(
+      toFormData({
+        activityDesignId: activity.activityDesignId,
+        activityId: activity.id,
+        mealScheduleId: createResult.mealSchedule.id,
+        label: "  Dinner  ",
+        mealTime: "18:45",
+        plannedServings: 240,
+      }),
     );
 
-    expect(updateResponse.status).toBe(200);
-    expect(await updateResponse.json()).toMatchObject({
+    expect(updateResult).toMatchObject({
+      status: "success",
       mealSchedule: {
-        id: created.id,
+        id: createResult.mealSchedule.id,
         activityId: activity.id,
         label: "Dinner",
         mealTime: "18:45",
         plannedServings: 240,
       },
     });
-
-    const rereadResponse = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
-      ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-
-    expect(await rereadResponse.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          {
-            mealSchedules: [
-              {
-                id: created.id,
-                label: "Dinner",
-                mealTime: "18:45",
-                plannedServings: 240,
-              },
-            ],
-          },
-        ],
+    await expect(readMealSchedules(activity.id)).resolves.toMatchObject([
+      {
+        id: createResult.mealSchedule.id,
+        label: "Dinner",
+        mealTime: "18:45",
+        plannedServings: 240,
       },
-    });
+    ]);
   });
 
   it.each([
@@ -308,36 +272,40 @@ describe("Meal Schedule API", () => {
   ] as const)(
     "rejects editing with %s and leaves the saved Meal Schedule unchanged",
     async (_description, invalidFields, expectedField) => {
-      const { cookie, activityDesign, activity } =
-        await createActivityScenario();
-      const createResponse = await mealSchedulesPost(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-          "POST",
-          { ...validMealSchedule, plannedServings: 120 },
-          cookie,
-        ),
-        routeParams(activityDesign.id, activity.id),
+      const { cookie, activity } = await createActivityScenario();
+      setActionCookie(cookie);
+      const createResult = await createMealScheduleAction(
+        toFormData({
+          activityDesignId: activity.activityDesignId,
+          activityId: activity.id,
+          ...validMealSchedule,
+          plannedServings: 120,
+        }),
       );
-      const created = (await createResponse.json()).mealSchedule;
+      if (createResult.status !== "success") {
+        throw new Error(createResult.error);
+      }
 
-      const response = await mealSchedulePatch(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules/${created.id}`,
-          "PATCH",
-          { ...validMealSchedule, plannedServings: 120, ...invalidFields },
-          cookie,
-        ),
-        mealScheduleRouteParams(activityDesign.id, activity.id, created.id),
+      const result = await updateMealScheduleAction(
+        toFormData({
+          activityDesignId: activity.activityDesignId,
+          activityId: activity.id,
+          mealScheduleId: createResult.mealSchedule.id,
+          ...validMealSchedule,
+          plannedServings: 120,
+          ...invalidFields,
+        }),
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
+      expect(result).toMatchObject({
+        status: "error",
         error: "Please correct the highlighted Meal Schedule fields.",
         fields: { [expectedField]: expect.any(Array) },
       });
       await expect(
-        prisma.mealSchedule.findUnique({ where: { id: created.id } }),
+        prisma.mealSchedule.findUnique({
+          where: { id: createResult.mealSchedule.id },
+        }),
       ).resolves.toMatchObject({
         label: validMealSchedule.label,
         mealTime: validMealSchedule.mealTime,
@@ -347,103 +315,83 @@ describe("Meal Schedule API", () => {
   );
 
   it("deletes a Meal Schedule without an Issuance Record and preserves the Activity", async () => {
-    const { cookie, activityDesign, activity } =
-      await createActivityScenario();
-    const createResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        validMealSchedule,
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
+    const { cookie, activity } = await createActivityScenario();
+    setActionCookie(cookie);
+    const createResult = await createMealScheduleAction(
+      toFormData({
+        activityDesignId: activity.activityDesignId,
+        activityId: activity.id,
+        ...validMealSchedule,
+      }),
     );
-    const created = (await createResponse.json()).mealSchedule;
+    if (createResult.status !== "success") {
+      throw new Error(createResult.error);
+    }
 
-    const response = await mealScheduleDelete(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules/${created.id}`,
-        "DELETE",
-        undefined,
-        cookie,
-      ),
-      mealScheduleRouteParams(activityDesign.id, activity.id, created.id),
-    );
-
-    expect(response.status).toBe(204);
     await expect(
-      prisma.mealSchedule.findUnique({ where: { id: created.id } }),
-    ).resolves.toBeNull();
-
-    const rereadResponse = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
+      deleteMealScheduleAction(
+        activity.activityDesignId,
+        activity.id,
+        createResult.mealSchedule.id,
       ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-
-    expect(await rereadResponse.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          {
-            id: activity.id,
-            mealScheduleCount: 0,
-            mealSchedules: [],
-          },
-        ],
-      },
-    });
+    ).resolves.toEqual({ status: "success" });
+    await expect(
+      prisma.mealSchedule.findUnique({
+        where: { id: createResult.mealSchedule.id },
+      }),
+    ).resolves.toBeNull();
+    await expect(listActivities()).resolves.toMatchObject([
+      { id: activity.id, mealScheduleCount: 0 },
+    ]);
   });
 
-  it("rejects editing or deleting a Meal Schedule from another Activity or Activity Design", async () => {
+  it("rejects editing or deleting a Meal Schedule from another Activity Design", async () => {
     const { cookie, activityDesign, activity } =
       await createActivityScenario();
-    const createResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        validMealSchedule,
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
+    setActionCookie(cookie);
+    const createResult = await createMealScheduleAction(
+      toFormData({
+        activityDesignId: activityDesign.id,
+        activityId: activity.id,
+        ...validMealSchedule,
+      }),
     );
-    const created = (await createResponse.json()).mealSchedule;
-    const otherDesignResponse = await activityDesignsPost(
-      request(
-        "/api/activity-designs",
-        "POST",
-        { ...validActivityDesign, activityDesignNo: "AD-2026-019" },
-        cookie,
-      ),
-    );
-    const otherDesign = (await otherDesignResponse.json()).activityDesign;
+    if (createResult.status !== "success") {
+      throw new Error(createResult.error);
+    }
+    const otherDesign = await createActivityDesign(cookie, {
+      ...validActivityDesign,
+      activityDesignNo: "AD-2026-019",
+    });
 
-    const updateResponse = await mealSchedulePatch(
-      request(
-        `/api/activity-designs/${otherDesign.id}/activities/${activity.id}/meal-schedules/${created.id}`,
-        "PATCH",
-        { label: "Should not move", mealTime: "18:00" },
-        cookie,
-      ),
-      mealScheduleRouteParams(otherDesign.id, activity.id, created.id),
+    const updateResult = await updateMealScheduleAction(
+      toFormData({
+        activityDesignId: otherDesign.id,
+        activityId: activity.id,
+        mealScheduleId: createResult.mealSchedule.id,
+        label: "Should not move",
+        mealTime: "18:00",
+      }),
     );
-    const deleteResponse = await mealScheduleDelete(
-      request(
-        `/api/activity-designs/${otherDesign.id}/activities/${activity.id}/meal-schedules/${created.id}`,
-        "DELETE",
-        undefined,
-        cookie,
-      ),
-      mealScheduleRouteParams(otherDesign.id, activity.id, created.id),
+    const deleteResult = await deleteMealScheduleAction(
+      otherDesign.id,
+      activity.id,
+      createResult.mealSchedule.id,
     );
 
-    expect(updateResponse.status).toBe(404);
-    expect(deleteResponse.status).toBe(404);
+    expect(updateResult).toEqual({
+      status: "error",
+      error: "The Meal Schedule could not be found.",
+      fields: {},
+    });
+    expect(deleteResult).toEqual({
+      status: "error",
+      error: "The Meal Schedule could not be found.",
+    });
     await expect(
-      prisma.mealSchedule.findUnique({ where: { id: created.id } }),
+      prisma.mealSchedule.findUnique({
+        where: { id: createResult.mealSchedule.id },
+      }),
     ).resolves.toMatchObject({
       activityId: activity.id,
       label: validMealSchedule.label,
@@ -464,21 +412,20 @@ describe("Meal Schedule API", () => {
   ] as const)(
     "rejects %s without creating a Meal Schedule",
     async (_description, invalidFields, expectedField) => {
-      const { cookie, activityDesign, activity } =
-        await createActivityScenario();
+      const { cookie, activity } = await createActivityScenario();
+      setActionCookie(cookie);
 
-      const response = await mealSchedulesPost(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities/${activity.id}/meal-schedules`,
-          "POST",
-          { ...validMealSchedule, ...invalidFields },
-          cookie,
-        ),
-        routeParams(activityDesign.id, activity.id),
+      const result = await createMealScheduleAction(
+        toFormData({
+          activityDesignId: activity.activityDesignId,
+          activityId: activity.id,
+          ...validMealSchedule,
+          ...invalidFields,
+        }),
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
+      expect(result).toMatchObject({
+        status: "error",
         error: "Please correct the highlighted Meal Schedule fields.",
         fields: { [expectedField]: expect.any(Array) },
       });
@@ -489,86 +436,83 @@ describe("Meal Schedule API", () => {
   it("rejects missing or mismatched parent Activities before persistence", async () => {
     const { cookie, activityDesign, activity } =
       await createActivityScenario();
+    setActionCookie(cookie);
 
-    const missingActivityResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/missing-activity/meal-schedules`,
-        "POST",
-        validMealSchedule,
-        cookie,
+    await expect(
+      createMealScheduleAction(
+        toFormData({
+          activityDesignId: activityDesign.id,
+          activityId: "missing-activity",
+          ...validMealSchedule,
+        }),
       ),
-      routeParams(activityDesign.id, "missing-activity"),
-    );
-
-    expect(missingActivityResponse.status).toBe(404);
-    expect(await missingActivityResponse.json()).toEqual({
+    ).resolves.toEqual({
+      status: "error",
       error: "The Activity could not be found.",
       fields: {},
     });
 
-    const otherDesignResponse = await activityDesignsPost(
-      request(
-        "/api/activity-designs",
-        "POST",
-        { ...validActivityDesign, activityDesignNo: "AD-2026-019" },
-        cookie,
+    const otherDesign = await createActivityDesign(cookie, {
+      ...validActivityDesign,
+      activityDesignNo: "AD-2026-019",
+    });
+    await expect(
+      createMealScheduleAction(
+        toFormData({
+          activityDesignId: otherDesign.id,
+          activityId: activity.id,
+          ...validMealSchedule,
+        }),
       ),
-    );
-    const otherDesign = (await otherDesignResponse.json()).activityDesign;
-    const mismatchedParentResponse = await mealSchedulesPost(
-      request(
-        `/api/activity-designs/${otherDesign.id}/activities/${activity.id}/meal-schedules`,
-        "POST",
-        validMealSchedule,
-        cookie,
-      ),
-      routeParams(otherDesign.id, activity.id),
-    );
-
-    expect(mismatchedParentResponse.status).toBe(404);
+    ).resolves.toEqual({
+      status: "error",
+      error: "The Activity could not be found.",
+      fields: {},
+    });
     expect(await prisma.mealSchedule.count()).toBe(0);
   });
 
   it("requires authentication for Meal Schedule creation", async () => {
-    const response = await mealSchedulesPost(
-      request(
-        "/api/activity-designs/missing-design/activities/missing-activity/meal-schedules",
-        "POST",
-        validMealSchedule,
+    await expect(
+      createMealScheduleAction(
+        toFormData({
+          activityDesignId: "missing-design",
+          activityId: "missing-activity",
+          ...validMealSchedule,
+        }),
       ),
-      routeParams("missing-design", "missing-activity"),
-    );
-
-    expect(response.status).toBe(401);
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+      fields: {},
+    });
     expect(await prisma.mealSchedule.count()).toBe(0);
   });
 
   it("requires authentication for Meal Schedule editing and deletion", async () => {
-    const response = await mealSchedulePatch(
-      request(
-        "/api/activity-designs/missing-design/activities/missing-activity/meal-schedules/missing-schedule",
-        "PATCH",
-        validMealSchedule,
+    await expect(
+      updateMealScheduleAction(
+        toFormData({
+          activityDesignId: "missing-design",
+          activityId: "missing-activity",
+          mealScheduleId: "missing-schedule",
+          ...validMealSchedule,
+        }),
       ),
-      mealScheduleRouteParams(
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+      fields: {},
+    });
+    await expect(
+      deleteMealScheduleAction(
         "missing-design",
         "missing-activity",
         "missing-schedule",
       ),
-    );
-    const deleteResponse = await mealScheduleDelete(
-      request(
-        "/api/activity-designs/missing-design/activities/missing-activity/meal-schedules/missing-schedule",
-        "DELETE",
-      ),
-      mealScheduleRouteParams(
-        "missing-design",
-        "missing-activity",
-        "missing-schedule",
-      ),
-    );
-
-    expect(response.status).toBe(401);
-    expect(deleteResponse.status).toBe(401);
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+    });
   });
 });

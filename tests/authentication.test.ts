@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
-import { GET as operationsGet } from "@/app/api/operations/route";
 import { getCurrentActor } from "@/server/auth";
 import { prisma } from "@/prisma/client";
 
@@ -82,7 +81,7 @@ describe("username authentication API", () => {
 
     await expect(
       getCurrentActor(
-        new Request("http://localhost:3000/api/operations", {
+        new Request("http://localhost:3000/overview", {
           headers: { cookie: cookie?.split(";")[0] ?? "" },
         }),
       ),
@@ -115,40 +114,10 @@ describe("username authentication API", () => {
     expect(await prisma.session.count()).toBe(0);
   });
 
-  it("rejects access to Masanao operations without an authenticated session", async () => {
-    const response = await operationsGet(
-      new Request("http://localhost:3000/api/operations"),
-    );
-
-    expect(response.status).toBe(401);
-  });
-
-  it("allows an authenticated staff member to access Masanao operations", async () => {
-    await createStaffAccount();
-
-    const signInResponse = await signInWithUsername(
-      "kitchen.staff",
-      staffPassword,
-    );
-    const cookie = signInResponse.headers.get("set-cookie");
-
-    const response = await operationsGet(
-      new Request("http://localhost:3000/api/operations", {
-        headers: {
-          cookie: cookie?.split(";")[0] ?? "",
-        },
-      }),
-    );
-
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      authenticated: true,
-      user: {
-        id: "staff-user",
-        name: "Kitchen Staff",
-        username: "kitchen.staff",
-      },
-    });
+  it("returns no current actor without an authenticated session", async () => {
+    await expect(
+      getCurrentActor(new Request("http://localhost:3000/overview")),
+    ).resolves.toBeNull();
   });
 
   it("keeps email, social, registration, and recovery auth paths unavailable", async () => {

@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -29,17 +31,157 @@ async function createDesign(page: Page, title: string) {
   await expect(dialog).toHaveCount(0);
 }
 
-async function createDesignViaApi(page: Page, title: string) {
-  const response = await page.request.post("/api/activity-designs", {
-    data: {
-      activityDesignNo: `E2E-GLOBAL-${Date.now()}`,
-      fiscalYear: 2026,
-      title,
-    },
+type ActivityDesignFixture = {
+  id: string;
+  activityDesignNo: string;
+  title: string;
+};
+
+type ActivityFixture = {
+  id: string;
+  activityDesignId: string;
+  name: string;
+  officeName: string;
+  particulars: string | null;
+  venue: string | null;
+  plannedParticipantCount: number | null;
+  plannedBudgetCentavos: number | null;
+};
+
+function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
+  const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
+  if (!databasePath) {
+    throw new Error("MASANAO_E2E_DATABASE_PATH is not set");
+  }
+
+  const database = new Database(databasePath);
+  try {
+    return callback(database);
+  } finally {
+    database.close();
+  }
+}
+
+function createDesignFixture(
+  title: string,
+  fiscalYear = 2026,
+): ActivityDesignFixture {
+  const activityDesign = {
+    id: randomUUID(),
+    activityDesignNo: `E2E-GLOBAL-${randomUUID()}`,
+    title,
+  };
+
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "activity_design"
+         ("id", "activityDesignNo", "fiscalYear", "title", "aipReferenceCode", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        activityDesign.id,
+        activityDesign.activityDesignNo,
+        fiscalYear,
+        activityDesign.title,
+      );
   });
 
-  expect(response.status()).toBe(201);
-  return (await response.json()).activityDesign;
+  return activityDesign;
+}
+
+function createActivityFixture({
+  activityDesignId,
+  name,
+  officeName,
+  scheduledDate,
+}: {
+  activityDesignId: string;
+  name: string;
+  officeName: string;
+  scheduledDate: string;
+}) {
+  const activity = {
+    id: randomUUID(),
+    activityDesignId,
+  };
+
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "activity"
+         ("id", "activityDesignId", "name", "officeName", "particulars", "scheduledDate", "venue", "plannedParticipantCount", "plannedBudgetCentavos", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, NULL, ?, NULL, NULL, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(activity.id, activityDesignId, name, officeName, scheduledDate);
+  });
+
+  return activity;
+}
+
+function readActivityFixture(
+  activityDesignId: string,
+  name: string,
+): ActivityFixture | undefined {
+  return withE2eDatabase((database) =>
+    database
+      .prepare(
+        `SELECT "id", "activityDesignId", "name", "officeName", "particulars", "venue", "plannedParticipantCount", "plannedBudgetCentavos"
+         FROM "activity"
+         WHERE "activityDesignId" = ? AND "name" = ?`,
+      )
+      .get(activityDesignId, name) as ActivityFixture | undefined,
+  );
+}
+
+function createMealScheduleFixture(activityId: string) {
+  const mealScheduleId = randomUUID();
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "meal_schedule"
+         ("id", "activityId", "label", "mealTime", "plannedServings", "createdAt", "updatedAt")
+         VALUES (?, ?, 'Lunch', '12:00', 1250, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(mealScheduleId, activityId);
+  });
+
+  return mealScheduleId;
+}
+
+function deleteMealScheduleFixture(mealScheduleId: string) {
+  withE2eDatabase((database) => {
+    database
+      .prepare('DELETE FROM "meal_schedule" WHERE "id" = ?')
+      .run(mealScheduleId);
+  });
+}
+
+function deleteActivityFixture(activityId: string) {
+  withE2eDatabase((database) => {
+    database.prepare('DELETE FROM "activity" WHERE "id" = ?').run(activityId);
+  });
+}
+
+function deleteDesigns(designs: ActivityDesignFixture[]) {
+  withE2eDatabase((database) => {
+    const remove = database.transaction(() => {
+      for (const design of designs) {
+        database
+          .prepare(
+            'DELETE FROM "meal_schedule" WHERE "activityId" IN (SELECT "id" FROM "activity" WHERE "activityDesignId" = ?)',
+          )
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity" WHERE "activityDesignId" = ?')
+          .run(design.id);
+        database
+          .prepare('DELETE FROM "activity_design" WHERE "id" = ?')
+          .run(design.id);
+      }
+    });
+    remove();
+  });
 }
 
 test.describe("Activity planning journey", () => {
@@ -70,7 +212,7 @@ test.describe("Activity planning journey", () => {
     let mealScheduleId: string | undefined;
 
     try {
-      const createdDesign = await createDesignViaApi(page, "E2E Global Activity Plan");
+      const createdDesign = createDesignFixture("E2E Global Activity Plan");
       activityDesign = createdDesign;
       const design = createdDesign;
       await page.reload();
@@ -159,22 +301,16 @@ test.describe("Activity planning journey", () => {
       const createdRow = page.getByRole("row").filter({ hasText: activityName });
       await expect(createdRow).toBeVisible();
 
-      const detailResponse = await page.request.get(
-        `/api/activity-designs/${design.id}`,
-      );
-      expect(detailResponse.status()).toBe(200);
-      const detail = await detailResponse.json();
-      const savedActivity = detail.activityDesign.activities.find(
-        (activity: { name: string }) => activity.name === activityName,
-      );
+      const savedActivity = readActivityFixture(design.id, activityName);
+      expect(savedActivity).toBeDefined();
       expect(savedActivity).toMatchObject({
         officeName: "E2E Global Office",
         particulars: "E2E global particulars",
         venue: "E2E global venue",
         plannedParticipantCount: 1250,
-        plannedBudgetCentavos: "125000",
+        plannedBudgetCentavos: 125000,
       });
-      activityId = savedActivity.id;
+      activityId = savedActivity!.id;
 
       await createdRow
         .getByRole("button", { name: `Actions for ${activityName}`, exact: true })
@@ -235,20 +371,14 @@ test.describe("Activity planning journey", () => {
         }),
       ).toBeFocused();
 
-      const updatedDetailResponse = await page.request.get(
-        `/api/activity-designs/${design.id}`,
-      );
-      const updatedDetail = await updatedDetailResponse.json();
-      expect(updatedDetail.activityDesign.activities).toContainEqual(
-        expect.objectContaining({
-          id: activityId,
-          name: updatedActivityName,
-          particulars: null,
-          venue: null,
-          plannedParticipantCount: null,
-          plannedBudgetCentavos: null,
-        }),
-      );
+      expect(readActivityFixture(design.id, updatedActivityName)).toMatchObject({
+        id: activityId,
+        name: updatedActivityName,
+        particulars: null,
+        venue: null,
+        plannedParticipantCount: null,
+        plannedBudgetCentavos: null,
+      });
 
       await activitySearch.fill("Global Activity Updated");
       await expect(updatedRow).toBeVisible();
@@ -283,18 +413,7 @@ test.describe("Activity planning journey", () => {
       const deleteDialog = page.getByRole("alertdialog");
       await expect(deleteDialog).toContainText(`Delete “${updatedActivityName}”?`);
 
-      const scheduleResponse = await page.request.post(
-        `/api/activity-designs/${design.id}/activities/${activityId}/meal-schedules`,
-        {
-          data: {
-            label: "Lunch",
-            mealTime: "12:00",
-            plannedServings: 1250,
-          },
-        },
-      );
-      expect(scheduleResponse.status()).toBe(201);
-      mealScheduleId = (await scheduleResponse.json()).mealSchedule.id;
+      mealScheduleId = createMealScheduleFixture(activityId!);
 
       await deleteDialog
         .getByRole("button", { name: "Delete Activity", exact: true })
@@ -308,10 +427,7 @@ test.describe("Activity planning journey", () => {
       await expect(deleteDialog.getByRole("button", { name: "Close", exact: true })).toHaveCount(1);
       await deleteDialog.getByRole("button", { name: "Close", exact: true }).click();
 
-      const scheduleDeleteResponse = await page.request.delete(
-        `/api/activity-designs/${design.id}/activities/${activityId}/meal-schedules/${mealScheduleId}`,
-      );
-      expect(scheduleDeleteResponse.status()).toBe(204);
+      deleteMealScheduleFixture(mealScheduleId);
       mealScheduleId = undefined;
 
       await staleRow
@@ -331,17 +447,10 @@ test.describe("Activity planning journey", () => {
       ).toBeFocused();
     } finally {
       if (mealScheduleId && activityDesign && activityId) {
-        await page.request.delete(
-          `/api/activity-designs/${activityDesign.id}/activities/${activityId}/meal-schedules/${mealScheduleId}`,
-        );
-      }
-      if (activityDesign && activityId) {
-        await page.request.delete(
-          `/api/activity-designs/${activityDesign.id}/activities/${activityId}`,
-        );
+        deleteMealScheduleFixture(mealScheduleId);
       }
       if (activityDesign) {
-        await page.request.delete(`/api/activity-designs/${activityDesign.id}`);
+        deleteDesigns([activityDesign]);
       }
     }
   });
@@ -402,19 +511,10 @@ test.describe("Activity planning journey", () => {
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     const savedRow = page.getByRole("row").filter({ hasText: title });
     await expect(savedRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
-    const savedResponse = await page.request.get(`/api/activity-designs/${designId}`);
-    expect(savedResponse.status()).toBe(200);
-    expect(await savedResponse.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          expect.objectContaining({
-            name: "E2E Community Feeding",
-            officeName: "E2E Kitchen Office",
-            scheduledDate: expect.stringContaining("2026-09-03"),
-            plannedBudgetCentavos: "1234567",
-          }),
-        ],
-      },
+    expect(readActivityFixture(designId, "E2E Community Feeding")).toMatchObject({
+      name: "E2E Community Feeding",
+      officeName: "E2E Kitchen Office",
+      plannedBudgetCentavos: 1234567,
     });
 
     await page.goto(`/activity-designs/${designId}`);
@@ -457,148 +557,76 @@ test.describe("Activity planning journey", () => {
     page,
   }) => {
     await signIn(page);
-    const firstResponse = await page.request.post("/api/activity-designs", {
-      data: {
-        activityDesignNo: `E2E-REG-${Date.now()}`,
-        fiscalYear: 2026,
-        title: "E2E Regression Feeding Plan",
-      },
-    });
-    const secondResponse = await page.request.post("/api/activity-designs", {
-      data: {
-        activityDesignNo: `E2E-REG-${Date.now()}-2`,
-        fiscalYear: 2025,
-        title: "E2E Regression Outreach Plan",
-      },
-    });
-    expect(firstResponse.status()).toBe(201);
-    expect(secondResponse.status()).toBe(201);
-    const firstDesign = (await firstResponse.json()).activityDesign;
-    const secondDesign = (await secondResponse.json()).activityDesign;
-    const activityResponse = await page.request.post(
-      `/api/activity-designs/${firstDesign.id}/activities`,
-      {
-        data: {
-          name: "Regression activity",
-          officeName: "Regression Office",
-          scheduledDate: "2026-09-04",
-        },
-      },
+    const firstDesign = createDesignFixture("E2E Regression Feeding Plan");
+    const secondDesign = createDesignFixture(
+      "E2E Regression Outreach Plan",
+      2025,
     );
-    expect(activityResponse.status()).toBe(201);
-    const activity = (await activityResponse.json()).activity;
-
-    await page.reload();
-    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    await page.waitForLoadState("networkidle");
-    const search = page.getByRole("searchbox", {
-      name: "Search Activity Designs",
-      exact: true,
-    });
-    await search.fill("  outreach  ");
-    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toBeVisible();
-    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" })).toHaveCount(0);
-    await search.fill("");
-    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" })).toBeVisible();
-    await expect(page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" })).toBeVisible();
-
-    const row = page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" });
-    await row.getByRole("button", { name: /Actions for E2E Regression Feeding Plan/ }).click();
-    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-    const blockedDialog = page.getByRole("alertdialog");
-    await expect(blockedDialog).toContainText("contains 1 Activity");
-    await blockedDialog.getByRole("button", { name: "Close", exact: true }).click();
-
-    await page.request.delete(
-      `/api/activity-designs/${firstDesign.id}/activities/${activity.id}`,
-    );
-    await page.request.delete(`/api/activity-designs/${secondDesign.id}`);
-    await page.reload();
-    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    const refreshedRow = page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" });
-    await refreshedRow.getByRole("button", { name: /Actions for E2E Regression Feeding Plan/ }).click();
-    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
-    await page
-      .getByRole("alertdialog")
-      .getByRole("button", { name: "Delete Activity Design", exact: true })
-      .click();
-    await expect(refreshedRow).toHaveCount(0);
-  });
-
-  test("preserves Activity and Meal Schedule API contracts after retiring detail UI", async ({
-    page,
-  }) => {
-    await signIn(page);
-    const designResponse = await page.request.post("/api/activity-designs", {
-      data: {
-        activityDesignNo: `E2E-API-${Date.now()}`,
-        fiscalYear: 2026,
-        title: "E2E API Contract Plan",
-      },
-    });
-    expect(designResponse.status()).toBe(201);
-    const design = (await designResponse.json()).activityDesign;
-
-    const activityResponse = await page.request.post(
-      `/api/activity-designs/${design.id}/activities`,
-      {
-        data: {
-          name: "API contract activity",
-          officeName: "Municipal Health Office",
-          scheduledDate: "2026-09-05",
-        },
-      },
-    );
-    expect(activityResponse.status()).toBe(201);
-    const activity = (await activityResponse.json()).activity;
-
-    const scheduleResponse = await page.request.post(
-      `/api/activity-designs/${design.id}/activities/${activity.id}/meal-schedules`,
-      {
-        data: {
-          label: "Lunch",
-          mealTime: "12:00",
-          plannedServings: 120,
-        },
-      },
-    );
-    expect(scheduleResponse.status()).toBe(201);
-    const schedule = (await scheduleResponse.json()).mealSchedule;
-    expect(schedule).toMatchObject({
-      label: "Lunch",
-      mealTime: "12:00",
-      plannedServings: 120,
+    const activity = createActivityFixture({
+      activityDesignId: firstDesign.id,
+      name: "Regression activity",
+      officeName: "Regression Office",
+      scheduledDate: "2026-09-04T00:00:00.000Z",
     });
 
-    const updateResponse = await page.request.patch(
-      `/api/activity-designs/${design.id}/activities/${activity.id}/meal-schedules/${schedule.id}`,
-      {
-        data: {
-          label: "Dinner",
-          mealTime: "18:45",
-          plannedServings: 240,
-        },
-      },
-    );
-    expect(updateResponse.status()).toBe(200);
-    expect((await updateResponse.json()).mealSchedule).toMatchObject({
-      label: "Dinner",
-      mealTime: "18:45",
-      plannedServings: 240,
-    });
+    try {
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.waitForLoadState("networkidle");
+      const search = page.getByRole("searchbox", {
+        name: "Search Activity Designs",
+        exact: true,
+      });
+      await search.fill("  outreach  ");
+      await expect(
+        page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" }),
+      ).toHaveCount(0);
+      await search.fill("");
+      await expect(
+        page.getByRole("row").filter({ hasText: "E2E Regression Feeding Plan" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("row").filter({ hasText: "E2E Regression Outreach Plan" }),
+      ).toBeVisible();
 
-    const scheduleDeleteResponse = await page.request.delete(
-      `/api/activity-designs/${design.id}/activities/${activity.id}/meal-schedules/${schedule.id}`,
-    );
-    expect(scheduleDeleteResponse.status()).toBe(204);
+      const row = page
+        .getByRole("row")
+        .filter({ hasText: "E2E Regression Feeding Plan" });
+      await row
+        .getByRole("button", {
+          name: /Actions for E2E Regression Feeding Plan/,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const blockedDialog = page.getByRole("alertdialog");
+      await expect(blockedDialog).toContainText("contains 1 Activity");
+      await blockedDialog
+        .getByRole("button", { name: "Close", exact: true })
+        .click();
 
-    const activityDeleteResponse = await page.request.delete(
-      `/api/activity-designs/${design.id}/activities/${activity.id}`,
-    );
-    expect(activityDeleteResponse.status()).toBe(204);
-    const designDeleteResponse = await page.request.delete(
-      `/api/activity-designs/${design.id}`,
-    );
-    expect(designDeleteResponse.status()).toBe(204);
+      deleteActivityFixture(activity.id);
+      deleteDesigns([secondDesign]);
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const refreshedRow = page
+        .getByRole("row")
+        .filter({ hasText: "E2E Regression Feeding Plan" });
+      await refreshedRow
+        .getByRole("button", {
+          name: /Actions for E2E Regression Feeding Plan/,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Delete Activity Design", exact: true })
+        .click();
+      await expect(refreshedRow).toHaveCount(0);
+    } finally {
+      deleteDesigns([firstDesign, secondDesign]);
+    }
   });
 });

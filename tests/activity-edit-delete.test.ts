@@ -1,17 +1,29 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hashPassword } from "better-auth/crypto";
 
+const mocks = vi.hoisted(() => ({
+  actionHeaders: new Headers(),
+  revalidatePath: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: mocks.revalidatePath,
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn(async () => mocks.actionHeaders),
+}));
+
 import {
-  GET as activityDesignGet,
-} from "@/app/api/activity-designs/[id]/route";
+  createActivityAction,
+  createActivityDesignAction,
+  deleteActivityAction,
+  updateActivityAction,
+} from "@/features/activity-planning/actions";
 import {
-  DELETE as activityDelete,
-  PATCH as activityPatch,
-} from "@/app/api/activity-designs/[id]/activities/[activityId]/route";
-import {
-  POST as activitiesPost,
-} from "@/app/api/activity-designs/[id]/activities/route";
-import { POST as activityDesignsPost } from "@/app/api/activity-designs/route";
+  listActivities,
+  listActivityDesigns,
+} from "@/features/activity-planning/server";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { prisma } from "@/prisma/client";
 
@@ -65,82 +77,82 @@ async function cookieForStaff() {
   return response.headers.get("set-cookie")?.split(";")[0] ?? "";
 }
 
-function request(
-  url: string,
-  method: "GET" | "POST" | "PATCH" | "DELETE",
-  body?: Record<string, unknown>,
-  cookie = "",
+function setActionCookie(cookie = "") {
+  mocks.actionHeaders = new Headers(cookie ? { cookie } : {});
+}
+
+function toFormData(values: Record<string, unknown>) {
+  const formData = new FormData();
+
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && value !== null) {
+      formData.set(key, String(value));
+    }
+  }
+
+  return formData;
+}
+
+async function createActivityDesign(
+  cookie: string,
+  values: Record<string, unknown> = validActivityDesign,
 ) {
-  return new Request(`http://localhost:3000${url}`, {
-    method,
-    headers: {
-      ...(body ? { "content-type": "application/json" } : {}),
-      ...(cookie ? { cookie } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  setActionCookie(cookie);
+  await expect(
+    createActivityDesignAction(toFormData(values)),
+  ).resolves.toEqual({ status: "success" });
+
+  const activityDesignNo = String(values.activityDesignNo).trim().toLowerCase();
+  const activityDesign = (await listActivityDesigns()).find(
+    (design) => design.activityDesignNo === activityDesignNo,
+  );
+  expect(activityDesign).toBeDefined();
+  return activityDesign!;
+}
+
+async function createActivity(cookie: string, activityDesignId: string) {
+  setActionCookie(cookie);
+  const result = await createActivityAction(
+    toFormData({ activityDesignId, ...validActivity }),
+  );
+
+  if (result.status !== "success") {
+    throw new Error(result.error);
+  }
+
+  return result.activity;
 }
 
 async function createActivityScenario() {
   await createStaffAccount();
   const cookie = await cookieForStaff();
-  const designResponse = await activityDesignsPost(
-    request("/api/activity-designs", "POST", validActivityDesign, cookie),
-  );
-  const activityDesign = (await designResponse.json()).activityDesign;
-  const createResponse = await activitiesPost(
-    request(
-      `/api/activity-designs/${activityDesign.id}/activities`,
-      "POST",
-      validActivity,
-      cookie,
-    ),
-    { params: Promise.resolve({ id: activityDesign.id }) },
-  );
+  const activityDesign = await createActivityDesign(cookie);
+  const activity = await createActivity(cookie, activityDesign.id);
 
-  return {
-    cookie,
-    activityDesign,
-    activity: (await createResponse.json()).activity,
-  };
+  return { cookie, activityDesign, activity };
 }
 
-function routeParams(id: string, activityId: string) {
-  return { params: Promise.resolve({ id, activityId }) };
-}
-
-describe("Activity edit API", () => {
+describe("Activity edit and delete Server Action adapters", () => {
   beforeEach(async () => {
     await prisma.session.deleteMany();
     await prisma.mealSchedule.deleteMany();
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    setActionCookie();
+    mocks.revalidatePath.mockClear();
   });
 
-  it("edits an Activity and returns the saved planning values after rereading", async () => {
-    await createStaffAccount();
-    const cookie = await cookieForStaff();
-    const designResponse = await activityDesignsPost(
-      request("/api/activity-designs", "POST", validActivityDesign, cookie),
-    );
-    const activityDesign = (await designResponse.json()).activityDesign;
-    const createResponse = await activitiesPost(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities`,
-        "POST",
-        validActivity,
-        cookie,
-      ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-    const activity = (await createResponse.json()).activity;
+  it("edits an Activity and returns the saved planning values after rereading through the workspace gateway", async () => {
+    const { cookie, activityDesign, activity } =
+      await createActivityScenario();
 
-    const updateResponse = await activityPatch(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}`,
-        "PATCH",
-        {
+    setActionCookie(cookie);
+    await expect(
+      updateActivityAction(
+        toFormData({
+          activityDesignId: activityDesign.id,
+          activityId: activity.id,
           name: "  Expanded Community Feeding  ",
           officeName: "  Municipal Health Office  ",
           particulars: "  Nutrition Month launch  ",
@@ -148,14 +160,10 @@ describe("Activity edit API", () => {
           venue: "  Municipal Covered Court  ",
           plannedParticipantCount: 120,
           plannedBudgetPesos: "1250.00",
-        },
-        cookie,
+        }),
       ),
-      routeParams(activityDesign.id, activity.id),
-    );
-
-    expect(updateResponse.status).toBe(200);
-    expect(await updateResponse.json()).toMatchObject({
+    ).resolves.toMatchObject({
+      status: "success",
       activity: {
         id: activity.id,
         name: "Expanded Community Feeding",
@@ -169,33 +177,18 @@ describe("Activity edit API", () => {
       },
     });
 
-    const rereadResponse = await activityDesignGet(
-      request(
-        `/api/activity-designs/${activityDesign.id}`,
-        "GET",
-        undefined,
-        cookie,
-      ),
-      { params: Promise.resolve({ id: activityDesign.id }) },
-    );
-
-    expect(rereadResponse.status).toBe(200);
-    expect(await rereadResponse.json()).toMatchObject({
-      activityDesign: {
-        activities: [
-          {
-            id: activity.id,
-            name: "Expanded Community Feeding",
-            officeName: "Municipal Health Office",
-            particulars: "Nutrition Month launch",
-            scheduledDate: "2026-09-03T00:00:00.000Z",
-            venue: "Municipal Covered Court",
-            plannedParticipantCount: 120,
-            plannedBudgetCentavos: "125000",
-          },
-        ],
+    await expect(listActivities()).resolves.toMatchObject([
+      {
+        id: activity.id,
+        name: "Expanded Community Feeding",
+        officeName: "Municipal Health Office",
+        particulars: "Nutrition Month launch",
+        scheduledDate: "2026-09-03T00:00:00.000Z",
+        venue: "Municipal Covered Court",
+        plannedParticipantCount: 120,
+        plannedBudgetCentavos: "125000",
       },
-    });
+    ]);
   });
 
   it.each([
@@ -209,19 +202,19 @@ describe("Activity edit API", () => {
     async (_description, invalidFields, expectedField) => {
       const { cookie, activityDesign, activity } =
         await createActivityScenario();
+      setActionCookie(cookie);
 
-      const response = await activityPatch(
-        request(
-          `/api/activity-designs/${activityDesign.id}/activities/${activity.id}`,
-          "PATCH",
-          { ...validActivity, ...invalidFields },
-          cookie,
-        ),
-        routeParams(activityDesign.id, activity.id),
+      const result = await updateActivityAction(
+        toFormData({
+          ...validActivity,
+          ...invalidFields,
+          activityDesignId: activityDesign.id,
+          activityId: activity.id,
+        }),
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
+      expect(result).toMatchObject({
+        status: "error",
         error: "Please correct the highlighted Activity fields.",
         fields: { [expectedField]: expect.any(Array) },
       });
@@ -240,26 +233,14 @@ describe("Activity edit API", () => {
     const { cookie, activityDesign, activity } =
       await createActivityScenario();
 
-    const response = await activityDelete(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}`,
-        "DELETE",
-        undefined,
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
-    );
-
-    expect(response.status).toBe(204);
+    setActionCookie(cookie);
+    await expect(
+      deleteActivityAction(activityDesign.id, activity.id),
+    ).resolves.toEqual({ status: "success" });
     await expect(
       prisma.activity.findUnique({ where: { id: activity.id } }),
     ).resolves.toBeNull();
-    await expect(
-      prisma.activityDesign.findUnique({
-        where: { id: activityDesign.id },
-        include: { activities: true },
-      }),
-    ).resolves.toMatchObject({ activities: [] });
+    await expect(listActivities()).resolves.toEqual([]);
   });
 
   it("blocks deleting an Activity with Meal Schedules and preserves the child", async () => {
@@ -274,18 +255,12 @@ describe("Activity edit API", () => {
       },
     });
 
-    const response = await activityDelete(
-      request(
-        `/api/activity-designs/${activityDesign.id}/activities/${activity.id}`,
-        "DELETE",
-        undefined,
-        cookie,
-      ),
-      routeParams(activityDesign.id, activity.id),
-    );
-
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
+    setActionCookie(cookie);
+    await expect(
+      deleteActivityAction(activityDesign.id, activity.id),
+    ).resolves.toEqual({
+      status: "error",
+      kind: "has-meal-schedules",
       error:
         "This Activity cannot be deleted while it has Meal Schedules. Remove its Meal Schedules first.",
       mealScheduleCount: 1,
@@ -304,37 +279,35 @@ describe("Activity edit API", () => {
   it("rejects editing or deleting an Activity from another Activity Design", async () => {
     const { cookie, activityDesign, activity } =
       await createActivityScenario();
-    const otherDesignResponse = await activityDesignsPost(
-      request(
-        "/api/activity-designs",
-        "POST",
-        { ...validActivityDesign, activityDesignNo: "AD-2026-018" },
-        cookie,
-      ),
-    );
-    const otherActivityDesign = (await otherDesignResponse.json()).activityDesign;
+    const otherActivityDesign = await createActivityDesign(cookie, {
+      ...validActivityDesign,
+      activityDesignNo: "AD-2026-018",
+    });
 
-    const updateResponse = await activityPatch(
-      request(
-        `/api/activity-designs/${otherActivityDesign.id}/activities/${activity.id}`,
-        "PATCH",
-        { ...validActivity, name: "Should not move" },
-        cookie,
-      ),
-      routeParams(otherActivityDesign.id, activity.id),
+    setActionCookie(cookie);
+    const updateResult = await updateActivityAction(
+      toFormData({
+        ...validActivity,
+        name: "Should not move",
+        activityDesignId: otherActivityDesign.id,
+        activityId: activity.id,
+      }),
     );
-    const deleteResponse = await activityDelete(
-      request(
-        `/api/activity-designs/${otherActivityDesign.id}/activities/${activity.id}`,
-        "DELETE",
-        undefined,
-        cookie,
-      ),
-      routeParams(otherActivityDesign.id, activity.id),
+    const deleteResult = await deleteActivityAction(
+      otherActivityDesign.id,
+      activity.id,
     );
 
-    expect(updateResponse.status).toBe(404);
-    expect(deleteResponse.status).toBe(404);
+    expect(updateResult).toEqual({
+      status: "error",
+      error: "The Activity could not be found.",
+      fields: {},
+    });
+    expect(deleteResult).toEqual({
+      status: "error",
+      kind: "not-found",
+      error: "The Activity could not be found.",
+    });
     await expect(
       prisma.activity.findUnique({ where: { id: activity.id } }),
     ).resolves.toMatchObject({
@@ -344,23 +317,27 @@ describe("Activity edit API", () => {
   });
 
   it("requires authentication for Activity editing and deletion", async () => {
-    const patchResponse = await activityPatch(
-      request(
-        "/api/activity-designs/missing-design/activities/missing-activity",
-        "PATCH",
-        validActivity,
-      ),
-      routeParams("missing-design", "missing-activity"),
-    );
-    const deleteResponse = await activityDelete(
-      request(
-        "/api/activity-designs/missing-design/activities/missing-activity",
-        "DELETE",
-      ),
-      routeParams("missing-design", "missing-activity"),
-    );
+    const activityDesignId = "missing-design";
+    const activityId = "missing-activity";
 
-    expect(patchResponse.status).toBe(401);
-    expect(deleteResponse.status).toBe(401);
+    await expect(
+      updateActivityAction(
+        toFormData({
+          ...validActivity,
+          activityDesignId,
+          activityId,
+        }),
+      ),
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+      fields: {},
+    });
+    await expect(
+      deleteActivityAction(activityDesignId, activityId),
+    ).resolves.toEqual({
+      status: "error",
+      error: "Authentication required",
+    });
   });
 });
