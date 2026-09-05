@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
@@ -12,6 +14,7 @@ import {
 import type { VendorListItem } from "../types";
 import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
 import VendorActionsMenu from "./vendor-actions-menu";
+import DeleteVendorDialog from "./delete-vendor-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
 import MasterDataTableFrame from "./master-data-table-frame";
 
@@ -35,6 +38,67 @@ function VendorContactContext({ vendor }: { vendor: VendorListItem }) {
   );
 }
 
+function VendorRow({
+  vendor,
+  canManage,
+  actionDisabled,
+  onEdit,
+  onToggle,
+  onDeleted,
+}: {
+  vendor: VendorListItem;
+  canManage: boolean;
+  actionDisabled: boolean;
+  onEdit: () => void;
+  onToggle: () => void;
+  onDeleted: () => void;
+}) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <TableRow className="hover:bg-muted/35">
+        <TableCell className="max-w-[20rem]">
+          <span className="block truncate">{vendor.name}</span>
+        </TableCell>
+        <TableCell className="max-w-[16rem]">
+          <span className="block truncate">
+            {vendor.contactPerson ?? "—"}
+          </span>
+        </TableCell>
+        <TableCell>
+          <VendorContactContext vendor={vendor} />
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={vendor.isActive ? "default" : "outline"}>
+            {vendor.isActive ? "Active" : "Inactive"}
+          </Badge>
+        </TableCell>
+        {canManage ? (
+          <TableCell className="text-center">
+            <VendorActionsMenu
+              vendorName={vendor.name}
+              isActive={vendor.isActive}
+              actionButtonId={`vendor-actions-${vendor.id}`}
+              disabled={actionDisabled}
+              onEdit={onEdit}
+              onToggle={onToggle}
+              onDelete={() => setIsDeleteDialogOpen(true)}
+            />
+          </TableCell>
+        ) : null}
+      </TableRow>
+      <DeleteVendorDialog
+        key={`${vendor.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
+        vendor={vendor}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={onDeleted}
+      />
+    </>
+  );
+}
+
 export default function VendorTable({
   vendors,
   filters,
@@ -42,6 +106,9 @@ export default function VendorTable({
   canManage,
   onNew,
   onEdit,
+  onToggle,
+  onDeleted,
+  actionDisabled,
 }: {
   vendors: VendorListItem[];
   filters: VendorFilters;
@@ -49,6 +116,9 @@ export default function VendorTable({
   canManage: boolean;
   onNew: () => void;
   onEdit: (vendor: VendorListItem) => void;
+  onToggle: (vendor: VendorListItem) => void;
+  onDeleted: (vendor: VendorListItem) => void;
+  actionDisabled: boolean;
 }) {
   const hasFilters = hasVendorFilters(filters);
 
@@ -99,33 +169,15 @@ export default function VendorTable({
       </TableHeader>
       <TableBody>
         {vendors.map((vendor) => (
-          <TableRow key={vendor.id} className="hover:bg-muted/35">
-            <TableCell className="max-w-[20rem]">
-              <span className="block truncate">{vendor.name}</span>
-            </TableCell>
-            <TableCell className="max-w-[16rem]">
-              <span className="block truncate">
-                {vendor.contactPerson ?? "—"}
-              </span>
-            </TableCell>
-            <TableCell>
-              <VendorContactContext vendor={vendor} />
-            </TableCell>
-            <TableCell className="text-center">
-              <Badge variant={vendor.isActive ? "default" : "outline"}>
-                {vendor.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
-            {canManage ? (
-              <TableCell className="text-center">
-                <VendorActionsMenu
-                  vendorName={vendor.name}
-                  actionButtonId={`vendor-actions-${vendor.id}`}
-                  onEdit={() => onEdit(vendor)}
-                />
-              </TableCell>
-            ) : null}
-          </TableRow>
+          <VendorRow
+            key={vendor.id}
+            vendor={vendor}
+            canManage={canManage}
+            actionDisabled={actionDisabled}
+            onEdit={() => onEdit(vendor)}
+            onToggle={() => onToggle(vendor)}
+            onDeleted={() => onDeleted(vendor)}
+          />
         ))}
       </TableBody>
     </MasterDataTableFrame>

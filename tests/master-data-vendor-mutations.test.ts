@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   createVendor,
+  deleteVendor,
+  setVendorActive,
   updateVendor,
 } from "@/features/master-data/server";
 import { prisma } from "@/prisma/client";
@@ -130,6 +132,54 @@ describe("Master Data Vendor mutation gateway", () => {
       ok: false,
       kind: "forbidden",
       fields: {},
+    });
+    await expect(
+      setVendorActive(staffActor, created.vendor.id, false),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+    await expect(deleteVendor(staffActor, created.vendor.id)).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+  });
+
+  it("supports lifecycle changes, safe deletion, and missing-record responses", async () => {
+    await createActorUser(adminActor, "admin");
+    const created = await createVendor(adminActor, { name: "Acme Foods" });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    await expect(
+      setVendorActive(adminActor, created.vendor.id, false),
+    ).resolves.toMatchObject({
+      ok: true,
+      vendor: { name: "Acme Foods", isActive: false },
+    });
+    await expect(
+      setVendorActive(adminActor, created.vendor.id, true),
+    ).resolves.toMatchObject({
+      ok: true,
+      vendor: { name: "Acme Foods", isActive: true },
+    });
+
+    await expect(deleteVendor(adminActor, created.vendor.id)).resolves.toEqual({
+      ok: true,
+    });
+    await expect(deleteVendor(adminActor, created.vendor.id)).resolves.toEqual({
+      ok: false,
+      kind: "not-found",
+      error: "The Vendor could not be found.",
+    });
+    await expect(
+      setVendorActive(adminActor, "missing-vendor", false),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "not-found",
+      error: "The Vendor could not be found.",
     });
   });
 });

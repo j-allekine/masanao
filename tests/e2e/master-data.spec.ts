@@ -286,20 +286,74 @@ test.describe("Master Data Vendors journey", () => {
     ).toBeVisible();
     await expect(await vendorRow(page, "Demo Vendor")).toContainText("Dana Cruz");
 
+    await (await vendorRow(page, "Demo Vendor"))
+      .getByRole("button", { name: "Actions for Demo Vendor", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Deactivate", exact: true }).click();
+    await expect(
+      page.getByText("Vendor “Demo Vendor” deactivated", { exact: true }),
+    ).toBeVisible();
+    await expect(await vendorRow(page, "Demo Vendor")).toContainText("Inactive");
+    await expect(
+      page.getByRole("button", {
+        name: "Actions for Demo Vendor",
+        exact: true,
+      }),
+    ).toBeFocused();
+
+    await (await vendorRow(page, "Demo Vendor"))
+      .getByRole("button", { name: "Actions for Demo Vendor", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Activate", exact: true }).click();
+    await expect(
+      page.getByText("Vendor “Demo Vendor” activated", { exact: true }),
+    ).toBeVisible();
+    await expect(await vendorRow(page, "Demo Vendor")).toContainText("Active");
+
+    await (await vendorRow(page, "Demo Vendor"))
+      .getByRole("button", { name: "Actions for Demo Vendor", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    let deleteDialog = page.getByRole("alertdialog");
+    await expect(deleteDialog).toContainText("Delete “Demo Vendor”?");
+    await deleteDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(deleteDialog).toHaveCount(0);
+    await expect(await vendorRow(page, "Demo Vendor")).toBeVisible();
+
+    await (await vendorRow(page, "Demo Vendor"))
+      .getByRole("button", { name: "Actions for Demo Vendor", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    deleteDialog = page.getByRole("alertdialog");
+    await deleteDialog
+      .getByRole("button", { name: "Delete Vendor", exact: true })
+      .click();
+    await expect(deleteDialog).toHaveCount(0);
+    await expect(
+      page.getByText("Vendor “Demo Vendor” deleted", { exact: true }),
+    ).toBeVisible();
+    await expect(await vendorRow(page, "Demo Vendor")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", {
+        name: "Actions for Evergreen Produce",
+        exact: true,
+      }),
+    ).toBeFocused();
+
     await addButton.click();
     dialog = page.getByRole("dialog");
     const duplicateName = dialog.getByRole("textbox", {
       name: "Name",
       exact: true,
     });
-    await duplicateName.fill(" demo vendor ");
+    await duplicateName.fill(" acme foods ");
     await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
     await expect(
       dialog.getByText("A Vendor with that name already exists.", {
         exact: true,
       }),
     ).toBeVisible();
-    await expect(duplicateName).toHaveValue(" demo vendor ");
+    await expect(duplicateName).toHaveValue(" acme foods ");
     await duplicateName.fill("Second Vendor");
     await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
     await expect(dialog).toHaveCount(0);

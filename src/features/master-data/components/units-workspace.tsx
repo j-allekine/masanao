@@ -10,7 +10,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { setUnitActiveAction } from "../actions";
+import { setUnitActiveAction, setVendorActiveAction } from "../actions";
 import type { UnitListItem, VendorListItem } from "../types";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
@@ -56,7 +56,33 @@ export default function UnitsWorkspace({
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
   const [vendorDialogState, setVendorDialogState] =
     useState<VendorDialogState | null>(null);
+  const [pendingVendorFocusTarget, setPendingVendorFocusTarget] =
+    useState<string | null>(null);
   const [isMutating, startMutation] = useTransition();
+
+  useEffect(() => {
+    const targetId = pendingVendorFocusTarget;
+    if (!targetId) return;
+
+    let attempts = 0;
+    const focusTarget = () => {
+      document.getElementById(targetId)?.focus();
+      attempts += 1;
+
+      if (attempts >= 20) {
+        setPendingVendorFocusTarget(null);
+      }
+    };
+    const intervalId = window.setInterval(() => {
+      focusTarget();
+    }, 100);
+    const timeoutId = window.setTimeout(focusTarget, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [pendingVendorFocusTarget]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -227,6 +253,59 @@ export default function UnitsWorkspace({
     }, 0);
   }
 
+  function handleVendorToggle(vendor: VendorListItem) {
+    startMutation(async () => {
+      try {
+        const result = await setVendorActiveAction(vendor.id, !vendor.isActive);
+
+        if (result.status === "error") {
+          toast.error(result.error);
+          return;
+        }
+
+        setPendingVendorFocusTarget(`vendor-actions-${vendor.id}`);
+        router.refresh();
+        toast.success(
+          `Vendor “${vendor.name}” ${result.vendor.isActive ? "activated" : "deactivated"}`,
+        );
+      } catch {
+        toast.error(
+          "The Vendor status could not be changed. Check your connection and try again.",
+        );
+      }
+    });
+  }
+
+  function handleVendorDeleted(vendor: VendorListItem) {
+    const deletedIndex = paginatedVendors.findIndex(
+      (currentVendor) => currentVendor.id === vendor.id,
+    );
+    const nextFocusTarget =
+      paginatedVendors[deletedIndex + 1] ?? paginatedVendors[deletedIndex - 1];
+    const remainingVendorCount = Math.max(filteredVendors.length - 1, 0);
+    const nextPageCount = Math.max(
+      1,
+      Math.ceil(remainingVendorCount / PAGE_SIZE),
+    );
+    const nextPage = Math.min(currentPage, nextPageCount);
+    const nextFocusTargetId = nextFocusTarget
+      ? `vendor-actions-${nextFocusTarget.id}`
+      : "new-vendor";
+
+    setListState((current) => ({ ...current, page: nextPage }));
+    setPendingVendorFocusTarget(nextFocusTargetId);
+    router.replace(
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: "vendors",
+        page: nextPage,
+      }),
+      { scroll: false },
+    );
+
+    router.refresh();
+    toast.success(`Vendor “${vendor.name}” deleted`);
+  }
+
   function changePage(nextPage: number) {
     const pageCount =
       listState.tab === "vendors" ? vendorPageCount : unitPageCount;
@@ -304,6 +383,9 @@ export default function UnitsWorkspace({
             canManage={canManage}
             onNew={openCreateVendorDialog}
             onEdit={openEditVendorDialog}
+            onToggle={handleVendorToggle}
+            onDeleted={handleVendorDeleted}
+            actionDisabled={isMutating}
           />
         </MasterDataTabContent>
       </MasterDataTabs>

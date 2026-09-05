@@ -80,6 +80,22 @@ export type VendorUpdateResult =
       fields: VendorFieldErrors;
     };
 
+export type VendorLifecycleResult =
+  | { ok: true; vendor: VendorListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found";
+      error: string;
+    };
+
+export type VendorDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found" | "referenced";
+      error: string;
+    };
+
 export type VendorFormActionState =
   | { status: "success"; vendor: VendorListItem }
   | {
@@ -93,6 +109,27 @@ export type VendorFormActionState =
         | "server";
       error: string;
       fields: VendorFieldErrors;
+    };
+
+export type VendorLifecycleActionState =
+  | { status: "success"; vendor: VendorListItem }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "not-found" | "server";
+      error: string;
+    };
+
+export type VendorDeleteActionState =
+  | { status: "success" }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "not-found"
+        | "referenced"
+        | "server";
+      error: string;
     };
 
 export type UnitFormActionState =

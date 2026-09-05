@@ -59,6 +59,13 @@ export function isRecordNotFound(error: unknown) {
   );
 }
 
+export function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
+  );
+}
+
 export async function findVendorConflictRecord(
   input: VendorInput,
   excludeId?: string,
@@ -107,4 +114,31 @@ export async function updateVendorRecord(id: string, input: VendorInput) {
     },
     select: vendorListSelect,
   });
+}
+
+export async function setVendorActiveRecord(id: string, isActive: boolean) {
+  return prisma.vendor.update({
+    where: { id },
+    data: { isActive },
+    select: vendorListSelect,
+  });
+}
+
+export async function deleteVendorRecord(id: string) {
+  try {
+    await prisma.vendor.delete({ where: { id } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+
+    // Future procurement and receiving relationships must remain restrictive.
+    // No relationship is added in this slice, but the explicit error path is
+    // ready for those records when they are introduced.
+    if (isRestrictiveRelationViolation(error)) {
+      return { deleted: false as const, referenced: true as const };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }

@@ -8,6 +8,8 @@ import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { createVendorCommand } from "./server/commands/create-vendor";
 import { updateVendorCommand } from "./server/commands/update-vendor";
+import { setVendorActiveCommand } from "./server/commands/set-vendor-active";
+import { deleteVendorCommand } from "./server/commands/delete-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
@@ -17,6 +19,8 @@ import type {
   UnitLifecycleResult,
   UnitUpdateResult,
   VendorCreateResult,
+  VendorDeleteResult,
+  VendorLifecycleResult,
   VendorUpdateResult,
 } from "./types";
 
@@ -26,6 +30,8 @@ export type {
   UnitLifecycleResult,
   UnitListItem,
   VendorListItem,
+  VendorDeleteResult,
+  VendorLifecycleResult,
   UnitUpdateResult,
 } from "./types";
 
@@ -126,4 +132,25 @@ export async function updateVendor(
   }
 
   return updateVendorCommand(id, input);
+}
+
+export async function setVendorActive(
+  actor: CurrentActor,
+  id: string,
+  active: boolean,
+): Promise<VendorLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setVendorActiveCommand(id, active);
+}
+
+export async function deleteVendor(
+  actor: CurrentActor,
+  id: string,
+): Promise<VendorDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteVendorCommand(id);
 }

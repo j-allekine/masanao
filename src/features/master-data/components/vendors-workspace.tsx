@@ -20,6 +20,9 @@ export default function VendorsWorkspace({
   canManage,
   onNew,
   onEdit,
+  onToggle,
+  onDeleted,
+  actionDisabled,
 }: {
   vendors: VendorListItem[];
   total: number;
@@ -34,6 +37,9 @@ export default function VendorsWorkspace({
   canManage: boolean;
   onNew: () => void;
   onEdit: (vendor: VendorListItem) => void;
+  onToggle: (vendor: VendorListItem) => void;
+  onDeleted: (vendor: VendorListItem) => void;
+  actionDisabled: boolean;
 }) {
   const filters: VendorFilters = { search };
 
@@ -54,6 +60,9 @@ export default function VendorsWorkspace({
         canManage={canManage}
         onNew={onNew}
         onEdit={onEdit}
+        onToggle={onToggle}
+        onDeleted={onDeleted}
+        actionDisabled={actionDisabled}
       />
       <VendorPagination
         page={page}

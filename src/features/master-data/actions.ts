@@ -6,11 +6,15 @@ import { executeSetUnitActive } from "./server/actions/set-unit-active";
 import { executeUpdateUnit } from "./server/actions/update-unit";
 import { executeCreateVendor } from "./server/actions/create-vendor";
 import { executeUpdateVendor } from "./server/actions/update-vendor";
+import { executeSetVendorActive } from "./server/actions/set-vendor-active";
+import { executeDeleteVendor } from "./server/actions/delete-vendor";
 import type {
   UnitDeleteActionState,
   UnitFormActionState,
   UnitLifecycleActionState,
+  VendorDeleteActionState,
   VendorFormActionState,
+  VendorLifecycleActionState,
 } from "./types";
 
 export async function createUnitAction(
@@ -48,4 +52,17 @@ export async function updateVendorAction(
   formData: FormData,
 ): Promise<VendorFormActionState> {
   return executeUpdateVendor(formData);
+}
+
+export async function setVendorActiveAction(
+  id: string,
+  active: boolean,
+): Promise<VendorLifecycleActionState> {
+  return executeSetVendorActive(id, active);
+}
+
+export async function deleteVendorAction(
+  id: string,
+): Promise<VendorDeleteActionState> {
+  return executeDeleteVendor(id);
 }
