@@ -12,18 +12,21 @@ import {
 } from "../domain/office";
 import type { OfficeFieldErrors } from "../types";
 
-const officeNameSchema = z
-  .string()
-  .transform(normalizeOfficeDisplayValue)
-  .pipe(
-    z
-      .string()
-      .min(1, "Office name is required")
-      .max(
-        OFFICE_NAME_MAX_LENGTH,
-        `Office name must be ${OFFICE_NAME_MAX_LENGTH} characters or fewer`,
-      ),
-  );
+const officeNameSchema = z.preprocess(
+  (value) => (value === undefined || value === null ? "" : value),
+  z
+    .string()
+    .transform(normalizeOfficeDisplayValue)
+    .pipe(
+      z
+        .string()
+        .min(1, "Office name is required")
+        .max(
+          OFFICE_NAME_MAX_LENGTH,
+          `Office name must be ${OFFICE_NAME_MAX_LENGTH} characters or fewer`,
+        ),
+    ),
+);
 
 function optionalOfficeText(label: string, max: number) {
   return z.preprocess(

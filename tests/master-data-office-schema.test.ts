@@ -86,4 +86,15 @@ describe("Master Data Office normalization", () => {
       contactNumber: ["Contact number must be 100 characters or fewer"],
     });
   });
+
+  it("reports a required name when the name field is omitted", () => {
+    const result = officeSchema.safeParse({});
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+
+    expect(officeFieldErrors(result.error)).toEqual({
+      name: ["Office name is required"],
+    });
+  });
 });
