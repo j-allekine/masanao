@@ -10,7 +10,6 @@ import { isAdministrator } from "./server/policies/authorization";
 import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import type {
-  OfficeListItem,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
