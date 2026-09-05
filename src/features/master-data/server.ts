@@ -4,7 +4,9 @@ import type { CurrentActor } from "@/server/auth";
 
 import { createOfficeCommand } from "./server/commands/create-office";
 import { createUnitCommand } from "./server/commands/create-unit";
+import { deleteOfficeCommand } from "./server/commands/delete-office";
 import { deleteUnitCommand } from "./server/commands/delete-unit";
+import { setOfficeActiveCommand } from "./server/commands/set-office-active";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateOfficeCommand } from "./server/commands/update-office";
 import { updateUnitCommand } from "./server/commands/update-unit";
@@ -28,6 +30,8 @@ import type {
   CategoryUpdateResult,
   OfficeListItem,
   OfficeCreateResult,
+  OfficeDeleteResult,
+  OfficeLifecycleResult,
   OfficeUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
@@ -42,6 +46,8 @@ import type {
 export type {
   CategoryListItem,
   OfficeCreateResult,
+  OfficeDeleteResult,
+  OfficeLifecycleResult,
   OfficeListItem,
   OfficeUpdateResult,
   UnitCreateResult,
@@ -142,6 +148,27 @@ export async function updateOffice(
   }
 
   return updateOfficeCommand(id, input);
+}
+
+export async function setOfficeActive(
+  actor: CurrentActor,
+  id: string,
+  isActive: boolean,
+): Promise<OfficeLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setOfficeActiveCommand(id, isActive);
+}
+
+export async function deleteOffice(
+  actor: CurrentActor,
+  id: string,
+): Promise<OfficeDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteOfficeCommand(id);
 }
 
 export async function setUnitActive(

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   createOffice,
+  deleteOffice,
+  setOfficeActive,
   updateOffice,
 } from "@/features/master-data/server";
 import { prisma } from "@/prisma/client";
@@ -218,6 +220,74 @@ describe("Master Data Office mutation gateway", () => {
       kind: "forbidden",
       error: "Administrator access required",
       fields: {},
+    });
+
+    await expect(
+      setOfficeActive(staffActor, created.office.id, false),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+    await expect(deleteOffice(staffActor, created.office.id)).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+  });
+
+  it("supports lifecycle changes, deletion confirmation's server contract, and safe repeated requests", async () => {
+    await createActorUser(adminActor, "admin");
+
+    const created = await createOffice(adminActor, {
+      name: "Office to Retire",
+      abbreviation: "OTR",
+      headName: "Alex Santos",
+      officialEmail: "retire@example.test",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const deactivated = await setOfficeActive(
+      adminActor,
+      created.office.id,
+      false,
+    );
+    expect(deactivated).toMatchObject({
+      ok: true,
+      office: {
+        name: "Office to Retire",
+        abbreviation: "OTR",
+        headName: "Alex Santos",
+        officialEmail: "retire@example.test",
+        isActive: false,
+      },
+    });
+
+    const reactivated = await setOfficeActive(
+      adminActor,
+      created.office.id,
+      true,
+    );
+    expect(reactivated).toMatchObject({
+      ok: true,
+      office: { isActive: true },
+    });
+
+    await expect(deleteOffice(adminActor, created.office.id)).resolves.toEqual(
+      { ok: true },
+    );
+    await expect(deleteOffice(adminActor, created.office.id)).resolves.toEqual({
+      ok: false,
+      kind: "not-found",
+      error: "The Office could not be found.",
+    });
+    await expect(
+      setOfficeActive(adminActor, created.office.id, false),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "not-found",
+      error: "The Office could not be found.",
     });
   });
 });
