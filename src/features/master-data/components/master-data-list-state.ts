@@ -2,7 +2,7 @@ export const masterDataTabs = [
   { id: "units", label: "Units", disabled: false },
   { id: "categories", label: "Categories", disabled: true },
   { id: "offices", label: "Offices", disabled: true },
-  { id: "vendors", label: "Vendors", disabled: true },
+  { id: "vendors", label: "Vendors", disabled: false },
 ] as const;
 
 export type MasterDataTab = (typeof masterDataTabs)[number]["id"];

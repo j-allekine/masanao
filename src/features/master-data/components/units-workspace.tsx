@@ -11,13 +11,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { setUnitActiveAction } from "../actions";
-import type { UnitListItem } from "../types";
+import type { UnitListItem, VendorListItem } from "../types";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
+import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
 import UnitPagination from "./unit-pagination";
 import { filterUnits, type UnitFilters } from "./unit-filters";
 import UnitTable from "./unit-table";
+import { filterVendors } from "./vendor-filters";
+import VendorsWorkspace from "./vendors-workspace";
 import {
   getMasterDataListState,
   getMasterDataQuery,
@@ -29,10 +32,12 @@ const PAGE_SIZE = 10;
 
 export default function UnitsWorkspace({
   units,
+  vendors,
   initialQuery = "",
   canManage,
 }: {
   units: UnitListItem[];
+  vendors: VendorListItem[];
   initialQuery?: string;
   canManage: boolean;
 }) {
@@ -49,6 +54,8 @@ export default function UnitsWorkspace({
   );
   const [listState, setListState] = useState(initialState);
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
+  const [vendorDialogState, setVendorDialogState] =
+    useState<VendorDialogState | null>(null);
   const [isMutating, startMutation] = useTransition();
 
   useEffect(() => {
@@ -65,12 +72,35 @@ export default function UnitsWorkspace({
     () => filterUnits(units, { search }),
     [search, units],
   );
-  const pageCount = Math.max(1, Math.ceil(filteredUnits.length / PAGE_SIZE));
-  const currentPage = Math.min(listState.page, pageCount);
-  const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
+  const filteredVendors = useMemo(
+    () => filterVendors(vendors, { search }),
+    [search, vendors],
+  );
+  const unitPageCount = Math.max(
+    1,
+    Math.ceil(filteredUnits.length / PAGE_SIZE),
+  );
+  const vendorPageCount = Math.max(
+    1,
+    Math.ceil(filteredVendors.length / PAGE_SIZE),
+  );
+  const unitCurrentPage = Math.min(listState.page, unitPageCount);
+  const vendorCurrentPage = Math.min(listState.page, vendorPageCount);
+  const currentPage =
+    listState.tab === "vendors" ? vendorCurrentPage : unitCurrentPage;
+  const firstItemIndex = (unitCurrentPage - 1) * PAGE_SIZE;
+  const firstVendorItemIndex = (vendorCurrentPage - 1) * PAGE_SIZE;
   const paginatedUnits = useMemo(
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
+  );
+  const paginatedVendors = useMemo(
+    () =>
+      filteredVendors.slice(
+        firstVendorItemIndex,
+        firstVendorItemIndex + PAGE_SIZE,
+      ),
+    [filteredVendors, firstVendorItemIndex],
   );
   const resultStart =
     paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
@@ -85,7 +115,7 @@ export default function UnitsWorkspace({
     setListState((current) => ({ ...current, search: nextSearch, page: 1 }));
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
-        tab: "units",
+        tab: listState.tab,
         search: nextSearch,
         page: 1,
       }),
@@ -105,6 +135,14 @@ export default function UnitsWorkspace({
     setDialogState({ mode: "edit", unit });
   }
 
+  function openCreateVendorDialog() {
+    setVendorDialogState({ mode: "create" });
+  }
+
+  function openEditVendorDialog(vendor: VendorListItem) {
+    setVendorDialogState({ mode: "edit", vendor });
+  }
+
   function closeDialog() {
     const closedDialog = dialogState;
     setDialogState(null);
@@ -114,6 +152,19 @@ export default function UnitsWorkspace({
         closedDialog?.mode === "edit"
           ? `unit-actions-${closedDialog.unit.id}`
           : "new-unit";
+      document.getElementById(targetId)?.focus();
+    }, 0);
+  }
+
+  function closeVendorDialog() {
+    const closedDialog = vendorDialogState;
+    setVendorDialogState(null);
+
+    window.setTimeout(() => {
+      const targetId =
+        closedDialog?.mode === "edit"
+          ? `vendor-actions-${closedDialog.vendor.id}`
+          : "new-vendor";
       document.getElementById(targetId)?.focus();
     }, 0);
   }
@@ -177,20 +228,25 @@ export default function UnitsWorkspace({
   }
 
   function changePage(nextPage: number) {
+    const pageCount =
+      listState.tab === "vendors" ? vendorPageCount : unitPageCount;
     const page = Math.min(Math.max(nextPage, 1), pageCount);
     setListState((current) => ({ ...current, page }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units", page }),
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: listState.tab,
+        page,
+      }),
       { scroll: false },
     );
   }
 
   function changeTab(value: MasterDataTab) {
-    if (value !== "units") return;
+    if (value !== "units" && value !== "vendors") return;
 
-    setListState((current) => ({ ...current, tab: "units" }));
+    setListState((current) => ({ ...current, tab: value }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units" }),
+      getMasterDataUrl(pathname, currentQuery, { tab: value }),
       { scroll: false },
     );
   }
@@ -222,14 +278,33 @@ export default function UnitsWorkspace({
               actionDisabled={isMutating}
             />
             <UnitPagination
-              page={currentPage}
-              pageCount={pageCount}
+              page={unitCurrentPage}
+              pageCount={unitPageCount}
               start={resultStart}
               end={resultEnd}
               total={filteredUnits.length}
               onPageChange={changePage}
             />
           </MasterDataCatalogLayout>
+        </MasterDataTabContent>
+        <MasterDataTabContent value="vendors">
+          <VendorsWorkspace
+            vendors={paginatedVendors}
+            total={filteredVendors.length}
+            search={search}
+            page={vendorCurrentPage}
+            pageCount={vendorPageCount}
+            start={
+              paginatedVendors.length === 0 ? 0 : firstVendorItemIndex + 1
+            }
+            end={firstVendorItemIndex + paginatedVendors.length}
+            onSearchChange={updateSearch}
+            onClearFilters={clearFilters}
+            onPageChange={changePage}
+            canManage={canManage}
+            onNew={openCreateVendorDialog}
+            onEdit={openEditVendorDialog}
+          />
         </MasterDataTabContent>
       </MasterDataTabs>
       <UnitDialog
@@ -243,6 +318,20 @@ export default function UnitsWorkspace({
             mode === "edit"
               ? `Unit “${unit.name}” updated`
               : `Unit “${unit.name}” created`,
+          );
+        }}
+      />
+      <VendorDialog
+        dialogState={vendorDialogState}
+        onClose={closeVendorDialog}
+        onSuccess={(vendor) => {
+          const mode = vendorDialogState?.mode;
+          closeVendorDialog();
+          router.refresh();
+          toast.success(
+            mode === "edit"
+              ? `Vendor “${vendor.name}” updated`
+              : `Vendor “${vendor.name}” added`,
           );
         }}
       />

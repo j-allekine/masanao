@@ -1,0 +1,48 @@
+import "server-only";
+
+import { revalidatePath } from "next/cache";
+
+import { createVendor } from "../../server";
+import type { VendorFormActionState } from "../../types";
+import { getCurrentUnitActor } from "./current-actor";
+
+export async function executeCreateVendor(
+  formData: FormData,
+): Promise<VendorFormActionState> {
+  const actor = await getCurrentUnitActor();
+
+  if (!actor) {
+    return {
+      status: "error",
+      kind: "authentication",
+      error: "Authentication required",
+      fields: {},
+    };
+  }
+
+  try {
+    const result = await createVendor(
+      actor,
+      Object.fromEntries(formData.entries()),
+    );
+
+    if (!result.ok) {
+      return {
+        status: "error",
+        kind: result.kind,
+        error: result.error,
+        fields: result.fields,
+      };
+    }
+
+    revalidatePath("/master-data");
+    return { status: "success", vendor: result.vendor };
+  } catch {
+    return {
+      status: "error",
+      kind: "server",
+      error: "The Vendor could not be saved. Check your connection and try again.",
+      fields: {},
+    };
+  }
+}

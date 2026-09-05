@@ -6,13 +6,18 @@ import { createUnitCommand } from "./server/commands/create-unit";
 import { deleteUnitCommand } from "./server/commands/delete-unit";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
+import { createVendorCommand } from "./server/commands/create-vendor";
+import { updateVendorCommand } from "./server/commands/update-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
+import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
   UnitUpdateResult,
+  VendorCreateResult,
+  VendorUpdateResult,
 } from "./types";
 
 export type {
@@ -20,11 +25,16 @@ export type {
   UnitDeleteResult,
   UnitLifecycleResult,
   UnitListItem,
+  VendorListItem,
   UnitUpdateResult,
 } from "./types";
 
 export async function listUnits() {
   return listUnitsQuery();
+}
+
+export async function listVendors() {
+  return listVendorsQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {
@@ -40,6 +50,10 @@ async function authorizeAdministrator(actor: CurrentActor) {
 }
 
 export async function canManageUnits(actor: CurrentActor) {
+  return isAdministrator(actor);
+}
+
+export async function canManageVendors(actor: CurrentActor) {
   return isAdministrator(actor);
 }
 
@@ -87,4 +101,29 @@ export async function deleteUnit(
   if (authorizationFailure) return authorizationFailure;
 
   return deleteUnitCommand(id);
+}
+
+export async function createVendor(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<VendorCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createVendorCommand(input);
+}
+
+export async function updateVendor(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<VendorUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateVendorCommand(id, input);
 }

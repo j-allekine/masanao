@@ -6,7 +6,9 @@ const staffPassword = "correct-horse-battery-staple";
 async function signIn(page: Page, username: string, password: string) {
   const response = await page.request.post("/api/auth/sign-in/username", {
     data: { username, password },
-    headers: { origin: "http://localhost:3019" },
+    headers: {
+      origin: process.env.PLAYWRIGHT_TEST_ORIGIN ?? "http://localhost:3019",
+    },
   });
 
   expect(response.status()).toBe(200);
@@ -39,6 +41,10 @@ async function discardUnitDialog(page: Page) {
 }
 
 async function unitRow(page: Page, name: string) {
+  return page.getByRole("row").filter({ hasText: name }).first();
+}
+
+async function vendorRow(page: Page, name: string) {
   return page.getByRole("row").filter({ hasText: name }).first();
 }
 
@@ -86,9 +92,10 @@ test.describe("Master Data Units journey", () => {
       "aria-selected",
       "true",
     );
-    for (const tabName of ["Categories", "Offices", "Vendors"]) {
+    for (const tabName of ["Categories", "Offices"]) {
       await expect(tabs.getByRole("tab", { name: tabName, exact: true })).toBeDisabled();
     }
+    await expect(tabs.getByRole("tab", { name: "Vendors", exact: true })).toBeEnabled();
     await expect(page.getByText("No Units yet.", { exact: true })).toBeVisible();
 
     await page.locator("#new-unit").click();
@@ -118,7 +125,7 @@ test.describe("Master Data Units journey", () => {
       .fill("gram-alt");
     await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
     await expect(
-      dialog.getByText("A Unit with that name already exists.", { exact: true }),
+      dialog.locator("#create-unit-name-error"),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
       " gram ",
@@ -134,7 +141,7 @@ test.describe("Master Data Units journey", () => {
       .fill(" G ");
     await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
     await expect(
-      dialog.getByText("A Unit with that abbreviation already exists.", { exact: true }),
+      dialog.locator("#create-unit-abbreviation-error"),
     ).toBeVisible();
     await discardUnitDialog(page);
 
@@ -231,4 +238,176 @@ test.describe("Master Data Units journey", () => {
     await expect(page.getByRole("button", { name: /Actions for/ })).toHaveCount(0);
     await expect(page.getByRole("tab", { name: "Categories", exact: true })).toBeDisabled();
   });
+});
+
+test.describe("Master Data Vendors journey", () => {
+  test("lets an administrator add and edit Vendors through the visible workspace", async ({
+    page,
+  }) => {
+    await openMasterData(page, "municipal.admin", adminPassword);
+    await page.getByRole("tab", { name: "Vendors", exact: true }).click();
+
+    const addButton = page.getByRole("button", {
+      name: "Add Vendor",
+      exact: true,
+    });
+    await expect(addButton).toBeVisible();
+    await addButton.click();
+
+    let dialog = page.getByRole("dialog");
+    const nameInput = dialog.getByRole("textbox", {
+      name: "Name",
+      exact: true,
+    });
+    await expect(nameInput).toBeFocused();
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(
+      dialog.getByText("Vendor name is required", { exact: true }),
+    ).toBeVisible();
+    await expect(nameInput).toBeFocused();
+
+    await nameInput.fill("  Demo Vendor  ");
+    await dialog
+      .getByRole("textbox", { name: "Contact person", exact: true })
+      .fill("  Dana Cruz  ");
+    await dialog
+      .getByRole("textbox", { name: "Contact number", exact: true })
+      .fill("   ");
+    await dialog
+      .getByRole("textbox", { name: "Email", exact: true })
+      .fill(" dana@example.test ");
+    await dialog
+      .getByRole("textbox", { name: "Address", exact: true })
+      .fill("  Municipal Market  ");
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      page.getByText("Vendor “Demo Vendor” added", { exact: true }),
+    ).toBeVisible();
+    await expect(await vendorRow(page, "Demo Vendor")).toContainText("Dana Cruz");
+
+    await addButton.click();
+    dialog = page.getByRole("dialog");
+    const duplicateName = dialog.getByRole("textbox", {
+      name: "Name",
+      exact: true,
+    });
+    await duplicateName.fill(" demo vendor ");
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(
+      dialog.getByText("A Vendor with that name already exists.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(duplicateName).toHaveValue(" demo vendor ");
+    await duplicateName.fill("Second Vendor");
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+
+    const deltaRow = await vendorRow(page, "Delta Grocers");
+    await deltaRow
+      .getByRole("button", { name: "Actions for Delta Grocers", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByRole("textbox", { name: "Name", exact: true }),
+    ).toHaveValue("Delta Grocers");
+    await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill("Delta Grocers Updated");
+    await dialog
+      .getByRole("textbox", { name: "Contact person", exact: true })
+      .fill("Delta Updated");
+    await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(
+      page.getByText("Vendor “Delta Grocers Updated” updated", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+    await page.getByRole("tab", { name: "Vendors", exact: true }).click();
+    await expect(await vendorRow(page, "Delta Grocers Updated")).toContainText(
+      "Delta Updated",
+    );
+  });
+
+  test(
+    "shows the persisted Vendor catalog as read-only",
+    async ({ page }, testInfo) => {
+      await openMasterData(page, "kitchen.staff", staffPassword);
+      await page.getByRole("tab", { name: "Vendors", exact: true }).click();
+
+      await expect(page).toHaveURL(/tab=vendors/);
+      await expect(
+        page.getByRole("tab", { name: "Vendors", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(
+        page.getByRole("searchbox", { name: "Search Vendors", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("columnheader", { name: "Actions", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: /Create Vendor/ }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText(/Showing 1 to 10 of \d+ results/, { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("Inactive", { exact: true })).toBeVisible();
+
+      await page.getByRole("button", { name: "Next page", exact: true }).click();
+      await expect(page).toHaveURL(/tab=vendors&page=2$/);
+      await expect(
+        page.getByRole("button", { name: "Page 2 of 2", exact: true }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(
+        page.getByText("Kitchen Select", { exact: true }),
+      ).toBeVisible();
+
+      await page.goto("/master-data?tab=vendors");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const search = page.getByRole("searchbox", {
+        name: "Search Vendors",
+        exact: true,
+      });
+      await search.fill("  aLiCe  ");
+      await expect(page).toHaveURL(/tab=vendors&search=/);
+      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("Showing 1 result", { exact: true }),
+      ).toBeVisible();
+      await search.fill("no-such-vendor");
+      await expect(
+        page.getByText("No Vendors match your search.", { exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Clear search", exact: true })
+        .click();
+      await expect(search).toBeEmpty();
+      await expect(
+        page.getByText("Acme Foods", { exact: true }),
+      ).toBeVisible();
+
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.screenshot({
+        path: testInfo.outputPath("master-data-vendors-desktop.png"),
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        )
+        .toBe(true);
+      await page.screenshot({
+        path: testInfo.outputPath("master-data-vendors-mobile.png"),
+        fullPage: true,
+      });
+    },
+  );
 });

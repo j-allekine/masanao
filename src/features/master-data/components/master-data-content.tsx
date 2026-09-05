@@ -1,15 +1,17 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-import type { UnitListItem } from "../types";
+import type { UnitListItem, VendorListItem } from "../types";
 import UnitsWorkspace from "./units-workspace";
 
 export default function MasterDataContent({
   units,
+  vendors,
   initialQuery = "",
   canManage,
 }: {
   units: UnitListItem[];
+  vendors: VendorListItem[];
   initialQuery?: string;
   canManage: boolean;
 }) {
@@ -31,6 +33,7 @@ export default function MasterDataContent({
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
         <UnitsWorkspace
           units={units}
+          vendors={vendors}
           initialQuery={initialQuery}
           canManage={canManage}
         />
