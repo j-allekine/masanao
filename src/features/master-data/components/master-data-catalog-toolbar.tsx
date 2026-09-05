@@ -17,6 +17,7 @@ export default function MasterDataCatalogToolbar({
   onSearchChange,
   canCreate,
   onCreate,
+  createLabel,
 }: {
   resourceKey: string;
   resourceLabels: { singular: string; plural: string };
@@ -24,6 +25,7 @@ export default function MasterDataCatalogToolbar({
   onSearchChange: (search: string) => void;
   canCreate: boolean;
   onCreate: () => void;
+  createLabel?: string;
 }) {
   const searchInputId = `${resourceKey}-search`;
   const createButtonId = `new-${resourceKey}`;
@@ -61,7 +63,7 @@ export default function MasterDataCatalogToolbar({
           onClick={onCreate}
         >
           <Plus data-icon="inline-start" />
-          Create {resourceLabels.singular}
+          {createLabel ?? `Create ${resourceLabels.singular}`}
         </Button>
       ) : null}
     </div>

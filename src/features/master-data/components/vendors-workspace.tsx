@@ -17,6 +17,9 @@ export default function VendorsWorkspace({
   onSearchChange,
   onClearFilters,
   onPageChange,
+  canManage,
+  onNew,
+  onEdit,
 }: {
   vendors: VendorListItem[];
   total: number;
@@ -28,6 +31,9 @@ export default function VendorsWorkspace({
   onSearchChange: (search: string) => void;
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
+  canManage: boolean;
+  onNew: () => void;
+  onEdit: (vendor: VendorListItem) => void;
 }) {
   const filters: VendorFilters = { search };
 
@@ -37,13 +43,17 @@ export default function VendorsWorkspace({
       resourceLabels={{ singular: "Vendor", plural: "Vendors" }}
       search={search}
       onSearchChange={onSearchChange}
-      canCreate={false}
-      onCreate={() => undefined}
+      canCreate={canManage}
+      onCreate={onNew}
+      createLabel="Add Vendor"
     >
       <VendorTable
         vendors={vendors}
         filters={filters}
         onClearFilters={onClearFilters}
+        canManage={canManage}
+        onNew={onNew}
+        onEdit={onEdit}
       />
       <VendorPagination
         page={page}

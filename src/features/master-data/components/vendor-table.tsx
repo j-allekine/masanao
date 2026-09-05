@@ -11,6 +11,7 @@ import {
 
 import type { VendorListItem } from "../types";
 import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
+import VendorActionsMenu from "./vendor-actions-menu";
 import MasterDataEmptyState from "./master-data-empty-state";
 import MasterDataTableFrame from "./master-data-table-frame";
 
@@ -38,10 +39,16 @@ export default function VendorTable({
   vendors,
   filters,
   onClearFilters,
+  canManage,
+  onNew,
+  onEdit,
 }: {
   vendors: VendorListItem[];
   filters: VendorFilters;
   onClearFilters: () => void;
+  canManage: boolean;
+  onNew: () => void;
+  onEdit: (vendor: VendorListItem) => void;
 }) {
   const hasFilters = hasVendorFilters(filters);
 
@@ -59,9 +66,9 @@ export default function VendorTable({
           description:
             "An administrator can add the first Vendor to begin the catalog.",
         }}
-        canCreate={false}
-        createLabel="Create Vendor"
-        onCreate={() => undefined}
+        canCreate={canManage}
+        createLabel="Add Vendor"
+        onCreate={onNew}
         onClearFilters={onClearFilters}
       />
     );
@@ -83,6 +90,11 @@ export default function VendorTable({
           <TableHead scope="col" className="text-center">
             Status
           </TableHead>
+          {canManage ? (
+            <TableHead scope="col" className="text-center">
+              Actions
+            </TableHead>
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -104,6 +116,15 @@ export default function VendorTable({
                 {vendor.isActive ? "Active" : "Inactive"}
               </Badge>
             </TableCell>
+            {canManage ? (
+              <TableCell className="text-center">
+                <VendorActionsMenu
+                  vendorName={vendor.name}
+                  actionButtonId={`vendor-actions-${vendor.id}`}
+                  onEdit={() => onEdit(vendor)}
+                />
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

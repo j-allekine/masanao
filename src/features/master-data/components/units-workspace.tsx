@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { setUnitActiveAction } from "../actions";
 import type { UnitListItem, VendorListItem } from "../types";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
+import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
 import UnitPagination from "./unit-pagination";
@@ -53,6 +54,8 @@ export default function UnitsWorkspace({
   );
   const [listState, setListState] = useState(initialState);
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
+  const [vendorDialogState, setVendorDialogState] =
+    useState<VendorDialogState | null>(null);
   const [isMutating, startMutation] = useTransition();
 
   useEffect(() => {
@@ -132,6 +135,14 @@ export default function UnitsWorkspace({
     setDialogState({ mode: "edit", unit });
   }
 
+  function openCreateVendorDialog() {
+    setVendorDialogState({ mode: "create" });
+  }
+
+  function openEditVendorDialog(vendor: VendorListItem) {
+    setVendorDialogState({ mode: "edit", vendor });
+  }
+
   function closeDialog() {
     const closedDialog = dialogState;
     setDialogState(null);
@@ -141,6 +152,19 @@ export default function UnitsWorkspace({
         closedDialog?.mode === "edit"
           ? `unit-actions-${closedDialog.unit.id}`
           : "new-unit";
+      document.getElementById(targetId)?.focus();
+    }, 0);
+  }
+
+  function closeVendorDialog() {
+    const closedDialog = vendorDialogState;
+    setVendorDialogState(null);
+
+    window.setTimeout(() => {
+      const targetId =
+        closedDialog?.mode === "edit"
+          ? `vendor-actions-${closedDialog.vendor.id}`
+          : "new-vendor";
       document.getElementById(targetId)?.focus();
     }, 0);
   }
@@ -277,6 +301,9 @@ export default function UnitsWorkspace({
             onSearchChange={updateSearch}
             onClearFilters={clearFilters}
             onPageChange={changePage}
+            canManage={canManage}
+            onNew={openCreateVendorDialog}
+            onEdit={openEditVendorDialog}
           />
         </MasterDataTabContent>
       </MasterDataTabs>
@@ -291,6 +318,20 @@ export default function UnitsWorkspace({
             mode === "edit"
               ? `Unit “${unit.name}” updated`
               : `Unit “${unit.name}” created`,
+          );
+        }}
+      />
+      <VendorDialog
+        dialogState={vendorDialogState}
+        onClose={closeVendorDialog}
+        onSuccess={(vendor) => {
+          const mode = vendorDialogState?.mode;
+          closeVendorDialog();
+          router.refresh();
+          toast.success(
+            mode === "edit"
+              ? `Vendor “${vendor.name}” updated`
+              : `Vendor “${vendor.name}” added`,
           );
         }}
       />
