@@ -98,6 +98,39 @@ describe("Master Data Categories gateway", () => {
     });
   });
 
+  it("rejects case-insensitive duplicates during editing", async () => {
+    await createActorUser(adminActor, "admin");
+    const vegetables = await createCategory(adminActor, { name: "Vegetables" });
+    const fruits = await createCategory(adminActor, { name: "Fruits" });
+    expect(vegetables.ok && fruits.ok).toBe(true);
+    if (!vegetables.ok || !fruits.ok) return;
+
+    await expect(
+      updateCategory(adminActor, fruits.category.id, {
+        name: " vegetables ",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["A Category with that name already exists."] },
+    });
+  });
+
+  it("applies the documented case-folding rule to Unicode names", async () => {
+    await createActorUser(adminActor, "admin");
+    await expect(
+      createCategory(adminActor, { name: "Éclair" }),
+    ).resolves.toMatchObject({ ok: true });
+
+    await expect(
+      createCategory(adminActor, { name: "éclair" }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["A Category with that name already exists."] },
+    });
+  });
+
   it("enforces the normalized name key at the database boundary", async () => {
     await expect(
       prisma.category.create({

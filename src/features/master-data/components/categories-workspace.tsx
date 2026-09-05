@@ -58,7 +58,6 @@ export default function CategoriesWorkspace({
           return;
         }
 
-        router.refresh();
         toast.success(
           `Category “${category.name}” ${result.category.isActive ? "activated" : "deactivated"}`,
         );
@@ -72,7 +71,6 @@ export default function CategoriesWorkspace({
   }
 
   function handleDeleted(category: CategoryListItem) {
-    router.refresh();
     toast.success(`Category “${category.name}” deleted`);
     window.setTimeout(() => {
       document.getElementById("new-category")?.focus();
@@ -115,7 +113,6 @@ export default function CategoriesWorkspace({
         onSuccess={(category) => {
           const mode = dialogState?.mode;
           closeDialog();
-          router.refresh();
           toast.success(
             mode === "edit"
               ? `Category “${category.name}” updated`
