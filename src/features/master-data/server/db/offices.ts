@@ -84,6 +84,13 @@ export function isRecordNotFound(error: unknown) {
   );
 }
 
+export function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
+  );
+}
+
 export async function findOfficeConflictRecord(
   input: OfficeInput,
   excludeId?: string,
@@ -147,6 +154,34 @@ export async function updateOfficeRecord(id: string, input: OfficeInput) {
   });
 
   return toOfficeListItem(office);
+}
+
+export async function setOfficeActiveRecord(id: string, isActive: boolean) {
+  const office = await prisma.office.update({
+    where: { id },
+    data: { isActive },
+    select: officeListSelect,
+  });
+
+  return toOfficeListItem(office);
+}
+
+export async function deleteOfficeRecord(id: string) {
+  try {
+    await prisma.office.delete({ where: { id } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+
+    // The future Activity relation must remain restrictive. No relationship is
+    // added in this slice, but the feature keeps the explicit failure path.
+    if (isRestrictiveRelationViolation(error)) {
+      return { deleted: false as const, referenced: true as const };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }
 
 export async function listOfficeRecords(): Promise<OfficeListItem[]> {

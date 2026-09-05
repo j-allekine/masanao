@@ -50,6 +50,22 @@ export type OfficeUpdateResult =
       fields: OfficeFieldErrors;
     };
 
+export type OfficeLifecycleResult =
+  | { ok: true; office: OfficeListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found";
+      error: string;
+    };
+
+export type OfficeDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found" | "referenced";
+      error: string;
+    };
+
 export type OfficeFormActionState =
   | { status: "success"; office: OfficeListItem }
   | {
@@ -63,6 +79,27 @@ export type OfficeFormActionState =
         | "server";
       error: string;
       fields: OfficeFieldErrors;
+    };
+
+export type OfficeLifecycleActionState =
+  | { status: "success"; office: OfficeListItem }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "not-found" | "server";
+      error: string;
+    };
+
+export type OfficeDeleteActionState =
+  | { status: "success" }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "not-found"
+        | "referenced"
+        | "server";
+      error: string;
     };
 
 export type UnitCreateResult =
