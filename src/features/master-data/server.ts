@@ -16,6 +16,7 @@ import { setVendorActiveCommand } from "./server/commands/set-vendor-active";
 import { updateVendorCommand } from "./server/commands/update-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listCategories as listCategoriesQuery } from "./server/queries/list-categories";
+import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
@@ -23,6 +24,7 @@ import type {
   CategoryDeleteResult,
   CategoryLifecycleResult,
   CategoryUpdateResult,
+  OfficeListItem,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -35,6 +37,7 @@ import type {
 
 export type {
   CategoryListItem,
+  OfficeListItem,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -51,6 +54,10 @@ export async function listUnits() {
 
 export async function listCategories() {
   return listCategoriesQuery();
+}
+
+export async function listOffices() {
+  return listOfficesQuery();
 }
 
 export async function listVendors() {

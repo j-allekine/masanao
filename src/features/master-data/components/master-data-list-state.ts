@@ -1,7 +1,7 @@
 export const masterDataTabs = [
   { id: "units", label: "Units", disabled: false },
   { id: "categories", label: "Categories", disabled: false },
-  { id: "offices", label: "Offices", disabled: true },
+  { id: "offices", label: "Offices", disabled: false },
   { id: "vendors", label: "Vendors", disabled: false },
 ] as const;
 
