@@ -243,7 +243,8 @@ test.describe("Master Data Units journey", () => {
 test.describe("Master Data Vendors journey", () => {
   test("lets an administrator add and edit Vendors through the visible workspace", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    test.setTimeout(120_000);
     await openMasterData(page, "municipal.admin", adminPassword);
     await page.getByRole("tab", { name: "Vendors", exact: true }).click();
 
@@ -273,6 +274,16 @@ test.describe("Master Data Vendors journey", () => {
     await dialog
       .getByRole("textbox", { name: "Contact number", exact: true })
       .fill("   ");
+    await dialog
+      .getByRole("textbox", { name: "Email", exact: true })
+      .fill("not-an-email");
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(
+      dialog.getByText("Email must be a valid email address", { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
+      "not-an-email",
+    );
     await dialog
       .getByRole("textbox", { name: "Email", exact: true })
       .fill(" dana@example.test ");
@@ -371,6 +382,19 @@ test.describe("Master Data Vendors journey", () => {
       .getByRole("textbox", { name: "Name", exact: true })
       .fill("Delta Grocers Updated");
     await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill(" acme foods ");
+    await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(
+      dialog.getByText("A Vendor with that name already exists.", { exact: true }),
+    ).toBeVisible();
+    await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
+      " acme foods ",
+    );
+    await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill("Delta Grocers Updated");
+    await dialog
       .getByRole("textbox", { name: "Contact person", exact: true })
       .fill("Delta Updated");
     await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
@@ -384,6 +408,38 @@ test.describe("Master Data Vendors journey", () => {
     await expect(await vendorRow(page, "Delta Grocers Updated")).toContainText(
       "Delta Updated",
     );
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({
+      path: testInfo.outputPath("master-data-vendors-admin-desktop.png"),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+      page.getByRole("button", {
+        name: "Actions for Delta Grocers Updated",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const mobileActions = page.getByRole("button", {
+      name: "Actions for Delta Grocers Updated",
+      exact: true,
+    });
+    await mobileActions.click();
+    await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(mobileActions).toBeFocused();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath("master-data-vendors-admin-mobile.png"),
+      fullPage: true,
+    });
   });
 
   test(
@@ -408,7 +464,9 @@ test.describe("Master Data Vendors journey", () => {
       await expect(
         page.getByText(/Showing 1 to 10 of \d+ results/, { exact: true }),
       ).toBeVisible();
-      await expect(page.getByText("Inactive", { exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("table").getByText("Inactive", { exact: true }),
+      ).toBeVisible();
 
       await page.getByRole("button", { name: "Next page", exact: true }).click();
       await expect(page).toHaveURL(/tab=vendors&page=2$/);
@@ -418,7 +476,7 @@ test.describe("Master Data Vendors journey", () => {
       await page.reload();
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await expect(
-        page.getByText("Kitchen Select", { exact: true }),
+        page.getByRole("table").getByText("Kitchen Select", { exact: true }),
       ).toBeVisible();
 
       await page.goto("/master-data?tab=vendors");
@@ -429,7 +487,9 @@ test.describe("Master Data Vendors journey", () => {
       });
       await search.fill("  aLiCe  ");
       await expect(page).toHaveURL(/tab=vendors&search=/);
-      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("table").getByText("Acme Foods", { exact: true }),
+      ).toBeVisible();
       await expect(
         page.getByText("Showing 1 result", { exact: true }),
       ).toBeVisible();
@@ -442,7 +502,7 @@ test.describe("Master Data Vendors journey", () => {
         .click();
       await expect(search).toBeEmpty();
       await expect(
-        page.getByText("Acme Foods", { exact: true }),
+        page.getByRole("table").getByText("Acme Foods", { exact: true }),
       ).toBeVisible();
 
       await page.setViewportSize({ width: 1440, height: 900 });

@@ -30,6 +30,20 @@ import {
 
 const PAGE_SIZE = 10;
 
+function focusVisibleVendorAction(vendorId: string) {
+  const actionButtons = document.querySelectorAll<HTMLElement>(
+    `[id^="vendor-actions-${vendorId}"]`,
+  );
+  const visibleButton = Array.from(actionButtons).find(
+    (button) => button.getClientRects().length > 0,
+  );
+  visibleButton?.focus();
+}
+
+type VendorFocusTarget =
+  | { kind: "action"; vendorId: string }
+  | "new-vendor";
+
 export default function UnitsWorkspace({
   units,
   vendors,
@@ -57,7 +71,7 @@ export default function UnitsWorkspace({
   const [vendorDialogState, setVendorDialogState] =
     useState<VendorDialogState | null>(null);
   const [pendingVendorFocusTarget, setPendingVendorFocusTarget] =
-    useState<string | null>(null);
+    useState<VendorFocusTarget | null>(null);
   const [isMutating, startMutation] = useTransition();
 
   useEffect(() => {
@@ -66,7 +80,11 @@ export default function UnitsWorkspace({
 
     let attempts = 0;
     const focusTarget = () => {
-      document.getElementById(targetId)?.focus();
+      if (targetId === "new-vendor") {
+        document.getElementById(targetId)?.focus();
+      } else {
+        focusVisibleVendorAction(targetId.vendorId);
+      }
       attempts += 1;
 
       if (attempts >= 20) {
@@ -189,9 +207,13 @@ export default function UnitsWorkspace({
     window.setTimeout(() => {
       const targetId =
         closedDialog?.mode === "edit"
-          ? `vendor-actions-${closedDialog.vendor.id}`
+          ? { kind: "action" as const, vendorId: closedDialog.vendor.id }
           : "new-vendor";
-      document.getElementById(targetId)?.focus();
+      if (targetId === "new-vendor") {
+        document.getElementById(targetId)?.focus();
+      } else {
+        focusVisibleVendorAction(targetId.vendorId);
+      }
     }, 0);
   }
 
@@ -263,7 +285,7 @@ export default function UnitsWorkspace({
           return;
         }
 
-        setPendingVendorFocusTarget(`vendor-actions-${vendor.id}`);
+        setPendingVendorFocusTarget({ kind: "action", vendorId: vendor.id });
         router.refresh();
         toast.success(
           `Vendor “${vendor.name}” ${result.vendor.isActive ? "activated" : "deactivated"}`,
@@ -289,7 +311,7 @@ export default function UnitsWorkspace({
     );
     const nextPage = Math.min(currentPage, nextPageCount);
     const nextFocusTargetId = nextFocusTarget
-      ? `vendor-actions-${nextFocusTarget.id}`
+      ? { kind: "action" as const, vendorId: nextFocusTarget.id }
       : "new-vendor";
 
     setListState((current) => ({ ...current, page: nextPage }));
