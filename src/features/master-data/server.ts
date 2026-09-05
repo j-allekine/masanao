@@ -2,14 +2,18 @@ import "server-only";
 
 import type { CurrentActor } from "@/server/auth";
 
+import { createOfficeCommand } from "./server/commands/create-office";
 import { createUnitCommand } from "./server/commands/create-unit";
 import { deleteUnitCommand } from "./server/commands/delete-unit";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
+import { updateOfficeCommand } from "./server/commands/update-office";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { isAdministrator } from "./server/policies/authorization";
 import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import type {
+  OfficeCreateResult,
+  OfficeUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -17,7 +21,9 @@ import type {
 } from "./types";
 
 export type {
+  OfficeCreateResult,
   OfficeListItem,
+  OfficeUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -61,6 +67,18 @@ export async function createUnit(
   return createUnitCommand(input);
 }
 
+export async function createOffice(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<OfficeCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createOfficeCommand(input);
+}
+
 export async function updateUnit(
   actor: CurrentActor,
   id: string,
@@ -72,6 +90,19 @@ export async function updateUnit(
   }
 
   return updateUnitCommand(id, input);
+}
+
+export async function updateOffice(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<OfficeUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateOfficeCommand(id, input);
 }
 
 export async function setUnitActive(

@@ -11,6 +11,7 @@ import {
 
 import type { OfficeListItem } from "../types";
 import { hasOfficeFilters, type OfficeFilters } from "./office-filters";
+import OfficeActionsMenu from "./office-actions-menu";
 import MasterDataEmptyState from "./master-data-empty-state";
 import MasterDataTableFrame from "./master-data-table-frame";
 
@@ -56,10 +57,18 @@ export default function OfficeTable({
   offices,
   filters,
   onClearFilters,
+  canManage,
+  onNew,
+  onEdit,
+  actionDisabled,
 }: {
   offices: OfficeListItem[];
   filters: OfficeFilters;
   onClearFilters: () => void;
+  canManage: boolean;
+  onNew: () => void;
+  onEdit: (office: OfficeListItem) => void;
+  actionDisabled: boolean;
 }) {
   const hasFilters = hasOfficeFilters(filters);
 
@@ -77,9 +86,9 @@ export default function OfficeTable({
           description:
             "Offices will appear here once the municipal directory is configured.",
         }}
-        canCreate={false}
+        canCreate={canManage}
         createLabel="Create Office"
-        onCreate={() => undefined}
+        onCreate={onNew}
         onClearFilters={onClearFilters}
       />
     );
@@ -104,6 +113,11 @@ export default function OfficeTable({
           <TableHead scope="col" className="text-center">
             Status
           </TableHead>
+          {canManage ? (
+            <TableHead scope="col" className="text-center">
+              Actions
+            </TableHead>
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -126,6 +140,16 @@ export default function OfficeTable({
                 {office.isActive ? "Active" : "Inactive"}
               </Badge>
             </TableCell>
+            {canManage ? (
+              <TableCell className="text-center">
+                <OfficeActionsMenu
+                  officeName={office.name}
+                  actionButtonId={`office-actions-${office.id}`}
+                  disabled={actionDisabled}
+                  onEdit={() => onEdit(office)}
+                />
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

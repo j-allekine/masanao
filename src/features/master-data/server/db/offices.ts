@@ -1,7 +1,9 @@
 import "server-only";
 
+import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
+import type { OfficeInput } from "../../schemas/office";
 import type { OfficeListItem } from "../../types";
 
 const officeListSelect = {
@@ -34,6 +36,117 @@ function toOfficeListItem(office: {
     createdAt: office.createdAt.toISOString(),
     updatedAt: office.updatedAt.toISOString(),
   };
+}
+
+export function isUniqueConstraintViolation(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
+
+export function getOfficeDuplicateField(error: unknown) {
+  if (!isUniqueConstraintViolation(error)) return null;
+
+  const target = error.meta?.target;
+  const fields = Array.isArray(target)
+    ? target.filter((field): field is string => typeof field === "string")
+    : typeof target === "string"
+      ? [target]
+      : [];
+  const normalizedFields = fields.map((field) => field.toLowerCase());
+
+  if (
+    normalizedFields.some(
+      (field) => field.includes("abbreviation") || field.includes("office_abbreviation"),
+    )
+  ) {
+    return "abbreviation" as const;
+  }
+
+  if (
+    normalizedFields.some(
+      (field) => field.includes("name") || field.includes("office_name"),
+    )
+  ) {
+    return "name" as const;
+  }
+
+  return null;
+}
+
+export function isRecordNotFound(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  );
+}
+
+export async function findOfficeConflictRecord(
+  input: OfficeInput,
+  excludeId?: string,
+) {
+  const nameConflicts = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "office"
+    WHERE "name" COLLATE NOCASE = ${input.name}
+    LIMIT 1
+  `;
+
+  if (nameConflicts.some(({ id }) => id !== excludeId)) {
+    return "name" as const;
+  }
+
+  if (input.abbreviation === null) return null;
+
+  const abbreviationConflicts = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "office"
+    WHERE "abbreviation" COLLATE NOCASE = ${input.abbreviation}
+    LIMIT 1
+  `;
+
+  if (abbreviationConflicts.some(({ id }) => id !== excludeId)) {
+    return "abbreviation" as const;
+  }
+
+  return null;
+}
+
+export async function createOfficeRecord(input: OfficeInput) {
+  const office = await prisma.office.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: input.name,
+      abbreviation: input.abbreviation,
+      headName: input.headName,
+      headDesignation: input.headDesignation,
+      officialEmail: input.officialEmail,
+      contactNumber: input.contactNumber,
+    },
+    select: officeListSelect,
+  });
+
+  return toOfficeListItem(office);
+}
+
+export async function updateOfficeRecord(id: string, input: OfficeInput) {
+  const office = await prisma.office.update({
+    where: { id },
+    data: {
+      name: input.name,
+      abbreviation: input.abbreviation,
+      headName: input.headName,
+      headDesignation: input.headDesignation,
+      officialEmail: input.officialEmail,
+      contactNumber: input.contactNumber,
+    },
+    select: officeListSelect,
+  });
+
+  return toOfficeListItem(office);
 }
 
 export async function listOfficeRecords(): Promise<OfficeListItem[]> {

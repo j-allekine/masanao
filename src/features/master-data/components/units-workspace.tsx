@@ -274,6 +274,7 @@ export default function UnitsWorkspace({
             onSearchChange={updateSearch}
             onClearFilters={clearFilters}
             onPageChange={changePage}
+            canManage={canManage}
           />
         </MasterDataTabContent>
       </MasterDataTabs>
