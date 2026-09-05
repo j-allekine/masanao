@@ -232,3 +232,84 @@ test.describe("Master Data Units journey", () => {
     await expect(page.getByRole("tab", { name: "Categories", exact: true })).toBeDisabled();
   });
 });
+
+test.describe("Master Data Vendors journey", () => {
+  test(
+    "shows the persisted Vendor catalog as read-only",
+    async ({ page }, testInfo) => {
+      await openMasterData(page, "kitchen.staff", staffPassword);
+      await page.getByRole("tab", { name: "Vendors", exact: true }).click();
+
+      await expect(page).toHaveURL(/tab=vendors/);
+      await expect(
+        page.getByRole("tab", { name: "Vendors", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(
+        page.getByRole("searchbox", { name: "Search Vendors", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("columnheader", { name: "Actions", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: /Create Vendor/ }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("Inactive", { exact: true })).toBeVisible();
+
+      await page.getByRole("button", { name: "Next page", exact: true }).click();
+      await expect(page).toHaveURL(/tab=vendors&page=2$/);
+      await expect(
+        page.getByRole("button", { name: "Page 2 of 2", exact: true }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(
+        page.getByText("Kitchen Select", { exact: true }),
+      ).toBeVisible();
+
+      await page.goto("/master-data?tab=vendors");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const search = page.getByRole("searchbox", {
+        name: "Search Vendors",
+        exact: true,
+      });
+      await search.fill("  aLiCe  ");
+      await expect(page).toHaveURL(/tab=vendors&search=/);
+      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("Showing 1 result", { exact: true }),
+      ).toBeVisible();
+      await search.fill("no-such-vendor");
+      await expect(
+        page.getByText("No Vendors match your search.", { exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Clear search", exact: true })
+        .click();
+      await expect(search).toBeEmpty();
+      await expect(
+        page.getByText("Acme Foods", { exact: true }),
+      ).toBeVisible();
+
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.screenshot({
+        path: testInfo.outputPath("master-data-vendors-desktop.png"),
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        )
+        .toBe(true);
+      await page.screenshot({
+        path: testInfo.outputPath("master-data-vendors-mobile.png"),
+        fullPage: true,
+      });
+    },
+  );
+});

@@ -8,6 +8,7 @@ import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { isAdministrator } from "./server/policies/authorization";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
+import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
   UnitCreateResult,
   UnitDeleteResult,
@@ -20,11 +21,16 @@ export type {
   UnitDeleteResult,
   UnitLifecycleResult,
   UnitListItem,
+  VendorListItem,
   UnitUpdateResult,
 } from "./types";
 
 export async function listUnits() {
   return listUnitsQuery();
+}
+
+export async function listVendors() {
+  return listVendorsQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {

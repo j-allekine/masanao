@@ -98,6 +98,20 @@ model Unit {
   @@map("unit")
 }
 
+model Vendor {
+  id            String   @id
+  name          String
+  contactPerson String?
+  contactNumber String?
+  email         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("vendor")
+}
+
 model ActivityDesign {
   id               String     @id
   activityDesignNo String     @unique

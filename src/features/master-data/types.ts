@@ -9,6 +9,16 @@ export type UnitListItem = {
   active: boolean;
 };
 
+export type VendorListItem = {
+  id: string;
+  name: string;
+  contactPerson: string | null;
+  contactNumber: string | null;
+  email: string | null;
+  address: string | null;
+  isActive: boolean;
+};
+
 export type UnitCreateResult =
   | { ok: true; unit: UnitListItem }
   | {

@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { MasterDataContent } from "@/features/master-data/ui";
-import { canManageUnits, listUnits } from "@/features/master-data/server";
+import {
+  canManageUnits,
+  listUnits,
+  listVendors,
+} from "@/features/master-data/server";
 import { auth } from "@/server/auth";
 import { serializeSearchParams } from "@/lib/search-params";
 
@@ -31,8 +35,9 @@ export default async function MasterDataRoute({
     name: session.user.name ?? session.user.username ?? "Municipal staff",
     username: session.user.username ?? null,
   };
-  const [units, canManage, rawSearchParams] = await Promise.all([
+  const [units, vendors, canManage, rawSearchParams] = await Promise.all([
     listUnits(),
+    listVendors(),
     canManageUnits(actor),
     searchParams,
   ]);
@@ -48,6 +53,7 @@ export default async function MasterDataRoute({
     >
       <MasterDataContent
         units={units}
+        vendors={vendors}
         initialQuery={initialQuery}
         canManage={canManage}
       />
