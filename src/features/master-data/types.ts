@@ -2,6 +2,16 @@ export type UnitField = "name" | "abbreviation";
 
 export type UnitFieldErrors = Partial<Record<UnitField | "form", string[]>>;
 
+export type OfficeField =
+  | "name"
+  | "abbreviation"
+  | "headName"
+  | "headDesignation"
+  | "officialEmail"
+  | "contactNumber";
+
+export type OfficeFieldErrors = Partial<Record<OfficeField | "form", string[]>>;
+
 export type UnitListItem = {
   id: string;
   name: string;

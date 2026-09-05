@@ -1,8 +1,10 @@
 "use server";
 
+import { executeCreateOffice } from "./server/actions/create-office";
 import { executeCreateUnit } from "./server/actions/create-unit";
 import { executeDeleteUnit } from "./server/actions/delete-unit";
 import { executeSetUnitActive } from "./server/actions/set-unit-active";
+import { executeUpdateOffice } from "./server/actions/update-office";
 import { executeUpdateUnit } from "./server/actions/update-unit";
 import { executeCreateCategory } from "./server/actions/create-category";
 import { executeDeleteCategory } from "./server/actions/delete-category";
@@ -16,6 +18,7 @@ import type {
   CategoryDeleteActionState,
   CategoryFormActionState,
   CategoryLifecycleActionState,
+  OfficeFormActionState,
   UnitDeleteActionState,
   UnitFormActionState,
   UnitLifecycleActionState,
@@ -30,10 +33,22 @@ export async function createUnitAction(
   return executeCreateUnit(formData);
 }
 
+export async function createOfficeAction(
+  formData: FormData,
+): Promise<OfficeFormActionState> {
+  return executeCreateOffice(formData);
+}
+
 export async function updateUnitAction(
   formData: FormData,
 ): Promise<UnitFormActionState> {
   return executeUpdateUnit(formData);
+}
+
+export async function updateOfficeAction(
+  formData: FormData,
+): Promise<OfficeFormActionState> {
+  return executeUpdateOffice(formData);
 }
 
 export async function setUnitActiveAction(
