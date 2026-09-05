@@ -6,9 +6,18 @@ import { createUnitCommand } from "./server/commands/create-unit";
 import { deleteUnitCommand } from "./server/commands/delete-unit";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
+import { createCategoryCommand } from "./server/commands/create-category";
+import { deleteCategoryCommand } from "./server/commands/delete-category";
+import { setCategoryActiveCommand } from "./server/commands/set-category-active";
+import { updateCategoryCommand } from "./server/commands/update-category";
 import { isAdministrator } from "./server/policies/authorization";
+import { listCategories as listCategoriesQuery } from "./server/queries/list-categories";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import type {
+  CategoryCreateResult,
+  CategoryDeleteResult,
+  CategoryLifecycleResult,
+  CategoryUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -16,6 +25,7 @@ import type {
 } from "./types";
 
 export type {
+  CategoryListItem,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -25,6 +35,10 @@ export type {
 
 export async function listUnits() {
   return listUnitsQuery();
+}
+
+export async function listCategories() {
+  return listCategoriesQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {
@@ -40,6 +54,10 @@ async function authorizeAdministrator(actor: CurrentActor) {
 }
 
 export async function canManageUnits(actor: CurrentActor) {
+  return isAdministrator(actor);
+}
+
+export async function canManageCategories(actor: CurrentActor) {
   return isAdministrator(actor);
 }
 
@@ -87,4 +105,50 @@ export async function deleteUnit(
   if (authorizationFailure) return authorizationFailure;
 
   return deleteUnitCommand(id);
+}
+
+export async function createCategory(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<CategoryCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createCategoryCommand(input);
+}
+
+export async function updateCategory(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<CategoryUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateCategoryCommand(id, input);
+}
+
+export async function setCategoryActive(
+  actor: CurrentActor,
+  id: string,
+  isActive: boolean,
+): Promise<CategoryLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setCategoryActiveCommand(id, isActive);
+}
+
+export async function deleteCategory(
+  actor: CurrentActor,
+  id: string,
+): Promise<CategoryDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteCategoryCommand(id);
 }

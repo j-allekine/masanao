@@ -11,7 +11,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { setUnitActiveAction } from "../actions";
-import type { UnitListItem } from "../types";
+import type { CategoryListItem, UnitListItem } from "../types";
+import CategoriesWorkspace from "./categories-workspace";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
@@ -27,14 +28,18 @@ import {
 
 const PAGE_SIZE = 10;
 
-export default function UnitsWorkspace({
+export default function MasterDataWorkspace({
   units,
+  categories,
   initialQuery = "",
-  canManage,
+  canManageUnits,
+  canManageCategories,
 }: {
   units: UnitListItem[];
+  categories: CategoryListItem[];
   initialQuery?: string;
-  canManage: boolean;
+  canManageUnits: boolean;
+  canManageCategories: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,7 +54,7 @@ export default function UnitsWorkspace({
   );
   const [listState, setListState] = useState(initialState);
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
-  const [isMutating, startMutation] = useTransition();
+  const [isUnitMutating, startUnitMutation] = useTransition();
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -72,8 +77,7 @@ export default function UnitsWorkspace({
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
   );
-  const resultStart =
-    paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
+  const resultStart = paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: listState.tab,
@@ -119,12 +123,13 @@ export default function UnitsWorkspace({
   }
 
   function handleToggle(unit: UnitListItem) {
-    startMutation(async () => {
+    startUnitMutation(async () => {
       try {
         const result = await setUnitActiveAction(unit.id, !unit.active);
 
         if (result.status === "error") {
           toast.error(result.error);
+          router.refresh();
           return;
         }
 
@@ -139,6 +144,7 @@ export default function UnitsWorkspace({
         toast.error(
           "The Unit status could not be changed. Check your connection and try again.",
         );
+        router.refresh();
       }
     });
   }
@@ -186,11 +192,16 @@ export default function UnitsWorkspace({
   }
 
   function changeTab(value: MasterDataTab) {
-    if (value !== "units") return;
-
-    setListState((current) => ({ ...current, tab: "units" }));
+    setListState((current) => ({
+      ...current,
+      tab: value,
+      ...(value === "categories" ? { search: "", page: 1 } : {}),
+    }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units" }),
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: value,
+        ...(value === "categories" ? { search: "", page: 1 } : {}),
+      }),
       { scroll: false },
     );
   }
@@ -207,19 +218,19 @@ export default function UnitsWorkspace({
             resourceLabels={{ singular: "Unit", plural: "Units" }}
             search={filters.search}
             onSearchChange={updateSearch}
-            canCreate={canManage}
+            canCreate={canManageUnits}
             onCreate={openCreateDialog}
           >
             <UnitTable
               units={paginatedUnits}
               filters={filters}
               onClearFilters={clearFilters}
-              canManage={canManage}
+              canManage={canManageUnits}
               onNew={openCreateDialog}
               onEdit={openEditDialog}
               onToggle={handleToggle}
               onDeleted={handleDeleted}
-              actionDisabled={isMutating}
+              actionDisabled={isUnitMutating}
             />
             <UnitPagination
               page={currentPage}
@@ -230,6 +241,12 @@ export default function UnitsWorkspace({
               onPageChange={changePage}
             />
           </MasterDataCatalogLayout>
+        </MasterDataTabContent>
+        <MasterDataTabContent value="categories">
+          <CategoriesWorkspace
+            categories={categories}
+            canManage={canManageCategories}
+          />
         </MasterDataTabContent>
       </MasterDataTabs>
       <UnitDialog

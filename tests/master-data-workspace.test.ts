@@ -34,6 +34,11 @@ describe("Master Data Units workspace", () => {
       search: "gram",
       page: 3,
     });
+    expect(getMasterDataListState("tab=categories")).toMatchObject({
+      tab: "categories",
+      search: "",
+      page: 1,
+    });
     expect(getMasterDataUrl("/master-data", query, { page: 1 })).toBe(
       "/master-data?tab=units&sort=name&search=++gram+",
     );
