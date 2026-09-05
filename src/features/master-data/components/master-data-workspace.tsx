@@ -192,15 +192,10 @@ export default function MasterDataWorkspace({
   }
 
   function changeTab(value: MasterDataTab) {
-    setListState((current) => ({
-      ...current,
-      tab: value,
-      ...(value === "categories" ? { search: "", page: 1 } : {}),
-    }));
+    setListState((current) => ({ ...current, tab: value }));
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
         tab: value,
-        ...(value === "categories" ? { search: "", page: 1 } : {}),
       }),
       { scroll: false },
     );

@@ -181,6 +181,16 @@ test.describe("Master Data Units journey", () => {
     await page.getByRole("button", { name: "Next page", exact: true }).click();
     await expect(page).toHaveURL(/page=2$/);
     await expect(page.getByRole("button", { name: "Page 2 of 2", exact: true })).toBeVisible();
+
+    await tabs.getByRole("tab", { name: "Categories", exact: true }).click();
+    await expect(tabs.getByRole("tab", { name: "Categories", exact: true })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await tabs.getByRole("tab", { name: "Units", exact: true }).click();
+    await expect(page).toHaveURL(/tab=units&page=2$/);
+    await expect(page.getByRole("button", { name: "Page 2 of 2", exact: true })).toBeVisible();
+
     await page.getByRole("button", { name: "Previous page", exact: true }).click();
     await expect(page).toHaveURL(/master-data(?:\?tab=units)?$/);
 
@@ -188,6 +198,13 @@ test.describe("Master Data Units journey", () => {
     await expect(page).toHaveURL(/search=mL/);
     await expect(await unitRow(page, "Milliliter")).toContainText("mL");
     await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
+
+    await tabs.getByRole("tab", { name: "Categories", exact: true }).click();
+    await tabs.getByRole("tab", { name: "Units", exact: true }).click();
+    await expect(page).toHaveURL(/tab=units&search=mL$/);
+    await expect(page.getByRole("searchbox", { name: "Search Units", exact: true })).toHaveValue("mL");
+    await expect(await unitRow(page, "Milliliter")).toContainText("mL");
+
     await page.getByRole("searchbox", { name: "Search Units", exact: true }).fill("no-such-unit");
     await expect(page.getByText("No Units match your search.", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Clear search", exact: true }).click();
