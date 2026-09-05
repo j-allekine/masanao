@@ -9,6 +9,19 @@ export type UnitListItem = {
   active: boolean;
 };
 
+export type OfficeListItem = {
+  id: string;
+  name: string;
+  abbreviation: string | null;
+  headName: string | null;
+  headDesignation: string | null;
+  officialEmail: string | null;
+  contactNumber: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UnitCreateResult =
   | { ok: true; unit: UnitListItem }
   | {

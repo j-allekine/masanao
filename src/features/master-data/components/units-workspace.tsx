@@ -11,11 +11,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { setUnitActiveAction } from "../actions";
-import type { UnitListItem } from "../types";
+import type { OfficeListItem, UnitListItem } from "../types";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
+import OfficesWorkspace from "./offices-workspace";
 import UnitPagination from "./unit-pagination";
+import { filterOffices } from "./office-filters";
 import { filterUnits, type UnitFilters } from "./unit-filters";
 import UnitTable from "./unit-table";
 import {
@@ -29,10 +31,12 @@ const PAGE_SIZE = 10;
 
 export default function UnitsWorkspace({
   units,
+  offices,
   initialQuery = "",
   canManage,
 }: {
   units: UnitListItem[];
+  offices: OfficeListItem[];
   initialQuery?: string;
   canManage: boolean;
 }) {
@@ -65,27 +69,49 @@ export default function UnitsWorkspace({
     () => filterUnits(units, { search }),
     [search, units],
   );
+  const filteredOffices = useMemo(
+    () => filterOffices(offices, { search }),
+    [search, offices],
+  );
   const pageCount = Math.max(1, Math.ceil(filteredUnits.length / PAGE_SIZE));
+  const officePageCount = Math.max(
+    1,
+    Math.ceil(filteredOffices.length / PAGE_SIZE),
+  );
   const currentPage = Math.min(listState.page, pageCount);
+  const officeCurrentPage = Math.min(listState.page, officePageCount);
+  const activePage = listState.tab === "offices" ? officeCurrentPage : currentPage;
   const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
+  const firstOfficeItemIndex = (officeCurrentPage - 1) * PAGE_SIZE;
   const paginatedUnits = useMemo(
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
   );
+  const paginatedOffices = useMemo(
+    () =>
+      filteredOffices.slice(
+        firstOfficeItemIndex,
+        firstOfficeItemIndex + PAGE_SIZE,
+      ),
+    [filteredOffices, firstOfficeItemIndex],
+  );
   const resultStart =
     paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
+  const officeResultStart =
+    paginatedOffices.length === 0 ? 0 : firstOfficeItemIndex + 1;
+  const officeResultEnd = firstOfficeItemIndex + paginatedOffices.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: listState.tab,
     search,
-    page: currentPage,
+    page: activePage,
   });
 
   function updateSearch(nextSearch: string) {
     setListState((current) => ({ ...current, search: nextSearch, page: 1 }));
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
-        tab: "units",
+        tab: listState.tab,
         search: nextSearch,
         page: 1,
       }),
@@ -177,20 +203,25 @@ export default function UnitsWorkspace({
   }
 
   function changePage(nextPage: number) {
-    const page = Math.min(Math.max(nextPage, 1), pageCount);
+    const selectedPageCount =
+      listState.tab === "offices" ? officePageCount : pageCount;
+    const page = Math.min(Math.max(nextPage, 1), selectedPageCount);
     setListState((current) => ({ ...current, page }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units", page }),
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: listState.tab,
+        page,
+      }),
       { scroll: false },
     );
   }
 
   function changeTab(value: MasterDataTab) {
-    if (value !== "units") return;
+    if (value !== "units" && value !== "offices") return;
 
-    setListState((current) => ({ ...current, tab: "units" }));
+    setListState((current) => ({ ...current, tab: value }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units" }),
+      getMasterDataUrl(pathname, currentQuery, { tab: value }),
       { scroll: false },
     );
   }
@@ -230,6 +261,20 @@ export default function UnitsWorkspace({
               onPageChange={changePage}
             />
           </MasterDataCatalogLayout>
+        </MasterDataTabContent>
+        <MasterDataTabContent value="offices">
+          <OfficesWorkspace
+            offices={paginatedOffices}
+            total={filteredOffices.length}
+            search={search}
+            page={officeCurrentPage}
+            pageCount={officePageCount}
+            start={officeResultStart}
+            end={officeResultEnd}
+            onSearchChange={updateSearch}
+            onClearFilters={clearFilters}
+            onPageChange={changePage}
+          />
         </MasterDataTabContent>
       </MasterDataTabs>
       <UnitDialog

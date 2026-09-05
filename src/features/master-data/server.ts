@@ -7,6 +7,7 @@ import { deleteUnitCommand } from "./server/commands/delete-unit";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { isAdministrator } from "./server/policies/authorization";
+import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import type {
   UnitCreateResult,
@@ -16,6 +17,7 @@ import type {
 } from "./types";
 
 export type {
+  OfficeListItem,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -25,6 +27,10 @@ export type {
 
 export async function listUnits() {
   return listUnitsQuery();
+}
+
+export async function listOffices() {
+  return listOfficesQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {
