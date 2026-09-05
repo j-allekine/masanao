@@ -138,6 +138,40 @@ describe("Master Data Office mutation gateway", () => {
     });
   });
 
+  it("rejects case-insensitive Unicode identity duplicates", async () => {
+    await createActorUser(adminActor, "admin");
+
+    const first = await createOffice(adminActor, {
+      name: "École Office",
+      abbreviation: "ÉCO",
+    });
+    expect(first.ok).toBe(true);
+
+    await expect(
+      createOffice(adminActor, {
+        name: "éCOLE OFFICE",
+        abbreviation: "other",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["An Office with that name already exists."] },
+    });
+
+    await expect(
+      createOffice(adminActor, {
+        name: "Another Office",
+        abbreviation: "éco",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: {
+        abbreviation: ["An Office with that abbreviation already exists."],
+      },
+    });
+  });
+
   it("allows self-normalized edits, preserves status, and rejects other-office conflicts without changing the record", async () => {
     await createActorUser(adminActor, "admin");
 

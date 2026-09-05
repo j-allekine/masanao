@@ -24,7 +24,7 @@ describe("Master Data Office unique conflicts", () => {
   it("reports a late abbreviation collision on the abbreviation field during create", async () => {
     vi.spyOn(officeDb, "findOfficeConflictRecord").mockResolvedValue(null);
     vi.spyOn(officeDb, "createOfficeRecord").mockRejectedValue(
-      uniqueConstraintError("office_abbreviation_nocase_key"),
+      uniqueConstraintError("office_normalizedAbbreviation_key"),
     );
 
     await expect(
@@ -42,7 +42,7 @@ describe("Master Data Office unique conflicts", () => {
   it("reports a late name collision on the name field during update", async () => {
     vi.spyOn(officeDb, "findOfficeConflictRecord").mockResolvedValue(null);
     vi.spyOn(officeDb, "updateOfficeRecord").mockRejectedValue(
-      uniqueConstraintError("office_name_nocase_key"),
+      uniqueConstraintError("office_normalizedName_key"),
     );
 
     await expect(

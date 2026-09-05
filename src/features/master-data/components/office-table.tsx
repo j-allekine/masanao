@@ -77,7 +77,9 @@ function OfficeRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[20rem]">
-          <span className="block truncate">{office.name}</span>
+          <span className="block whitespace-normal break-words">
+            {office.name}
+          </span>
         </TableCell>
         <TableCell className="font-mono text-mono tracking-mono text-primary">
           {office.abbreviation ?? "—"}

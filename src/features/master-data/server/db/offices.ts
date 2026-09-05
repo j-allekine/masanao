@@ -95,31 +95,28 @@ export async function findOfficeConflictRecord(
   input: OfficeInput,
   excludeId?: string,
 ) {
-  const nameConflicts = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "office"
-    WHERE "name" COLLATE NOCASE = ${input.name}
-    LIMIT 1
-  `;
+  const office = await prisma.office.findFirst({
+    where: {
+      OR: [
+        { normalizedName: input.normalizedName },
+        ...(input.normalizedAbbreviation === null
+          ? []
+          : [{ normalizedAbbreviation: input.normalizedAbbreviation }]),
+      ],
+      ...(excludeId ? { NOT: { id: excludeId } } : {}),
+    },
+    select: {
+      normalizedName: true,
+      normalizedAbbreviation: true,
+    },
+  });
 
-  if (nameConflicts.some(({ id }) => id !== excludeId)) {
+  if (!office) return null;
+  if (office.normalizedName === input.normalizedName) {
     return "name" as const;
   }
 
-  if (input.abbreviation === null) return null;
-
-  const abbreviationConflicts = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "office"
-    WHERE "abbreviation" COLLATE NOCASE = ${input.abbreviation}
-    LIMIT 1
-  `;
-
-  if (abbreviationConflicts.some(({ id }) => id !== excludeId)) {
-    return "abbreviation" as const;
-  }
-
-  return null;
+  return "abbreviation" as const;
 }
 
 export async function createOfficeRecord(input: OfficeInput) {
@@ -128,6 +125,8 @@ export async function createOfficeRecord(input: OfficeInput) {
       id: crypto.randomUUID(),
       name: input.name,
       abbreviation: input.abbreviation,
+      normalizedName: input.normalizedName,
+      normalizedAbbreviation: input.normalizedAbbreviation,
       headName: input.headName,
       headDesignation: input.headDesignation,
       officialEmail: input.officialEmail,
@@ -145,6 +144,8 @@ export async function updateOfficeRecord(id: string, input: OfficeInput) {
     data: {
       name: input.name,
       abbreviation: input.abbreviation,
+      normalizedName: input.normalizedName,
+      normalizedAbbreviation: input.normalizedAbbreviation,
       headName: input.headName,
       headDesignation: input.headDesignation,
       officialEmail: input.officialEmail,
