@@ -98,6 +98,18 @@ model Unit {
   @@map("unit")
 }
 
+model Category {
+  id             String   @id
+  name           String
+  description    String?
+  normalizedName String   @unique
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("category")
+}
+
 model ActivityDesign {
   id               String     @id
   activityDesignNo String     @unique

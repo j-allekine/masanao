@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import type { CurrentActor } from "@/server/auth";
 import { auth } from "@/server/auth";
 
-export async function getCurrentUnitActor(): Promise<CurrentActor | null> {
+export async function getCurrentMasterDataActor(): Promise<CurrentActor | null> {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,4 +17,8 @@ export async function getCurrentUnitActor(): Promise<CurrentActor | null> {
     name: session.user.name,
     username: session.user.username ?? null,
   };
+}
+
+export async function getCurrentUnitActor(): Promise<CurrentActor | null> {
+  return getCurrentMasterDataActor();
 }
