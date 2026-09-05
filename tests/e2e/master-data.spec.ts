@@ -520,6 +520,7 @@ test.describe("Master Data Offices journey", () => {
     await expect(searchbox).toBeEmpty();
     await expect(page).toHaveURL(/master-data\?tab=offices$/);
     await page.reload();
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await expect(page.getByRole("tab", { name: "Offices", exact: true })).toHaveAttribute(
       "aria-selected",
       "true",

@@ -99,16 +99,19 @@ model Unit {
 }
 
 model Office {
-  id               String   @id
-  name             String
-  abbreviation     String?
-  headName         String?
-  headDesignation  String?
-  officialEmail    String?
-  contactNumber    String?
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                     String   @id
+  name                   String
+  abbreviation           String?
+  headName               String?
+  headDesignation        String?
+  officialEmail          String?
+  contactNumber          String?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  // Internal comparison keys; omitted from the public Office read contract.
+  normalizedName         String   @unique
+  normalizedAbbreviation String?  @unique
 
   @@map("office")
 }

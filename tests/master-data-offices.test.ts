@@ -89,12 +89,16 @@ describe("Master Data Offices read path", () => {
         {
           id: "health-office",
           name: "Municipal Health Office",
+          normalizedName: "municipal health office",
+          normalizedAbbreviation: null,
           isActive: false,
         },
         {
           id: "mayors-office",
           name: "Mayor's Office",
           abbreviation: "MO",
+          normalizedName: "mayor's office",
+          normalizedAbbreviation: "mo",
           headName: "Alex Santos",
           headDesignation: "Department Head",
           officialEmail: "mayor@example.test",
@@ -139,7 +143,7 @@ describe("Master Data Office persistence contract", () => {
     await prisma.office.deleteMany();
   });
 
-  it("has only the approved columns, case-insensitive identity indexes, active default, and timestamps", async () => {
+  it("has the approved columns, normalized identity indexes, active default, and timestamps", async () => {
     const columns = await prisma.$queryRaw<Array<{ name: string }>>`
       SELECT name FROM pragma_table_info('office') ORDER BY cid
     `;
@@ -149,7 +153,7 @@ describe("Master Data Office persistence contract", () => {
     const indexes = await prisma.$queryRaw<Array<{ name: string; sql: string }>>`
       SELECT name, sql
       FROM sqlite_master
-      WHERE type = 'index' AND name IN ('office_name_nocase_key', 'office_abbreviation_nocase_key')
+      WHERE type = 'index' AND name IN ('office_normalizedName_key', 'office_normalizedAbbreviation_key')
       ORDER BY name
     `;
 
@@ -164,17 +168,25 @@ describe("Master Data Office persistence contract", () => {
       "isActive",
       "createdAt",
       "updatedAt",
+      "normalizedName",
+      "normalizedAbbreviation",
     ]);
     expect(table[0]?.sql).toContain('"isActive" BOOLEAN NOT NULL DEFAULT true');
     expect(indexes).toHaveLength(2);
-    expect(indexes.every(({ sql }) => sql.includes("COLLATE NOCASE"))).toBe(
-      true,
-    );
+    expect(indexes.map(({ name }) => name)).toEqual([
+      "office_normalizedAbbreviation_key",
+      "office_normalizedName_key",
+    ]);
   });
 
   it("defaults new Office records to active and manages both timestamps", async () => {
     const office = await prisma.office.create({
-      data: { id: "new-office", name: "New Office" },
+      data: {
+        id: "new-office",
+        name: "New Office",
+        normalizedName: "new office",
+        normalizedAbbreviation: null,
+      },
     });
 
     expect(office).toMatchObject({
