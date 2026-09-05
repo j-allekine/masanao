@@ -12,17 +12,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### UI system
 
-- Before modifying the component layer, read `./components.json`.
-- Before creating UI, inspect the shadcn UI directory configured in `./components.json` for existing primitives.
-- Prefer existing shadcn/ui primitives for buttons, inputs, fields, dialogs, menus, and other controls.
-- If a required primitive is missing, add it through the shadcn CLI using the project's package manager.
-- Review generated component files after adding them.
-- Custom page designs must compose shadcn/ui primitives.
-- Use existing component variants and semantic design tokens.
-- Page-specific CSS may handle layout, spacing, surfaces, and branding.
-- Do not recreate shadcn/ui controls with native elements and custom CSS.
-- Native HTML is allowed for semantic structure or when no suitable primitive exists; document exceptions.
-- Invoke the installed `shadcn` skill for component work.
+- shadcn/ui is the required UI primitive layer for production interfaces.
+- Before UI work, read `./components.json` and inspect `./components/ui/`.
+- MUST use an existing shadcn/ui component when shadcn provides an equivalent control or pattern.
+- If the required shadcn/ui component is not installed, add the official component through the shadcn CLI using the project's package manager.
+- Treat the generated shadcn/ui component as the canonical starting point. Do not recreate its markup, behavior, interaction states, or accessibility behavior with custom native controls.
+- Start from the official shadcn/ui implementation and default styling, then adapt it to Masanao using semantic design tokens, supported variants, composition, and `className`.
+- Prefer extending an existing shared component or adding a reusable variant when customization will be reused across multiple features.
+- Page-specific CSS may control page layout, positioning, responsive composition, spacing, branding, and decorative treatment.
+- Page-specific CSS MUST NOT recreate or replace the structure, interaction states, or behavior of an existing shadcn/ui control.
+- Do not use native HTML interactive controls such as `button`, `input`, `textarea`, `select`, `checkbox`, or similar controls directly in application UI when an equivalent shadcn/ui primitive exists.
+- Semantic HTML such as `main`, `section`, `header`, `nav`, `form`, `article`, headings, paragraphs, and other structural elements is allowed and encouraged.
+- Native interactive elements may only appear inside shared primitive implementations or when explicitly required by a browser/platform capability that shadcn/ui does not wrap. Document the reason for any such exception.
+- Review newly generated shadcn/ui component files before using them.
+- Invoke the installed `shadcn` skill before implementing or substantially modifying UI/component work.
 
 ### React / Next.js
 
