@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
+import { normalizeVendorKey } from "../../domain/vendor";
 import type { VendorInput } from "../../schemas/vendor";
 import type { VendorListItem } from "../../types";
 
@@ -44,7 +45,8 @@ export function getVendorDuplicateField(error: unknown) {
 
   if (
     fields.some((field) => field.toLowerCase().includes("name")) ||
-    error.message.toLowerCase().includes("vendor_name_nocase")
+    error.message.toLowerCase().includes("vendor_name_nocase") ||
+    error.message.toLowerCase().includes("vendor_normalized_name")
   ) {
     return "name" as const;
   }
@@ -70,18 +72,19 @@ export async function findVendorConflictRecord(
   input: VendorInput,
   excludeId?: string,
 ) {
+  const normalizedName = normalizeVendorKey(input.name);
   const conflicts = excludeId
     ? await prisma.$queryRaw<Array<{ id: string }>>`
         SELECT "id"
         FROM "vendor"
-        WHERE "name" = ${input.name} COLLATE NOCASE
+        WHERE "normalizedName" = ${normalizedName}
           AND "id" <> ${excludeId}
         LIMIT 1
       `
     : await prisma.$queryRaw<Array<{ id: string }>>`
         SELECT "id"
         FROM "vendor"
-        WHERE "name" = ${input.name} COLLATE NOCASE
+        WHERE "normalizedName" = ${normalizedName}
         LIMIT 1
       `;
 
@@ -93,6 +96,7 @@ export async function createVendorRecord(input: VendorInput) {
     data: {
       id: crypto.randomUUID(),
       name: input.name,
+      normalizedName: normalizeVendorKey(input.name),
       contactPerson: input.contactPerson,
       contactNumber: input.contactNumber,
       email: input.email,
@@ -107,6 +111,7 @@ export async function updateVendorRecord(id: string, input: VendorInput) {
     where: { id },
     data: {
       name: input.name,
+      normalizedName: normalizeVendorKey(input.name),
       contactPerson: input.contactPerson,
       contactNumber: input.contactNumber,
       email: input.email,

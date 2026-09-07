@@ -47,13 +47,15 @@ export default function VendorActionsMenu({
             type="button"
             id={actionButtonId}
             variant="ghost"
-            size="icon-sm"
+            size="sm"
+            className="gap-1.5 px-2"
             aria-label={`Actions for ${vendorName}`}
             disabled={disabled}
           />
         }
       >
         <Ellipsis />
+        <span>Actions</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-36">
         <DropdownMenuGroup>

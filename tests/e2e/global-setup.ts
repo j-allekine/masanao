@@ -3,6 +3,8 @@ import { readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { hashPassword } from "better-auth/crypto";
 
+import { normalizeVendorKey } from "../../src/features/master-data/domain/vendor";
+
 export default async function globalSetup() {
   const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
   if (!databasePath) {
@@ -133,8 +135,8 @@ export default async function globalSetup() {
   ] as const;
   const insertVendor = database.prepare(
     `INSERT INTO "vendor"
-     ("id", "name", "contactPerson", "contactNumber", "email", "address", "isActive", "createdAt", "updatedAt")
-     VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+     ("id", "name", "normalizedName", "contactPerson", "contactNumber", "email", "address", "isActive", "createdAt", "updatedAt")
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
   );
   for (const [
     id,
@@ -148,6 +150,7 @@ export default async function globalSetup() {
     insertVendor.run(
       id,
       name,
+      normalizeVendorKey(name),
       contactPerson,
       contactNumber,
       email,

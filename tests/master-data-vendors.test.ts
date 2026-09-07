@@ -6,6 +6,7 @@ import {
   getMasterDataListState,
   masterDataTabs,
 } from "@/features/master-data/components/master-data-list-state";
+import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { listVendors } from "@/features/master-data/server";
 import type { VendorListItem } from "@/features/master-data/types";
 import { prisma } from "@/prisma/client";
@@ -30,6 +31,13 @@ const vendors: VendorListItem[] = [
     isActive: false,
   },
 ];
+
+function withNormalizedVendorName<T extends { name: string }>(data: T) {
+  return {
+    ...data,
+    normalizedName: normalizeVendorKey(data.name),
+  };
+}
 
 describe("Master Data Vendors read path", () => {
   it("enables Vendors while keeping Categories and Offices disabled", () => {
@@ -71,7 +79,7 @@ describe("Master Data Vendors read path", () => {
   it("lists active and inactive Vendors with only the public read fields", async () => {
     await prisma.vendor.deleteMany();
     for (const vendor of vendors) {
-      await prisma.vendor.create({ data: vendor });
+      await prisma.vendor.create({ data: withNormalizedVendorName(vendor) });
     }
 
     await expect(listVendors()).resolves.toEqual(vendors);
@@ -88,13 +96,17 @@ describe("Vendor persistence contract", () => {
     const indexes = await prisma.$queryRaw<Array<{ sql: string }>>`
       SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'vendor_name_nocase_key'
     `;
+    const normalizedIndexes = await prisma.$queryRaw<Array<{ sql: string }>>`
+      SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'vendor_normalized_name_key'
+    `;
 
     expect(table[0]?.sql).toContain('"isActive" BOOLEAN NOT NULL DEFAULT true');
-    expect(table[0]?.sql).not.toContain("normalized");
+    expect(table[0]?.sql).toContain('"normalizedName" TEXT NOT NULL');
     expect(indexes[0]?.sql).toContain("COLLATE NOCASE");
+    expect(normalizedIndexes[0]?.sql).toContain('"normalizedName"');
 
     const created = await prisma.vendor.create({
-      data: { id: "case-sensitive", name: "Acme Foods" },
+      data: withNormalizedVendorName({ id: "case-sensitive", name: "Acme Foods" }),
     });
 
     expect(created.isActive).toBe(true);
@@ -104,15 +116,36 @@ describe("Vendor persistence contract", () => {
 
     await expect(
       prisma.vendor.create({
-        data: { id: "duplicate", name: "acme foods" },
+        data: withNormalizedVendorName({ id: "duplicate", name: "acme foods" }),
       }),
     ).rejects.toMatchObject({ code: "P2002" });
 
     await expect(
       prisma.vendor.create({
-        data: { id: "not-trimmed", name: " Acme Supplies " },
+        data: withNormalizedVendorName({
+          id: "not-trimmed",
+          name: " Acme Supplies ",
+        }),
       }),
     ).rejects.toThrow();
+
+    await expect(
+      prisma.vendor.create({
+        data: withNormalizedVendorName({
+          id: "unicode-upper",
+          name: "Éclair Foods",
+        }),
+      }),
+    ).resolves.toMatchObject({ normalizedName: "éclair foods" });
+
+    await expect(
+      prisma.vendor.create({
+        data: withNormalizedVendorName({
+          id: "unicode-lower",
+          name: "éclair foods",
+        }),
+      }),
+    ).rejects.toMatchObject({ code: "P2002" });
   });
 
   it("enforces normalized optional fields and practical email validity in SQLite", async () => {
@@ -120,14 +153,14 @@ describe("Vendor persistence contract", () => {
 
     await expect(
       prisma.vendor.create({
-        data: {
+        data: withNormalizedVendorName({
           id: "valid-contact-data",
           name: "Valid Contact Data",
           contactPerson: "Alice Reyes",
           contactNumber: "+63 917 000 0001",
           email: "alice+office@example.com",
           address: "Municipal Market",
-        },
+        }),
       }),
     ).resolves.toMatchObject({
       contactPerson: "Alice Reyes",
@@ -140,14 +173,15 @@ describe("Vendor persistence contract", () => {
       ["contactPerson", "   "],
       ["contactNumber", "\t\n"],
       ["address", ""],
+      ["contactPerson", "\u00a0"],
     ] as const) {
       await expect(
         prisma.vendor.create({
-          data: {
+          data: withNormalizedVendorName({
             id: `invalid-${field}`,
-            name: `Invalid ${field}`,
+            name: `Invalid ${field} ${JSON.stringify(value)}`,
             [field]: value,
-          },
+          }),
         }),
       ).rejects.toThrow();
     }
@@ -157,14 +191,15 @@ describe("Vendor persistence contract", () => {
       ["untrimmed-contact-number", "contactNumber", " 0917 000 0001 "],
       ["untrimmed-address", "address", " Municipal Market "],
       ["untrimmed-email", "email", " alice@example.com "],
+      ["unicode-untrimmed-contact-person", "contactPerson", "\u00a0Alice Reyes\u00a0"],
     ] as const) {
       await expect(
         prisma.vendor.create({
-          data: {
+          data: withNormalizedVendorName({
             id,
             name: id,
             [field]: value,
-          },
+          }),
         }),
       ).rejects.toThrow();
     }
@@ -178,21 +213,21 @@ describe("Vendor persistence contract", () => {
     ] as const) {
       await expect(
         prisma.vendor.create({
-          data: { id, name: id, email },
+          data: withNormalizedVendorName({ id, name: id, email }),
         }),
       ).rejects.toThrow();
     }
 
     await expect(
       prisma.vendor.create({
-        data: {
+        data: withNormalizedVendorName({
           id: "null-optional-data",
           name: "Null Optional Data",
           contactPerson: null,
           contactNumber: null,
           email: null,
           address: null,
-        },
+        }),
       }),
     ).resolves.toMatchObject({
       contactPerson: null,
