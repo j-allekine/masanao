@@ -42,12 +42,12 @@ describe("Master Data Offices read path", () => {
     await prisma.office.deleteMany();
   });
 
-  it("enables Offices while keeping the other unbuilt sections disabled", () => {
+  it("enables Offices alongside the other built sections", () => {
     expect(masterDataTabs).toEqual([
       { id: "units", label: "Units", disabled: false },
-      { id: "categories", label: "Categories", disabled: true },
+      { id: "categories", label: "Categories", disabled: false },
       { id: "offices", label: "Offices", disabled: false },
-      { id: "vendors", label: "Vendors", disabled: true },
+      { id: "vendors", label: "Vendors", disabled: false },
     ]);
     expect(getMasterDataListState("tab=offices&search=  mayor  &page=2")).toEqual(
       {
