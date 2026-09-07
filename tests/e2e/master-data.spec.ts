@@ -691,4 +691,58 @@ test.describe("Master Data Vendors journey", () => {
       });
     },
   );
+
+  test("restores row focus after deleting the only Vendor on a later page", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await openMasterData(page, "municipal.admin", adminPassword);
+    await page.getByRole("tab", { name: "Vendors", exact: true }).click();
+
+    await page.locator("#new-vendor").click();
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill(`ZZ Focus Target ${Date.now()}`);
+    await dialog.getByRole("button", { name: "Add Vendor", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await expect(page).toHaveURL(/tab=vendors&page=2$/);
+
+    const pageRows = page
+      .getByRole("table")
+      .getByRole("row")
+      .filter({ has: page.getByRole("button", { name: /Actions for/ }) });
+    while ((await pageRows.count()) > 1) {
+      const rowCount = await pageRows.count();
+      await pageRows
+        .last()
+        .getByRole("button", { name: /Actions for/ })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const deleteDialog = page.getByRole("alertdialog");
+      await deleteDialog
+        .getByRole("button", { name: "Delete Vendor", exact: true })
+        .click();
+      await expect(deleteDialog).toHaveCount(0);
+      await expect(pageRows).toHaveCount(rowCount - 1);
+    }
+
+    await pageRows
+      .first()
+      .getByRole("button", { name: /Actions for/ })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    const deleteDialog = page.getByRole("alertdialog");
+    await deleteDialog
+      .getByRole("button", { name: "Delete Vendor", exact: true })
+      .click();
+
+    await expect(page).toHaveURL(/\/master-data\?tab=vendors$/);
+    await expect(
+      page.locator('button[aria-label^="Actions for "]:focus'),
+    ).toBeVisible();
+    await expect(page.locator("#new-vendor")).not.toBeFocused();
+  });
 });

@@ -315,14 +315,21 @@ export default function MasterDataWorkspace({
     const deletedIndex = paginatedVendors.findIndex(
       (currentVendor) => currentVendor.id === vendor.id,
     );
-    const nextFocusTarget =
-      paginatedVendors[deletedIndex + 1] ?? paginatedVendors[deletedIndex - 1];
-    const remainingVendorCount = Math.max(filteredVendors.length - 1, 0);
+    const remainingVendors = filteredVendors.filter(
+      (currentVendor) => currentVendor.id !== vendor.id,
+    );
+    const remainingVendorCount = remainingVendors.length;
     const nextPageCount = Math.max(
       1,
       Math.ceil(remainingVendorCount / PAGE_SIZE),
     );
     const nextPage = Math.min(currentPage, nextPageCount);
+    const deletedGlobalIndex =
+      firstVendorItemIndex + Math.max(deletedIndex, 0);
+    const nextFocusTarget =
+      remainingVendors[
+        Math.min(deletedGlobalIndex, remainingVendorCount - 1)
+      ];
     const nextFocusTargetId = nextFocusTarget
       ? { kind: "action" as const, vendorId: nextFocusTarget.id }
       : "new-vendor";
