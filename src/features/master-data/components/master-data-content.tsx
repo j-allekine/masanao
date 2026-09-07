@@ -1,19 +1,29 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-import type { UnitListItem, VendorListItem } from "../types";
-import UnitsWorkspace from "./units-workspace";
+import type {
+  CategoryListItem,
+  UnitListItem,
+  VendorListItem,
+} from "../types";
+import MasterDataWorkspace from "./master-data-workspace";
 
 export default function MasterDataContent({
   units,
+  categories,
   vendors,
   initialQuery = "",
-  canManage,
+  canManageUnits,
+  canManageCategories,
+  canManageVendors,
 }: {
   units: UnitListItem[];
+  categories: CategoryListItem[];
   vendors: VendorListItem[];
   initialQuery?: string;
-  canManage: boolean;
+  canManageUnits: boolean;
+  canManageCategories: boolean;
+  canManageVendors: boolean;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -31,11 +41,14 @@ export default function MasterDataContent({
       </header>
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <UnitsWorkspace
+        <MasterDataWorkspace
           units={units}
+          categories={categories}
           vendors={vendors}
           initialQuery={initialQuery}
-          canManage={canManage}
+          canManageUnits={canManageUnits}
+          canManageCategories={canManageCategories}
+          canManageVendors={canManageVendors}
         />
       </div>
     </div>

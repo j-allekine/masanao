@@ -4,11 +4,18 @@ import { executeCreateUnit } from "./server/actions/create-unit";
 import { executeDeleteUnit } from "./server/actions/delete-unit";
 import { executeSetUnitActive } from "./server/actions/set-unit-active";
 import { executeUpdateUnit } from "./server/actions/update-unit";
+import { executeCreateCategory } from "./server/actions/create-category";
+import { executeDeleteCategory } from "./server/actions/delete-category";
+import { executeSetCategoryActive } from "./server/actions/set-category-active";
+import { executeUpdateCategory } from "./server/actions/update-category";
 import { executeCreateVendor } from "./server/actions/create-vendor";
-import { executeUpdateVendor } from "./server/actions/update-vendor";
-import { executeSetVendorActive } from "./server/actions/set-vendor-active";
 import { executeDeleteVendor } from "./server/actions/delete-vendor";
+import { executeSetVendorActive } from "./server/actions/set-vendor-active";
+import { executeUpdateVendor } from "./server/actions/update-vendor";
 import type {
+  CategoryDeleteActionState,
+  CategoryFormActionState,
+  CategoryLifecycleActionState,
   UnitDeleteActionState,
   UnitFormActionState,
   UnitLifecycleActionState,
@@ -65,4 +72,29 @@ export async function deleteVendorAction(
   id: string,
 ): Promise<VendorDeleteActionState> {
   return executeDeleteVendor(id);
+}
+
+export async function createCategoryAction(
+  formData: FormData,
+): Promise<CategoryFormActionState> {
+  return executeCreateCategory(formData);
+}
+
+export async function updateCategoryAction(
+  formData: FormData,
+): Promise<CategoryFormActionState> {
+  return executeUpdateCategory(formData);
+}
+
+export async function setCategoryActiveAction(
+  id: string,
+  isActive: boolean,
+): Promise<CategoryLifecycleActionState> {
+  return executeSetCategoryActive(id, isActive);
+}
+
+export async function deleteCategoryAction(
+  id: string,
+): Promise<CategoryDeleteActionState> {
+  return executeDeleteCategory(id);
 }

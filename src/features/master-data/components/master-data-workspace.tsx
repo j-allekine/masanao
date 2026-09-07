@@ -11,7 +11,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { setUnitActiveAction, setVendorActiveAction } from "../actions";
-import type { UnitListItem, VendorListItem } from "../types";
+import type {
+  CategoryListItem,
+  UnitListItem,
+  VendorListItem,
+} from "../types";
+import CategoriesWorkspace from "./categories-workspace";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
@@ -44,16 +49,22 @@ type VendorFocusTarget =
   | { kind: "action"; vendorId: string }
   | "new-vendor";
 
-export default function UnitsWorkspace({
+export default function MasterDataWorkspace({
   units,
+  categories,
   vendors,
   initialQuery = "",
-  canManage,
+  canManageUnits,
+  canManageCategories,
+  canManageVendors,
 }: {
   units: UnitListItem[];
+  categories: CategoryListItem[];
   vendors: VendorListItem[];
   initialQuery?: string;
-  canManage: boolean;
+  canManageUnits: boolean;
+  canManageCategories: boolean;
+  canManageVendors: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -72,7 +83,8 @@ export default function UnitsWorkspace({
     useState<VendorDialogState | null>(null);
   const [pendingVendorFocusTarget, setPendingVendorFocusTarget] =
     useState<VendorFocusTarget | null>(null);
-  const [isMutating, startMutation] = useTransition();
+  const [isUnitMutating, startUnitMutation] = useTransition();
+  const [isVendorMutating, startVendorMutation] = useTransition();
 
   useEffect(() => {
     const targetId = pendingVendorFocusTarget;
@@ -146,8 +158,7 @@ export default function UnitsWorkspace({
       ),
     [filteredVendors, firstVendorItemIndex],
   );
-  const resultStart =
-    paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
+  const resultStart = paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: listState.tab,
@@ -218,12 +229,13 @@ export default function UnitsWorkspace({
   }
 
   function handleToggle(unit: UnitListItem) {
-    startMutation(async () => {
+    startUnitMutation(async () => {
       try {
         const result = await setUnitActiveAction(unit.id, !unit.active);
 
         if (result.status === "error") {
           toast.error(result.error);
+          router.refresh();
           return;
         }
 
@@ -238,6 +250,7 @@ export default function UnitsWorkspace({
         toast.error(
           "The Unit status could not be changed. Check your connection and try again.",
         );
+        router.refresh();
       }
     });
   }
@@ -276,7 +289,7 @@ export default function UnitsWorkspace({
   }
 
   function handleVendorToggle(vendor: VendorListItem) {
-    startMutation(async () => {
+    startVendorMutation(async () => {
       try {
         const result = await setVendorActiveAction(vendor.id, !vendor.isActive);
 
@@ -343,11 +356,11 @@ export default function UnitsWorkspace({
   }
 
   function changeTab(value: MasterDataTab) {
-    if (value !== "units" && value !== "vendors") return;
-
     setListState((current) => ({ ...current, tab: value }));
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: value }),
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: value,
+      }),
       { scroll: false },
     );
   }
@@ -364,19 +377,19 @@ export default function UnitsWorkspace({
             resourceLabels={{ singular: "Unit", plural: "Units" }}
             search={filters.search}
             onSearchChange={updateSearch}
-            canCreate={canManage}
+            canCreate={canManageUnits}
             onCreate={openCreateDialog}
           >
             <UnitTable
               units={paginatedUnits}
               filters={filters}
               onClearFilters={clearFilters}
-              canManage={canManage}
+              canManage={canManageUnits}
               onNew={openCreateDialog}
               onEdit={openEditDialog}
               onToggle={handleToggle}
               onDeleted={handleDeleted}
-              actionDisabled={isMutating}
+              actionDisabled={isUnitMutating}
             />
             <UnitPagination
               page={unitCurrentPage}
@@ -387,6 +400,12 @@ export default function UnitsWorkspace({
               onPageChange={changePage}
             />
           </MasterDataCatalogLayout>
+        </MasterDataTabContent>
+        <MasterDataTabContent value="categories">
+          <CategoriesWorkspace
+            categories={categories}
+            canManage={canManageCategories}
+          />
         </MasterDataTabContent>
         <MasterDataTabContent value="vendors">
           <VendorsWorkspace
@@ -402,12 +421,12 @@ export default function UnitsWorkspace({
             onSearchChange={updateSearch}
             onClearFilters={clearFilters}
             onPageChange={changePage}
-            canManage={canManage}
+            canManage={canManageVendors}
             onNew={openCreateVendorDialog}
             onEdit={openEditVendorDialog}
             onToggle={handleVendorToggle}
             onDeleted={handleVendorDeleted}
-            actionDisabled={isMutating}
+            actionDisabled={isVendorMutating}
           />
         </MasterDataTabContent>
       </MasterDataTabs>

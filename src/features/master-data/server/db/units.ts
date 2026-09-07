@@ -67,13 +67,6 @@ export function isRestrictiveRelationViolation(error: unknown) {
   );
 }
 
-export async function findUnitActorRole(actorId: string) {
-  return prisma.user.findUnique({
-    where: { id: actorId },
-    select: { role: true },
-  });
-}
-
 export async function listUnitRecords(): Promise<UnitListItem[]> {
   const units = await prisma.unit.findMany({
     select: unitListSelect,

@@ -40,10 +40,10 @@ function withNormalizedVendorName<T extends { name: string }>(data: T) {
 }
 
 describe("Master Data Vendors read path", () => {
-  it("enables Vendors while keeping Categories and Offices disabled", () => {
+  it("enables Vendors alongside Categories while keeping Offices disabled", () => {
     expect(masterDataTabs).toEqual([
       { id: "units", label: "Units", disabled: false },
-      { id: "categories", label: "Categories", disabled: true },
+      { id: "categories", label: "Categories", disabled: false },
       { id: "offices", label: "Offices", disabled: true },
       { id: "vendors", label: "Vendors", disabled: false },
     ]);
