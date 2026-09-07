@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { updateUnit } from "../../server";
 import type { UnitFormActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeUpdateUnit(
   formData: FormData,
 ): Promise<UnitFormActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { deleteUnit } from "../../server";
 import type { UnitDeleteActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeDeleteUnit(
   id: unknown,
 ): Promise<UnitDeleteActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

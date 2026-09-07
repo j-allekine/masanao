@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { setUnitActive } from "../../server";
 import type { UnitLifecycleActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeSetUnitActive(
   id: unknown,
   active: unknown,
 ): Promise<UnitLifecycleActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

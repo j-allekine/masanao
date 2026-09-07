@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { setVendorActive } from "../../server";
 import type { VendorLifecycleActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeSetVendorActive(
   id: unknown,
   isActive: unknown,
 ): Promise<VendorLifecycleActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

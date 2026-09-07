@@ -3,7 +3,13 @@
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   TableBody,
   TableCell,
@@ -59,11 +65,11 @@ function VendorRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[20rem]">
-          <span className="block truncate">{vendor.name}</span>
+        <TableCell className="max-w-[20rem] whitespace-normal align-top">
+          <span className="block break-words">{vendor.name}</span>
         </TableCell>
-        <TableCell className="max-w-[16rem]">
-          <span className="block truncate">
+        <TableCell className="max-w-[16rem] whitespace-normal align-top">
+          <span className="block break-words">
             {vendor.contactPerson ?? "—"}
           </span>
         </TableCell>

@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { deleteVendor } from "../../server";
 import type { VendorDeleteActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeDeleteVendor(
   id: unknown,
 ): Promise<VendorDeleteActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

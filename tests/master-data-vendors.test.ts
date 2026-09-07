@@ -114,4 +114,91 @@ describe("Vendor persistence contract", () => {
       }),
     ).rejects.toThrow();
   });
+
+  it("enforces normalized optional fields and practical email validity in SQLite", async () => {
+    await prisma.vendor.deleteMany();
+
+    await expect(
+      prisma.vendor.create({
+        data: {
+          id: "valid-contact-data",
+          name: "Valid Contact Data",
+          contactPerson: "Alice Reyes",
+          contactNumber: "+63 917 000 0001",
+          email: "alice+office@example.com",
+          address: "Municipal Market",
+        },
+      }),
+    ).resolves.toMatchObject({
+      contactPerson: "Alice Reyes",
+      contactNumber: "+63 917 000 0001",
+      email: "alice+office@example.com",
+      address: "Municipal Market",
+    });
+
+    for (const [field, value] of [
+      ["contactPerson", "   "],
+      ["contactNumber", "\t\n"],
+      ["address", ""],
+    ] as const) {
+      await expect(
+        prisma.vendor.create({
+          data: {
+            id: `invalid-${field}`,
+            name: `Invalid ${field}`,
+            [field]: value,
+          },
+        }),
+      ).rejects.toThrow();
+    }
+
+    for (const [id, field, value] of [
+      ["untrimmed-contact-person", "contactPerson", " Alice Reyes "],
+      ["untrimmed-contact-number", "contactNumber", " 0917 000 0001 "],
+      ["untrimmed-address", "address", " Municipal Market "],
+      ["untrimmed-email", "email", " alice@example.com "],
+    ] as const) {
+      await expect(
+        prisma.vendor.create({
+          data: {
+            id,
+            name: id,
+            [field]: value,
+          },
+        }),
+      ).rejects.toThrow();
+    }
+
+    for (const [id, email] of [
+      ["invalid-email-shape", "not-an-email"],
+      ["invalid-email-domain", "alice@example"],
+      ["invalid-email-double-at", "alice@@example.com"],
+      ["invalid-email-double-dot", "alice@example..com"],
+      ["invalid-email-domain-hyphen", "alice@-example.com"],
+    ] as const) {
+      await expect(
+        prisma.vendor.create({
+          data: { id, name: id, email },
+        }),
+      ).rejects.toThrow();
+    }
+
+    await expect(
+      prisma.vendor.create({
+        data: {
+          id: "null-optional-data",
+          name: "Null Optional Data",
+          contactPerson: null,
+          contactNumber: null,
+          email: null,
+          address: null,
+        },
+      }),
+    ).resolves.toMatchObject({
+      contactPerson: null,
+      contactNumber: null,
+      email: null,
+      address: null,
+    });
+  });
 });
