@@ -20,7 +20,7 @@ const vendorListSelect = {
 export async function listVendorRecords(): Promise<VendorListItem[]> {
   return prisma.vendor.findMany({
     select: vendorListSelect,
-    orderBy: [{ name: "asc" }, { id: "asc" }],
+    orderBy: [{ normalizedName: "asc" }, { id: "asc" }],
   });
 }
 

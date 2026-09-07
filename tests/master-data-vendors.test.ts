@@ -84,6 +84,25 @@ describe("Master Data Vendors read path", () => {
 
     await expect(listVendors()).resolves.toEqual(vendors);
   });
+
+  it("orders Vendors by their case-insensitive normalized name", async () => {
+    await prisma.vendor.deleteMany();
+    for (const [id, name] of [
+      ["zulu", "Zulu Foods"],
+      ["alpha", "alpha foods"],
+      ["bravo", "Bravo Foods"],
+    ]) {
+      await prisma.vendor.create({
+        data: withNormalizedVendorName({ id, name }),
+      });
+    }
+
+    await expect(listVendors()).resolves.toEqual([
+      expect.objectContaining({ name: "alpha foods" }),
+      expect.objectContaining({ name: "Bravo Foods" }),
+      expect.objectContaining({ name: "Zulu Foods" }),
+    ]);
+  });
 });
 
 describe("Vendor persistence contract", () => {

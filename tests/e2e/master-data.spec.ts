@@ -212,6 +212,19 @@ test.describe("Master Data Units journey", () => {
     await expect(page.getByRole("searchbox", { name: "Search Units", exact: true })).toHaveValue("mL");
     await expect(await unitRow(page, "Milliliter")).toContainText("mL");
 
+    await tabs.getByRole("tab", { name: "Vendors", exact: true }).click();
+    const vendorSearch = page.getByRole("searchbox", {
+      name: "Search Vendors",
+      exact: true,
+    });
+    await vendorSearch.fill("Acme");
+    await expect(page).toHaveURL(/tab=vendors&search=Acme$/);
+    await tabs.getByRole("tab", { name: "Units", exact: true }).click();
+    await expect(page).toHaveURL(/tab=units&search=mL$/);
+    await expect(
+      page.getByRole("searchbox", { name: "Search Units", exact: true }),
+    ).toHaveValue("mL");
+
     await page.getByRole("searchbox", { name: "Search Units", exact: true }).fill("no-such-unit");
     await expect(page.getByText("No Units match your search.", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Clear search", exact: true }).click();

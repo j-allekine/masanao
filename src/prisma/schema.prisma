@@ -113,7 +113,7 @@ model Category {
 model Vendor {
   id             String   @id
   name           String
-  normalizedName String   @unique
+  normalizedName String   @unique(map: "vendor_normalized_name_key")
   contactPerson  String?
   contactNumber  String?
   email          String?
