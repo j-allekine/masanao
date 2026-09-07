@@ -52,6 +52,11 @@ type VendorFocusTarget =
   | { kind: "action"; vendorId: string }
   | "new-vendor";
 
+type VendorFocusRequest = {
+  target: VendorFocusTarget;
+  sourceVendors: VendorListItem[];
+};
+
 type CatalogListState = {
   search: string;
   page: number;
@@ -101,60 +106,26 @@ export default function MasterDataWorkspace({
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
   const [vendorDialogState, setVendorDialogState] =
     useState<VendorDialogState | null>(null);
-  const [pendingVendorFocusTarget, setPendingVendorFocusTarget] =
-    useState<VendorFocusTarget | null>(null);
+  const [pendingVendorFocusRequest, setPendingVendorFocusRequest] =
+    useState<VendorFocusRequest | null>(null);
   const [isUnitMutating, startUnitMutation] = useTransition();
   const [isVendorMutating, startVendorMutation] = useTransition();
 
   useEffect(() => {
-    const targetId = pendingVendorFocusTarget;
-    if (!targetId) return;
+    const request = pendingVendorFocusRequest;
+    if (!request || vendors === request.sourceVendors) return;
 
-    let attempts = 0;
-    let lastFocusedElement: HTMLElement | null = null;
-    const focusTarget = () => {
-      const activeElement = document.activeElement;
-      if (
-        lastFocusedElement?.isConnected &&
-        activeElement instanceof HTMLElement &&
-        activeElement !== document.body &&
-        activeElement !== lastFocusedElement
-      ) {
-        setPendingVendorFocusTarget(null);
-        return;
+    const timeoutId = window.setTimeout(() => {
+      if (request.target === "new-vendor") {
+        document.getElementById(request.target)?.focus();
+      } else {
+        focusVisibleVendorAction(request.target.vendorId);
       }
+      setPendingVendorFocusRequest(null);
+    }, 0);
 
-      const focusElement =
-        targetId === "new-vendor"
-          ? (() => {
-              const button = document.getElementById(targetId);
-              if (!button) return null;
-
-              return button;
-            })()
-          : findVisibleVendorAction(targetId.vendorId);
-
-      if (focusElement) {
-        if (activeElement !== focusElement) focusElement.focus();
-        lastFocusedElement = focusElement;
-      }
-
-      attempts += 1;
-
-      if (attempts >= 20) {
-        setPendingVendorFocusTarget(null);
-      }
-    };
-    const intervalId = window.setInterval(() => {
-      focusTarget();
-    }, 100);
-    const timeoutId = window.setTimeout(focusTarget, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
-    };
-  }, [pendingVendorFocusTarget]);
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingVendorFocusRequest, vendors]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -366,7 +337,10 @@ export default function MasterDataWorkspace({
           return;
         }
 
-        setPendingVendorFocusTarget({ kind: "action", vendorId: vendor.id });
+        setPendingVendorFocusRequest({
+          target: { kind: "action", vendorId: vendor.id },
+          sourceVendors: vendors,
+        });
         router.refresh();
         toast.success(
           `Vendor “${vendor.name}” ${result.vendor.isActive ? "activated" : "deactivated"}`,
@@ -403,7 +377,10 @@ export default function MasterDataWorkspace({
       : "new-vendor";
 
     setVendorListState((current) => ({ ...current, page: nextPage }));
-    setPendingVendorFocusTarget(nextFocusTargetId);
+    setPendingVendorFocusRequest({
+      target: nextFocusTargetId,
+      sourceVendors: vendors,
+    });
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
         tab: "vendors",
