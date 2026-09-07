@@ -110,6 +110,21 @@ model Category {
   @@map("category")
 }
 
+model Vendor {
+  id             String   @id
+  name           String
+  normalizedName String   @unique(map: "vendor_normalized_name_key")
+  contactPerson  String?
+  contactNumber  String?
+  email          String?
+  address        String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("vendor")
+}
+
 model ActivityDesign {
   id               String     @id
   activityDesignNo String     @unique

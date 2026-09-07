@@ -18,7 +18,3 @@ export async function getCurrentMasterDataActor(): Promise<CurrentActor | null> 
     username: session.user.username ?? null,
   };
 }
-
-export async function getCurrentUnitActor(): Promise<CurrentActor | null> {
-  return getCurrentMasterDataActor();
-}

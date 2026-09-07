@@ -2,14 +2,13 @@ import "server-only";
 
 import { revalidatePath } from "next/cache";
 
-import { setUnitActive } from "../../server";
-import type { UnitLifecycleActionState } from "../../types";
+import { deleteVendor } from "../../server";
+import type { VendorDeleteActionState } from "../../types";
 import { getCurrentMasterDataActor } from "./current-actor";
 
-export async function executeSetUnitActive(
+export async function executeDeleteVendor(
   id: unknown,
-  active: unknown,
-): Promise<UnitLifecycleActionState> {
+): Promise<VendorDeleteActionState> {
   const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
@@ -20,16 +19,16 @@ export async function executeSetUnitActive(
     };
   }
 
-  if (typeof id !== "string" || !id.trim() || typeof active !== "boolean") {
+  if (typeof id !== "string" || !id.trim()) {
     return {
       status: "error",
-      kind: "server",
-      error: "The Unit status request is invalid.",
+      kind: "not-found",
+      error: "The Vendor could not be found.",
     };
   }
 
   try {
-    const result = await setUnitActive(actor, id, active);
+    const result = await deleteVendor(actor, id);
 
     if (!result.ok) {
       return {
@@ -40,12 +39,13 @@ export async function executeSetUnitActive(
     }
 
     revalidatePath("/master-data");
-    return { status: "success", unit: result.unit };
+    return { status: "success" };
   } catch {
     return {
       status: "error",
       kind: "server",
-      error: "The Unit status could not be changed. Check your connection and try again.",
+      error:
+        "The Vendor could not be deleted. Check your connection and try again.",
     };
   }
 }

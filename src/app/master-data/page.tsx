@@ -7,8 +7,10 @@ import { MasterDataContent } from "@/features/master-data/ui";
 import {
   canManageCategories,
   canManageUnits,
+  canManageVendors,
   listCategories,
   listUnits,
+  listVendors,
 } from "@/features/master-data/server";
 import { auth } from "@/server/auth";
 import { serializeSearchParams } from "@/lib/search-params";
@@ -36,12 +38,21 @@ export default async function MasterDataRoute({
     name: session.user.name ?? session.user.username ?? "Municipal staff",
     username: session.user.username ?? null,
   };
-  const [units, categories, canManageUnitsResult, canManageCategoriesResult, rawSearchParams] =
-    await Promise.all([
+  const [
+    units,
+    categories,
+    vendors,
+    canManageUnitsResult,
+    canManageCategoriesResult,
+    canManageVendorsResult,
+    rawSearchParams,
+  ] = await Promise.all([
     listUnits(),
     listCategories(),
+    listVendors(),
     canManageUnits(actor),
     canManageCategories(actor),
+    canManageVendors(actor),
     searchParams,
   ]);
   const initialQuery = serializeSearchParams(rawSearchParams);
@@ -57,9 +68,11 @@ export default async function MasterDataRoute({
       <MasterDataContent
         units={units}
         categories={categories}
+        vendors={vendors}
         initialQuery={initialQuery}
         canManageUnits={canManageUnitsResult}
         canManageCategories={canManageCategoriesResult}
+        canManageVendors={canManageVendorsResult}
       />
     </WorkspaceShell>
   );

@@ -11,6 +11,7 @@ export default function MasterDataCatalogLayout({
   onSearchChange,
   canCreate,
   onCreate,
+  createLabel,
   children,
 }: {
   resourceKey: string;
@@ -19,6 +20,7 @@ export default function MasterDataCatalogLayout({
   onSearchChange: (search: string) => void;
   canCreate: boolean;
   onCreate: () => void;
+  createLabel?: string;
   children: ReactNode;
 }) {
   return (
@@ -30,6 +32,7 @@ export default function MasterDataCatalogLayout({
         onSearchChange={onSearchChange}
         canCreate={canCreate}
         onCreate={onCreate}
+        createLabel={createLabel}
       />
       <div className="mt-6">{children}</div>
     </>

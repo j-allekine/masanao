@@ -10,9 +10,14 @@ import { createCategoryCommand } from "./server/commands/create-category";
 import { deleteCategoryCommand } from "./server/commands/delete-category";
 import { setCategoryActiveCommand } from "./server/commands/set-category-active";
 import { updateCategoryCommand } from "./server/commands/update-category";
+import { createVendorCommand } from "./server/commands/create-vendor";
+import { deleteVendorCommand } from "./server/commands/delete-vendor";
+import { setVendorActiveCommand } from "./server/commands/set-vendor-active";
+import { updateVendorCommand } from "./server/commands/update-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listCategories as listCategoriesQuery } from "./server/queries/list-categories";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
+import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -22,6 +27,10 @@ import type {
   UnitDeleteResult,
   UnitLifecycleResult,
   UnitUpdateResult,
+  VendorCreateResult,
+  VendorDeleteResult,
+  VendorLifecycleResult,
+  VendorUpdateResult,
 } from "./types";
 
 export type {
@@ -30,6 +39,9 @@ export type {
   UnitDeleteResult,
   UnitLifecycleResult,
   UnitListItem,
+  VendorListItem,
+  VendorDeleteResult,
+  VendorLifecycleResult,
   UnitUpdateResult,
 } from "./types";
 
@@ -39,6 +51,10 @@ export async function listUnits() {
 
 export async function listCategories() {
   return listCategoriesQuery();
+}
+
+export async function listVendors() {
+  return listVendorsQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {
@@ -58,6 +74,10 @@ export async function canManageUnits(actor: CurrentActor) {
 }
 
 export async function canManageCategories(actor: CurrentActor) {
+  return isAdministrator(actor);
+}
+
+export async function canManageVendors(actor: CurrentActor) {
   return isAdministrator(actor);
 }
 
@@ -151,4 +171,50 @@ export async function deleteCategory(
   if (authorizationFailure) return authorizationFailure;
 
   return deleteCategoryCommand(id);
+}
+
+export async function createVendor(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<VendorCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createVendorCommand(input);
+}
+
+export async function updateVendor(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<VendorUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateVendorCommand(id, input);
+}
+
+export async function setVendorActive(
+  actor: CurrentActor,
+  id: string,
+  active: boolean,
+): Promise<VendorLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setVendorActiveCommand(id, active);
+}
+
+export async function deleteVendor(
+  actor: CurrentActor,
+  id: string,
+): Promise<VendorDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteVendorCommand(id);
 }

@@ -10,15 +10,22 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { setUnitActiveAction } from "../actions";
-import type { CategoryListItem, UnitListItem } from "../types";
+import { setUnitActiveAction, setVendorActiveAction } from "../actions";
+import type {
+  CategoryListItem,
+  UnitListItem,
+  VendorListItem,
+} from "../types";
 import CategoriesWorkspace from "./categories-workspace";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
+import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
 import UnitPagination from "./unit-pagination";
 import { filterUnits, type UnitFilters } from "./unit-filters";
 import UnitTable from "./unit-table";
+import { filterVendors } from "./vendor-filters";
+import VendorsWorkspace from "./vendors-workspace";
 import {
   getMasterDataListState,
   getMasterDataQuery,
@@ -28,18 +35,51 @@ import {
 
 const PAGE_SIZE = 10;
 
+function findVisibleVendorAction(vendorId: string) {
+  const actionButtons = document.querySelectorAll<HTMLElement>(
+    `[id^="vendor-actions-${vendorId}"]`,
+  );
+  return Array.from(actionButtons).find(
+    (button) => button.getClientRects().length > 0,
+  );
+}
+
+function focusVisibleVendorAction(vendorId: string) {
+  findVisibleVendorAction(vendorId)?.focus();
+}
+
+type VendorFocusTarget =
+  | { kind: "action"; vendorId: string }
+  | "new-vendor";
+
+type VendorFocusRequest = {
+  target: VendorFocusTarget;
+  sourceVendors: VendorListItem[];
+};
+
+type CatalogListState = {
+  search: string;
+  page: number;
+};
+
+const emptyCatalogListState: CatalogListState = { search: "", page: 1 };
+
 export default function MasterDataWorkspace({
   units,
   categories,
+  vendors,
   initialQuery = "",
   canManageUnits,
   canManageCategories,
+  canManageVendors,
 }: {
   units: UnitListItem[];
   categories: CategoryListItem[];
+  vendors: VendorListItem[];
   initialQuery?: string;
   canManageUnits: boolean;
   canManageCategories: boolean;
+  canManageVendors: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -52,44 +92,124 @@ export default function MasterDataWorkspace({
     () => getMasterDataListState(initialQuery),
     [initialQuery],
   );
-  const [listState, setListState] = useState(initialState);
+  const [activeTab, setActiveTab] = useState(initialState.tab);
+  const [unitListState, setUnitListState] = useState<CatalogListState>(() =>
+    initialState.tab === "units"
+      ? { search: initialState.search, page: initialState.page }
+      : emptyCatalogListState,
+  );
+  const [vendorListState, setVendorListState] = useState<CatalogListState>(() =>
+    initialState.tab === "vendors"
+      ? { search: initialState.search, page: initialState.page }
+      : emptyCatalogListState,
+  );
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
+  const [vendorDialogState, setVendorDialogState] =
+    useState<VendorDialogState | null>(null);
+  const [pendingVendorFocusRequest, setPendingVendorFocusRequest] =
+    useState<VendorFocusRequest | null>(null);
   const [isUnitMutating, startUnitMutation] = useTransition();
+  const [isVendorMutating, startVendorMutation] = useTransition();
+
+  useEffect(() => {
+    const request = pendingVendorFocusRequest;
+    if (!request || vendors === request.sourceVendors) return;
+
+    const timeoutId = window.setTimeout(() => {
+      if (request.target === "new-vendor") {
+        document.getElementById(request.target)?.focus();
+      } else {
+        focusVisibleVendorAction(request.target.vendorId);
+      }
+      setPendingVendorFocusRequest(null);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingVendorFocusRequest, vendors]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setListState(initialState);
+      setActiveTab(initialState.tab);
+      if (initialState.tab === "units") {
+        setUnitListState({
+          search: initialState.search,
+          page: initialState.page,
+        });
+      } else if (initialState.tab === "vendors") {
+        setVendorListState({
+          search: initialState.search,
+          page: initialState.page,
+        });
+      }
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
   }, [initialState]);
 
-  const search = listState.search;
-  const filters: UnitFilters = { search };
+  const unitSearch = unitListState.search;
+  const vendorSearch = vendorListState.search;
+  const filters: UnitFilters = { search: unitSearch };
   const filteredUnits = useMemo(
-    () => filterUnits(units, { search }),
-    [search, units],
+    () => filterUnits(units, { search: unitSearch }),
+    [unitSearch, units],
   );
-  const pageCount = Math.max(1, Math.ceil(filteredUnits.length / PAGE_SIZE));
-  const currentPage = Math.min(listState.page, pageCount);
-  const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
+  const filteredVendors = useMemo(
+    () => filterVendors(vendors, { search: vendorSearch }),
+    [vendorSearch, vendors],
+  );
+  const unitPageCount = Math.max(
+    1,
+    Math.ceil(filteredUnits.length / PAGE_SIZE),
+  );
+  const vendorPageCount = Math.max(
+    1,
+    Math.ceil(filteredVendors.length / PAGE_SIZE),
+  );
+  const unitCurrentPage = Math.min(unitListState.page, unitPageCount);
+  const vendorCurrentPage = Math.min(vendorListState.page, vendorPageCount);
+  const currentPage =
+    activeTab === "vendors"
+      ? vendorCurrentPage
+      : activeTab === "units"
+        ? unitCurrentPage
+        : 1;
+  const currentSearch =
+    activeTab === "vendors"
+      ? vendorSearch
+      : activeTab === "units"
+        ? unitSearch
+        : "";
+  const firstItemIndex = (unitCurrentPage - 1) * PAGE_SIZE;
+  const firstVendorItemIndex = (vendorCurrentPage - 1) * PAGE_SIZE;
   const paginatedUnits = useMemo(
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
   );
+  const paginatedVendors = useMemo(
+    () =>
+      filteredVendors.slice(
+        firstVendorItemIndex,
+        firstVendorItemIndex + PAGE_SIZE,
+      ),
+    [filteredVendors, firstVendorItemIndex],
+  );
   const resultStart = paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
-    tab: listState.tab,
-    search,
+    tab: activeTab,
+    search: currentSearch,
     page: currentPage,
   });
 
   function updateSearch(nextSearch: string) {
-    setListState((current) => ({ ...current, search: nextSearch, page: 1 }));
+    if (activeTab === "vendors") {
+      setVendorListState({ search: nextSearch, page: 1 });
+    } else {
+      setUnitListState({ search: nextSearch, page: 1 });
+    }
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
-        tab: "units",
+        tab: activeTab,
         search: nextSearch,
         page: 1,
       }),
@@ -109,6 +229,14 @@ export default function MasterDataWorkspace({
     setDialogState({ mode: "edit", unit });
   }
 
+  function openCreateVendorDialog() {
+    setVendorDialogState({ mode: "create" });
+  }
+
+  function openEditVendorDialog(vendor: VendorListItem) {
+    setVendorDialogState({ mode: "edit", vendor });
+  }
+
   function closeDialog() {
     const closedDialog = dialogState;
     setDialogState(null);
@@ -119,6 +247,23 @@ export default function MasterDataWorkspace({
           ? `unit-actions-${closedDialog.unit.id}`
           : "new-unit";
       document.getElementById(targetId)?.focus();
+    }, 0);
+  }
+
+  function closeVendorDialog() {
+    const closedDialog = vendorDialogState;
+    setVendorDialogState(null);
+
+    window.setTimeout(() => {
+      const targetId =
+        closedDialog?.mode === "edit"
+          ? { kind: "action" as const, vendorId: closedDialog.vendor.id }
+          : "new-vendor";
+      if (targetId === "new-vendor") {
+        document.getElementById(targetId)?.focus();
+      } else {
+        focusVisibleVendorAction(targetId.vendorId);
+      }
     }, 0);
   }
 
@@ -160,9 +305,9 @@ export default function MasterDataWorkspace({
       1,
       Math.ceil(remainingUnitCount / PAGE_SIZE),
     );
-    const nextPage = Math.min(currentPage, nextPageCount);
+    const nextPage = Math.min(unitCurrentPage, nextPageCount);
 
-    setListState((current) => ({ ...current, page: nextPage }));
+    setUnitListState((current) => ({ ...current, page: nextPage }));
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
         tab: "units",
@@ -182,20 +327,103 @@ export default function MasterDataWorkspace({
     }, 0);
   }
 
-  function changePage(nextPage: number) {
-    const page = Math.min(Math.max(nextPage, 1), pageCount);
-    setListState((current) => ({ ...current, page }));
+  function handleVendorToggle(vendor: VendorListItem) {
+    startVendorMutation(async () => {
+      try {
+        const result = await setVendorActiveAction(vendor.id, !vendor.isActive);
+
+        if (result.status === "error") {
+          toast.error(result.error);
+          return;
+        }
+
+        setPendingVendorFocusRequest({
+          target: { kind: "action", vendorId: vendor.id },
+          sourceVendors: vendors,
+        });
+        router.refresh();
+        toast.success(
+          `Vendor “${vendor.name}” ${result.vendor.isActive ? "activated" : "deactivated"}`,
+        );
+      } catch {
+        toast.error(
+          "The Vendor status could not be changed. Check your connection and try again.",
+        );
+      }
+    });
+  }
+
+  function handleVendorDeleted(vendor: VendorListItem) {
+    const deletedIndex = paginatedVendors.findIndex(
+      (currentVendor) => currentVendor.id === vendor.id,
+    );
+    const remainingVendors = filteredVendors.filter(
+      (currentVendor) => currentVendor.id !== vendor.id,
+    );
+    const remainingVendorCount = remainingVendors.length;
+    const nextPageCount = Math.max(
+      1,
+      Math.ceil(remainingVendorCount / PAGE_SIZE),
+    );
+    const nextPage = Math.min(vendorCurrentPage, nextPageCount);
+    const deletedGlobalIndex =
+      firstVendorItemIndex + Math.max(deletedIndex, 0);
+    const nextFocusTarget =
+      remainingVendors[
+        Math.min(deletedGlobalIndex, remainingVendorCount - 1)
+      ];
+    const nextFocusTargetId = nextFocusTarget
+      ? { kind: "action" as const, vendorId: nextFocusTarget.id }
+      : "new-vendor";
+
+    setVendorListState((current) => ({ ...current, page: nextPage }));
+    setPendingVendorFocusRequest({
+      target: nextFocusTargetId,
+      sourceVendors: vendors,
+    });
     router.replace(
-      getMasterDataUrl(pathname, currentQuery, { tab: "units", page }),
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: "vendors",
+        page: nextPage,
+      }),
+      { scroll: false },
+    );
+
+    router.refresh();
+    toast.success(`Vendor “${vendor.name}” deleted`);
+  }
+
+  function changePage(nextPage: number) {
+    const pageCount =
+      activeTab === "vendors" ? vendorPageCount : unitPageCount;
+    const page = Math.min(Math.max(nextPage, 1), pageCount);
+    if (activeTab === "vendors") {
+      setVendorListState((current) => ({ ...current, page }));
+    } else {
+      setUnitListState((current) => ({ ...current, page }));
+    }
+    router.replace(
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: activeTab,
+        page,
+      }),
       { scroll: false },
     );
   }
 
   function changeTab(value: MasterDataTab) {
-    setListState((current) => ({ ...current, tab: value }));
+    const nextListState =
+      value === "vendors"
+        ? vendorListState
+        : value === "units"
+          ? unitListState
+          : emptyCatalogListState;
+    setActiveTab(value);
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
         tab: value,
+        search: nextListState.search,
+        page: nextListState.page,
       }),
       { scroll: false },
     );
@@ -206,7 +434,7 @@ export default function MasterDataWorkspace({
       className="flex flex-col gap-0"
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <MasterDataTabs activeTab={listState.tab} onTabChange={changeTab}>
+      <MasterDataTabs activeTab={activeTab} onTabChange={changeTab}>
         <MasterDataTabContent value="units">
           <MasterDataCatalogLayout
             resourceKey="unit"
@@ -228,8 +456,8 @@ export default function MasterDataWorkspace({
               actionDisabled={isUnitMutating}
             />
             <UnitPagination
-              page={currentPage}
-              pageCount={pageCount}
+              page={unitCurrentPage}
+              pageCount={unitPageCount}
               start={resultStart}
               end={resultEnd}
               total={filteredUnits.length}
@@ -241,6 +469,28 @@ export default function MasterDataWorkspace({
           <CategoriesWorkspace
             categories={categories}
             canManage={canManageCategories}
+          />
+        </MasterDataTabContent>
+        <MasterDataTabContent value="vendors">
+          <VendorsWorkspace
+            vendors={paginatedVendors}
+            total={filteredVendors.length}
+            search={vendorSearch}
+            page={vendorCurrentPage}
+            pageCount={vendorPageCount}
+            start={
+              paginatedVendors.length === 0 ? 0 : firstVendorItemIndex + 1
+            }
+            end={firstVendorItemIndex + paginatedVendors.length}
+            onSearchChange={updateSearch}
+            onClearFilters={clearFilters}
+            onPageChange={changePage}
+            canManage={canManageVendors}
+            onNew={openCreateVendorDialog}
+            onEdit={openEditVendorDialog}
+            onToggle={handleVendorToggle}
+            onDeleted={handleVendorDeleted}
+            actionDisabled={isVendorMutating}
           />
         </MasterDataTabContent>
       </MasterDataTabs>
@@ -255,6 +505,20 @@ export default function MasterDataWorkspace({
             mode === "edit"
               ? `Unit “${unit.name}” updated`
               : `Unit “${unit.name}” created`,
+          );
+        }}
+      />
+      <VendorDialog
+        dialogState={vendorDialogState}
+        onClose={closeVendorDialog}
+        onSuccess={(vendor) => {
+          const mode = vendorDialogState?.mode;
+          closeVendorDialog();
+          router.refresh();
+          toast.success(
+            mode === "edit"
+              ? `Vendor “${vendor.name}” updated`
+              : `Vendor “${vendor.name}” added`,
           );
         }}
       />

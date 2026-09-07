@@ -2,13 +2,13 @@ import "server-only";
 
 import { revalidatePath } from "next/cache";
 
-import { updateUnit } from "../../server";
-import type { UnitFormActionState } from "../../types";
+import { updateVendor } from "../../server";
+import type { VendorFormActionState } from "../../types";
 import { getCurrentMasterDataActor } from "./current-actor";
 
-export async function executeUpdateUnit(
+export async function executeUpdateVendor(
   formData: FormData,
-): Promise<UnitFormActionState> {
+): Promise<VendorFormActionState> {
   const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
@@ -25,7 +25,7 @@ export async function executeUpdateUnit(
     return {
       status: "error",
       kind: "not-found",
-      error: "The Unit could not be found.",
+      error: "The Vendor could not be found.",
       fields: {},
     };
   }
@@ -34,7 +34,7 @@ export async function executeUpdateUnit(
   delete input.id;
 
   try {
-    const result = await updateUnit(actor, id, input);
+    const result = await updateVendor(actor, id, input);
 
     if (!result.ok) {
       return {
@@ -46,12 +46,12 @@ export async function executeUpdateUnit(
     }
 
     revalidatePath("/master-data");
-    return { status: "success", unit: result.unit };
+    return { status: "success", vendor: result.vendor };
   } catch {
     return {
       status: "error",
       kind: "server",
-      error: "The Unit could not be saved. Check your connection and try again.",
+      error: "The Vendor could not be saved. Check your connection and try again.",
       fields: {},
     };
   }

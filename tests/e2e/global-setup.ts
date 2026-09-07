@@ -3,6 +3,8 @@ import { readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { hashPassword } from "better-auth/crypto";
 
+import { normalizeVendorKey } from "../../src/features/master-data/domain/vendor";
+
 export default async function globalSetup() {
   const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
   if (!databasePath) {
@@ -93,5 +95,69 @@ export default async function globalSetup() {
       "e2e-admin-user",
       adminPassword,
     );
+
+  const vendors = [
+    [
+      "e2e-vendor-acme",
+      "Acme Foods",
+      "Alice Reyes",
+      "0917 000 0001",
+      "alice@example.test",
+      "Municipal Market",
+      1,
+    ],
+    ["e2e-vendor-bravo", "Bravo Supply", "Ben Cruz", null, null, null, 1],
+    ["e2e-vendor-cedar", "Cedar Wholesale", "Cora Lim", null, null, null, 1],
+    ["e2e-vendor-delta", "Delta Grocers", null, null, null, null, 1],
+    [
+      "e2e-vendor-evergreen",
+      "Evergreen Produce",
+      "Eva Tan",
+      null,
+      null,
+      null,
+      1,
+    ],
+    ["e2e-vendor-fresh", "Fresh Choice", "Faye Diaz", null, null, null, 1],
+    ["e2e-vendor-green", "Green Basket", null, null, null, null, 1],
+    ["e2e-vendor-harbor", "Harbor Market", "Hank Yu", null, null, null, 0],
+    ["e2e-vendor-island", "Island Foods", "Inez Ong", null, null, null, 1],
+    ["e2e-vendor-juniper", "Juniper Trading", null, null, null, null, 1],
+    [
+      "e2e-vendor-kitchen",
+      "Kitchen Select",
+      "Kai Flores",
+      null,
+      null,
+      null,
+      1,
+    ],
+  ] as const;
+  const insertVendor = database.prepare(
+    `INSERT INTO "vendor"
+     ("id", "name", "normalizedName", "contactPerson", "contactNumber", "email", "address", "isActive", "createdAt", "updatedAt")
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+  );
+  for (const [
+    id,
+    name,
+    contactPerson,
+    contactNumber,
+    email,
+    address,
+    isActive,
+  ] of vendors) {
+    insertVendor.run(
+      id,
+      name,
+      normalizeVendorKey(name),
+      contactPerson,
+      contactNumber,
+      email,
+      address,
+      isActive,
+    );
+  }
+
   database.close();
 }

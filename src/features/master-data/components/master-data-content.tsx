@@ -1,21 +1,29 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-import type { CategoryListItem, UnitListItem } from "../types";
+import type {
+  CategoryListItem,
+  UnitListItem,
+  VendorListItem,
+} from "../types";
 import MasterDataWorkspace from "./master-data-workspace";
 
 export default function MasterDataContent({
   units,
   categories,
+  vendors,
   initialQuery = "",
   canManageUnits,
   canManageCategories,
+  canManageVendors,
 }: {
   units: UnitListItem[];
   categories: CategoryListItem[];
+  vendors: VendorListItem[];
   initialQuery?: string;
   canManageUnits: boolean;
   canManageCategories: boolean;
+  canManageVendors: boolean;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -36,9 +44,11 @@ export default function MasterDataContent({
         <MasterDataWorkspace
           units={units}
           categories={categories}
+          vendors={vendors}
           initialQuery={initialQuery}
           canManageUnits={canManageUnits}
           canManageCategories={canManageCategories}
+          canManageVendors={canManageVendors}
         />
       </div>
     </div>
