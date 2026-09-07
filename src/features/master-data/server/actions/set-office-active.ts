@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { setOfficeActive } from "../../server";
 import type { OfficeLifecycleActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeSetOfficeActive(
   id: unknown,
   isActive: unknown,
 ): Promise<OfficeLifecycleActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

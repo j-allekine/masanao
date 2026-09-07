@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { deleteOffice } from "../../server";
 import type { OfficeDeleteActionState } from "../../types";
-import { getCurrentUnitActor } from "./current-actor";
+import { getCurrentMasterDataActor } from "./current-actor";
 
 export async function executeDeleteOffice(
   id: unknown,
 ): Promise<OfficeDeleteActionState> {
-  const actor = await getCurrentUnitActor();
+  const actor = await getCurrentMasterDataActor();
 
   if (!actor) {
     return {

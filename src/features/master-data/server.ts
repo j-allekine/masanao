@@ -28,7 +28,6 @@ import type {
   CategoryDeleteResult,
   CategoryLifecycleResult,
   CategoryUpdateResult,
-  OfficeListItem,
   OfficeCreateResult,
   OfficeDeleteResult,
   OfficeLifecycleResult,
