@@ -25,17 +25,34 @@ import {
 } from "@/components/ui/table";
 
 import type { ItemListItem } from "../types";
+import ItemActionsMenu from "./item-actions-menu";
 import MasterDataTableFrame from "./master-data-table-frame";
 
 function ItemStatus({ isActive }: { isActive: boolean }) {
   return <Badge variant={isActive ? "default" : "outline"}>{isActive ? "Active" : "Inactive"}</Badge>;
 }
 
-function ItemMobileCard({ item }: { item: ItemListItem }) {
+function ItemMobileCard({
+  item,
+  canManage,
+  onEdit,
+}: {
+  item: ItemListItem;
+  canManage: boolean;
+  onEdit: () => void;
+}) {
   return (
     <Card size="sm" data-item-id={item.id}>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
         <CardTitle className="break-words">{item.name}</CardTitle>
+        {canManage ? (
+          <ItemActionsMenu
+            itemId={item.id}
+            itemName={item.name}
+            actionButtonId={`item-actions-mobile-${item.id}`}
+            onEdit={onEdit}
+          />
+        ) : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
@@ -61,7 +78,15 @@ function ItemMobileCard({ item }: { item: ItemListItem }) {
   );
 }
 
-function ItemRow({ item }: { item: ItemListItem }) {
+function ItemRow({
+  item,
+  canManage,
+  onEdit,
+}: {
+  item: ItemListItem;
+  canManage: boolean;
+  onEdit: () => void;
+}) {
   return (
     <TableRow className="hover:bg-muted/35" data-item-id={item.id}>
       <TableCell className="max-w-[22rem] whitespace-normal align-top">
@@ -76,6 +101,16 @@ function ItemRow({ item }: { item: ItemListItem }) {
       <TableCell className="text-center">
         <ItemStatus isActive={item.isActive} />
       </TableCell>
+      {canManage ? (
+        <TableCell className="text-center">
+          <ItemActionsMenu
+            itemId={item.id}
+            itemName={item.name}
+            actionButtonId={`item-actions-desktop-${item.id}`}
+            onEdit={onEdit}
+          />
+        </TableCell>
+      ) : null}
     </TableRow>
   );
 }
@@ -84,10 +119,14 @@ export default function ItemsTable({
   items,
   hasFilters,
   onClearFilters,
+  canManage,
+  onEdit,
 }: {
   items: ItemListItem[];
   hasFilters: boolean;
   onClearFilters: () => void;
+  canManage: boolean;
+  onEdit: (item: ItemListItem) => void;
 }) {
   if (items.length === 0) {
     return (
@@ -120,7 +159,12 @@ export default function ItemsTable({
     <>
       <div className="flex flex-col gap-3 sm:hidden" data-items-mobile>
         {items.map((item) => (
-          <ItemMobileCard key={item.id} item={item} />
+          <ItemMobileCard
+            key={item.id}
+            item={item}
+            canManage={canManage}
+            onEdit={() => onEdit(item)}
+          />
         ))}
       </div>
       <div className="hidden sm:block" data-items-table-desktop>
@@ -139,11 +183,21 @@ export default function ItemsTable({
               <TableHead scope="col" className="text-center">
                 Status
               </TableHead>
+              {canManage ? (
+                <TableHead scope="col" className="text-center">
+                  Actions
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <ItemRow key={item.id} item={item} />
+              <ItemRow
+                key={item.id}
+                item={item}
+                canManage={canManage}
+                onEdit={() => onEdit(item)}
+              />
             ))}
           </TableBody>
         </MasterDataTableFrame>

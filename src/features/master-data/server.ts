@@ -25,6 +25,7 @@ import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import { createItemCommand } from "./server/commands/create-item";
+import { updateItemCommand } from "./server/commands/update-item";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -43,6 +44,7 @@ import type {
   VendorLifecycleResult,
   VendorUpdateResult,
   ItemCreateResult,
+  ItemUpdateResult,
 } from "./types";
 
 export type {
@@ -62,6 +64,7 @@ export type {
   VendorLifecycleResult,
   UnitUpdateResult,
   ItemCreateResult,
+  ItemUpdateResult,
 } from "./types";
 
 export async function listUnits() {
@@ -122,6 +125,19 @@ export async function createItem(
   }
 
   return createItemCommand(input);
+}
+
+export async function updateItem(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<ItemUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateItemCommand(id, input);
 }
 
 export async function createUnit(

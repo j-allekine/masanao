@@ -25,17 +25,20 @@ import ItemForm from "./item-form";
 
 export default function ItemCreateDialog({
   open,
+  item,
   categories,
   units,
   onClose,
   onSuccess,
 }: {
   open: boolean;
+  item?: ItemListItem;
   categories: CategoryListItem[];
   units: UnitListItem[];
   onClose: () => void;
   onSuccess: (item: ItemListItem) => void;
 }) {
+  const mode = item ? "edit" : "create";
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
@@ -65,13 +68,17 @@ export default function ItemCreateDialog({
         {open ? (
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Add Item</DialogTitle>
+              <DialogTitle>{mode === "edit" ? "Edit Item" : "Add Item"}</DialogTitle>
               <DialogDescription>
-                Add a supply to the active municipal kitchen catalog.
+                {mode === "edit"
+                  ? "Correct the Item definition. Assigned inactive lookups remain available unless you choose an active replacement."
+                  : "Add a supply to the active municipal kitchen catalog."}
               </DialogDescription>
             </DialogHeader>
             <ItemForm
-              key="create"
+              key={item ? `edit-${item.id}` : "create"}
+              mode={mode}
+              item={item}
               categories={categories}
               units={units}
               onCancel={requestClose}

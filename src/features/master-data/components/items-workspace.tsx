@@ -29,6 +29,10 @@ import {
 
 const PAGE_SIZE = 10;
 
+type ItemDialogState =
+  | { mode: "create" }
+  | { mode: "edit"; item: ItemListItem };
+
 export default function ItemsWorkspace({
   items,
   categories,
@@ -43,7 +47,8 @@ export default function ItemsWorkspace({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [itemDialogState, setItemDialogState] =
+    useState<ItemDialogState | null>(null);
   const currentQuery = searchParams.toString();
   const latestQueryRef = useRef(currentQuery);
   const listState = useMemo(
@@ -116,9 +121,31 @@ export default function ItemsWorkspace({
     navigateList({ page: Math.min(Math.max(nextPage, 1), pageCount) });
   }
 
+  function openCreateDialog() {
+    setItemDialogState({ mode: "create" });
+  }
+
+  function openEditDialog(item: ItemListItem) {
+    setItemDialogState({ mode: "edit", item });
+  }
+
   function closeCreateDialog() {
-    setIsCreateDialogOpen(false);
+    const closedDialog = itemDialogState;
+    setItemDialogState(null);
     window.setTimeout(() => {
+      if (closedDialog?.mode === "edit") {
+        const actionButtons = Array.from(
+          document.querySelectorAll<HTMLElement>("[data-item-action-id]"),
+        ).filter(
+          (button) => button.dataset.itemActionId === closedDialog.item.id,
+        );
+        const visibleAction = actionButtons.find(
+          (button) => button.offsetWidth > 0 && button.offsetHeight > 0,
+        );
+        visibleAction?.focus();
+        return;
+      }
+
       document.getElementById("new-item")?.focus();
     }, 0);
   }
@@ -141,7 +168,7 @@ export default function ItemsWorkspace({
             type="button"
             size="sm"
             className="h-9 w-full sm:w-auto sm:min-w-[8rem]"
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={openCreateDialog}
           >
             Add Item
           </Button>
@@ -160,6 +187,8 @@ export default function ItemsWorkspace({
         items={paginatedItems}
         hasFilters={filtersAreActive}
         onClearFilters={clearFilters}
+        canManage={canManageItems}
+        onEdit={openEditDialog}
       />
       <ItemPagination
         page={currentPage}
@@ -171,14 +200,24 @@ export default function ItemsWorkspace({
       />
       {canManageItems ? (
         <ItemCreateDialog
-          open={isCreateDialogOpen}
+          open={itemDialogState !== null}
+          item={
+            itemDialogState?.mode === "edit"
+              ? itemDialogState.item
+              : undefined
+          }
           categories={categories}
           units={units}
           onClose={closeCreateDialog}
           onSuccess={(item) => {
+            const mode = itemDialogState?.mode;
             closeCreateDialog();
             router.refresh();
-            toast.success(`Item “${item.name}” created`);
+            toast.success(
+              mode === "edit"
+                ? `Item “${item.name}” updated`
+                : `Item “${item.name}” created`,
+            );
           }}
         />
       ) : null}

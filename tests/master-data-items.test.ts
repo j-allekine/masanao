@@ -4,6 +4,7 @@ import {
   canManageItems,
   createItem,
   listItems,
+  updateItem,
 } from "@/features/master-data/server";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
@@ -237,6 +238,186 @@ describe("Master Data Items read path", () => {
     await expect(
       createItem(staffActor, {
         name: "Staff Attempt",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+  });
+
+  it("updates an Item while preserving identity and normalized validation", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+    const replacementCategory = await prisma.category.create({
+      data: {
+        id: "items-category-canned",
+        name: "Canned Goods",
+        normalizedName: "canned goods",
+      },
+    });
+    const replacementUnit = await prisma.unit.create({
+      data: {
+        id: "items-unit-piece",
+        name: "Piece",
+        abbreviation: "pc",
+        normalizedName: "piece",
+        normalizedAbbreviation: "pc",
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        id: "items-update-target",
+        name: "Brown Rice",
+        normalizedName: "brown rice",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+    await prisma.item.create({
+      data: {
+        id: "items-update-conflict",
+        name: "Canned Beans",
+        normalizedName: "canned beans",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    const result = await updateItem(adminActor, item.id, {
+      name: "  Rice   Flour ",
+      categoryId: replacementCategory.id,
+      baseUnitId: replacementUnit.id,
+      note: "  Revised note  ",
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      item: {
+        id: item.id,
+        name: "Rice Flour",
+        category: { id: replacementCategory.id },
+        baseUnit: { id: replacementUnit.id },
+        note: "Revised note",
+      },
+    });
+    expect(
+      await prisma.item.findUnique({ where: { id: item.id } }),
+    ).toMatchObject({
+      id: item.id,
+      normalizedName: "rice flour",
+    });
+
+    await expect(
+      updateItem(adminActor, item.id, {
+        name: " Canned   Beans ",
+        categoryId: replacementCategory.id,
+        baseUnitId: replacementUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["An Item with that name already exists."] },
+    });
+  });
+
+  it("retains assigned inactive lookups but rejects inactive replacements", async () => {
+    await createActorUser(adminActor, "admin");
+    const inactiveCategory = await prisma.category.create({
+      data: {
+        id: "items-update-inactive-category",
+        name: "Retired Category",
+        normalizedName: "retired category",
+        isActive: false,
+      },
+    });
+    const inactiveUnit = await prisma.unit.create({
+      data: {
+        id: "items-update-inactive-unit",
+        name: "Retired Unit",
+        abbreviation: "ru",
+        normalizedName: "retired unit",
+        normalizedAbbreviation: "ru",
+        active: false,
+      },
+    });
+    const otherInactiveCategory = await prisma.category.create({
+      data: {
+        id: "items-update-other-inactive-category",
+        name: "Another Retired Category",
+        normalizedName: "another retired category",
+        isActive: false,
+      },
+    });
+    const otherInactiveUnit = await prisma.unit.create({
+      data: {
+        id: "items-update-other-inactive-unit",
+        name: "Another Retired Unit",
+        abbreviation: "au",
+        normalizedName: "another retired unit",
+        normalizedAbbreviation: "au",
+        active: false,
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        id: "items-update-inactive-target",
+        name: "Retired Rice",
+        normalizedName: "retired rice",
+        categoryId: inactiveCategory.id,
+        baseUnitId: inactiveUnit.id,
+      },
+    });
+
+    await expect(
+      updateItem(adminActor, item.id, {
+        name: "Retired Rice",
+        categoryId: inactiveCategory.id,
+        baseUnitId: inactiveUnit.id,
+        note: "Still assigned",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      item: {
+        category: { id: inactiveCategory.id, isActive: false },
+        baseUnit: { id: inactiveUnit.id, active: false },
+      },
+    });
+
+    await expect(
+      updateItem(adminActor, item.id, {
+        name: "Retired Rice",
+        categoryId: otherInactiveCategory.id,
+        baseUnitId: otherInactiveUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: {
+        categoryId: ["Select an active Category."],
+        baseUnitId: ["Select an active Base Unit."],
+      },
+    });
+  });
+
+  it("rejects Item updates from authenticated staff", async () => {
+    await createActorUser(staffActor);
+    const { category, baseUnit } = await createLookupRecords();
+    const item = await prisma.item.create({
+      data: {
+        id: "items-staff-update-target",
+        name: "Staff Item",
+        normalizedName: "staff item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    await expect(
+      updateItem(staffActor, item.id, {
+        name: "Changed Item",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
       }),
