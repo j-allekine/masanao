@@ -245,6 +245,33 @@ export type ItemListItem = {
   updatedAt: string;
 };
 
+export type ItemField = "name" | "categoryId" | "baseUnitId" | "note";
+
+export type ItemFieldErrors = Partial<Record<ItemField | "form", string[]>>;
+
+export type ItemCreateResult =
+  | { ok: true; item: ItemListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate";
+      error: string;
+      fields: ItemFieldErrors;
+    };
+
+export type ItemFormActionState =
+  | { status: "success"; item: ItemListItem }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "validation"
+        | "duplicate"
+        | "server";
+      error: string;
+      fields: ItemFieldErrors;
+    };
+
 export type UnitFormActionState =
   | { status: "success"; unit: UnitListItem }
   | {

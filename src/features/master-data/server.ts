@@ -24,6 +24,7 @@ import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
+import { createItemCommand } from "./server/commands/create-item";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -41,6 +42,7 @@ import type {
   VendorDeleteResult,
   VendorLifecycleResult,
   VendorUpdateResult,
+  ItemCreateResult,
 } from "./types";
 
 export type {
@@ -59,6 +61,7 @@ export type {
   VendorDeleteResult,
   VendorLifecycleResult,
   UnitUpdateResult,
+  ItemCreateResult,
 } from "./types";
 
 export async function listUnits() {
@@ -107,6 +110,18 @@ export async function canManageVendors(actor: CurrentActor) {
 
 export async function canManageItems(actor: CurrentActor) {
   return isAdministrator(actor);
+}
+
+export async function createItem(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<ItemCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createItemCommand(input);
 }
 
 export async function createUnit(

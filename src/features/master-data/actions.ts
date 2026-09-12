@@ -16,6 +16,7 @@ import { executeCreateVendor } from "./server/actions/create-vendor";
 import { executeDeleteVendor } from "./server/actions/delete-vendor";
 import { executeSetVendorActive } from "./server/actions/set-vendor-active";
 import { executeUpdateVendor } from "./server/actions/update-vendor";
+import { executeCreateItem } from "./server/actions/create-item";
 import type {
   CategoryDeleteActionState,
   CategoryFormActionState,
@@ -29,6 +30,7 @@ import type {
   VendorDeleteActionState,
   VendorFormActionState,
   VendorLifecycleActionState,
+  ItemFormActionState,
 } from "./types";
 
 export async function createUnitAction(
@@ -129,4 +131,10 @@ export async function deleteCategoryAction(
   id: string,
 ): Promise<CategoryDeleteActionState> {
   return executeDeleteCategory(id);
+}
+
+export async function createItemAction(
+  formData: FormData,
+): Promise<ItemFormActionState> {
+  return executeCreateItem(formData);
 }

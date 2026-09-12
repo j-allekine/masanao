@@ -3,7 +3,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
-import { canManageItems, listItems } from "@/features/master-data/server";
+import {
+  canManageItems,
+  listCategories,
+  listItems,
+  listUnits,
+} from "@/features/master-data/server";
 import { ItemsContent } from "@/features/master-data/ui";
 import { auth } from "@/server/auth";
 
@@ -26,8 +31,10 @@ export default async function ItemsRoute() {
     name: session.user.name ?? session.user.username ?? "Municipal staff",
     username: session.user.username ?? null,
   };
-  const [items, canManageItemsResult] = await Promise.all([
+  const [items, categories, units, canManageItemsResult] = await Promise.all([
     listItems(),
+    listCategories(),
+    listUnits(),
     canManageItems(actor),
   ]);
 
@@ -41,6 +48,8 @@ export default async function ItemsRoute() {
     >
       <ItemsContent
         items={items}
+        categories={categories}
+        units={units}
         canManageItems={canManageItemsResult}
       />
     </WorkspaceShell>
