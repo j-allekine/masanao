@@ -23,6 +23,7 @@ import { listCategories as listCategoriesQuery } from "./server/queries/list-cat
 import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
+import { listItems as listItemsQuery } from "./server/queries/list-items";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -44,6 +45,7 @@ import type {
 
 export type {
   CategoryListItem,
+  ItemListItem,
   OfficeCreateResult,
   OfficeDeleteResult,
   OfficeLifecycleResult,
@@ -75,6 +77,10 @@ export async function listVendors() {
   return listVendorsQuery();
 }
 
+export async function listItems() {
+  return listItemsQuery();
+}
+
 async function authorizeAdministrator(actor: CurrentActor) {
   if (!(await isAdministrator(actor))) {
     return {
@@ -96,6 +102,10 @@ export async function canManageCategories(actor: CurrentActor) {
 }
 
 export async function canManageVendors(actor: CurrentActor) {
+  return isAdministrator(actor);
+}
+
+export async function canManageItems(actor: CurrentActor) {
   return isAdministrator(actor);
 }
 
