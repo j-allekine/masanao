@@ -75,7 +75,7 @@ describe("Master Data Category mutation commands", () => {
     });
   });
 
-  it("keeps the future restrictive reference outcome", async () => {
+  it("maps a referenced Category during deletion", async () => {
     vi.spyOn(categoryDb, "deleteCategoryRecord").mockResolvedValue({
       deleted: false,
       referenced: true,
@@ -85,7 +85,7 @@ describe("Master Data Category mutation commands", () => {
       ok: false,
       kind: "referenced",
       error:
-        "This Category cannot be deleted because it is already referenced by other records.",
+        "This Category cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
     });
   });
 });

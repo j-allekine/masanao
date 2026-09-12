@@ -62,7 +62,7 @@ export default function DeleteUnitDialog({
           <AlertDialogTitle>Delete “{unit.name}”?</AlertDialogTitle>
           <AlertDialogDescription>
             This permanently removes the Unit from the catalog. A Unit that is
-            already referenced by other records cannot be deleted.
+            referenced by an Item cannot be deleted; deactivate it instead.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (

@@ -66,7 +66,7 @@ export default function DeleteCategoryDialog({
           <AlertDialogTitle>Delete “{category.name}”?</AlertDialogTitle>
           <AlertDialogDescription>
             This permanently removes the Category from the catalog. A Category
-            referenced by an Item cannot be deleted in the future.
+            referenced by an Item cannot be deleted; deactivate it instead.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (

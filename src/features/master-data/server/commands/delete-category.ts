@@ -20,7 +20,7 @@ export async function deleteCategoryCommand(
       ok: false,
       kind: "referenced",
       error:
-        "This Category cannot be deleted because it is already referenced by other records.",
+        "This Category cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
     };
   }
 

@@ -126,8 +126,8 @@ export async function deleteCategoryRecord(id: string) {
   } catch (error) {
     if (isRecordNotFound(error)) return null;
 
-    // Future Item relationships must remain restrictive. No relationship is
-    // added in this slice, but the feature keeps the explicit failure path.
+    // Item.categoryId uses ON DELETE RESTRICT. Translate the provider error
+    // into a stable result so the command can give clear administrator feedback.
     if (isRestrictiveRelationViolation(error)) {
       return { deleted: false as const, referenced: true as const };
     }
