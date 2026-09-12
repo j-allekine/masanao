@@ -103,6 +103,34 @@ function createItemFixtures() {
   return { activeItemId, inactiveItemId, categoryId, baseUnitId };
 }
 
+function createPagingFixtures(categoryId: string, baseUnitId: string) {
+  const names = [
+    "Apple Sauce",
+    "Baking Flour",
+    "Canned Beans",
+    "Diced Tomatoes",
+    "Egg Noodles",
+    "Fresh Carrots",
+    "Green Peas",
+    "Haricot Beans",
+    "Island Rice",
+    "Jasmine Rice",
+    "Kelp Powder",
+  ];
+
+  withE2eDatabase((database) => {
+    const insertItem = database.prepare(
+      `INSERT INTO "item"
+       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    );
+
+    for (const name of names) {
+      insertItem.run(randomUUID(), name, name.toLowerCase(), categoryId, baseUnitId);
+    }
+  });
+}
+
 test.describe("Items catalog journey", () => {
   test("lets authenticated staff browse empty and populated Items without mutation controls", async ({
     page,
@@ -127,7 +155,7 @@ test.describe("Items catalog journey", () => {
       page.getByRole("button", { name: /(?:Create|Add) Item/i }),
     ).toHaveCount(0);
 
-    createItemFixtures();
+    const fixtures = createItemFixtures();
     await page.reload();
 
     const desktopTable = page.locator("[data-items-table-desktop]");
@@ -265,5 +293,60 @@ test.describe("Items catalog journey", () => {
       ),
     ).toHaveText("An Item with that name already exists.");
     await expect(duplicateDialog.getByLabel("Name")).toHaveValue("brown rice");
+
+    await duplicateDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    const discardDialog = page.getByRole("alertdialog");
+    await expect(discardDialog).toBeVisible();
+    await discardDialog
+      .getByRole("button", { name: "Discard changes", exact: true })
+      .click();
+    await expect(duplicateDialog).toBeHidden();
+
+    createPagingFixtures(fixtures.categoryId, fixtures.baseUnitId);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    await expect(page.locator("[data-items-table-desktop]")).toBeVisible();
+    await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Previous page", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeEnabled();
+
+    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await expect(page).toHaveURL(/items\?itemsPage=2$/);
+    await expect(page.getByText("Showing 11 to 14 of 14 results", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("table").getByText("Retired Rice", { exact: true }),
+    ).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/items$/);
+    await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
+    await page.goForward();
+    await expect(page).toHaveURL(/items\?itemsPage=2$/);
+    await expect(page.getByText("Showing 11 to 14 of 14 results", { exact: true })).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Status filter" }).click();
+    await page.getByRole("option", { name: "Inactive only", exact: true }).click();
+    await expect(page).toHaveURL(/items\?itemsStatus=inactive$/);
+    await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("table").getByText("Retired Rice", { exact: true }),
+    ).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Status filter" }).click();
+    await page.getByRole("option", { name: "All Statuses", exact: true }).click();
+    await page.getByLabel("Search Items").fill("does-not-exist");
+    await expect(page).toHaveURL(/items\?itemsSearch=does-not-exist$/);
+    await expect(page.getByText("No Items match your current filters.", { exact: true })).toBeVisible();
+    await page
+      .getByRole("search", { name: "Item catalog search and filters" })
+      .getByRole("button", { name: "Clear filters", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/items$/);
+    await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Category filter" }).click();
+    await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`items\\?itemsCategory=${fixtures.categoryId}$`));
   });
 });

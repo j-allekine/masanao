@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -35,12 +37,20 @@ export default function ItemsContent({
       </header>
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <ItemsWorkspace
-          items={items}
-          categories={categories}
-          units={units}
-          canManageItems={canManageItems}
-        />
+        <Suspense
+          fallback={
+            <div className="min-h-60 rounded-lg border p-6 text-body-sm text-muted-foreground">
+              Loading Items…
+            </div>
+          }
+        >
+          <ItemsWorkspace
+            items={items}
+            categories={categories}
+            units={units}
+            canManageItems={canManageItems}
+          />
+        </Suspense>
       </div>
     </div>
   );

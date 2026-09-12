@@ -2,11 +2,13 @@ import { PackageOpen } from "lucide-react";
 
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -78,7 +80,15 @@ function ItemRow({ item }: { item: ItemListItem }) {
   );
 }
 
-export default function ItemsTable({ items }: { items: ItemListItem[] }) {
+export default function ItemsTable({
+  items,
+  hasFilters,
+  onClearFilters,
+}: {
+  items: ItemListItem[];
+  hasFilters: boolean;
+  onClearFilters: () => void;
+}) {
   if (items.length === 0) {
     return (
       <Empty className="min-h-60 rounded-lg border">
@@ -86,11 +96,22 @@ export default function ItemsTable({ items }: { items: ItemListItem[] }) {
           <EmptyMedia variant="icon">
             <PackageOpen aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>No Items yet.</EmptyTitle>
+          <EmptyTitle>
+            {hasFilters ? "No Items match your current filters." : "No Items yet."}
+          </EmptyTitle>
           <EmptyDescription>
-            Items will appear here once the supply catalog is configured.
+            {hasFilters
+              ? "Clear filters to see the complete Items list."
+              : "Items will appear here once the supply catalog is configured."}
           </EmptyDescription>
         </EmptyHeader>
+        {hasFilters ? (
+          <EmptyContent>
+            <Button type="button" variant="outline" onClick={onClearFilters}>
+              Clear filters
+            </Button>
+          </EmptyContent>
+        ) : null}
       </Empty>
     );
   }
