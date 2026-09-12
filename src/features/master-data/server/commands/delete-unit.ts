@@ -20,7 +20,7 @@ export async function deleteUnitCommand(
       ok: false,
       kind: "referenced",
       error:
-        "This Unit cannot be deleted because it is already referenced by other records.",
+        "This Unit cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
     };
   }
 

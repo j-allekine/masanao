@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,21 +16,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
 
-import { deleteCategoryAction } from "../actions";
-import type { CategoryListItem } from "../types";
+import { deleteItemAction } from "../actions";
+import type { ItemListItem } from "../types";
 
-export default function DeleteCategoryDialog({
-  category,
+export default function DeleteItemDialog({
+  item,
   open,
   onOpenChange,
   onDeleted,
 }: {
-  category: CategoryListItem;
+  item: ItemListItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => void;
 }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
@@ -40,11 +38,10 @@ export default function DeleteCategoryDialog({
 
     startDeleteTransition(async () => {
       try {
-        const result = await deleteCategoryAction(category.id);
+        const result = await deleteItemAction(item.id);
 
         if (result.status === "error") {
           setError(result.error);
-          router.refresh();
           return;
         }
 
@@ -52,9 +49,8 @@ export default function DeleteCategoryDialog({
         onDeleted();
       } catch {
         setError(
-          "The Category could not be deleted. Check your connection and try again.",
+          "The Item could not be deleted. Check your connection and try again.",
         );
-        router.refresh();
       }
     });
   }
@@ -63,10 +59,10 @@ export default function DeleteCategoryDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete “{category.name}”?</AlertDialogTitle>
+          <AlertDialogTitle>Delete “{item.name}”?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes the Category from the catalog. A Category
-            referenced by an Item cannot be deleted; deactivate it instead.
+            This permanently removes the Item from the catalog. An Item that
+            is already referenced by operational records cannot be deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (
@@ -87,7 +83,7 @@ export default function DeleteCategoryDialog({
             ) : (
               <Trash2 data-icon="inline-start" />
             )}
-            {isDeleting ? "Deleting…" : "Delete Category"}
+            {isDeleting ? "Deleting..." : "Delete Item"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
