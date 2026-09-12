@@ -23,10 +23,16 @@ _Avoid_: Meal Occasion, Schedule Entry
 ### Master data
 
 **Item**:
-A distinct supply identity tracked in inventory, with one Base Unit and optional Item Unit Conversions.
+A distinct, uniquely named supply identity tracked in inventory, with one Base Unit and optional Item Unit Conversions.
+
+**Item Note**:
+Optional free-form information recorded with an Item.
 
 **Base Unit**:
-The authoritative unit in which an Item's inventory balance and ledger movements are recorded.
+The default and authoritative unit in which an Item's inventory balance and ledger movements are recorded. It cannot change after stock activity begins.
+
+**Inactive Item**:
+An Item unavailable for future selection that remains identifiable in historical records.
 
 **Unit**:
 A reusable quantity label such as kg, piece, sack, or tray. A Unit label does not define how much of a particular Item it represents.
@@ -39,7 +45,7 @@ A fixed relationship between an Item's alternate Unit and its Base Unit, such as
 A transaction-specific Base Unit quantity that replaces the calculated quantity for that transaction without changing the Item Unit Conversion.
 
 **Category**:
-A flat classification assigned to an Item. It does not determine the Item's Unit or expiry behavior.
+A flat classification required for every Item. It does not determine the Item's Unit or expiry behavior.
 
 **Vendor**:
 A supplier or organization from which supplies may be procured and received.
