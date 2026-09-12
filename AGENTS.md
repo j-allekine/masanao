@@ -47,15 +47,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   reproduction can set a higher visual-fidelity target without weakening those
   product and accessibility requirements.
 - Before changing layout, styling, typography, tokens, shared UI, or responsive
-  behavior, read and follow `./docs/frontend-change-playbook.md`.
+  behavior, identify the affected routes and their expected states.
 - Treat `src/app/globals.css`, `src/app/layout.tsx`, `src/components/ui`, and the
-  workspace shell as shared surfaces. Inventory their consumers and verify the
-  playbook's sentinel routes before considering a shared-surface change done.
+  workspace shell as shared surfaces. Inventory their consumers and verify each
+  affected route before considering a shared-surface change done.
 - Keep page-specific feedback page-scoped by default. Promote it to a shared
   component variant or global token only when the user requests system-wide
   behavior or current usage proves the pattern is shared.
-- A frontend change is complete only when the requested state and the required
-  sentinel routes have fresh browser evidence with no unintended wrapping,
+- A frontend change is complete only when the requested state and affected
+  routes have fresh browser evidence with no unintended wrapping,
   clipping, overflow, or interaction regression.
 
 ## Application architecture
