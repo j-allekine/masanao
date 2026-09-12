@@ -35,6 +35,8 @@ async function createActorUser(actor: CurrentActor, role = "staff") {
 
 describe("Master Data Units gateway", () => {
   beforeEach(async () => {
+    await prisma.item.deleteMany();
+    await prisma.category.deleteMany();
     await prisma.unit.deleteMany();
     await prisma.session.deleteMany();
     await prisma.user.deleteMany();
@@ -92,6 +94,56 @@ describe("Master Data Units gateway", () => {
         abbreviation: ["A Unit with that abbreviation already exists."],
       },
     });
+  });
+
+  it("protects a Unit referenced by an Item while keeping deactivation available", async () => {
+    await createActorUser(adminActor, "admin");
+    const category = await prisma.category.create({
+      data: {
+        id: "unit-item-reference-category",
+        name: "Item Category",
+        normalizedName: "item category",
+      },
+    });
+    const baseUnit = await prisma.unit.create({
+      data: {
+        id: "unit-item-reference",
+        name: "Kilogram",
+        abbreviation: "kg",
+        normalizedName: "kilogram",
+        normalizedAbbreviation: "kg",
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        id: "unit-item-reference-item",
+        name: "Referenced Item",
+        normalizedName: "referenced item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    await expect(
+      prisma.unit.delete({ where: { id: baseUnit.id } }),
+    ).rejects.toMatchObject({
+      code: expect.stringMatching(/^P20(03|14)$/),
+    });
+    await expect(deleteUnit(adminActor, baseUnit.id)).resolves.toEqual({
+      ok: false,
+      kind: "referenced",
+      error:
+        "This Unit cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+    });
+    await expect(
+      setUnitActive(adminActor, baseUnit.id, false),
+    ).resolves.toMatchObject({
+      ok: true,
+      unit: { id: baseUnit.id, active: false },
+    });
+    await expect(
+      prisma.item.findUnique({ where: { id: item.id } }),
+    ).resolves.toMatchObject({ baseUnitId: baseUnit.id });
   });
 
   it("restricts every write gateway to administrators", async () => {
