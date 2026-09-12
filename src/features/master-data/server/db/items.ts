@@ -63,6 +63,13 @@ export function isRecordNotFound(error: unknown) {
   );
 }
 
+export function isRestrictiveRelationViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2003" || error.code === "P2014")
+  );
+}
+
 export async function findItemRecord(id: string) {
   return prisma.item.findUnique({
     where: { id },
@@ -152,6 +159,32 @@ export async function updateItemRecord(id: string, input: ItemInput) {
   });
 
   return toItemListItem(item);
+}
+
+export async function setItemActiveRecord(id: string, isActive: boolean) {
+  const item = await prisma.item.update({
+    where: { id },
+    data: { isActive },
+    select: itemListSelect,
+  });
+
+  return toItemListItem(item);
+}
+
+export async function deleteItemRecord(id: string) {
+  try {
+    await prisma.item.delete({ where: { id } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+
+    if (isRestrictiveRelationViolation(error)) {
+      return { deleted: false as const, referenced: true as const };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }
 
 export async function listItemRecords(): Promise<ItemListItem[]> {

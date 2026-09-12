@@ -456,6 +456,24 @@ test.describe("Items catalog journey", () => {
       .click();
     await expect(inactiveLookupDialog).toBeHidden();
 
+    const alphaBeansCard = page.locator(
+      `[data-items-mobile] [data-item-id="${fixtures.activeItemId}"]`,
+    );
+    await alphaBeansCard
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await page
+      .getByRole("menuitem", { name: "Deactivate", exact: true })
+      .click();
+    await expect(alphaBeansCard.getByText("Inactive", { exact: true })).toBeVisible();
+    await alphaBeansCard
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await page
+      .getByRole("menuitem", { name: "Activate", exact: true })
+      .click();
+    await expect(alphaBeansCard.getByText("Active", { exact: true })).toBeVisible();
+
     await addItemButton.click();
     const duplicateDialog = page.getByRole("dialog");
     await duplicateDialog.getByLabel("Name").fill("brown rice updated");
@@ -527,5 +545,31 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("combobox", { name: "Category filter" }).click();
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`items\\?itemsCategory=${fixtures.categoryId}$`));
+
+    await page.goto("/items?itemsSearch=Retired%20Rice");
+    const retiredRiceRow = page.getByRole("row").filter({
+      has: page.getByText("Retired Rice", { exact: true }),
+    });
+    await retiredRiceRow
+      .getByRole("button", { name: "Actions for Retired Rice", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    const deleteDialog = page.getByRole("alertdialog");
+    await expect(
+      deleteDialog.getByRole("heading", { name: /Delete .*Retired Rice/ }),
+    ).toBeVisible();
+    await expect(
+      deleteDialog.getByText(/permanently removes the Item/, { exact: false }),
+    ).toBeVisible();
+    await deleteDialog
+      .getByRole("button", { name: "Delete Item", exact: true })
+      .click();
+    await expect(deleteDialog).toBeHidden();
+    await expect(
+      page.getByRole("row").filter({
+        has: page.getByText("Retired Rice", { exact: true }),
+      }),
+    ).toHaveCount(0);
+    await expect(addItemButton).toBeFocused();
   });
 });
