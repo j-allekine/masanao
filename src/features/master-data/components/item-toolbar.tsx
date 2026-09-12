@@ -40,6 +40,19 @@ export default function ItemToolbar({
   onStatusChange: (status: ItemListStatus) => void;
   onClearFilters: () => void;
 }) {
+  const categoryItems = [
+    { value: "all", label: "All Categories" },
+    ...categories.map((category) => ({
+      value: category.id,
+      label: category.name,
+    })),
+  ];
+  const statusItems = [
+    { value: "all", label: "All Statuses" },
+    { value: "active", label: "Active only" },
+    { value: "inactive", label: "Inactive only" },
+  ];
+
   return (
     <div
       aria-label="Item catalog search and filters"
@@ -71,6 +84,7 @@ export default function ItemToolbar({
             Category filter
           </FieldLabel>
           <Select
+            items={categoryItems}
             value={filters.categoryId || "all"}
             onValueChange={(value) =>
               onCategoryChange(value === "all" ? "" : (value ?? ""))
@@ -99,6 +113,7 @@ export default function ItemToolbar({
             Status filter
           </FieldLabel>
           <Select
+            items={statusItems}
             value={filters.status}
             onValueChange={(value) =>
               onStatusChange((value as ItemListStatus | null) ?? "all")

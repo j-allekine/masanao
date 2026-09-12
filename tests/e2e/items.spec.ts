@@ -514,6 +514,12 @@ test.describe("Items catalog journey", () => {
     await expect(
       page.getByRole("table").getByText("Retired Rice", { exact: true }),
     ).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/items\?itemsPage=2$/);
+    await expect(page.getByText("Showing 11 to 14 of 14 results", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("table").getByText("Retired Rice", { exact: true }),
+    ).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/items$/);
@@ -525,6 +531,11 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("combobox", { name: "Status filter" }).click();
     await page.getByRole("option", { name: "Inactive only", exact: true }).click();
     await expect(page).toHaveURL(/items\?itemsStatus=inactive$/);
+    await page.reload();
+    await expect(page).toHaveURL(/items\?itemsStatus=inactive$/);
+    await expect(
+      page.getByRole("combobox", { name: "Status filter" }),
+    ).toContainText("Inactive only");
     await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("table").getByText("Retired Rice", { exact: true }),
@@ -532,9 +543,11 @@ test.describe("Items catalog journey", () => {
 
     await page.getByRole("combobox", { name: "Status filter" }).click();
     await page.getByRole("option", { name: "All Statuses", exact: true }).click();
+    await expect(page).toHaveURL(/\/items$/);
     await page.getByLabel("Search Items").fill("does-not-exist");
     await expect(page).toHaveURL(/items\?itemsSearch=does-not-exist$/);
     await expect(page.getByText("No Items match your current filters.", { exact: true })).toBeVisible();
+
     await page
       .getByRole("search", { name: "Item catalog search and filters" })
       .getByRole("button", { name: "Clear filters", exact: true })
@@ -542,11 +555,31 @@ test.describe("Items catalog journey", () => {
     await expect(page).toHaveURL(/\/items$/);
     await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
 
+    await page.getByLabel("Search Items").fill("does-not-exist");
+    await expect(page).toHaveURL(/items\?itemsSearch=does-not-exist$/);
+    await page.reload();
+    await expect(page).toHaveURL(/items\?itemsSearch=does-not-exist$/);
+    await expect(page.getByLabel("Search Items")).toHaveValue("does-not-exist");
+    await expect(page.getByText("No Items match your current filters.", { exact: true })).toBeVisible();
+
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    await expect(page.getByLabel("Search Items")).toHaveValue("");
+    await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
+
     await page.getByRole("combobox", { name: "Category filter" }).click();
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`items\\?itemsCategory=${fixtures.categoryId}$`));
+    await page.reload();
+    await expect(
+      page.getByRole("combobox", { name: "Category filter" }),
+    ).toContainText("Dry Goods");
 
-    await page.goto("/items?itemsSearch=Retired%20Rice");
+    await page.getByRole("combobox", { name: "Category filter" }).click();
+    await page.getByRole("option", { name: "All Categories", exact: true }).click();
+    await expect(page).toHaveURL(/\/items$/);
+    await page.getByLabel("Search Items").fill("Retired Rice");
+    await expect(page).toHaveURL(/items\?itemsSearch=Retired(?:%20|\+)Rice$/);
     const retiredRiceRow = page.getByRole("row").filter({
       has: page.getByText("Retired Rice", { exact: true }),
     });

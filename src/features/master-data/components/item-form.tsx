@@ -98,6 +98,10 @@ function LookupField({
 }) {
   const inputId = `${mode}-item-${id}`;
   const hasError = Boolean(error?.length);
+  const lookupItems =
+    options.length > 0
+      ? options.map((option) => ({ value: option.id, label: option.label }))
+      : [{ value: "__none", label: "No active options available" }];
 
   return (
     <Field data-invalid={hasError}>
@@ -108,6 +112,7 @@ function LookupField({
         </span>
       </FieldLabel>
       <Select
+        items={lookupItems}
         value={value || null}
         onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
       >
