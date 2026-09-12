@@ -94,6 +94,7 @@ model Unit {
   active                 Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+  baseUnitItems          Item[]   @relation("ItemBaseUnit")
 
   @@map("unit")
 }
@@ -106,8 +107,27 @@ model Category {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  items          Item[]
 
   @@map("category")
+}
+
+model Item {
+  id             String   @id
+  name           String
+  normalizedName String   @unique(map: "item_normalized_name_key")
+  categoryId     String
+  baseUnitId     String
+  note           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  baseUnit       Unit     @relation("ItemBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+
+  @@index([categoryId])
+  @@index([baseUnitId])
+  @@map("item")
 }
 
 model Office {

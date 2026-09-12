@@ -225,6 +225,26 @@ export type VendorDeleteActionState =
       error: string;
     };
 
+export type ItemListItem = {
+  id: string;
+  name: string;
+  category: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  };
+  baseUnit: {
+    id: string;
+    name: string;
+    abbreviation: string;
+    active: boolean;
+  };
+  note: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type UnitFormActionState =
   | { status: "success"; unit: UnitListItem }
   | {
