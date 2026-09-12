@@ -152,12 +152,57 @@ function createItemFixtures() {
     activeItemId,
     inactiveItemId,
     categoryId,
+    inactiveCategoryId,
     baseUnitId,
+    inactiveBaseUnitId,
     otherInactiveCategoryId,
     otherInactiveBaseUnitId,
     replacementCategoryId,
     replacementBaseUnitId,
   };
+}
+
+function removeItemFixtures(
+  fixtures: ReturnType<typeof createItemFixtures>,
+) {
+  withE2eDatabase((database) => {
+    const deleteItemsByCategory = database.prepare(
+      'DELETE FROM "item" WHERE "categoryId" = ?',
+    );
+    const deleteItemsByUnit = database.prepare(
+      'DELETE FROM "item" WHERE "baseUnitId" = ?',
+    );
+    const deleteCategory = database.prepare('DELETE FROM "category" WHERE "id" = ?');
+    const deleteUnit = database.prepare('DELETE FROM "unit" WHERE "id" = ?');
+
+    const categoryIds = [
+      fixtures.categoryId,
+      fixtures.inactiveCategoryId,
+      fixtures.otherInactiveCategoryId,
+      fixtures.replacementCategoryId,
+    ];
+    const baseUnitIds = [
+      fixtures.baseUnitId,
+      fixtures.inactiveBaseUnitId,
+      fixtures.otherInactiveBaseUnitId,
+      fixtures.replacementBaseUnitId,
+    ];
+
+    database.transaction(() => {
+      for (const categoryId of categoryIds) {
+        deleteItemsByCategory.run(categoryId);
+      }
+      for (const baseUnitId of baseUnitIds) {
+        deleteItemsByUnit.run(baseUnitId);
+      }
+      for (const categoryId of categoryIds) {
+        deleteCategory.run(categoryId);
+      }
+      for (const baseUnitId of baseUnitIds) {
+        deleteUnit.run(baseUnitId);
+      }
+    })();
+  });
 }
 
 function createPagingFixtures(categoryId: string, baseUnitId: string) {
@@ -189,6 +234,15 @@ function createPagingFixtures(categoryId: string, baseUnitId: string) {
 }
 
 test.describe("Items catalog journey", () => {
+  let fixturesToRemove: ReturnType<typeof createItemFixtures> | null = null;
+
+  test.afterEach(() => {
+    if (!fixturesToRemove) return;
+
+    removeItemFixtures(fixturesToRemove);
+    fixturesToRemove = null;
+  });
+
   test("lets authenticated staff browse empty and populated Items without mutation controls", async ({
     page,
   }) => {
@@ -213,6 +267,7 @@ test.describe("Items catalog journey", () => {
     ).toHaveCount(0);
 
     const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
     await page.reload();
 
     const desktopTable = page.locator("[data-items-table-desktop]");
@@ -566,6 +621,17 @@ test.describe("Items catalog journey", () => {
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await expect(page.getByLabel("Search Items")).toHaveValue("");
     await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
+
+    const searchHistoryLength = await page.evaluate(() => window.history.length);
+    await page.getByLabel("Search Items").pressSequentially("retired", { delay: 25 });
+    await expect(page).toHaveURL(/items\?itemsSearch=retired$/);
+    await expect(page.getByLabel("Search Items")).toHaveValue("retired");
+    expect(await page.evaluate(() => window.history.length)).toBe(searchHistoryLength);
+    await page
+      .getByRole("search", { name: "Item catalog search and filters" })
+      .getByRole("button", { name: "Clear filters", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/items$/);
 
     await page.getByRole("combobox", { name: "Category filter" }).click();
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();

@@ -29,41 +29,59 @@ import {
 } from "./item-list-state";
 
 const PAGE_SIZE = 10;
+const SEARCH_NAVIGATION_DELAY_MS = 250;
 
 type ItemDialogState =
   | { mode: "create" }
   | { mode: "edit"; item: ItemListItem };
 
-export default function ItemsWorkspace({
-  items,
-  categories,
-  units,
-  canManageItems,
-}: {
+type ItemsWorkspaceProps = {
   items: ItemListItem[];
   categories: CategoryListItem[];
   units: UnitListItem[];
   canManageItems: boolean;
-}) {
+};
+
+export default function ItemsWorkspace(props: ItemsWorkspaceProps) {
+  const currentQuery = useSearchParams().toString();
+
+  return (
+    <ItemsWorkspaceContent
+      key={currentQuery}
+      {...props}
+      currentQuery={currentQuery}
+    />
+  );
+}
+
+function ItemsWorkspaceContent({
+  items,
+  categories,
+  units,
+  canManageItems,
+  currentQuery,
+}: ItemsWorkspaceProps & { currentQuery: string }) {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [itemDialogState, setItemDialogState] =
     useState<ItemDialogState | null>(null);
+  const [searchInput, setSearchInput] = useState(
+    () => getItemListState(new URLSearchParams(currentQuery)).search,
+  );
   const [isMutating, startMutation] = useTransition();
-  const currentQuery = searchParams.toString();
   const latestQueryRef = useRef(currentQuery);
+  const searchNavigationTimeoutRef = useRef<number | null>(null);
   const listState = useMemo(
     () => getItemListState(new URLSearchParams(currentQuery)),
     [currentQuery],
   );
   const filters = useMemo<ItemListFilters>(
     () => ({
-      search: listState.search,
+      search: searchInput,
       categoryId: listState.categoryId,
       status: listState.status,
     }),
-    [listState.categoryId, listState.search, listState.status],
+    [listState.categoryId, listState.status, searchInput],
   );
   const filteredItems = useMemo(
     () => filterItems(items, filters),
@@ -82,8 +100,12 @@ export default function ItemsWorkspace({
   const filtersAreActive = hasItemListFilters(filters);
 
   useEffect(() => {
-    latestQueryRef.current = currentQuery;
-  }, [currentQuery]);
+    return () => {
+      if (searchNavigationTimeoutRef.current !== null) {
+        window.clearTimeout(searchNavigationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (listState.page <= pageCount) return;
@@ -95,32 +117,60 @@ export default function ItemsWorkspace({
 
   function navigateList(
     updates: Parameters<typeof getItemListQuery>[1],
+    navigation: "push" | "replace" = "push",
   ) {
     const nextUrl = getItemListUrl(pathname, latestQueryRef.current, updates);
     latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
-    router.push(nextUrl, {
+    router[navigation](nextUrl, {
       scroll: false,
     });
   }
 
   function updateSearch(search: string) {
-    navigateList({ search, page: 1 });
+    setSearchInput(search);
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+    }
+    searchNavigationTimeoutRef.current = window.setTimeout(() => {
+      navigateList({ search, page: 1 }, "replace");
+      searchNavigationTimeoutRef.current = null;
+    }, SEARCH_NAVIGATION_DELAY_MS);
   }
 
   function updateCategory(categoryId: string) {
-    navigateList({ categoryId, page: 1 });
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    navigateList({ search: searchInput, categoryId, page: 1 });
   }
 
   function updateStatus(status: ItemListStatus) {
-    navigateList({ status, page: 1 });
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    navigateList({ search: searchInput, status, page: 1 });
   }
 
   function clearFilters() {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    setSearchInput("");
     navigateList({ search: "", categoryId: "", status: "all", page: 1 });
   }
 
   function changePage(nextPage: number) {
-    navigateList({ page: Math.min(Math.max(nextPage, 1), pageCount) });
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    navigateList({
+      search: searchInput,
+      page: Math.min(Math.max(nextPage, 1), pageCount),
+    });
   }
 
   function openCreateDialog() {

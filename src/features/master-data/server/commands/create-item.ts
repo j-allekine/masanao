@@ -3,9 +3,7 @@ import "server-only";
 import { itemFieldErrors, itemSchema } from "../../schemas/item";
 import type { ItemCreateResult, ItemFieldErrors } from "../../types";
 import {
-  createItemRecord,
-  findActiveItemLookups,
-  findItemConflictRecord,
+  createItemWithActiveLookups,
   isUniqueConstraintViolation,
 } from "../db/items";
 
@@ -36,29 +34,24 @@ export async function createItemCommand(
     return validationResult(itemFieldErrors(parsedInput.error));
   }
 
-  const conflict = await findItemConflictRecord(parsedInput.data);
-  if (conflict) return duplicateResult();
-
-  const { category, baseUnit } = await findActiveItemLookups(parsedInput.data);
-  const fields: ItemFieldErrors = {};
-
-  if (!category) {
-    fields.categoryId = ["Select an active Category."];
-  }
-  if (!baseUnit) {
-    fields.baseUnitId = ["Select an active Base Unit."];
-  }
-  if (Object.keys(fields).length > 0) {
-    return validationResult(
-      fields,
-      "Please choose an active Category and Base Unit.",
-    );
-  }
-
   try {
+    const result = await createItemWithActiveLookups(parsedInput.data);
+
+    if (result.kind === "duplicate") return duplicateResult();
+    if (result.kind === "invalid-lookups") {
+      const fields: ItemFieldErrors = {};
+      if (!result.category) fields.categoryId = ["Select an active Category."];
+      if (!result.baseUnit) fields.baseUnitId = ["Select an active Base Unit."];
+
+      return validationResult(
+        fields,
+        "Please choose an active Category and Base Unit.",
+      );
+    }
+
     return {
       ok: true,
-      item: await createItemRecord(parsedInput.data),
+      item: result.item,
     };
   } catch (error) {
     if (isUniqueConstraintViolation(error)) return duplicateResult();

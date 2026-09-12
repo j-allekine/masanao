@@ -34,6 +34,22 @@ type ItemListRecord = Prisma.ItemGetPayload<{
   select: typeof itemListSelect;
 }>;
 
+type ItemDatabase = Pick<
+  Prisma.TransactionClient,
+  "category" | "item" | "unit"
+>;
+
+export type ItemCreateWriteResult =
+  | { kind: "created"; item: ItemListItem }
+  | { kind: "duplicate" }
+  | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
+
+export type ItemUpdateWriteResult =
+  | { kind: "updated"; item: ItemListItem }
+  | { kind: "duplicate" }
+  | { kind: "not-found" }
+  | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
+
 function toItemListItem(item: ItemListRecord): ItemListItem {
   return {
     id: item.id,
@@ -70,8 +86,8 @@ export function isRestrictiveRelationViolation(error: unknown) {
   );
 }
 
-export async function findItemRecord(id: string) {
-  return prisma.item.findUnique({
+async function findItemRecord(database: ItemDatabase, id: string) {
+  return database.item.findUnique({
     where: { id },
     select: {
       id: true,
@@ -81,11 +97,12 @@ export async function findItemRecord(id: string) {
   });
 }
 
-export async function findItemConflictRecord(
+async function findItemConflictRecord(
+  database: ItemDatabase,
   input: ItemInput,
   excludeId?: string,
 ) {
-  return prisma.item.findFirst({
+  return database.item.findFirst({
     where: {
       normalizedName: input.normalizedName,
       ...(excludeId ? { NOT: { id: excludeId } } : {}),
@@ -94,12 +111,13 @@ export async function findItemConflictRecord(
   });
 }
 
-export async function findActiveItemLookups(
+async function findActiveItemLookups(
+  database: ItemDatabase,
   input: ItemInput,
   existing?: { categoryId: string; baseUnitId: string },
 ) {
   const [category, baseUnit] = await Promise.all([
-    prisma.category.findFirst({
+    database.category.findFirst({
       where: {
         id: input.categoryId,
         OR: [
@@ -111,7 +129,7 @@ export async function findActiveItemLookups(
       },
       select: { id: true },
     }),
-    prisma.unit.findFirst({
+    database.unit.findFirst({
       where: {
         id: input.baseUnitId,
         OR: [
@@ -128,8 +146,8 @@ export async function findActiveItemLookups(
   return { category, baseUnit };
 }
 
-export async function createItemRecord(input: ItemInput) {
-  const item = await prisma.item.create({
+async function createItemRecord(database: ItemDatabase, input: ItemInput) {
+  const item = await database.item.create({
     data: {
       id: crypto.randomUUID(),
       name: input.name,
@@ -145,8 +163,12 @@ export async function createItemRecord(input: ItemInput) {
   return toItemListItem(item);
 }
 
-export async function updateItemRecord(id: string, input: ItemInput) {
-  const item = await prisma.item.update({
+async function updateItemRecord(
+  database: ItemDatabase,
+  id: string,
+  input: ItemInput,
+) {
+  const item = await database.item.update({
     where: { id },
     data: {
       name: input.name,
@@ -159,6 +181,66 @@ export async function updateItemRecord(id: string, input: ItemInput) {
   });
 
   return toItemListItem(item);
+}
+
+export async function createItemWithActiveLookups(
+  input: ItemInput,
+): Promise<ItemCreateWriteResult> {
+  return prisma.$transaction(
+    async (transaction) => {
+      const [conflict, { category, baseUnit }] = await Promise.all([
+        findItemConflictRecord(transaction, input),
+        findActiveItemLookups(transaction, input),
+      ]);
+
+      if (conflict) return { kind: "duplicate" };
+      if (!category || !baseUnit) {
+        return {
+          kind: "invalid-lookups",
+          category: Boolean(category),
+          baseUnit: Boolean(baseUnit),
+        };
+      }
+
+      return {
+        kind: "created",
+        item: await createItemRecord(transaction, input),
+      };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export async function updateItemWithActiveLookups(
+  id: string,
+  input: ItemInput,
+): Promise<ItemUpdateWriteResult> {
+  return prisma.$transaction(
+    async (transaction) => {
+      const existing = await findItemRecord(transaction, id);
+      if (!existing) return { kind: "not-found" };
+
+      const [conflict, { category, baseUnit }] = await Promise.all([
+        findItemConflictRecord(transaction, input, id),
+        findActiveItemLookups(transaction, input, existing),
+      ]);
+
+      if (conflict) return { kind: "duplicate" };
+      if (!category || !baseUnit) {
+        return {
+          kind: "invalid-lookups",
+          category: Boolean(category),
+          baseUnit: Boolean(baseUnit),
+        };
+      }
+
+      return {
+        kind: "updated",
+        item: await updateItemRecord(transaction, id, input),
+      };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
 }
 
 export async function setItemActiveRecord(id: string, isActive: boolean) {

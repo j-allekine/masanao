@@ -3,12 +3,9 @@ import "server-only";
 import { itemFieldErrors, itemSchema } from "../../schemas/item";
 import type { ItemFieldErrors, ItemUpdateResult } from "../../types";
 import {
-  findActiveItemLookups,
-  findItemConflictRecord,
-  findItemRecord,
   isRecordNotFound,
   isUniqueConstraintViolation,
-  updateItemRecord,
+  updateItemWithActiveLookups,
 } from "../db/items";
 
 function validationResult(
@@ -48,35 +45,25 @@ export async function updateItemCommand(
     return validationResult(itemFieldErrors(parsedInput.error));
   }
 
-  const existing = await findItemRecord(id);
-  if (!existing) return notFoundResult();
-
-  const conflict = await findItemConflictRecord(parsedInput.data, id);
-  if (conflict) return duplicateResult();
-
-  const { category, baseUnit } = await findActiveItemLookups(
-    parsedInput.data,
-    existing,
-  );
-  const fields: ItemFieldErrors = {};
-
-  if (!category) {
-    fields.categoryId = ["Select an active Category."];
-  }
-  if (!baseUnit) {
-    fields.baseUnitId = ["Select an active Base Unit."];
-  }
-  if (Object.keys(fields).length > 0) {
-    return validationResult(
-      fields,
-      "Please choose an active Category and Base Unit, or keep the assigned lookup value.",
-    );
-  }
-
   try {
+    const result = await updateItemWithActiveLookups(id, parsedInput.data);
+
+    if (result.kind === "not-found") return notFoundResult();
+    if (result.kind === "duplicate") return duplicateResult();
+    if (result.kind === "invalid-lookups") {
+      const fields: ItemFieldErrors = {};
+      if (!result.category) fields.categoryId = ["Select an active Category."];
+      if (!result.baseUnit) fields.baseUnitId = ["Select an active Base Unit."];
+
+      return validationResult(
+        fields,
+        "Please choose an active Category and Base Unit, or keep the assigned lookup value.",
+      );
+    }
+
     return {
       ok: true,
-      item: await updateItemRecord(id, parsedInput.data),
+      item: result.item,
     };
   } catch (error) {
     if (isUniqueConstraintViolation(error)) return duplicateResult();
