@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,22 @@ import type {
   UnitListItem,
 } from "../types";
 import ItemCreateDialog from "./item-create-dialog";
+import ItemPagination from "./item-pagination";
+import ItemToolbar from "./item-toolbar";
 import ItemsTable from "./items-table";
+import {
+  filterItems,
+  hasItemListFilters,
+  type ItemListFilters,
+} from "./item-filters";
+import {
+  getItemListQuery,
+  getItemListState,
+  getItemListUrl,
+  type ItemListStatus,
+} from "./item-list-state";
+
+const PAGE_SIZE = 10;
 
 export default function ItemsWorkspace({
   items,
@@ -25,8 +40,81 @@ export default function ItemsWorkspace({
   units: UnitListItem[];
   canManageItems: boolean;
 }) {
+  const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const currentQuery = searchParams.toString();
+  const latestQueryRef = useRef(currentQuery);
+  const listState = useMemo(
+    () => getItemListState(new URLSearchParams(currentQuery)),
+    [currentQuery],
+  );
+  const filters = useMemo<ItemListFilters>(
+    () => ({
+      search: listState.search,
+      categoryId: listState.categoryId,
+      status: listState.status,
+    }),
+    [listState.categoryId, listState.search, listState.status],
+  );
+  const filteredItems = useMemo(
+    () => filterItems(items, filters),
+    [filters, items],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const currentPage = Math.min(listState.page, pageCount);
+  const firstItemIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedItems = useMemo(
+    () => filteredItems.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
+    [filteredItems, firstItemIndex],
+  );
+  const resultStart =
+    paginatedItems.length === 0 ? 0 : firstItemIndex + 1;
+  const resultEnd = firstItemIndex + paginatedItems.length;
+  const filtersAreActive = hasItemListFilters(filters);
+
+  useEffect(() => {
+    latestQueryRef.current = currentQuery;
+  }, [currentQuery]);
+
+  useEffect(() => {
+    if (listState.page <= pageCount) return;
+
+    router.replace(getItemListUrl(pathname, currentQuery, { page: pageCount }), {
+      scroll: false,
+    });
+  }, [currentQuery, listState.page, pageCount, pathname, router]);
+
+  function navigateList(
+    updates: Parameters<typeof getItemListQuery>[1],
+  ) {
+    const nextUrl = getItemListUrl(pathname, latestQueryRef.current, updates);
+    latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
+    router.push(nextUrl, {
+      scroll: false,
+    });
+  }
+
+  function updateSearch(search: string) {
+    navigateList({ search, page: 1 });
+  }
+
+  function updateCategory(categoryId: string) {
+    navigateList({ categoryId, page: 1 });
+  }
+
+  function updateStatus(status: ItemListStatus) {
+    navigateList({ status, page: 1 });
+  }
+
+  function clearFilters() {
+    navigateList({ search: "", categoryId: "", status: "all", page: 1 });
+  }
+
+  function changePage(nextPage: number) {
+    navigateList({ page: Math.min(Math.max(nextPage, 1), pageCount) });
+  }
 
   function closeCreateDialog() {
     setIsCreateDialogOpen(false);
@@ -59,7 +147,28 @@ export default function ItemsWorkspace({
           </Button>
         ) : null}
       </div>
-      <ItemsTable items={items} />
+      <ItemToolbar
+        filters={filters}
+        categories={categories}
+        hasFilters={filtersAreActive}
+        onSearchChange={updateSearch}
+        onCategoryChange={updateCategory}
+        onStatusChange={updateStatus}
+        onClearFilters={clearFilters}
+      />
+      <ItemsTable
+        items={paginatedItems}
+        hasFilters={filtersAreActive}
+        onClearFilters={clearFilters}
+      />
+      <ItemPagination
+        page={currentPage}
+        pageCount={pageCount}
+        start={resultStart}
+        end={resultEnd}
+        total={filteredItems.length}
+        onPageChange={changePage}
+      />
       {canManageItems ? (
         <ItemCreateDialog
           open={isCreateDialogOpen}
