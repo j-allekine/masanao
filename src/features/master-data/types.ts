@@ -258,6 +258,15 @@ export type ItemCreateResult =
       fields: ItemFieldErrors;
     };
 
+export type ItemUpdateResult =
+  | { ok: true; item: ItemListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "not-found";
+      error: string;
+      fields: ItemFieldErrors;
+    };
+
 export type ItemFormActionState =
   | { status: "success"; item: ItemListItem }
   | {
@@ -267,6 +276,7 @@ export type ItemFormActionState =
         | "forbidden"
         | "validation"
         | "duplicate"
+        | "not-found"
         | "server";
       error: string;
       fields: ItemFieldErrors;

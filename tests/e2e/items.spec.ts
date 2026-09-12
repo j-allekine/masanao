@@ -40,8 +40,12 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
 function createItemFixtures() {
   const categoryId = randomUUID();
   const inactiveCategoryId = randomUUID();
+  const otherInactiveCategoryId = randomUUID();
+  const replacementCategoryId = randomUUID();
   const baseUnitId = randomUUID();
   const inactiveBaseUnitId = randomUUID();
+  const otherInactiveBaseUnitId = randomUUID();
+  const replacementBaseUnitId = randomUUID();
   const activeItemId = randomUUID();
   const inactiveItemId = randomUUID();
 
@@ -62,6 +66,24 @@ function createItemFixtures() {
       .run(inactiveCategoryId, "Retired Categories", "retired categories");
     database
       .prepare(
+        `INSERT INTO "category"
+         ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        otherInactiveCategoryId,
+        "Other Retired Categories",
+        "other retired categories",
+      );
+    database
+      .prepare(
+        `INSERT INTO "category"
+         ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(replacementCategoryId, "Canned Goods", "canned goods");
+    database
+      .prepare(
         `INSERT INTO "unit"
          ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
          VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
@@ -74,6 +96,32 @@ function createItemFixtures() {
          VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(inactiveBaseUnitId, "Retired Unit", "ru", "retired unit", "ru");
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        otherInactiveBaseUnitId,
+        "Other Retired Unit",
+        "ou",
+        "other retired unit",
+        "ou",
+      );
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        replacementBaseUnitId,
+        "Piece",
+        "pc",
+        "piece",
+        "pc",
+      );
 
     const insertItem = database.prepare(
       `INSERT INTO "item"
@@ -93,14 +141,23 @@ function createItemFixtures() {
       inactiveItemId,
       "Retired Rice",
       "retired rice",
-      categoryId,
-      baseUnitId,
+      inactiveCategoryId,
+      inactiveBaseUnitId,
       "Previous stock",
       0,
     );
   });
 
-  return { activeItemId, inactiveItemId, categoryId, baseUnitId };
+  return {
+    activeItemId,
+    inactiveItemId,
+    categoryId,
+    baseUnitId,
+    otherInactiveCategoryId,
+    otherInactiveBaseUnitId,
+    replacementCategoryId,
+    replacementBaseUnitId,
+  };
 }
 
 function createPagingFixtures(categoryId: string, baseUnitId: string) {
@@ -198,10 +255,20 @@ test.describe("Items catalog journey", () => {
     ).toBeVisible();
     await expect(
       page.locator('[data-items-mobile]').getByText("Dry Goods", { exact: true }),
-    ).toHaveCount(2);
+    ).toHaveCount(1);
+    await expect(
+      page
+        .locator('[data-items-mobile]')
+        .getByText("Retired Categories", { exact: true }),
+    ).toHaveCount(1);
     await expect(
       page.locator('[data-items-mobile]').getByText("Kilogram", { exact: true }),
-    ).toHaveCount(2);
+    ).toHaveCount(1);
+    await expect(
+      page
+        .locator('[data-items-mobile]')
+        .getByText("Retired Unit", { exact: true }),
+    ).toHaveCount(1);
 
     const metrics = await page.evaluate(() => ({
       bodyScrollWidth: document.body.scrollWidth,
@@ -279,9 +346,119 @@ test.describe("Items catalog journey", () => {
       }).first(),
     ).toBeVisible();
 
+    const brownRiceCard = page
+      .locator('[data-items-mobile] [data-item-id]')
+      .filter({ hasText: "Brown Rice" });
+    await brownRiceCard
+      .getByRole("button", { name: "Actions for Brown Rice", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+
+    const editDialog = page.getByRole("dialog");
+    await expect(
+      editDialog.getByRole("heading", { name: "Edit Item", exact: true }),
+    ).toBeVisible();
+    await expect(editDialog.getByLabel("Name")).toHaveValue("Brown Rice");
+    await editDialog.getByLabel("Name").fill("  Brown   Rice Updated ");
+    await editDialog.getByRole("combobox", { name: "Category" }).click();
+    await page
+      .getByRole("option", { name: "Canned Goods", exact: true })
+      .click();
+    await editDialog.getByRole("combobox", { name: "Base Unit" }).click();
+    await page
+      .getByRole("option", { name: "Piece (pc)", exact: true })
+      .click();
+    await editDialog.getByLabel("Item Note (optional)").fill("Updated note");
+    await editDialog
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+
+    await expect(editDialog).toBeHidden();
+    const updatedRiceCard = page
+      .locator('[data-items-mobile] [data-item-id]')
+      .filter({ hasText: "Brown Rice Updated" });
+    await expect(updatedRiceCard).toBeVisible();
+    await expect(
+      updatedRiceCard.getByRole("button", {
+        name: "Actions for Brown Rice Updated",
+        exact: true,
+      }),
+    ).toBeFocused();
+
+    await updatedRiceCard
+      .getByRole("button", {
+        name: "Actions for Brown Rice Updated",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const validationDialog = page.getByRole("dialog");
+    await validationDialog.getByLabel("Name").fill("");
+    await validationDialog
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(
+      validationDialog.getByText("Item name is required", { exact: true }),
+    ).toBeVisible();
+    await expect(validationDialog.getByLabel("Name")).toHaveValue("");
+    await validationDialog.getByLabel("Name").fill("Brown Rice Fixed");
+    await validationDialog
+      .getByRole("button", { name: "Cancel", exact: true })
+      .click();
+    const validationDiscardDialog = page.getByRole("alertdialog");
+    await validationDiscardDialog
+      .getByRole("button", { name: "Discard changes", exact: true })
+      .click();
+    await expect(validationDialog).toBeHidden();
+
+    const retiredRiceCard = page.locator(
+      `[data-items-mobile] [data-item-id="${fixtures.inactiveItemId}"]`,
+    );
+    await retiredRiceCard
+      .getByRole("button", { name: "Actions for Retired Rice", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const inactiveLookupDialog = page.getByRole("dialog");
+    await inactiveLookupDialog
+      .getByRole("combobox", { name: "Category" })
+      .click();
+    await expect(
+      page.getByRole("option", {
+        name: "Retired Categories (Inactive)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", {
+        name: "Other Retired Categories (Inactive)",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await inactiveLookupDialog
+      .getByRole("combobox", { name: "Base Unit" })
+      .click();
+    await expect(
+      page.getByRole("option", {
+        name: "Retired Unit (ru) (Inactive)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", {
+        name: "Other Retired Unit (ou) (Inactive)",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await inactiveLookupDialog
+      .getByRole("button", { name: "Cancel", exact: true })
+      .click();
+    await expect(inactiveLookupDialog).toBeHidden();
+
     await addItemButton.click();
     const duplicateDialog = page.getByRole("dialog");
-    await duplicateDialog.getByLabel("Name").fill("brown rice");
+    await duplicateDialog.getByLabel("Name").fill("brown rice updated");
     await duplicateDialog.getByRole("combobox", { name: "Category" }).click();
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await duplicateDialog.getByRole("combobox", { name: "Base Unit" }).click();
@@ -292,7 +469,9 @@ test.describe("Items catalog journey", () => {
         '[data-slot="alert"] [data-slot="alert-description"]',
       ),
     ).toHaveText("An Item with that name already exists.");
-    await expect(duplicateDialog.getByLabel("Name")).toHaveValue("brown rice");
+    await expect(duplicateDialog.getByLabel("Name")).toHaveValue(
+      "brown rice updated",
+    );
 
     await duplicateDialog.getByRole("button", { name: "Cancel", exact: true }).click();
     const discardDialog = page.getByRole("alertdialog");

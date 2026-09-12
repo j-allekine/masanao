@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createItemAction } from "../actions";
+import { createItemAction, updateItemAction } from "../actions";
 import type {
   CategoryListItem,
   ItemField,
@@ -48,6 +48,17 @@ const emptyFormValues: ItemFormValues = {
   baseUnitId: "",
   note: "",
 };
+
+function initialValues(item?: ItemListItem): ItemFormValues {
+  if (!item) return emptyFormValues;
+
+  return {
+    name: item.name,
+    categoryId: item.category.id,
+    baseUnitId: item.baseUnit.id,
+    note: item.note ?? "",
+  };
+}
 
 function ItemFieldError({
   id,
@@ -67,6 +78,7 @@ function ItemFieldError({
 }
 
 function LookupField({
+  mode,
   id,
   label,
   placeholder,
@@ -75,6 +87,7 @@ function LookupField({
   options,
   onValueChange,
 }: {
+  mode: "create" | "edit";
   id: "categoryId" | "baseUnitId";
   label: string;
   placeholder: string;
@@ -83,7 +96,7 @@ function LookupField({
   options: Array<{ id: string; label: string }>;
   onValueChange: (value: string) => void;
 }) {
-  const inputId = `create-item-${id}`;
+  const inputId = `${mode}-item-${id}`;
   const hasError = Boolean(error?.length);
 
   return (
@@ -128,27 +141,44 @@ function LookupField({
 }
 
 export default function ItemForm({
+  mode,
+  item,
   categories,
   units,
   onCancel,
   onSuccess,
   onDirtyChange,
 }: {
+  mode: "create" | "edit";
+  item?: ItemListItem;
   categories: CategoryListItem[];
   units: UnitListItem[];
   onCancel: () => void;
   onSuccess: (item: ItemListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
-  const [formValues, setFormValues] = useState<ItemFormValues>(emptyFormValues);
+  const initialFormValues = initialValues(item);
+  const [formValues, setFormValues] = useState<ItemFormValues>(
+    initialFormValues,
+  );
   const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
-  const isDirty = (Object.keys(emptyFormValues) as ItemField[]).some(
-    (field) => formValues[field] !== emptyFormValues[field],
+  const isDirty = (Object.keys(initialFormValues) as ItemField[]).some(
+    (field) => formValues[field] !== initialFormValues[field],
   );
-  const activeCategories = categories.filter((category) => category.isActive);
-  const activeUnits = units.filter((unit) => unit.active);
+  const categoryOptions = categories
+    .filter((category) => category.isActive || category.id === item?.category.id)
+    .map((category) => ({
+      id: category.id,
+      label: `${category.name}${category.isActive ? "" : " (Inactive)"}`,
+    }));
+  const unitOptions = units
+    .filter((unit) => unit.active || unit.id === item?.baseUnit.id)
+    .map((unit) => ({
+      id: unit.id,
+      label: `${unit.name} (${unit.abbreviation})${unit.active ? "" : " (Inactive)"}`,
+    }));
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -161,13 +191,13 @@ export default function ItemForm({
 
     if (!firstInvalidField) return;
 
-    const targetId = `create-item-${firstInvalidField}`;
+    const targetId = `${mode}-item-${firstInvalidField}`;
     const timeoutId = window.setTimeout(() => {
       document.getElementById(targetId)?.focus();
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [fieldErrors]);
+  }, [fieldErrors, mode]);
 
   function updateField(field: ItemField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
@@ -197,7 +227,11 @@ export default function ItemForm({
     setFormError(null);
 
     const formData = new FormData(event.currentTarget);
-    for (const field of Object.keys(emptyFormValues) as ItemField[]) {
+    if (mode === "edit" && item) {
+      formData.set("id", item.id);
+    }
+
+    for (const field of Object.keys(initialFormValues) as ItemField[]) {
       if (field === "note" && formValues[field] === "") {
         formData.delete(field);
       } else {
@@ -207,7 +241,10 @@ export default function ItemForm({
 
     startTransition(async () => {
       try {
-        const result = await createItemAction(formData);
+        const result =
+          mode === "create"
+            ? await createItemAction(formData)
+            : await updateItemAction(formData);
         handleResult(result);
       } catch {
         setFormError(
@@ -224,9 +261,11 @@ export default function ItemForm({
     updateField(field, event.target.value);
   }
 
+  if (mode === "edit" && !item) return null;
+
   return (
     <form
-      aria-label="Create Item"
+      aria-label={`${mode === "create" ? "Create" : "Edit"} Item`}
       aria-busy={isSubmitting}
       noValidate
       onSubmit={handleSubmit}
@@ -241,14 +280,14 @@ export default function ItemForm({
 
         <FieldGroup>
           <Field data-invalid={Boolean(fieldErrors.name?.length)}>
-            <FieldLabel htmlFor="create-item-name">
+            <FieldLabel htmlFor={`${mode}-item-name`}>
               Name
               <span className="text-destructive" aria-hidden="true">
                 *
               </span>
             </FieldLabel>
             <Input
-              id="create-item-name"
+              id={`${mode}-item-name`}
               name="name"
               value={formValues.name}
               onChange={(event) => handleTextChange("name", event)}
@@ -256,47 +295,45 @@ export default function ItemForm({
               maxLength={100}
               aria-invalid={Boolean(fieldErrors.name?.length)}
               aria-describedby={
-                fieldErrors.name?.length ? "create-item-name-error" : undefined
+                fieldErrors.name?.length
+                  ? `${mode}-item-name-error`
+                  : undefined
               }
             />
             <ItemFieldError
-              id="create-item-name"
+              id={`${mode}-item-name`}
               errors={fieldErrors.name}
             />
           </Field>
 
           <LookupField
+            mode={mode}
             id="categoryId"
             label="Category"
             placeholder="Select a Category"
             value={formValues.categoryId}
             error={fieldErrors.categoryId}
-            options={activeCategories.map((category) => ({
-              id: category.id,
-              label: category.name,
-            }))}
+            options={categoryOptions}
             onValueChange={(value) => updateField("categoryId", value)}
           />
 
           <LookupField
+            mode={mode}
             id="baseUnitId"
             label="Base Unit"
             placeholder="Select a Base Unit"
             value={formValues.baseUnitId}
             error={fieldErrors.baseUnitId}
-            options={activeUnits.map((unit) => ({
-              id: unit.id,
-              label: `${unit.name} (${unit.abbreviation})`,
-            }))}
+            options={unitOptions}
             onValueChange={(value) => updateField("baseUnitId", value)}
           />
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
-            <FieldLabel htmlFor="create-item-note">
+            <FieldLabel htmlFor={`${mode}-item-note`}>
               Item Note <span className="text-muted-foreground">(optional)</span>
             </FieldLabel>
             <Textarea
-              id="create-item-note"
+              id={`${mode}-item-note`}
               name="note"
               value={formValues.note}
               onChange={(event) => handleTextChange("note", event)}
@@ -304,10 +341,15 @@ export default function ItemForm({
               maxLength={500}
               aria-invalid={Boolean(fieldErrors.note?.length)}
               aria-describedby={
-                fieldErrors.note?.length ? "create-item-note-error" : undefined
+                fieldErrors.note?.length
+                  ? `${mode}-item-note-error`
+                  : undefined
               }
             />
-            <ItemFieldError id="create-item-note" errors={fieldErrors.note} />
+            <ItemFieldError
+              id={`${mode}-item-note`}
+              errors={fieldErrors.note}
+            />
           </Field>
         </FieldGroup>
       </div>
@@ -321,8 +363,18 @@ export default function ItemForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
-          {isSubmitting ? "Saving…" : "Add Item"}
+          {isSubmitting ? (
+            <Spinner data-icon="inline-start" />
+          ) : mode === "create" ? (
+            <Plus data-icon="inline-start" />
+          ) : (
+            <Save data-icon="inline-start" />
+          )}
+          {isSubmitting
+            ? "Saving..."
+            : mode === "create"
+              ? "Add Item"
+              : "Save changes"}
         </Button>
       </DialogFooter>
     </form>

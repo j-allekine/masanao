@@ -56,21 +56,64 @@ export function isUniqueConstraintViolation(
   );
 }
 
-export async function findItemConflictRecord(input: ItemInput) {
+export function isRecordNotFound(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  );
+}
+
+export async function findItemRecord(id: string) {
+  return prisma.item.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      categoryId: true,
+      baseUnitId: true,
+    },
+  });
+}
+
+export async function findItemConflictRecord(
+  input: ItemInput,
+  excludeId?: string,
+) {
   return prisma.item.findFirst({
-    where: { normalizedName: input.normalizedName },
+    where: {
+      normalizedName: input.normalizedName,
+      ...(excludeId ? { NOT: { id: excludeId } } : {}),
+    },
     select: { id: true },
   });
 }
 
-export async function findActiveItemLookups(input: ItemInput) {
+export async function findActiveItemLookups(
+  input: ItemInput,
+  existing?: { categoryId: string; baseUnitId: string },
+) {
   const [category, baseUnit] = await Promise.all([
     prisma.category.findFirst({
-      where: { id: input.categoryId, isActive: true },
+      where: {
+        id: input.categoryId,
+        OR: [
+          { isActive: true },
+          ...(existing?.categoryId === input.categoryId
+            ? [{ id: existing.categoryId }]
+            : []),
+        ],
+      },
       select: { id: true },
     }),
     prisma.unit.findFirst({
-      where: { id: input.baseUnitId, active: true },
+      where: {
+        id: input.baseUnitId,
+        OR: [
+          { active: true },
+          ...(existing?.baseUnitId === input.baseUnitId
+            ? [{ id: existing.baseUnitId }]
+            : []),
+        ],
+      },
       select: { id: true },
     }),
   ]);
@@ -88,6 +131,22 @@ export async function createItemRecord(input: ItemInput) {
       baseUnitId: input.baseUnitId,
       note: input.note,
       isActive: true,
+    },
+    select: itemListSelect,
+  });
+
+  return toItemListItem(item);
+}
+
+export async function updateItemRecord(id: string, input: ItemInput) {
+  const item = await prisma.item.update({
+    where: { id },
+    data: {
+      name: input.name,
+      normalizedName: input.normalizedName,
+      categoryId: input.categoryId,
+      baseUnitId: input.baseUnitId,
+      note: input.note,
     },
     select: itemListSelect,
   });
