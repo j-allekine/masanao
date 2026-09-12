@@ -8,7 +8,9 @@ async function signIn(page: Page) {
       username: "kitchen.staff",
       password: staffPassword,
     },
-    headers: { origin: "http://localhost:3019" },
+    headers: {
+      origin: process.env.BETTER_AUTH_URL ?? "http://localhost:3019",
+    },
   });
 
   expect(response.status()).toBe(200);

@@ -4,15 +4,20 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { defineConfig } from "@playwright/test";
 
-const e2eDatabasePath = join(
-  tmpdir(),
-  `masanao-e2e-${randomUUID()}.db`,
+const configuredDatabasePath = process.env.MASANAO_E2E_DATABASE_PATH?.trim();
+const e2eDatabasePath = (
+  configuredDatabasePath ?? join(tmpdir(), `masanao-e2e-${randomUUID()}.db`)
 ).replaceAll("\\", "/");
 const e2eDatabaseUrl = `file:${e2eDatabasePath}`;
-const e2eDistDir = `.next-e2e-${randomUUID()}`;
+const e2eDistDir = process.env.NEXT_DIST_DIR ?? `.next-e2e-${randomUUID()}`;
 const e2eAuthSecret =
   "e2e-only-secret-that-is-long-enough-for-better-auth-testing";
-const e2eBaseUrl = "http://localhost:3019";
+const requestedPort = Number(process.env.MASANAO_E2E_PORT);
+const e2ePort =
+  Number.isInteger(requestedPort) && requestedPort >= 1024 && requestedPort <= 65535
+    ? requestedPort
+    : 3019;
+const e2eBaseUrl = `http://localhost:${e2ePort}`;
 
 process.env.MASANAO_E2E_TSCONFIG_CONTENT = readFileSync(
   join(process.cwd(), "tsconfig.json"),
@@ -35,9 +40,10 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm exec next dev --hostname 127.0.0.1 --port 3019",
+    command: `pnpm exec next dev --hostname 127.0.0.1 --port ${e2ePort}`,
     env: {
       DATABASE_URL: e2eDatabaseUrl,
+      MASANAO_E2E_DATABASE_PATH: e2eDatabasePath,
       BETTER_AUTH_SECRET: e2eAuthSecret,
       BETTER_AUTH_URL: e2eBaseUrl,
       DISABLE_ERD: "true",

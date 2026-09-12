@@ -9,6 +9,7 @@ import {
   canManageUnits,
   canManageVendors,
   listCategories,
+  listOffices,
   listUnits,
   listVendors,
 } from "@/features/master-data/server";
@@ -41,6 +42,7 @@ export default async function MasterDataRoute({
   const [
     units,
     categories,
+    offices,
     vendors,
     canManageUnitsResult,
     canManageCategoriesResult,
@@ -49,6 +51,7 @@ export default async function MasterDataRoute({
   ] = await Promise.all([
     listUnits(),
     listCategories(),
+    listOffices(),
     listVendors(),
     canManageUnits(actor),
     canManageCategories(actor),
@@ -68,9 +71,11 @@ export default async function MasterDataRoute({
       <MasterDataContent
         units={units}
         categories={categories}
+        offices={offices}
         vendors={vendors}
         initialQuery={initialQuery}
         canManageUnits={canManageUnitsResult}
+        canManageOffices={canManageUnitsResult}
         canManageCategories={canManageCategoriesResult}
         canManageVendors={canManageVendorsResult}
       />

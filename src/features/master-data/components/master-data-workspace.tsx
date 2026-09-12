@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { setUnitActiveAction, setVendorActiveAction } from "../actions";
 import type {
   CategoryListItem,
+  OfficeListItem,
   UnitListItem,
   VendorListItem,
 } from "../types";
@@ -21,7 +22,9 @@ import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
+import OfficesWorkspace from "./offices-workspace";
 import UnitPagination from "./unit-pagination";
+import { filterOffices } from "./office-filters";
 import { filterUnits, type UnitFilters } from "./unit-filters";
 import UnitTable from "./unit-table";
 import { filterVendors } from "./vendor-filters";
@@ -67,17 +70,21 @@ const emptyCatalogListState: CatalogListState = { search: "", page: 1 };
 export default function MasterDataWorkspace({
   units,
   categories,
+  offices,
   vendors,
   initialQuery = "",
   canManageUnits,
+  canManageOffices,
   canManageCategories,
   canManageVendors,
 }: {
   units: UnitListItem[];
   categories: CategoryListItem[];
+  offices: OfficeListItem[];
   vendors: VendorListItem[];
   initialQuery?: string;
   canManageUnits: boolean;
+  canManageOffices: boolean;
   canManageCategories: boolean;
   canManageVendors: boolean;
 }) {
@@ -100,6 +107,11 @@ export default function MasterDataWorkspace({
   );
   const [vendorListState, setVendorListState] = useState<CatalogListState>(() =>
     initialState.tab === "vendors"
+      ? { search: initialState.search, page: initialState.page }
+      : emptyCatalogListState,
+  );
+  const [officeListState, setOfficeListState] = useState<CatalogListState>(() =>
+    initialState.tab === "offices"
       ? { search: initialState.search, page: initialState.page }
       : emptyCatalogListState,
   );
@@ -140,6 +152,11 @@ export default function MasterDataWorkspace({
           search: initialState.search,
           page: initialState.page,
         });
+      } else if (initialState.tab === "offices") {
+        setOfficeListState({
+          search: initialState.search,
+          page: initialState.page,
+        });
       }
     }, 0);
 
@@ -148,6 +165,7 @@ export default function MasterDataWorkspace({
 
   const unitSearch = unitListState.search;
   const vendorSearch = vendorListState.search;
+  const officeSearch = officeListState.search;
   const filters: UnitFilters = { search: unitSearch };
   const filteredUnits = useMemo(
     () => filterUnits(units, { search: unitSearch }),
@@ -157,6 +175,10 @@ export default function MasterDataWorkspace({
     () => filterVendors(vendors, { search: vendorSearch }),
     [vendorSearch, vendors],
   );
+  const filteredOffices = useMemo(
+    () => filterOffices(offices, { search: officeSearch }),
+    [officeSearch, offices],
+  );
   const unitPageCount = Math.max(
     1,
     Math.ceil(filteredUnits.length / PAGE_SIZE),
@@ -165,22 +187,32 @@ export default function MasterDataWorkspace({
     1,
     Math.ceil(filteredVendors.length / PAGE_SIZE),
   );
+  const officePageCount = Math.max(
+    1,
+    Math.ceil(filteredOffices.length / PAGE_SIZE),
+  );
   const unitCurrentPage = Math.min(unitListState.page, unitPageCount);
   const vendorCurrentPage = Math.min(vendorListState.page, vendorPageCount);
+  const officeCurrentPage = Math.min(officeListState.page, officePageCount);
   const currentPage =
     activeTab === "vendors"
       ? vendorCurrentPage
+      : activeTab === "offices"
+        ? officeCurrentPage
       : activeTab === "units"
         ? unitCurrentPage
         : 1;
   const currentSearch =
     activeTab === "vendors"
       ? vendorSearch
+      : activeTab === "offices"
+        ? officeSearch
       : activeTab === "units"
         ? unitSearch
         : "";
   const firstItemIndex = (unitCurrentPage - 1) * PAGE_SIZE;
   const firstVendorItemIndex = (vendorCurrentPage - 1) * PAGE_SIZE;
+  const firstOfficeItemIndex = (officeCurrentPage - 1) * PAGE_SIZE;
   const paginatedUnits = useMemo(
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
@@ -193,8 +225,19 @@ export default function MasterDataWorkspace({
       ),
     [filteredVendors, firstVendorItemIndex],
   );
+  const paginatedOffices = useMemo(
+    () =>
+      filteredOffices.slice(
+        firstOfficeItemIndex,
+        firstOfficeItemIndex + PAGE_SIZE,
+      ),
+    [filteredOffices, firstOfficeItemIndex],
+  );
   const resultStart = paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
+  const officeResultStart =
+    paginatedOffices.length === 0 ? 0 : firstOfficeItemIndex + 1;
+  const officeResultEnd = firstOfficeItemIndex + paginatedOffices.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: activeTab,
     search: currentSearch,
@@ -204,6 +247,8 @@ export default function MasterDataWorkspace({
   function updateSearch(nextSearch: string) {
     if (activeTab === "vendors") {
       setVendorListState({ search: nextSearch, page: 1 });
+    } else if (activeTab === "offices") {
+      setOfficeListState({ search: nextSearch, page: 1 });
     } else {
       setUnitListState({ search: nextSearch, page: 1 });
     }
@@ -395,10 +440,16 @@ export default function MasterDataWorkspace({
 
   function changePage(nextPage: number) {
     const pageCount =
-      activeTab === "vendors" ? vendorPageCount : unitPageCount;
+      activeTab === "vendors"
+        ? vendorPageCount
+        : activeTab === "offices"
+          ? officePageCount
+          : unitPageCount;
     const page = Math.min(Math.max(nextPage, 1), pageCount);
     if (activeTab === "vendors") {
       setVendorListState((current) => ({ ...current, page }));
+    } else if (activeTab === "offices") {
+      setOfficeListState((current) => ({ ...current, page }));
     } else {
       setUnitListState((current) => ({ ...current, page }));
     }
@@ -415,6 +466,8 @@ export default function MasterDataWorkspace({
     const nextListState =
       value === "vendors"
         ? vendorListState
+        : value === "offices"
+          ? officeListState
         : value === "units"
           ? unitListState
           : emptyCatalogListState;
@@ -469,6 +522,21 @@ export default function MasterDataWorkspace({
           <CategoriesWorkspace
             categories={categories}
             canManage={canManageCategories}
+          />
+        </MasterDataTabContent>
+        <MasterDataTabContent value="offices">
+          <OfficesWorkspace
+            offices={paginatedOffices}
+            total={filteredOffices.length}
+            search={officeSearch}
+            page={officeCurrentPage}
+            pageCount={officePageCount}
+            start={officeResultStart}
+            end={officeResultEnd}
+            onSearchChange={updateSearch}
+            onClearFilters={clearFilters}
+            onPageChange={changePage}
+            canManage={canManageOffices}
           />
         </MasterDataTabContent>
         <MasterDataTabContent value="vendors">

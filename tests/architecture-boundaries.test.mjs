@@ -27,6 +27,12 @@ test("allowed architecture dependencies pass", async () => {
         'import { listUnits } from "@/features/master-data/server";',
     },
     {
+      name: "app to the Offices public gateway",
+      filePath: "src/app/architecture-fixture.ts",
+      source:
+        'import { listOffices } from "@/features/master-data/server";',
+    },
+    {
       name: "app to shared code",
       filePath: "src/app/architecture-fixture.ts",
       source: 'import { Button } from "@/components/ui/button";',
@@ -113,6 +119,13 @@ test("forbidden architecture dependencies are rejected", async () => {
       filePath: "src/app/architecture-fixture.ts",
       source:
         'import { listUnitRecords } from "@/features/master-data/server/db/units";',
+      ruleId: "boundaries/dependencies",
+    },
+    {
+      name: "app deep import into Master Data Offices",
+      filePath: "src/app/architecture-fixture.ts",
+      source:
+        'import { listOfficeRecords } from "@/features/master-data/server/db/offices";',
       ruleId: "boundaries/dependencies",
     },
     {

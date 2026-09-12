@@ -2,9 +2,13 @@ import "server-only";
 
 import type { CurrentActor } from "@/server/auth";
 
+import { createOfficeCommand } from "./server/commands/create-office";
 import { createUnitCommand } from "./server/commands/create-unit";
+import { deleteOfficeCommand } from "./server/commands/delete-office";
 import { deleteUnitCommand } from "./server/commands/delete-unit";
+import { setOfficeActiveCommand } from "./server/commands/set-office-active";
 import { setUnitActiveCommand } from "./server/commands/set-unit-active";
+import { updateOfficeCommand } from "./server/commands/update-office";
 import { updateUnitCommand } from "./server/commands/update-unit";
 import { createCategoryCommand } from "./server/commands/create-category";
 import { deleteCategoryCommand } from "./server/commands/delete-category";
@@ -16,6 +20,7 @@ import { setVendorActiveCommand } from "./server/commands/set-vendor-active";
 import { updateVendorCommand } from "./server/commands/update-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listCategories as listCategoriesQuery } from "./server/queries/list-categories";
+import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
@@ -23,6 +28,10 @@ import type {
   CategoryDeleteResult,
   CategoryLifecycleResult,
   CategoryUpdateResult,
+  OfficeCreateResult,
+  OfficeDeleteResult,
+  OfficeLifecycleResult,
+  OfficeUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -35,6 +44,11 @@ import type {
 
 export type {
   CategoryListItem,
+  OfficeCreateResult,
+  OfficeDeleteResult,
+  OfficeLifecycleResult,
+  OfficeListItem,
+  OfficeUpdateResult,
   UnitCreateResult,
   UnitDeleteResult,
   UnitLifecycleResult,
@@ -51,6 +65,10 @@ export async function listUnits() {
 
 export async function listCategories() {
   return listCategoriesQuery();
+}
+
+export async function listOffices() {
+  return listOfficesQuery();
 }
 
 export async function listVendors() {
@@ -93,6 +111,18 @@ export async function createUnit(
   return createUnitCommand(input);
 }
 
+export async function createOffice(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<OfficeCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return createOfficeCommand(input);
+}
+
 export async function updateUnit(
   actor: CurrentActor,
   id: string,
@@ -104,6 +134,40 @@ export async function updateUnit(
   }
 
   return updateUnitCommand(id, input);
+}
+
+export async function updateOffice(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<OfficeUpdateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) {
+    return { ...authorizationFailure, fields: {} };
+  }
+
+  return updateOfficeCommand(id, input);
+}
+
+export async function setOfficeActive(
+  actor: CurrentActor,
+  id: string,
+  isActive: boolean,
+): Promise<OfficeLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setOfficeActiveCommand(id, isActive);
+}
+
+export async function deleteOffice(
+  actor: CurrentActor,
+  id: string,
+): Promise<OfficeDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteOfficeCommand(id);
 }
 
 export async function setUnitActive(

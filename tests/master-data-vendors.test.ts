@@ -40,11 +40,11 @@ function withNormalizedVendorName<T extends { name: string }>(data: T) {
 }
 
 describe("Master Data Vendors read path", () => {
-  it("enables Vendors alongside Categories while keeping Offices disabled", () => {
+  it("enables Vendors alongside Categories and Offices", () => {
     expect(masterDataTabs).toEqual([
       { id: "units", label: "Units", disabled: false },
       { id: "categories", label: "Categories", disabled: false },
-      { id: "offices", label: "Offices", disabled: true },
+      { id: "offices", label: "Offices", disabled: false },
       { id: "vendors", label: "Vendors", disabled: false },
     ]);
     expect(getMasterDataListState("tab=vendors&search=  ana  &page=2")).toEqual(
