@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
+import type { ItemInput } from "../../schemas/item";
 import type { ItemListItem } from "../../types";
 
 const itemListSelect = {
@@ -44,6 +45,54 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };
+}
+
+export function isUniqueConstraintViolation(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
+
+export async function findItemConflictRecord(input: ItemInput) {
+  return prisma.item.findFirst({
+    where: { normalizedName: input.normalizedName },
+    select: { id: true },
+  });
+}
+
+export async function findActiveItemLookups(input: ItemInput) {
+  const [category, baseUnit] = await Promise.all([
+    prisma.category.findFirst({
+      where: { id: input.categoryId, isActive: true },
+      select: { id: true },
+    }),
+    prisma.unit.findFirst({
+      where: { id: input.baseUnitId, active: true },
+      select: { id: true },
+    }),
+  ]);
+
+  return { category, baseUnit };
+}
+
+export async function createItemRecord(input: ItemInput) {
+  const item = await prisma.item.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: input.name,
+      normalizedName: input.normalizedName,
+      categoryId: input.categoryId,
+      baseUnitId: input.baseUnitId,
+      note: input.note,
+      isActive: true,
+    },
+    select: itemListSelect,
+  });
+
+  return toItemListItem(item);
 }
 
 export async function listItemRecords(): Promise<ItemListItem[]> {

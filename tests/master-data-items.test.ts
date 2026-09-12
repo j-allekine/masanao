@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { canManageItems, listItems } from "@/features/master-data/server";
+import {
+  canManageItems,
+  createItem,
+  listItems,
+} from "@/features/master-data/server";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 
@@ -155,5 +159,91 @@ describe("Master Data Items read path", () => {
 
     await expect(canManageItems(adminActor)).resolves.toBe(true);
     await expect(canManageItems(staffActor)).resolves.toBe(false);
+  });
+
+  it("creates an active Item with normalized display and lookup values", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+
+    const result = await createItem(adminActor, {
+      name: "  Rice\n   Flour  ",
+      categoryId: category.id,
+      baseUnitId: baseUnit.id,
+      note: "  Keep dry.\nUse oldest stock first.  ",
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      item: {
+        name: "Rice Flour",
+        category: { id: category.id },
+        baseUnit: { id: baseUnit.id },
+        note: "Keep dry.\nUse oldest stock first.",
+        isActive: true,
+      },
+    });
+    expect(await prisma.item.count()).toBe(1);
+  });
+
+  it("rejects duplicate normalized names and inactive lookup records", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+
+    await expect(
+      createItem(adminActor, {
+        name: "Rice Flour",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    await expect(
+      createItem(adminActor, {
+        name: " rice   flour ",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["An Item with that name already exists."] },
+    });
+
+    const inactiveCategory = await prisma.category.create({
+      data: {
+        id: "items-category-inactive",
+        name: "Inactive",
+        normalizedName: "inactive",
+        isActive: false,
+      },
+    });
+    const invalidLookupResult = await createItem(adminActor, {
+      name: "New Item",
+      categoryId: inactiveCategory.id,
+      baseUnitId: baseUnit.id,
+    });
+
+    expect(invalidLookupResult).toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: { categoryId: ["Select an active Category."] },
+    });
+  });
+
+  it("rejects Item creation from authenticated staff", async () => {
+    await createActorUser(staffActor);
+    const { category, baseUnit } = await createLookupRecords();
+
+    await expect(
+      createItem(staffActor, {
+        name: "Staff Attempt",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
   });
 });

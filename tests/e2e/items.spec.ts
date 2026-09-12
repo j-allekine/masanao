@@ -3,12 +3,17 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
+const adminPassword = "administrator-password";
 
-async function signIn(page: Page) {
+async function signIn(
+  page: Page,
+  username = "kitchen.staff",
+  password = staffPassword,
+) {
   const response = await page.request.post("/api/auth/sign-in/username", {
     data: {
-      username: "kitchen.staff",
-      password: staffPassword,
+      username,
+      password,
     },
     headers: {
       origin: process.env.BETTER_AUTH_URL ?? "http://localhost:3019",
@@ -34,7 +39,9 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
 
 function createItemFixtures() {
   const categoryId = randomUUID();
+  const inactiveCategoryId = randomUUID();
   const baseUnitId = randomUUID();
+  const inactiveBaseUnitId = randomUUID();
   const activeItemId = randomUUID();
   const inactiveItemId = randomUUID();
 
@@ -48,11 +55,25 @@ function createItemFixtures() {
       .run(categoryId, "Dry Goods", "dry goods");
     database
       .prepare(
+        `INSERT INTO "category"
+         ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(inactiveCategoryId, "Retired Categories", "retired categories");
+    database
+      .prepare(
         `INSERT INTO "unit"
          ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
          VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(baseUnitId, "Kilogram", "kg", "kilogram", "kg");
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(inactiveBaseUnitId, "Retired Unit", "ru", "retired unit", "ru");
 
     const insertItem = database.prepare(
       `INSERT INTO "item"
@@ -79,7 +100,7 @@ function createItemFixtures() {
     );
   });
 
-  return { activeItemId, inactiveItemId };
+  return { activeItemId, inactiveItemId, categoryId, baseUnitId };
 }
 
 test.describe("Items catalog journey", () => {
@@ -137,6 +158,7 @@ test.describe("Items catalog journey", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
     await expect(page.locator("[data-items-mobile]")).toBeVisible();
     await expect(desktopTable).toBeHidden();
@@ -160,7 +182,8 @@ test.describe("Items catalog journey", () => {
     expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
 
     const sidebarTrigger = page.locator('[data-slot="sidebar-trigger"]');
-    await sidebarTrigger.click();
+    await sidebarTrigger.focus();
+    await page.keyboard.press("Enter");
     const mobileSidebar = page.locator(
       '[data-sidebar="sidebar"][data-mobile="true"]',
     );
@@ -171,5 +194,76 @@ test.describe("Items catalog journey", () => {
     await expect(
       mobileSidebar.getByRole("link", { name: "Items", exact: true }),
     ).toBeVisible();
+    await mobileSidebar.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(mobileSidebar).toBeHidden();
+
+    await page.context().clearCookies();
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/items");
+
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    await expect(page.locator('[data-can-manage-items="true"]')).toBeVisible();
+    const addItemButton = page.getByRole("button", {
+      name: "Add Item",
+      exact: true,
+    });
+    await expect(addItemButton).toBeVisible();
+    await addItemButton.click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Add Item" })).toBeVisible();
+
+    await dialog.getByRole("combobox", { name: "Category" }).click();
+    await expect(
+      page.getByRole("option", { name: "Dry Goods", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", { name: "Retired Categories", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await dialog.getByRole("combobox", { name: "Base Unit" }).click();
+    await expect(
+      page.getByRole("option", { name: "Kilogram (kg)", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", { name: "Retired Unit (ru)", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await dialog.getByRole("button", { name: "Add Item", exact: true }).click();
+    await expect(dialog.getByText("Item name is required", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Category is required", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Base Unit is required", { exact: true })).toBeVisible();
+
+    await dialog.getByLabel("Name").fill("  Brown   Rice ");
+    await dialog.getByRole("combobox", { name: "Category" }).click();
+    await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
+    await dialog.getByRole("combobox", { name: "Base Unit" }).click();
+    await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await dialog.getByLabel("Item Note (optional)").fill("Kitchen staple");
+    await dialog.getByRole("button", { name: "Add Item", exact: true }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.locator("[data-items-mobile]").getByText("Brown Rice", {
+        exact: true,
+      }).first(),
+    ).toBeVisible();
+
+    await addItemButton.click();
+    const duplicateDialog = page.getByRole("dialog");
+    await duplicateDialog.getByLabel("Name").fill("brown rice");
+    await duplicateDialog.getByRole("combobox", { name: "Category" }).click();
+    await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
+    await duplicateDialog.getByRole("combobox", { name: "Base Unit" }).click();
+    await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await duplicateDialog.getByRole("button", { name: "Add Item", exact: true }).click();
+    await expect(
+      duplicateDialog.locator(
+        '[data-slot="alert"] [data-slot="alert-description"]',
+      ),
+    ).toHaveText("An Item with that name already exists.");
+    await expect(duplicateDialog.getByLabel("Name")).toHaveValue("brown rice");
   });
 });

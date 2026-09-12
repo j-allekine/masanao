@@ -1,14 +1,22 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-import type { ItemListItem } from "../types";
+import type {
+  CategoryListItem,
+  ItemListItem,
+  UnitListItem,
+} from "../types";
 import ItemsWorkspace from "./items-workspace";
 
 export default function ItemsContent({
   items,
+  categories,
+  units,
   canManageItems,
 }: {
   items: ItemListItem[];
+  categories: CategoryListItem[];
+  units: UnitListItem[];
   canManageItems: boolean;
 }) {
   return (
@@ -27,7 +35,12 @@ export default function ItemsContent({
       </header>
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <ItemsWorkspace items={items} canManageItems={canManageItems} />
+        <ItemsWorkspace
+          items={items}
+          categories={categories}
+          units={units}
+          canManageItems={canManageItems}
+        />
       </div>
     </div>
   );
