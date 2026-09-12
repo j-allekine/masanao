@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 
+import { setItemActiveAction } from "../actions";
 import type {
   CategoryListItem,
   ItemListItem,
@@ -49,6 +50,7 @@ export default function ItemsWorkspace({
   const searchParams = useSearchParams();
   const [itemDialogState, setItemDialogState] =
     useState<ItemDialogState | null>(null);
+  const [isMutating, startMutation] = useTransition();
   const currentQuery = searchParams.toString();
   const latestQueryRef = useRef(currentQuery);
   const listState = useMemo(
@@ -150,6 +152,38 @@ export default function ItemsWorkspace({
     }, 0);
   }
 
+  function handleSetActive(item: ItemListItem, isActive: boolean) {
+    startMutation(async () => {
+      try {
+        const result = await setItemActiveAction(item.id, isActive);
+
+        if (result.status === "error") {
+          toast.error(result.error);
+          router.refresh();
+          return;
+        }
+
+        router.refresh();
+        toast.success(
+          `Item “${item.name}” ${result.item.isActive ? "activated" : "deactivated"}`,
+        );
+      } catch {
+        toast.error(
+          "The Item status could not be changed. Check your connection and try again.",
+        );
+        router.refresh();
+      }
+    });
+  }
+
+  function handleDeleted(item: ItemListItem) {
+    router.refresh();
+    toast.success(`Item “${item.name}” deleted`);
+    window.setTimeout(() => {
+      document.getElementById("new-item")?.focus();
+    }, 0);
+  }
+
   return (
     <main
       className="flex min-w-0 flex-col gap-6"
@@ -189,6 +223,9 @@ export default function ItemsWorkspace({
         onClearFilters={clearFilters}
         canManage={canManageItems}
         onEdit={openEditDialog}
+        onSetActive={handleSetActive}
+        onDeleted={handleDeleted}
+        actionDisabled={isMutating}
       />
       <ItemPagination
         page={currentPage}

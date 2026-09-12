@@ -18,6 +18,8 @@ import { executeSetVendorActive } from "./server/actions/set-vendor-active";
 import { executeUpdateVendor } from "./server/actions/update-vendor";
 import { executeCreateItem } from "./server/actions/create-item";
 import { executeUpdateItem } from "./server/actions/update-item";
+import { executeDeleteItem } from "./server/actions/delete-item";
+import { executeSetItemActive } from "./server/actions/set-item-active";
 import type {
   CategoryDeleteActionState,
   CategoryFormActionState,
@@ -32,6 +34,8 @@ import type {
   VendorFormActionState,
   VendorLifecycleActionState,
   ItemFormActionState,
+  ItemDeleteActionState,
+  ItemLifecycleActionState,
 } from "./types";
 
 export async function createUnitAction(
@@ -144,4 +148,17 @@ export async function updateItemAction(
   formData: FormData,
 ): Promise<ItemFormActionState> {
   return executeUpdateItem(formData);
+}
+
+export async function setItemActiveAction(
+  id: string,
+  isActive: boolean,
+): Promise<ItemLifecycleActionState> {
+  return executeSetItemActive(id, isActive);
+}
+
+export async function deleteItemAction(
+  id: string,
+): Promise<ItemDeleteActionState> {
+  return executeDeleteItem(id);
 }

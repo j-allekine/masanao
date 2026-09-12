@@ -267,6 +267,22 @@ export type ItemUpdateResult =
       fields: ItemFieldErrors;
     };
 
+export type ItemLifecycleResult =
+  | { ok: true; item: ItemListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found";
+      error: string;
+    };
+
+export type ItemDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found" | "referenced";
+      error: string;
+    };
+
 export type ItemFormActionState =
   | { status: "success"; item: ItemListItem }
   | {
@@ -280,6 +296,27 @@ export type ItemFormActionState =
         | "server";
       error: string;
       fields: ItemFieldErrors;
+    };
+
+export type ItemLifecycleActionState =
+  | { status: "success"; item: ItemListItem }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "not-found" | "server";
+      error: string;
+    };
+
+export type ItemDeleteActionState =
+  | { status: "success" }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "not-found"
+        | "referenced"
+        | "server";
+      error: string;
     };
 
 export type UnitFormActionState =

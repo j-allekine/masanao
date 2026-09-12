@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   canManageItems,
   createItem,
+  deleteItem,
   listItems,
+  setItemActive,
   updateItem,
 } from "@/features/master-data/server";
 import { prisma } from "@/prisma/client";
@@ -421,6 +423,72 @@ describe("Master Data Items read path", () => {
         categoryId: category.id,
         baseUnitId: baseUnit.id,
       }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+  });
+
+  it("deactivates, reactivates, and deletes an unused Item", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+    await prisma.item.create({
+      data: {
+        id: "items-lifecycle-target",
+        name: "Lifecycle Item",
+        normalizedName: "lifecycle item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    await expect(
+      setItemActive(adminActor, "items-lifecycle-target", false),
+    ).resolves.toMatchObject({
+      ok: true,
+      item: { id: "items-lifecycle-target", isActive: false },
+    });
+    await expect(listItems()).resolves.toMatchObject([
+      { id: "items-lifecycle-target", isActive: false },
+    ]);
+
+    await expect(
+      setItemActive(adminActor, "items-lifecycle-target", true),
+    ).resolves.toMatchObject({
+      ok: true,
+      item: { id: "items-lifecycle-target", isActive: true },
+    });
+    await expect(
+      deleteItem(adminActor, "items-lifecycle-target"),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      prisma.item.findUnique({ where: { id: "items-lifecycle-target" } }),
+    ).resolves.toBeNull();
+  });
+
+  it("rejects Item lifecycle mutations from authenticated staff", async () => {
+    await createActorUser(staffActor);
+    const { category, baseUnit } = await createLookupRecords();
+    await prisma.item.create({
+      data: {
+        id: "items-staff-lifecycle-target",
+        name: "Staff Lifecycle Item",
+        normalizedName: "staff lifecycle item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    await expect(
+      setItemActive(staffActor, "items-staff-lifecycle-target", false),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+    await expect(
+      deleteItem(staffActor, "items-staff-lifecycle-target"),
     ).resolves.toMatchObject({
       ok: false,
       kind: "forbidden",

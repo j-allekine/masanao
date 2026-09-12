@@ -26,6 +26,8 @@ import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import { createItemCommand } from "./server/commands/create-item";
 import { updateItemCommand } from "./server/commands/update-item";
+import { deleteItemCommand } from "./server/commands/delete-item";
+import { setItemActiveCommand } from "./server/commands/set-item-active";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -45,6 +47,8 @@ import type {
   VendorUpdateResult,
   ItemCreateResult,
   ItemUpdateResult,
+  ItemDeleteResult,
+  ItemLifecycleResult,
 } from "./types";
 
 export type {
@@ -65,6 +69,8 @@ export type {
   UnitUpdateResult,
   ItemCreateResult,
   ItemUpdateResult,
+  ItemDeleteResult,
+  ItemLifecycleResult,
 } from "./types";
 
 export async function listUnits() {
@@ -138,6 +144,27 @@ export async function updateItem(
   }
 
   return updateItemCommand(id, input);
+}
+
+export async function setItemActive(
+  actor: CurrentActor,
+  id: string,
+  isActive: boolean,
+): Promise<ItemLifecycleResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return setItemActiveCommand(id, isActive);
+}
+
+export async function deleteItem(
+  actor: CurrentActor,
+  id: string,
+): Promise<ItemDeleteResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+
+  return deleteItemCommand(id);
 }
 
 export async function createUnit(
