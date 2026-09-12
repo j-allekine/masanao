@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 const adminPassword = "administrator-password";
@@ -12,6 +14,106 @@ async function signIn(page: Page, username: string, password: string) {
   });
 
   expect(response.status()).toBe(200);
+}
+
+type ItemReferenceFixture = {
+  itemId: string;
+  categoryId: string;
+  unitId: string;
+  categoryName: string;
+  unitName: string;
+};
+
+function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
+  const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
+  if (!databasePath) {
+    throw new Error("MASANAO_E2E_DATABASE_PATH is not set");
+  }
+
+  const database = new Database(databasePath);
+  try {
+    return callback(database);
+  } finally {
+    database.close();
+  }
+}
+
+function createReferencedCategoryFixture(): ItemReferenceFixture {
+  const categoryId = randomUUID();
+  const unitId = randomUUID();
+  const itemId = randomUUID();
+  const categoryName = `Referenced Category ${categoryId.slice(0, 8)}`;
+  const unitName = `Reference Unit ${unitId.slice(0, 8)}`;
+  const itemName = `Reference Item ${itemId.slice(0, 8)}`;
+
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "category"
+         ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(categoryId, categoryName, categoryName.toLowerCase());
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(unitId, unitName, "ref", unitName.toLowerCase(), "ref");
+    database
+      .prepare(
+        `INSERT INTO "item"
+         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
+  });
+
+  return { itemId, categoryId, unitId, categoryName, unitName };
+}
+
+function createReferencedUnitFixture(): ItemReferenceFixture {
+  const categoryId = randomUUID();
+  const unitId = randomUUID();
+  const itemId = randomUUID();
+  const categoryName = `Reference Category ${categoryId.slice(0, 8)}`;
+  const unitName = `Referenced Unit ${unitId.slice(0, 8)}`;
+  const itemName = `Reference Item ${itemId.slice(0, 8)}`;
+
+  withE2eDatabase((database) => {
+    database
+      .prepare(
+        `INSERT INTO "category"
+         ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(categoryId, categoryName, categoryName.toLowerCase());
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(unitId, unitName, "ref", unitName.toLowerCase(), "ref");
+    database
+      .prepare(
+        `INSERT INTO "item"
+         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
+  });
+
+  return { itemId, categoryId, unitId, categoryName, unitName };
+}
+
+function deleteItemReferenceFixture(fixture: ItemReferenceFixture) {
+  withE2eDatabase((database) => {
+    database.prepare(`DELETE FROM "item" WHERE "id" = ?`).run(fixture.itemId);
+    database.prepare(`DELETE FROM "category" WHERE "id" = ?`).run(fixture.categoryId);
+    database.prepare(`DELETE FROM "unit" WHERE "id" = ?`).run(fixture.unitId);
+  });
 }
 
 async function openMasterData(page: Page, username: string, password: string) {
@@ -484,6 +586,96 @@ test.describe("Master Data Units journey", () => {
     await expect(page.getByText("Category “Rice   &   Pantry” deleted", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByText("No Categories yet.", { exact: true })).toBeVisible();
+  });
+});
+
+test.describe("Master Data Item reference protection journey", () => {
+  test("blocks Category deletion while keeping deactivation available", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixture = createReferencedCategoryFixture();
+
+    try {
+      await openCategories(page, "municipal.admin", adminPassword);
+      const categoryRow = page.getByRole("row").filter({
+        has: page.getByText(fixture.categoryName, { exact: true }),
+      });
+      await expect(categoryRow).toBeVisible();
+      await categoryRow
+        .getByRole("button", {
+          name: `Actions for ${fixture.categoryName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+
+      const deleteDialog = page.getByRole("alertdialog");
+      await deleteDialog
+        .getByRole("button", { name: "Delete Category", exact: true })
+        .click();
+      await expect(deleteDialog.getByText(
+        "This Category cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+        { exact: true },
+      )).toBeVisible();
+      await expect(deleteDialog).toBeVisible();
+      await deleteDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(deleteDialog).toBeHidden();
+
+      await categoryRow
+        .getByRole("button", {
+          name: `Actions for ${fixture.categoryName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Deactivate", exact: true }).click();
+      await expect(categoryRow).toContainText("Inactive");
+    } finally {
+      deleteItemReferenceFixture(fixture);
+    }
+  });
+
+  test("blocks Unit deletion while keeping deactivation available", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixture = createReferencedUnitFixture();
+
+    try {
+      await openMasterData(page, "municipal.admin", adminPassword);
+      const unitRowLocator = await unitRow(page, fixture.unitName);
+      await expect(unitRowLocator).toBeVisible();
+      await unitRowLocator
+        .getByRole("button", {
+          name: `Actions for ${fixture.unitName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+
+      const deleteDialog = page.getByRole("alertdialog");
+      await deleteDialog
+        .getByRole("button", { name: "Delete Unit", exact: true })
+        .click();
+      await expect(deleteDialog.getByText(
+        "This Unit cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+        { exact: true },
+      )).toBeVisible();
+      await expect(deleteDialog).toBeVisible();
+      await deleteDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(deleteDialog).toBeHidden();
+
+      await unitRowLocator
+        .getByRole("button", {
+          name: `Actions for ${fixture.unitName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Deactivate", exact: true }).click();
+      await expect(unitRowLocator).toContainText("Inactive");
+    } finally {
+      deleteItemReferenceFixture(fixture);
+    }
   });
 });
 

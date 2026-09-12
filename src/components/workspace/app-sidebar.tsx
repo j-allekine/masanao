@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   ChevronDown,
+  Package,
 } from "lucide-react"
 
 import {
@@ -37,7 +38,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  workspaceSections,
+  workspaceSectionGroups,
   type WorkspaceSectionId,
 } from "@/lib/workspace-navigation"
 
@@ -50,6 +51,7 @@ const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   overview: LayoutDashboard,
   "activity-designs": CalendarDays,
   "master-data": Database,
+  items: Package,
 }
 
 function getInitials(name: string) {
@@ -176,41 +178,43 @@ export function AppSidebar({
         <WorkspaceLink />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="px-3 py-1">
-          <SidebarGroupLabel className="h-8 px-3 text-label uppercase tracking-label text-sidebar-foreground/70">
-            Workspace
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {workspaceSections.map((item) => {
-                const Icon = iconBySection[item.id]
-                const visibleLabel = item.id === "activity-designs" ? "Planning" : item.label
+        {workspaceSectionGroups.map((group) => (
+          <SidebarGroup key={group.id} className="px-3 py-1">
+            <SidebarGroupLabel className="h-8 px-3 text-label uppercase tracking-label text-sidebar-foreground/70">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.sections.map((item) => {
+                  const Icon = iconBySection[item.id]
+                  const visibleLabel = item.id === "activity-designs" ? "Planning" : item.label
 
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      render={
-                        <Link
-                          href={item.href}
-                          aria-label={item.label}
-                          aria-current={
-                            activeSection === item.id ? "page" : undefined
-                          }
-                        />
-                      }
-                      isActive={activeSection === item.id}
-                      tooltip={item.label}
-                      className="h-10 rounded-lg px-3 text-body-sm"
-                    >
-                      <Icon />
-                      <span>{visibleLabel}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        render={
+                          <Link
+                            href={item.href}
+                            aria-label={item.label}
+                            aria-current={
+                              activeSection === item.id ? "page" : undefined
+                            }
+                          />
+                        }
+                        isActive={activeSection === item.id}
+                        tooltip={item.label}
+                        className="h-10 rounded-lg px-3 text-body-sm"
+                      >
+                        <Icon />
+                        <span>{visibleLabel}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter className="p-4 pt-3 pb-7">
         <AccountMenu user={user} />

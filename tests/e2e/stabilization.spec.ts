@@ -360,6 +360,36 @@ test.describe("frontend stabilization regression seam", () => {
     }
   });
 
+  test("captures the Items workspace shell sentinel at desktop and mobile widths", async ({
+    page,
+  }) => {
+    await authenticate(page);
+
+    for (const viewport of [
+      { width: 1458, height: 986, name: "desktop" },
+      { width: 390, height: 844, name: "mobile" },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/items?itemsSearch=__shell-sentinel__");
+      await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+      await expect(
+        page.getByText("No Items match your current filters.", { exact: true }),
+      ).toBeVisible();
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; }",
+      });
+      await page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
+      await expect(page).toHaveScreenshot("items-" + viewport.name + ".png", {
+        animations: "disabled",
+        fullPage: true,
+      });
+    }
+  });
+
   test("preserves form values and focus across validation and server errors", async ({
     page,
   }) => {

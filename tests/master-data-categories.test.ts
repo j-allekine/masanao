@@ -35,7 +35,9 @@ async function createActorUser(actor: CurrentActor, role = "staff") {
 
 describe("Master Data Categories gateway", () => {
   beforeEach(async () => {
+    await prisma.item.deleteMany();
     await prisma.category.deleteMany();
+    await prisma.unit.deleteMany();
     await prisma.session.deleteMany();
     await prisma.user.deleteMany();
   });
@@ -153,6 +155,56 @@ describe("Master Data Categories gateway", () => {
     ).rejects.toMatchObject({
       code: "P2002",
     });
+  });
+
+  it("protects a Category referenced by an Item while keeping deactivation available", async () => {
+    await createActorUser(adminActor, "admin");
+    const category = await prisma.category.create({
+      data: {
+        id: "category-item-reference",
+        name: "Item Category",
+        normalizedName: "item category",
+      },
+    });
+    const baseUnit = await prisma.unit.create({
+      data: {
+        id: "category-item-reference-unit",
+        name: "Kilogram",
+        abbreviation: "kg",
+        normalizedName: "kilogram",
+        normalizedAbbreviation: "kg",
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        id: "category-item-reference-item",
+        name: "Referenced Item",
+        normalizedName: "referenced item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    await expect(
+      prisma.category.delete({ where: { id: category.id } }),
+    ).rejects.toMatchObject({
+      code: expect.stringMatching(/^P20(03|14)$/),
+    });
+    await expect(deleteCategory(adminActor, category.id)).resolves.toEqual({
+      ok: false,
+      kind: "referenced",
+      error:
+        "This Category cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+    });
+    await expect(
+      setCategoryActive(adminActor, category.id, false),
+    ).resolves.toMatchObject({
+      ok: true,
+      category: { id: category.id, isActive: false },
+    });
+    await expect(
+      prisma.item.findUnique({ where: { id: item.id } }),
+    ).resolves.toMatchObject({ categoryId: category.id });
   });
 
   it("restricts every Category write gateway to administrators", async () => {
