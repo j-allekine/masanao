@@ -28,7 +28,7 @@ import {
 import type { ItemListItem } from "../types";
 import ItemActionsMenu from "./item-actions-menu";
 import DeleteItemDialog from "./delete-item-dialog";
-import MasterDataTableFrame from "./master-data-table-frame";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function ItemStatus({ isActive }: { isActive: boolean }) {
   return <Badge variant={isActive ? "default" : "outline"}>{isActive ? "Active" : "Inactive"}</Badge>;
@@ -221,7 +221,7 @@ export default function ItemsTable({
         ))}
       </div>
       <div className="hidden sm:block" data-items-table-desktop>
-        <MasterDataTableFrame caption="Items" className="min-w-[40rem]">
+        <WorkspaceTableFrame caption="Items" className="min-w-[40rem]">
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead scope="col" className="text-left">
@@ -256,7 +256,7 @@ export default function ItemsTable({
               />
             ))}
           </TableBody>
-        </MasterDataTableFrame>
+        </WorkspaceTableFrame>
       </div>
     </>
   );

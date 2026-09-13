@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   filterItems,
   hasItemListFilters,
-} from "@/features/master-data/components/item-filters";
-import { getItemResultsSummary } from "@/features/master-data/components/item-pagination";
+} from "@/features/supply-operations/components/item-filters";
+import { getItemResultsSummary } from "@/features/supply-operations/components/item-pagination";
 import {
   getItemListQuery,
   getItemListState,
-} from "@/features/master-data/components/item-list-state";
-import type { ItemListItem } from "@/features/master-data/types";
+} from "@/features/supply-operations/components/item-list-state";
+import type { ItemListItem } from "@/features/supply-operations/types";
 
 function item(
   id: string,

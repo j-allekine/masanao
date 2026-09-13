@@ -4,13 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { setItemActive } from "../../server";
 import type { ItemLifecycleActionState } from "../../types";
-import { getCurrentMasterDataActor } from "./current-actor";
+import { getCurrentSupplyOperationsActor } from "./current-actor";
 
 export async function executeSetItemActive(
   id: unknown,
   isActive: unknown,
 ): Promise<ItemLifecycleActionState> {
-  const actor = await getCurrentMasterDataActor();
+  const actor = await getCurrentSupplyOperationsActor();
 
   if (!actor) {
     return {

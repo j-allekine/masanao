@@ -275,7 +275,7 @@ export default function ItemForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="max-h-[min(62vh,34rem)] overflow-y-auto px-1 py-2">
+      <div className="max-h-[min(52svh,34rem)] overflow-y-auto px-1 py-2">
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Item</AlertTitle>

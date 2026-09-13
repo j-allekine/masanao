@@ -8,8 +8,8 @@ import {
   listCategories,
   listItems,
   listUnits,
-} from "@/features/master-data/server";
-import { ItemsContent } from "@/features/master-data/ui";
+} from "@/features/supply-operations/server";
+import { ItemsContent } from "@/features/supply-operations/ui";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {

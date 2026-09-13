@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeItemDisplayValue,
   normalizeItemKey,
-} from "@/features/master-data/domain/item";
+} from "@/features/supply-operations/domain/item";
 import {
   itemFieldErrors,
   itemSchema,
-} from "@/features/master-data/schemas/item";
+} from "@/features/supply-operations/schemas/item";
 
 describe("Master Data Item normalization", () => {
   it("collapses whitespace while preserving display casing", () => {

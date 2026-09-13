@@ -16,7 +16,7 @@ import DeleteOfficeDialog from "./delete-office-dialog";
 import { hasOfficeFilters, type OfficeFilters } from "./office-filters";
 import OfficeActionsMenu from "./office-actions-menu";
 import MasterDataEmptyState from "./master-data-empty-state";
-import MasterDataTableFrame from "./master-data-table-frame";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function OfficeHeadContext({ office }: { office: OfficeListItem }) {
   if (!office.headName && !office.headDesignation) {
@@ -166,7 +166,7 @@ export default function OfficeTable({
   }
 
   return (
-    <MasterDataTableFrame caption="Offices" className="min-w-[60rem]">
+    <WorkspaceTableFrame caption="Offices" className="min-w-[60rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
@@ -204,6 +204,6 @@ export default function OfficeTable({
           />
         ))}
       </TableBody>
-    </MasterDataTableFrame>
+    </WorkspaceTableFrame>
   );
 }

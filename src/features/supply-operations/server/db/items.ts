@@ -4,7 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { ItemInput } from "../../schemas/item";
-import type { ItemListItem } from "../../types";
+import type { CategoryListItem, ItemListItem, UnitListItem } from "../../types";
 
 const itemListSelect = {
   id: true,
@@ -276,4 +276,24 @@ export async function listItemRecords(): Promise<ItemListItem[]> {
   });
 
   return items.map(toItemListItem);
+}
+
+export async function listItemCategoryLookups(): Promise<CategoryListItem[]> {
+  const categories = await prisma.category.findMany({
+    select: { id: true, name: true, description: true, isActive: true, createdAt: true, updatedAt: true },
+    orderBy: [{ normalizedName: "asc" }, { id: "asc" }],
+  });
+
+  return categories.map((category) => ({
+    ...category,
+    createdAt: category.createdAt.toISOString(),
+    updatedAt: category.updatedAt.toISOString(),
+  }));
+}
+
+export async function listItemUnitLookups(): Promise<UnitListItem[]> {
+  return prisma.unit.findMany({
+    select: { id: true, name: true, abbreviation: true, active: true },
+    orderBy: [{ normalizedName: "asc" }, { normalizedAbbreviation: "asc" }, { id: "asc" }],
+  });
 }
