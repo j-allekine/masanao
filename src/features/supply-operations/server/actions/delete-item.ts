@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { deleteItem } from "../../server";
 import type { ItemDeleteActionState } from "../../types";
-import { getCurrentMasterDataActor } from "./current-actor";
+import { getCurrentSupplyOperationsActor } from "./current-actor";
 
 export async function executeDeleteItem(
   id: unknown,
 ): Promise<ItemDeleteActionState> {
-  const actor = await getCurrentMasterDataActor();
+  const actor = await getCurrentSupplyOperationsActor();
 
   if (!actor) {
     return {

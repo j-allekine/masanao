@@ -2,9 +2,8 @@ import "server-only";
 
 import type { CurrentActor } from "@/server/auth";
 
-import { findMasterDataActorRole } from "../db/authorization";
+import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 
 export async function isAdministrator(actor: CurrentActor) {
-  const user = await findMasterDataActorRole(actor.id);
-  return user?.role === "admin";
+  return isCurrentActorAdministrator(actor.id);
 }

@@ -66,7 +66,7 @@ export default function ItemCreateDialog({
         }}
       >
         {open ? (
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-h-[calc(100svh-2rem)] max-w-lg grid-rows-[auto_minmax(0,1fr)]">
             <DialogHeader>
               <DialogTitle>{mode === "edit" ? "Edit Item" : "Add Item"}</DialogTitle>
               <DialogDescription>

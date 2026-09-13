@@ -23,7 +23,7 @@ import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
 import VendorActionsMenu from "./vendor-actions-menu";
 import DeleteVendorDialog from "./delete-vendor-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
-import MasterDataTableFrame from "./master-data-table-frame";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function VendorContactContext({ vendor }: { vendor: VendorListItem }) {
   const context = [vendor.contactNumber, vendor.email, vendor.address].filter(
@@ -236,7 +236,7 @@ export default function VendorTable({
         ))}
       </div>
       <div className="hidden sm:block">
-        <MasterDataTableFrame caption="Vendors" className="min-w-[52rem]">
+        <WorkspaceTableFrame caption="Vendors" className="min-w-[52rem]">
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead scope="col" className="text-left">
@@ -271,7 +271,7 @@ export default function VendorTable({
               />
             ))}
           </TableBody>
-        </MasterDataTableFrame>
+        </WorkspaceTableFrame>
       </div>
     </>
   );

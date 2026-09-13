@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { createItem } from "../../server";
 import type { ItemFormActionState } from "../../types";
-import { getCurrentMasterDataActor } from "./current-actor";
+import { getCurrentSupplyOperationsActor } from "./current-actor";
 
 export async function executeCreateItem(
   formData: FormData,
 ): Promise<ItemFormActionState> {
-  const actor = await getCurrentMasterDataActor();
+  const actor = await getCurrentSupplyOperationsActor();
 
   if (!actor) {
     return {

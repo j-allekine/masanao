@@ -23,6 +23,23 @@ async function signIn(
   expect(response.status()).toBe(200);
 }
 
+async function expectOpenOptionIsClickable(page: Page, name: string) {
+  const option = page.getByRole("option", { name, exact: true });
+  await expect(option).toBeVisible();
+
+  expect(
+    await option.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      const topElement = document.elementFromPoint(
+        bounds.left + bounds.width / 2,
+        bounds.top + bounds.height / 2,
+      );
+
+      return topElement !== null && element.contains(topElement);
+    }),
+  ).toBe(true);
+}
+
 function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
   const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
   if (!databasePath) {
@@ -358,24 +375,34 @@ test.describe("Items catalog journey", () => {
       exact: true,
     });
     await expect(addItemButton).toBeVisible();
+
+    await page.setViewportSize({ width: 667, height: 390 });
     await addItemButton.click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "Add Item" })).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Cancel", exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Add Item", exact: true }),
+    ).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await addItemButton.click();
+    await expect(dialog).toBeVisible();
 
     await dialog.getByRole("combobox", { name: "Category" }).click();
-    await expect(
-      page.getByRole("option", { name: "Dry Goods", exact: true }),
-    ).toBeVisible();
+    await expectOpenOptionIsClickable(page, "Dry Goods");
     await expect(
       page.getByRole("option", { name: "Retired Categories", exact: true }),
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
 
     await dialog.getByRole("combobox", { name: "Base Unit" }).click();
-    await expect(
-      page.getByRole("option", { name: "Kilogram (kg)", exact: true }),
-    ).toBeVisible();
+    await expectOpenOptionIsClickable(page, "Kilogram (kg)");
     await expect(
       page.getByRole("option", { name: "Retired Unit (ru)", exact: true }),
     ).toHaveCount(0);
@@ -634,6 +661,7 @@ test.describe("Items catalog journey", () => {
     await expect(page).toHaveURL(/\/items$/);
 
     await page.getByRole("combobox", { name: "Category filter" }).click();
+    await expectOpenOptionIsClickable(page, "Dry Goods");
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`items\\?itemsCategory=${fixtures.categoryId}$`));
     await page.reload();

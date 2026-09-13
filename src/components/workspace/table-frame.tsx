@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { Table } from "@/components/ui/table";
 
-export default function MasterDataTableFrame({
+export default function WorkspaceTableFrame({
   caption,
   className,
   children,

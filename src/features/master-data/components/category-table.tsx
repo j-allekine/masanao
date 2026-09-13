@@ -24,7 +24,7 @@ import {
 import type { CategoryListItem } from "../types";
 import CategoryActionsMenu from "./category-actions-menu";
 import DeleteCategoryDialog from "./delete-category-dialog";
-import MasterDataTableFrame from "./master-data-table-frame";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function CategoryRow({
   category,
@@ -127,7 +127,7 @@ export default function CategoryTable({
   }
 
   return (
-    <MasterDataTableFrame caption="Categories" className="min-w-[38rem]">
+    <WorkspaceTableFrame caption="Categories" className="min-w-[38rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
@@ -159,6 +159,6 @@ export default function CategoryTable({
           />
         ))}
       </TableBody>
-    </MasterDataTableFrame>
+    </WorkspaceTableFrame>
   );
 }

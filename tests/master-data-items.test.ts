@@ -7,7 +7,7 @@ import {
   listItems,
   setItemActive,
   updateItem,
-} from "@/features/master-data/server";
+} from "@/features/supply-operations/server";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 

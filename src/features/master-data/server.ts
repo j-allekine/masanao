@@ -23,11 +23,6 @@ import { listCategories as listCategoriesQuery } from "./server/queries/list-cat
 import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
-import { listItems as listItemsQuery } from "./server/queries/list-items";
-import { createItemCommand } from "./server/commands/create-item";
-import { updateItemCommand } from "./server/commands/update-item";
-import { deleteItemCommand } from "./server/commands/delete-item";
-import { setItemActiveCommand } from "./server/commands/set-item-active";
 import type {
   CategoryCreateResult,
   CategoryDeleteResult,
@@ -45,15 +40,10 @@ import type {
   VendorDeleteResult,
   VendorLifecycleResult,
   VendorUpdateResult,
-  ItemCreateResult,
-  ItemUpdateResult,
-  ItemDeleteResult,
-  ItemLifecycleResult,
 } from "./types";
 
 export type {
   CategoryListItem,
-  ItemListItem,
   OfficeCreateResult,
   OfficeDeleteResult,
   OfficeLifecycleResult,
@@ -67,10 +57,6 @@ export type {
   VendorDeleteResult,
   VendorLifecycleResult,
   UnitUpdateResult,
-  ItemCreateResult,
-  ItemUpdateResult,
-  ItemDeleteResult,
-  ItemLifecycleResult,
 } from "./types";
 
 export async function listUnits() {
@@ -87,10 +73,6 @@ export async function listOffices() {
 
 export async function listVendors() {
   return listVendorsQuery();
-}
-
-export async function listItems() {
-  return listItemsQuery();
 }
 
 async function authorizeAdministrator(actor: CurrentActor) {
@@ -115,56 +97,6 @@ export async function canManageCategories(actor: CurrentActor) {
 
 export async function canManageVendors(actor: CurrentActor) {
   return isAdministrator(actor);
-}
-
-export async function canManageItems(actor: CurrentActor) {
-  return isAdministrator(actor);
-}
-
-export async function createItem(
-  actor: CurrentActor,
-  input: unknown,
-): Promise<ItemCreateResult> {
-  const authorizationFailure = await authorizeAdministrator(actor);
-  if (authorizationFailure) {
-    return { ...authorizationFailure, fields: {} };
-  }
-
-  return createItemCommand(input);
-}
-
-export async function updateItem(
-  actor: CurrentActor,
-  id: string,
-  input: unknown,
-): Promise<ItemUpdateResult> {
-  const authorizationFailure = await authorizeAdministrator(actor);
-  if (authorizationFailure) {
-    return { ...authorizationFailure, fields: {} };
-  }
-
-  return updateItemCommand(id, input);
-}
-
-export async function setItemActive(
-  actor: CurrentActor,
-  id: string,
-  isActive: boolean,
-): Promise<ItemLifecycleResult> {
-  const authorizationFailure = await authorizeAdministrator(actor);
-  if (authorizationFailure) return authorizationFailure;
-
-  return setItemActiveCommand(id, isActive);
-}
-
-export async function deleteItem(
-  actor: CurrentActor,
-  id: string,
-): Promise<ItemDeleteResult> {
-  const authorizationFailure = await authorizeAdministrator(actor);
-  if (authorizationFailure) return authorizationFailure;
-
-  return deleteItemCommand(id);
 }
 
 export async function createUnit(

@@ -16,7 +16,7 @@ import { hasUnitFilters, type UnitFilters } from "./unit-filters";
 import UnitActionsMenu from "./unit-actions-menu";
 import DeleteUnitDialog from "./delete-unit-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
-import MasterDataTableFrame from "./master-data-table-frame";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function UnitRow({
   unit,
@@ -120,7 +120,7 @@ export default function UnitTable({
   }
 
   return (
-    <MasterDataTableFrame caption="Units" className="min-w-[36rem]">
+    <WorkspaceTableFrame caption="Units" className="min-w-[36rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
@@ -152,6 +152,6 @@ export default function UnitTable({
           />
         ))}
       </TableBody>
-    </MasterDataTableFrame>
+    </WorkspaceTableFrame>
   );
 }
