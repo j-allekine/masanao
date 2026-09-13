@@ -40,6 +40,29 @@ async function expectOpenOptionIsClickable(page: Page, name: string) {
   ).toBe(true);
 }
 
+async function expectMenuDoesNotCoverTrigger(
+  page: Page,
+  triggerName: string,
+  optionName: string,
+) {
+  const trigger = page.getByRole("combobox", { name: triggerName });
+  const option = page.getByRole("option", { name: optionName, exact: true });
+  const menu = page
+    .locator('[data-slot="select-content"]')
+    .filter({ has: option });
+
+  await expect(menu).toBeVisible();
+
+  const [triggerBox, menuBox] = await Promise.all([
+    trigger.boundingBox(),
+    menu.boundingBox(),
+  ]);
+
+  expect(triggerBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height);
+}
+
 function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
   const databasePath = process.env.MASANAO_E2E_DATABASE_PATH;
   if (!databasePath) {
@@ -403,6 +426,7 @@ test.describe("Items catalog journey", () => {
 
     await dialog.getByRole("combobox", { name: "Base Unit" }).click();
     await expectOpenOptionIsClickable(page, "Kilogram (kg)");
+    await expectMenuDoesNotCoverTrigger(page, "Base Unit", "Kilogram (kg)");
     await expect(
       page.getByRole("option", { name: "Retired Unit (ru)", exact: true }),
     ).toHaveCount(0);
