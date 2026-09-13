@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 
 import { setItemActiveAction } from "../actions";
 import type {
@@ -247,15 +247,13 @@ function ItemsWorkspaceContent({
           </p>
         </div>
         {canManageItems ? (
-          <Button
+          <WorkspacePrimaryAction
             id="new-item"
-            type="button"
-            size="sm"
-            className="h-9 w-full sm:w-auto sm:min-w-[8rem]"
+            className="sm:min-w-[8rem]"
             onClick={openCreateDialog}
           >
             Add Item
-          </Button>
+          </WorkspacePrimaryAction>
         ) : null}
       </div>
       <ItemToolbar

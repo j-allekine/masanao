@@ -63,7 +63,7 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -80,6 +80,8 @@ function SelectContent({
         alignItemWithTrigger={alignItemWithTrigger}
         // A Select may be used inside DialogContent. Its portal must sit above
         // the dialog backdrop and popup so its options remain visible/clickable.
+        // Keep the menu outside its trigger; aligning the selected item over the
+        // trigger makes a one-option menu look like it has replaced the field.
         className="isolate z-[60]"
       >
         <SelectPrimitive.Popup

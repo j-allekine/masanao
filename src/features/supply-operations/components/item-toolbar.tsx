@@ -1,14 +1,10 @@
 "use client";
 
-import { ListFilter, Search, X } from "lucide-react";
+import { ListFilter, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { WorkspaceSearchField } from "@/components/workspace/catalog-controls";
 import {
   Select,
   SelectContent,
@@ -60,24 +56,14 @@ export default function ItemToolbar({
       role="search"
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        <Field className="min-w-0 flex-1 lg:max-w-[28rem]">
-          <FieldLabel className="sr-only" htmlFor="item-search">
-            Search Items
-          </FieldLabel>
-          <InputGroup className="h-9 bg-card">
-            <InputGroupAddon>
-              <Search aria-hidden="true" />
-            </InputGroupAddon>
-            <InputGroupInput
-              id="item-search"
-              className="text-body-sm"
-              type="search"
-              placeholder="Search items by name..."
-              value={filters.search}
-              onChange={(event) => onSearchChange(event.target.value)}
-            />
-          </InputGroup>
-        </Field>
+        <WorkspaceSearchField
+          id="item-search"
+          label="Search Items"
+          placeholder="Search items by name..."
+          value={filters.search}
+          onValueChange={onSearchChange}
+          className="lg:max-w-[28rem]"
+        />
 
         <Field className="min-w-0 lg:w-56">
           <FieldLabel className="sr-only" htmlFor="item-category-filter">
