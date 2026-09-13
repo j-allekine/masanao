@@ -375,10 +375,24 @@ test.describe("Items catalog journey", () => {
       exact: true,
     });
     await expect(addItemButton).toBeVisible();
+
+    await page.setViewportSize({ width: 667, height: 390 });
     await addItemButton.click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "Add Item" })).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Cancel", exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Add Item", exact: true }),
+    ).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await addItemButton.click();
+    await expect(dialog).toBeVisible();
 
     await dialog.getByRole("combobox", { name: "Category" }).click();
     await expectOpenOptionIsClickable(page, "Dry Goods");

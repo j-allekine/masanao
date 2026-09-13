@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import {
-  canManageItems,
   listCategories,
-  listItems,
   listUnits,
+} from "@/features/master-data/server";
+import {
+  canManageItems,
+  listItems,
 } from "@/features/supply-operations/server";
 import { ItemsContent } from "@/features/supply-operations/ui";
 import { auth } from "@/server/auth";

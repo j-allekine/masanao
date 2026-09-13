@@ -7,7 +7,7 @@ import { createItemCommand } from "./server/commands/create-item";
 import { deleteItemCommand } from "./server/commands/delete-item";
 import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
-import { listItemCategories, listItems as listItemsQuery, listItemUnits } from "./server/queries/list-items";
+import { listItems as listItemsQuery } from "./server/queries/list-items";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
@@ -19,14 +19,6 @@ export type { ItemListItem, ItemLookupCategory, ItemLookupUnit } from "./types";
 
 export async function listItems() {
   return listItemsQuery();
-}
-
-export async function listCategories() {
-  return listItemCategories();
-}
-
-export async function listUnits() {
-  return listItemUnits();
 }
 
 export async function canManageItems(actor: CurrentActor) {

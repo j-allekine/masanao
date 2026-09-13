@@ -272,10 +272,11 @@ export default function ItemForm({
     <form
       aria-label={`${mode === "create" ? "Create" : "Edit"} Item`}
       aria-busy={isSubmitting}
+      className="flex min-h-0 flex-col"
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="max-h-[min(52svh,34rem)] overflow-y-auto px-1 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Item</AlertTitle>
@@ -358,7 +359,7 @@ export default function ItemForm({
           </Field>
         </FieldGroup>
       </div>
-      <DialogFooter>
+      <DialogFooter className="shrink-0">
         <Button
           type="button"
           variant="outline"
