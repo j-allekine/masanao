@@ -6,6 +6,7 @@ import {
   getMasterDataUrl,
 } from "@/features/master-data/components/master-data-list-state";
 import {
+  getCatalogPageAfterDeletion,
   getCatalogPageItems,
   getCatalogResultsSummary,
 } from "@/components/workspace/catalog-pagination";
@@ -100,5 +101,14 @@ describe("Master Data Units workspace", () => {
       "ellipsis-end",
       12,
     ]);
+  });
+
+  it("clamps the stored page after deleting the final result on a last page", () => {
+    expect(
+      getCatalogPageAfterDeletion({ page: 2, total: 11, pageSize: 10 }),
+    ).toBe(1);
+    expect(
+      getCatalogPageAfterDeletion({ page: 2, total: 20, pageSize: 10 }),
+    ).toBe(2);
   });
 });

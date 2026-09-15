@@ -40,6 +40,7 @@ export default function CategoriesWorkspace({
   onSearchChange,
   onClearFilters,
   onPageChange,
+  onDeleted,
   canManage,
 }: {
   categories: CategoryListItem[];
@@ -52,6 +53,7 @@ export default function CategoriesWorkspace({
   onSearchChange: (search: string) => void;
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
+  onDeleted: () => void;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -133,6 +135,7 @@ export default function CategoriesWorkspace({
   }
 
   function handleDeleted(category: CategoryListItem) {
+    onDeleted();
     toast.success(`Category “${category.name}” deleted`);
     window.setTimeout(() => {
       document.getElementById("new-category")?.focus();

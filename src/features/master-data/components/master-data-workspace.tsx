@@ -18,7 +18,9 @@ import type {
   VendorListItem,
 } from "../types";
 import CategoriesWorkspace from "./categories-workspace";
-import CatalogPagination from "@/components/workspace/catalog-pagination";
+import CatalogPagination, {
+  getCatalogPageAfterDeletion,
+} from "@/components/workspace/catalog-pagination";
 import { filterCategories } from "./category-filters";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
@@ -481,6 +483,24 @@ export default function MasterDataWorkspace({
     toast.success(`Vendor “${vendor.name}” deleted`);
   }
 
+  function handleCategoryDeleted() {
+    const nextPage = getCatalogPageAfterDeletion({
+      page: categoryCurrentPage,
+      total: filteredCategories.length,
+      pageSize: PAGE_SIZE,
+    });
+
+    setCategoryListState((current) => ({ ...current, page: nextPage }));
+    router.replace(
+      getMasterDataUrl(pathname, currentQuery, {
+        tab: "categories",
+        page: nextPage,
+      }),
+      { scroll: false },
+    );
+    router.refresh();
+  }
+
   function changePage(nextPage: number) {
     const pageCount =
       activeTab === "vendors"
@@ -579,6 +599,7 @@ export default function MasterDataWorkspace({
             onSearchChange={updateSearch}
             onClearFilters={clearFilters}
             onPageChange={changePage}
+            onDeleted={handleCategoryDeleted}
             canManage={canManageCategories}
           />
         </MasterDataTabContent>

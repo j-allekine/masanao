@@ -40,6 +40,21 @@ export function getCatalogPageItems(page: number, pageCount: number) {
   return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", pageCount];
 }
 
+export function getCatalogPageAfterDeletion({
+  page,
+  total,
+  pageSize,
+}: {
+  page: number;
+  total: number;
+  pageSize: number;
+}) {
+  const remainingTotal = Math.max(total - 1, 0);
+  const remainingPageCount = Math.max(1, Math.ceil(remainingTotal / pageSize));
+
+  return Math.min(page, remainingPageCount);
+}
+
 export default function CatalogPagination({
   page,
   pageCount,
