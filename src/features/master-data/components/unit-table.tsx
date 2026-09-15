@@ -13,7 +13,7 @@ import {
 
 import type { UnitListItem } from "../types";
 import { hasUnitFilters, type UnitFilters } from "./unit-filters";
-import UnitActionsMenu from "./unit-actions-menu";
+import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteUnitDialog from "./delete-unit-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
@@ -51,13 +51,13 @@ function UnitRow({
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">
-            <UnitActionsMenu
-              unitName={unit.name}
-              active={unit.active}
+            <MasterDataActionsMenu
+              recordName={unit.name}
+              isActive={unit.active}
               actionButtonId={`unit-actions-${unit.id}`}
               disabled={actionDisabled}
               onEdit={onEdit}
-              onToggle={onToggle}
+              onSetActive={onToggle}
               onDelete={() => setIsDeleteDialogOpen(true)}
             />
           </TableCell>

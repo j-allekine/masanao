@@ -14,7 +14,7 @@ import {
 import type { OfficeListItem } from "../types";
 import DeleteOfficeDialog from "./delete-office-dialog";
 import { hasOfficeFilters, type OfficeFilters } from "./office-filters";
-import OfficeActionsMenu from "./office-actions-menu";
+import MasterDataActionsMenu from "./master-data-actions-menu";
 import MasterDataEmptyState from "./master-data-empty-state";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
@@ -97,13 +97,13 @@ function OfficeRow({
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">
-            <OfficeActionsMenu
-              officeName={office.name}
+            <MasterDataActionsMenu
+              recordName={office.name}
               isActive={office.isActive}
               actionButtonId={`office-actions-${office.id}`}
               disabled={actionDisabled}
               onEdit={onEdit}
-              onSetActive={onToggle}
+              onSetActive={() => onToggle()}
               onDelete={() => setIsDeleteDialogOpen(true)}
             />
           </TableCell>

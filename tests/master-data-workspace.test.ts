@@ -5,7 +5,12 @@ import {
   getMasterDataQuery,
   getMasterDataUrl,
 } from "@/features/master-data/components/master-data-list-state";
-import { getUnitResultsSummary } from "@/features/master-data/components/unit-pagination";
+import {
+  getCatalogPageAfterDeletion,
+  getCatalogPageItems,
+  getCatalogResultsSummary,
+  getMobileCatalogPageItems,
+} from "@/components/workspace/catalog-pagination";
 import { filterUnits } from "@/features/master-data/components/unit-filters";
 import { filterCategories } from "@/features/master-data/components/category-filters";
 import type { CategoryListItem, UnitListItem } from "@/features/master-data/types";
@@ -75,14 +80,42 @@ describe("Master Data Units workspace", () => {
   });
 
   it("describes empty, single-result, and paginated result ranges truthfully", () => {
-    expect(getUnitResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
+    expect(getCatalogResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
       "No results",
     );
-    expect(getUnitResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
+    expect(getCatalogResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
       "Showing 1 result",
     );
-    expect(getUnitResultsSummary({ start: 11, end: 12, total: 12 })).toBe(
+    expect(getCatalogResultsSummary({ start: 11, end: 12, total: 12 })).toBe(
       "Showing 11 to 12 of 12 results",
     );
+  });
+
+  it("shows every short page range and keeps long ranges compact", () => {
+    expect(getCatalogPageItems(2, 3)).toEqual([1, 2, 3]);
+    expect(getCatalogPageItems(6, 12)).toEqual([
+      1,
+      "ellipsis-start",
+      5,
+      6,
+      7,
+      "ellipsis-end",
+      12,
+    ]);
+  });
+
+  it("keeps mobile pagination to three page numbers", () => {
+    expect(getMobileCatalogPageItems(1, 7)).toEqual([1, 2, 7]);
+    expect(getMobileCatalogPageItems(4, 7)).toEqual([1, 4, 7]);
+    expect(getMobileCatalogPageItems(7, 7)).toEqual([1, 6, 7]);
+  });
+
+  it("clamps the stored page after deleting the final result on a last page", () => {
+    expect(
+      getCatalogPageAfterDeletion({ page: 2, total: 11, pageSize: 10 }),
+    ).toBe(1);
+    expect(
+      getCatalogPageAfterDeletion({ page: 2, total: 20, pageSize: 10 }),
+    ).toBe(2);
   });
 });

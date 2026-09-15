@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import {
   setCategoryActiveAction,
 } from "../actions";
@@ -30,15 +31,29 @@ function focusCategoryDialogTrigger(targetId: string) {
 
 export default function CategoriesWorkspace({
   categories,
+  total,
   search,
+  page,
+  pageCount,
+  start,
+  end,
   onSearchChange,
   onClearFilters,
+  onPageChange,
+  onDeleted,
   canManage,
 }: {
   categories: CategoryListItem[];
+  total: number;
   search: string;
+  page: number;
+  pageCount: number;
+  start: number;
+  end: number;
   onSearchChange: (search: string) => void;
   onClearFilters: () => void;
+  onPageChange: (page: number) => void;
+  onDeleted: () => void;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -120,6 +135,7 @@ export default function CategoriesWorkspace({
   }
 
   function handleDeleted(category: CategoryListItem) {
+    onDeleted();
     toast.success(`Category “${category.name}” deleted`);
     window.setTimeout(() => {
       document.getElementById("new-category")?.focus();
@@ -146,6 +162,14 @@ export default function CategoriesWorkspace({
         onSetActive={handleSetActive}
         onDeleted={handleDeleted}
         actionDisabled={isMutating}
+      />
+      <CatalogPagination
+        page={page}
+        pageCount={pageCount}
+        start={start}
+        end={end}
+        total={total}
+        onPageChange={onPageChange}
       />
       <CategoryDialog
         dialogState={dialogState}
