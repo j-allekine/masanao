@@ -4,11 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { setOfficeActiveAction } from "../actions";
 import type { OfficeListItem } from "../types";
 import OfficeDialog, { type OfficeDialogState } from "./office-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
-import OfficePagination from "./office-pagination";
 import OfficeTable from "./office-table";
 import { type OfficeFilters } from "./office-filters";
 
@@ -142,7 +142,7 @@ export default function OfficesWorkspace({
         onDeleted={handleDeleted}
         actionDisabled={dialogState !== null || isMutating}
       />
-      <OfficePagination
+      <CatalogPagination
         page={page}
         pageCount={pageCount}
         start={start}

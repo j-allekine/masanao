@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  CheckCircle2,
-  CircleOff,
-  Ellipsis,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { CheckCircle2, CircleOff, Ellipsis, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function CategoryActionsMenu({
-  categoryName,
+export default function MasterDataActionsMenu({
+  recordName,
   isActive,
   actionButtonId,
   onEdit,
@@ -27,7 +21,7 @@ export default function CategoryActionsMenu({
   onDelete,
   disabled = false,
 }: {
-  categoryName: string;
+  recordName: string;
   isActive: boolean;
   actionButtonId: string;
   onEdit: () => void;
@@ -48,23 +42,21 @@ export default function CategoryActionsMenu({
             id={actionButtonId}
             variant="ghost"
             size="icon-sm"
-            aria-label={`Actions for ${categoryName}`}
+            aria-label={`Actions for ${recordName}`}
             disabled={disabled}
           />
         }
       >
         <Ellipsis />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
+      <DropdownMenuContent align="end" className="min-w-36">
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
             <Pencil data-icon="inline-start" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() =>
-              openAfterMenuCloses(() => onSetActive(!isActive))
-            }
+            onClick={() => openAfterMenuCloses(() => onSetActive(!isActive))}
           >
             {isActive ? (
               <CircleOff data-icon="inline-start" />

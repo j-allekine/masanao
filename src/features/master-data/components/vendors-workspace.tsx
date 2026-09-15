@@ -1,8 +1,8 @@
 "use client";
 
 import type { VendorListItem } from "../types";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
-import VendorPagination from "./vendor-pagination";
 import { type VendorFilters } from "./vendor-filters";
 import VendorTable from "./vendor-table";
 
@@ -64,7 +64,7 @@ export default function VendorsWorkspace({
         onDeleted={onDeleted}
         actionDisabled={actionDisabled}
       />
-      <VendorPagination
+      <CatalogPagination
         page={page}
         pageCount={pageCount}
         start={start}

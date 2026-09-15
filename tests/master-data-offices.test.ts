@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { filterOffices } from "@/features/master-data/components/office-filters";
-import { getOfficeResultsSummary } from "@/features/master-data/components/office-pagination";
+import { getCatalogResultsSummary } from "@/components/workspace/catalog-pagination";
 import {
   getMasterDataListState,
   masterDataTabs,
@@ -72,13 +72,13 @@ describe("Master Data Offices read path", () => {
   });
 
   it("reports empty, single-result, and ten-row ranges truthfully", () => {
-    expect(getOfficeResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
+    expect(getCatalogResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
       "No results",
     );
-    expect(getOfficeResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
+    expect(getCatalogResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
       "Showing 1 result",
     );
-    expect(getOfficeResultsSummary({ start: 11, end: 11, total: 11 })).toBe(
+    expect(getCatalogResultsSummary({ start: 11, end: 11, total: 11 })).toBe(
       "Showing 11 to 11 of 11 results",
     );
   });

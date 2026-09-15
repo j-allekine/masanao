@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { filterVendors } from "@/features/master-data/components/vendor-filters";
-import { getVendorResultsSummary } from "@/features/master-data/components/vendor-pagination";
+import { getCatalogResultsSummary } from "@/components/workspace/catalog-pagination";
 import {
   getMasterDataListState,
   masterDataTabs,
@@ -65,13 +65,13 @@ describe("Master Data Vendors read path", () => {
   });
 
   it("reports empty, single-result, and ten-row ranges truthfully", () => {
-    expect(getVendorResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
+    expect(getCatalogResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
       "No results",
     );
-    expect(getVendorResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
+    expect(getCatalogResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
       "Showing 1 result",
     );
-    expect(getVendorResultsSummary({ start: 11, end: 11, total: 11 })).toBe(
+    expect(getCatalogResultsSummary({ start: 11, end: 11, total: 11 })).toBe(
       "Showing 11 to 11 of 11 results",
     );
   });
