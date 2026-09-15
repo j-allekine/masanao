@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -11,6 +11,22 @@ import type { CategoryListItem } from "../types";
 import CategoryDialog, { type CategoryDialogState } from "./category-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import CategoryTable from "./category-table";
+
+type CategoryFocusRequest = {
+  targetId: string;
+  sourceCategories: CategoryListItem[];
+};
+
+function focusCategoryDialogTrigger(targetId: string) {
+  const target = document.getElementById(targetId);
+
+  if (target) {
+    target.focus();
+    return;
+  }
+
+  document.getElementById("category-search")?.focus();
+}
 
 export default function CategoriesWorkspace({
   categories,
@@ -29,7 +45,21 @@ export default function CategoriesWorkspace({
   const [dialogState, setDialogState] = useState<CategoryDialogState | null>(
     null,
   );
+  const [pendingFocusRequest, setPendingFocusRequest] =
+    useState<CategoryFocusRequest | null>(null);
   const [isMutating, startMutation] = useTransition();
+
+  useEffect(() => {
+    const request = pendingFocusRequest;
+    if (!request || categories === request.sourceCategories) return;
+
+    const timeoutId = window.setTimeout(() => {
+      focusCategoryDialogTrigger(request.targetId);
+      setPendingFocusRequest(null);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [categories, pendingFocusRequest]);
 
   function openCreateDialog() {
     setDialogState({ mode: "create" });
@@ -48,8 +78,22 @@ export default function CategoriesWorkspace({
         closedDialog?.mode === "edit"
           ? `category-actions-${closedDialog.category.id}`
           : "new-category";
-      document.getElementById(targetId)?.focus();
+      focusCategoryDialogTrigger(targetId);
     }, 0);
+  }
+
+  function closeDialogAfterSuccess() {
+    const closedDialog = dialogState;
+    if (!closedDialog) return;
+
+    setDialogState(null);
+    setPendingFocusRequest({
+      targetId:
+        closedDialog.mode === "edit"
+          ? `category-actions-${closedDialog.category.id}`
+          : "new-category",
+      sourceCategories: categories,
+    });
   }
 
   function handleSetActive(category: CategoryListItem, isActive: boolean) {
@@ -108,7 +152,7 @@ export default function CategoriesWorkspace({
         onClose={closeDialog}
         onSuccess={(category) => {
           const mode = dialogState?.mode;
-          closeDialog();
+          closeDialogAfterSuccess();
           toast.success(
             mode === "edit"
               ? `Category “${category.name}” updated`

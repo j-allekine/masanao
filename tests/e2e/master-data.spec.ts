@@ -520,10 +520,21 @@ test.describe("Master Data Units journey", () => {
     await categorySearch.fill("staple");
     await expect(page).toHaveURL(/tab=categories&search=staple$/);
     await expect(page.getByText("Rice   &   Grains", { exact: true })).toBeVisible();
-    await categorySearch.fill("missing");
+    const filteredRow = page
+      .getByRole("row")
+      .filter({ hasText: "Rice   &   Grains" })
+      .first();
+    await filteredRow.getByRole("button", { name: /Actions for Rice/ }).click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("textbox", { name: "Description (optional)", exact: true })
+      .fill("Unrelated supplies");
+    await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
     await expect(
       page.getByText("No Categories match your search.", { exact: true }),
     ).toBeVisible();
+    await expect(categorySearch).toBeFocused();
     await page.getByRole("button", { name: "Clear search", exact: true }).click();
     await expect(categorySearch).toHaveValue("");
     await expect(page).toHaveURL(/tab=categories$/);
