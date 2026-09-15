@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 
 import {
   setCategoryActiveAction,
@@ -87,15 +87,13 @@ export default function CategoriesWorkspace({
           </p>
         </div>
         {canManage ? (
-          <Button
+          <WorkspacePrimaryAction
             id="new-category"
-            type="button"
-            size="sm"
-            className="h-9 w-full sm:w-auto sm:min-w-[9rem]"
+            className="sm:min-w-[9rem]"
             onClick={openCreateDialog}
           >
             Add Category
-          </Button>
+          </WorkspacePrimaryAction>
         ) : null}
       </div>
       <CategoryTable
