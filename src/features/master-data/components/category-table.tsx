@@ -14,7 +14,7 @@ import {
 
 import type { CategoryListItem } from "../types";
 import { hasCategoryFilters } from "./category-filters";
-import CategoryActionsMenu from "./category-actions-menu";
+import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteCategoryDialog from "./delete-category-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
@@ -54,8 +54,8 @@ function CategoryRow({
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">
-            <CategoryActionsMenu
-              categoryName={category.name}
+            <MasterDataActionsMenu
+              recordName={category.name}
               isActive={category.isActive}
               actionButtonId={`category-actions-${category.id}`}
               disabled={actionDisabled}

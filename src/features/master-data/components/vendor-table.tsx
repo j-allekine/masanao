@@ -20,7 +20,7 @@ import {
 
 import type { VendorListItem } from "../types";
 import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
-import VendorActionsMenu from "./vendor-actions-menu";
+import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteVendorDialog from "./delete-vendor-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
@@ -83,13 +83,13 @@ function VendorRow({
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">
-            <VendorActionsMenu
-              vendorName={vendor.name}
+            <MasterDataActionsMenu
+              recordName={vendor.name}
               isActive={vendor.isActive}
               actionButtonId={`vendor-actions-${vendor.id}`}
               disabled={actionDisabled}
               onEdit={onEdit}
-              onToggle={onToggle}
+              onSetActive={() => onToggle()}
               onDelete={() => setIsDeleteDialogOpen(true)}
             />
           </TableCell>
@@ -135,13 +135,13 @@ function VendorMobileCard({
           </div>
           {canManage ? (
             <CardAction>
-              <VendorActionsMenu
-                vendorName={vendor.name}
+              <MasterDataActionsMenu
+                recordName={vendor.name}
                 isActive={vendor.isActive}
                 actionButtonId={`vendor-actions-${vendor.id}-mobile`}
                 disabled={actionDisabled}
                 onEdit={onEdit}
-                onToggle={onToggle}
+                onSetActive={() => onToggle()}
                 onDelete={() => setIsDeleteDialogOpen(true)}
               />
             </CardAction>

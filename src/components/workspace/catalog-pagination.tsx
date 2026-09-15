@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
 } from "@/components/ui/pagination";
 
 const countFormatter = new Intl.NumberFormat("en-US");
 
-export function getUnitResultsSummary({
+export function getCatalogResultsSummary({
   start,
   end,
   total,
@@ -26,7 +27,20 @@ export function getUnitResultsSummary({
   return `Showing ${countFormatter.format(start)} to ${countFormatter.format(end)} of ${countFormatter.format(total)} results`;
 }
 
-export default function UnitPagination({
+export function getCatalogPageItems(page: number, pageCount: number) {
+  if (pageCount <= 7) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  if (page <= 4) return [1, 2, 3, 4, 5, "ellipsis-end", pageCount];
+  if (page >= pageCount - 3) {
+    return [1, "ellipsis-start", pageCount - 4, pageCount - 3, pageCount - 2, pageCount - 1, pageCount];
+  }
+
+  return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", pageCount];
+}
+
+export default function CatalogPagination({
   page,
   pageCount,
   start,
@@ -41,7 +55,7 @@ export default function UnitPagination({
   total: number;
   onPageChange: (page: number) => void;
 }) {
-  const resultsSummary = getUnitResultsSummary({ start, end, total });
+  const resultsSummary = getCatalogResultsSummary({ start, end, total });
 
   if (total === 0) {
     return (
@@ -70,19 +84,27 @@ export default function UnitPagination({
               <ChevronLeft aria-hidden="true" />
             </Button>
           </PaginationItem>
-          <PaginationItem>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={`Page ${page} of ${pageCount}`}
-              aria-current="page"
-              disabled
-              className="border-primary text-primary"
-            >
-              {page}
-            </Button>
-          </PaginationItem>
+          {getCatalogPageItems(page, pageCount).map((item, index) =>
+            typeof item === "number" ? (
+              <PaginationItem key={item}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={`Page ${item} of ${pageCount}`}
+                  aria-current={item === page ? "page" : undefined}
+                  className={item === page ? "border-primary text-primary" : undefined}
+                  onClick={() => onPageChange(item)}
+                >
+                  {item}
+                </Button>
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={`${item}-${index}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            ),
+          )}
           <PaginationItem>
             <Button
               type="button"

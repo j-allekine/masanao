@@ -18,13 +18,13 @@ import type {
   VendorListItem,
 } from "../types";
 import CategoriesWorkspace from "./categories-workspace";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { filterCategories } from "./category-filters";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import MasterDataTabs, { MasterDataTabContent } from "./master-data-tabs";
 import OfficesWorkspace from "./offices-workspace";
-import UnitPagination from "./unit-pagination";
 import { filterOffices } from "./office-filters";
 import { filterUnits, type UnitFilters } from "./unit-filters";
 import UnitTable from "./unit-table";
@@ -208,14 +208,24 @@ export default function MasterDataWorkspace({
     1,
     Math.ceil(filteredOffices.length / PAGE_SIZE),
   );
+  const categoryPageCount = Math.max(
+    1,
+    Math.ceil(filteredCategories.length / PAGE_SIZE),
+  );
   const unitCurrentPage = Math.min(unitListState.page, unitPageCount);
   const vendorCurrentPage = Math.min(vendorListState.page, vendorPageCount);
   const officeCurrentPage = Math.min(officeListState.page, officePageCount);
+  const categoryCurrentPage = Math.min(
+    categoryListState.page,
+    categoryPageCount,
+  );
   const currentPage =
     activeTab === "vendors"
       ? vendorCurrentPage
       : activeTab === "offices"
         ? officeCurrentPage
+      : activeTab === "categories"
+        ? categoryCurrentPage
       : activeTab === "units"
         ? unitCurrentPage
         : 1;
@@ -232,6 +242,7 @@ export default function MasterDataWorkspace({
   const firstItemIndex = (unitCurrentPage - 1) * PAGE_SIZE;
   const firstVendorItemIndex = (vendorCurrentPage - 1) * PAGE_SIZE;
   const firstOfficeItemIndex = (officeCurrentPage - 1) * PAGE_SIZE;
+  const firstCategoryItemIndex = (categoryCurrentPage - 1) * PAGE_SIZE;
   const paginatedUnits = useMemo(
     () => filteredUnits.slice(firstItemIndex, firstItemIndex + PAGE_SIZE),
     [filteredUnits, firstItemIndex],
@@ -252,11 +263,22 @@ export default function MasterDataWorkspace({
       ),
     [filteredOffices, firstOfficeItemIndex],
   );
+  const paginatedCategories = useMemo(
+    () =>
+      filteredCategories.slice(
+        firstCategoryItemIndex,
+        firstCategoryItemIndex + PAGE_SIZE,
+      ),
+    [filteredCategories, firstCategoryItemIndex],
+  );
   const resultStart = paginatedUnits.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedUnits.length;
   const officeResultStart =
     paginatedOffices.length === 0 ? 0 : firstOfficeItemIndex + 1;
   const officeResultEnd = firstOfficeItemIndex + paginatedOffices.length;
+  const categoryResultStart =
+    paginatedCategories.length === 0 ? 0 : firstCategoryItemIndex + 1;
+  const categoryResultEnd = firstCategoryItemIndex + paginatedCategories.length;
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: activeTab,
     search: currentSearch,
@@ -465,12 +487,16 @@ export default function MasterDataWorkspace({
         ? vendorPageCount
         : activeTab === "offices"
           ? officePageCount
+        : activeTab === "categories"
+          ? categoryPageCount
           : unitPageCount;
     const page = Math.min(Math.max(nextPage, 1), pageCount);
     if (activeTab === "vendors") {
       setVendorListState((current) => ({ ...current, page }));
     } else if (activeTab === "offices") {
       setOfficeListState((current) => ({ ...current, page }));
+    } else if (activeTab === "categories") {
+      setCategoryListState((current) => ({ ...current, page }));
     } else {
       setUnitListState((current) => ({ ...current, page }));
     }
@@ -531,7 +557,7 @@ export default function MasterDataWorkspace({
               onDeleted={handleDeleted}
               actionDisabled={isUnitMutating}
             />
-            <UnitPagination
+            <CatalogPagination
               page={unitCurrentPage}
               pageCount={unitPageCount}
               start={resultStart}
@@ -543,10 +569,16 @@ export default function MasterDataWorkspace({
         </MasterDataTabContent>
         <MasterDataTabContent value="categories">
           <CategoriesWorkspace
-            categories={filteredCategories}
+            categories={paginatedCategories}
+            total={filteredCategories.length}
             search={categorySearch}
+            page={categoryCurrentPage}
+            pageCount={categoryPageCount}
+            start={categoryResultStart}
+            end={categoryResultEnd}
             onSearchChange={updateSearch}
             onClearFilters={clearFilters}
+            onPageChange={changePage}
             canManage={canManageCategories}
           />
         </MasterDataTabContent>
