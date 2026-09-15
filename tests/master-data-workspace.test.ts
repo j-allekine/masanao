@@ -9,6 +9,7 @@ import {
   getCatalogPageAfterDeletion,
   getCatalogPageItems,
   getCatalogResultsSummary,
+  getMobileCatalogPageItems,
 } from "@/components/workspace/catalog-pagination";
 import { filterUnits } from "@/features/master-data/components/unit-filters";
 import { filterCategories } from "@/features/master-data/components/category-filters";
@@ -101,6 +102,12 @@ describe("Master Data Units workspace", () => {
       "ellipsis-end",
       12,
     ]);
+  });
+
+  it("keeps mobile pagination to three page numbers", () => {
+    expect(getMobileCatalogPageItems(1, 7)).toEqual([1, 2, 7]);
+    expect(getMobileCatalogPageItems(4, 7)).toEqual([1, 4, 7]);
+    expect(getMobileCatalogPageItems(7, 7)).toEqual([1, 6, 7]);
   });
 
   it("clamps the stored page after deleting the final result on a last page", () => {

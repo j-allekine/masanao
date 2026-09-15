@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/pagination";
 
 const countFormatter = new Intl.NumberFormat("en-US");
+type CatalogPageItem = number | "ellipsis-start" | "ellipsis-end";
 
 export function getCatalogResultsSummary({
   start,
@@ -27,7 +28,10 @@ export function getCatalogResultsSummary({
   return `Showing ${countFormatter.format(start)} to ${countFormatter.format(end)} of ${countFormatter.format(total)} results`;
 }
 
-export function getCatalogPageItems(page: number, pageCount: number) {
+export function getCatalogPageItems(
+  page: number,
+  pageCount: number,
+): CatalogPageItem[] {
   if (pageCount <= 7) {
     return Array.from({ length: pageCount }, (_, index) => index + 1);
   }
@@ -38,6 +42,20 @@ export function getCatalogPageItems(page: number, pageCount: number) {
   }
 
   return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", pageCount];
+}
+
+export function getMobileCatalogPageItems(
+  page: number,
+  pageCount: number,
+): number[] {
+  if (pageCount <= 3) {
+    return Array.from({ length: pageCount }, (_, index) => index + 1);
+  }
+
+  if (page <= 2) return [1, 2, pageCount];
+  if (page >= pageCount - 1) return [1, pageCount - 1, pageCount];
+
+  return [1, page, pageCount];
 }
 
 export function getCatalogPageAfterDeletion({
@@ -53,6 +71,70 @@ export function getCatalogPageAfterDeletion({
   const remainingPageCount = Math.max(1, Math.ceil(remainingTotal / pageSize));
 
   return Math.min(page, remainingPageCount);
+}
+
+function CatalogPaginationContent({
+  className,
+  page,
+  pageCount,
+  pageItems,
+  onPageChange,
+}: {
+  className?: string;
+  page: number;
+  pageCount: number;
+  pageItems: CatalogPageItem[];
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <PaginationContent className={className}>
+      <PaginationItem>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          disabled={page === 1}
+          aria-label="Previous page"
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft aria-hidden="true" />
+        </Button>
+      </PaginationItem>
+      {pageItems.map((item, index) =>
+        typeof item === "number" ? (
+          <PaginationItem key={item}>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`Page ${item} of ${pageCount}`}
+              aria-current={item === page ? "page" : undefined}
+              className={item === page ? "border-primary text-primary" : undefined}
+              onClick={() => onPageChange(item)}
+            >
+              {item}
+            </Button>
+          </PaginationItem>
+        ) : (
+          <PaginationItem key={`${item}-${index}`}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        ),
+      )}
+      <PaginationItem>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          disabled={page === pageCount}
+          aria-label="Next page"
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight aria-hidden="true" />
+        </Button>
+      </PaginationItem>
+    </PaginationContent>
+  );
 }
 
 export default function CatalogPagination({
@@ -86,53 +168,20 @@ export default function CatalogPagination({
         {resultsSummary}
       </p>
       <Pagination className="mx-0 w-full shrink-0 justify-start sm:w-auto sm:justify-end">
-        <PaginationContent>
-          <PaginationItem>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={page === 1}
-              aria-label="Previous page"
-              onClick={() => onPageChange(page - 1)}
-            >
-              <ChevronLeft aria-hidden="true" />
-            </Button>
-          </PaginationItem>
-          {getCatalogPageItems(page, pageCount).map((item, index) =>
-            typeof item === "number" ? (
-              <PaginationItem key={item}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={`Page ${item} of ${pageCount}`}
-                  aria-current={item === page ? "page" : undefined}
-                  className={item === page ? "border-primary text-primary" : undefined}
-                  onClick={() => onPageChange(item)}
-                >
-                  {item}
-                </Button>
-              </PaginationItem>
-            ) : (
-              <PaginationItem key={`${item}-${index}`}>
-                <PaginationEllipsis />
-              </PaginationItem>
-            ),
-          )}
-          <PaginationItem>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={page === pageCount}
-              aria-label="Next page"
-              onClick={() => onPageChange(page + 1)}
-            >
-              <ChevronRight aria-hidden="true" />
-            </Button>
-          </PaginationItem>
-        </PaginationContent>
+        <CatalogPaginationContent
+          className="sm:hidden"
+          page={page}
+          pageCount={pageCount}
+          pageItems={getMobileCatalogPageItems(page, pageCount)}
+          onPageChange={onPageChange}
+        />
+        <CatalogPaginationContent
+          className="hidden sm:flex"
+          page={page}
+          pageCount={pageCount}
+          pageItems={getCatalogPageItems(page, pageCount)}
+          onPageChange={onPageChange}
+        />
       </Pagination>
     </div>
   );
