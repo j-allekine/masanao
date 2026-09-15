@@ -128,6 +128,67 @@ async function openCategories(page: Page, username: string, password: string) {
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
 
+function masterDataRouteRequests(page: Page) {
+  const requests: string[] = [];
+
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/master-data") {
+      requests.push(request.url());
+    }
+  });
+
+  return requests;
+}
+
+type PaginationUnitFixture = {
+  ids: string[];
+  search: string;
+};
+
+function createPaginationUnitFixtures(): PaginationUnitFixture {
+  const search = `Regression Pagination ${randomUUID().slice(0, 8)}`;
+  const records = Array.from({ length: 11 }, (_, index) => {
+    const id = randomUUID();
+    const name = `${search} ${index + 1}`;
+    return {
+      id,
+      name,
+      normalizedName: name.toLowerCase(),
+      abbreviation: `rp${index + 1}`,
+      normalizedAbbreviation: `rp${index + 1}`,
+    };
+  });
+
+  withE2eDatabase((database) => {
+    const insert = database.prepare(
+      `INSERT INTO "unit"
+       ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    );
+
+    for (const record of records) {
+      insert.run(
+        record.id,
+        record.name,
+        record.abbreviation,
+        record.normalizedName,
+        record.normalizedAbbreviation,
+      );
+    }
+  });
+
+  return { ids: records.map((record) => record.id), search };
+}
+
+function deletePaginationUnitFixtures(fixture: PaginationUnitFixture) {
+  withE2eDatabase((database) => {
+    const placeholders = fixture.ids.map(() => "?").join(", ");
+    database
+      .prepare(`DELETE FROM "unit" WHERE "id" IN (${placeholders})`)
+      .run(...fixture.ids);
+  });
+}
+
 async function createUnit(page: Page, name: string, abbreviation: string) {
   await page.locator("#new-unit").click();
   const dialog = page.getByRole("dialog");
@@ -258,6 +319,42 @@ async function captureViewportEvidence(page: Page, testInfo: TestInfo) {
 }
 
 test.describe("Master Data Units journey", () => {
+  test("updates local list state without re-requesting the Master Data route", async ({
+    page,
+  }) => {
+    const fixture = createPaginationUnitFixtures();
+
+    try {
+      await openMasterData(page, "municipal.admin", adminPassword);
+      const requests = masterDataRouteRequests(page);
+      const tabs = page.getByRole("tablist", { name: "Master Data sections" });
+
+      await tabs.getByRole("tab", { name: "Categories", exact: true }).click();
+      await expect(page).toHaveURL(/\/master-data\?tab=categories$/);
+      await page
+        .getByRole("searchbox", { name: "Search Categories", exact: true })
+        .fill("rice");
+      await expect(page).toHaveURL(/tab=categories&search=rice$/);
+
+      await tabs.getByRole("tab", { name: "Units", exact: true }).click();
+      await page
+        .getByRole("searchbox", { name: "Search Units", exact: true })
+        .fill(fixture.search);
+      await expect(
+        page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Next page", exact: true }).click();
+      await expect(page).toHaveURL(/page=2$/);
+      await expect(
+        page.getByRole("button", { name: "Page 2 of 2", exact: true }),
+      ).toBeVisible();
+
+      await expect.poll(() => requests).toEqual([]);
+    } finally {
+      deletePaginationUnitFixtures(fixture);
+    }
+  });
+
   test("lets an administrator maintain Units through the visible workspace", async ({
     page,
   }, testInfo) => {

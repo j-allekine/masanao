@@ -5,9 +5,7 @@ import { redirect } from "next/navigation";
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { MasterDataContent } from "@/features/master-data/ui";
 import {
-  canManageCategories,
-  canManageUnits,
-  canManageVendors,
+  canManageMasterData,
   listCategories,
   listOffices,
   listUnits,
@@ -44,18 +42,14 @@ export default async function MasterDataRoute({
     categories,
     offices,
     vendors,
-    canManageUnitsResult,
-    canManageCategoriesResult,
-    canManageVendorsResult,
+    canManageMasterDataResult,
     rawSearchParams,
   ] = await Promise.all([
     listUnits(),
     listCategories(),
     listOffices(),
     listVendors(),
-    canManageUnits(actor),
-    canManageCategories(actor),
-    canManageVendors(actor),
+    canManageMasterData(actor),
     searchParams,
   ]);
   const initialQuery = serializeSearchParams(rawSearchParams);
@@ -74,10 +68,10 @@ export default async function MasterDataRoute({
         offices={offices}
         vendors={vendors}
         initialQuery={initialQuery}
-        canManageUnits={canManageUnitsResult}
-        canManageOffices={canManageUnitsResult}
-        canManageCategories={canManageCategoriesResult}
-        canManageVendors={canManageVendorsResult}
+        canManageUnits={canManageMasterDataResult}
+        canManageOffices={canManageMasterDataResult}
+        canManageCategories={canManageMasterDataResult}
+        canManageVendors={canManageMasterDataResult}
       />
     </WorkspaceShell>
   );
