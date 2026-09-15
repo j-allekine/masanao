@@ -4,15 +4,6 @@ import { useState } from "react";
 import { Tags } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import {
   TableBody,
   TableCell,
@@ -22,8 +13,10 @@ import {
 } from "@/components/ui/table";
 
 import type { CategoryListItem } from "../types";
+import { hasCategoryFilters } from "./category-filters";
 import CategoryActionsMenu from "./category-actions-menu";
 import DeleteCategoryDialog from "./delete-category-dialog";
+import MasterDataEmptyState from "./master-data-empty-state";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function CategoryRow({
@@ -86,6 +79,8 @@ function CategoryRow({
 
 export default function CategoryTable({
   categories,
+  search,
+  onClearFilters,
   canManage,
   onNew,
   onEdit,
@@ -94,6 +89,8 @@ export default function CategoryTable({
   actionDisabled,
 }: {
   categories: CategoryListItem[];
+  search: string;
+  onClearFilters: () => void;
   canManage: boolean;
   onNew: () => void;
   onEdit: (category: CategoryListItem) => void;
@@ -101,28 +98,27 @@ export default function CategoryTable({
   onDeleted: (category: CategoryListItem) => void;
   actionDisabled: boolean;
 }) {
+  const hasFilters = hasCategoryFilters({ search });
+
   if (categories.length === 0) {
     return (
-      <Empty className="min-h-60 rounded-lg border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Tags aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle>No Categories yet.</EmptyTitle>
-          <EmptyDescription>
-            {canManage
-              ? "Add the first Category to begin organizing future Item records."
-              : "An administrator can add the first Category to begin the catalog."}
-          </EmptyDescription>
-        </EmptyHeader>
-        {canManage ? (
-          <EmptyContent>
-            <Button type="button" onClick={onNew}>
-              Add Category
-            </Button>
-          </EmptyContent>
-        ) : null}
-      </Empty>
+      <MasterDataEmptyState
+        icon={<Tags aria-hidden="true" />}
+        hasFilters={hasFilters}
+        filteredState={{
+          title: "No Categories match your search.",
+          description: "Clear the search to see the complete Category catalog.",
+        }}
+        emptyState={{
+          title: "No Categories yet.",
+          description:
+            "An administrator can add the first Category to begin the catalog.",
+        }}
+        canCreate={canManage}
+        createLabel="Add Category"
+        onCreate={onNew}
+        onClearFilters={onClearFilters}
+      />
     );
   }
 

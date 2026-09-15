@@ -4,20 +4,25 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
-
 import {
   setCategoryActiveAction,
 } from "../actions";
 import type { CategoryListItem } from "../types";
 import CategoryDialog, { type CategoryDialogState } from "./category-dialog";
+import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import CategoryTable from "./category-table";
 
 export default function CategoriesWorkspace({
   categories,
+  search,
+  onSearchChange,
+  onClearFilters,
   canManage,
 }: {
   categories: CategoryListItem[];
+  search: string;
+  onSearchChange: (search: string) => void;
+  onClearFilters: () => void;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -78,26 +83,19 @@ export default function CategoriesWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-heading-3 font-semibold">Categories</h2>
-          <p className="text-body-sm text-muted-foreground">
-            Maintain flat organizational labels for future Items.
-          </p>
-        </div>
-        {canManage ? (
-          <WorkspacePrimaryAction
-            id="new-category"
-            className="sm:min-w-[9rem]"
-            onClick={openCreateDialog}
-          >
-            Add Category
-          </WorkspacePrimaryAction>
-        ) : null}
-      </div>
+    <MasterDataCatalogLayout
+      resourceKey="category"
+      resourceLabels={{ singular: "Category", plural: "Categories" }}
+      search={search}
+      onSearchChange={onSearchChange}
+      canCreate={canManage}
+      onCreate={openCreateDialog}
+      createLabel="Add Category"
+    >
       <CategoryTable
         categories={categories}
+        search={search}
+        onClearFilters={onClearFilters}
         canManage={canManage}
         onNew={openCreateDialog}
         onEdit={openEditDialog}
@@ -118,6 +116,6 @@ export default function CategoriesWorkspace({
           );
         }}
       />
-    </div>
+    </MasterDataCatalogLayout>
   );
 }

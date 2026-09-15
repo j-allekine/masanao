@@ -513,6 +513,21 @@ test.describe("Master Data Units journey", () => {
     await expect(page.getByText("Rice   &   Grains", { exact: true })).toBeVisible();
     await expect(page.getByText("Staple grain supplies", { exact: true })).toBeVisible();
 
+    const categorySearch = page.getByRole("searchbox", {
+      name: "Search Categories",
+      exact: true,
+    });
+    await categorySearch.fill("staple");
+    await expect(page).toHaveURL(/tab=categories&search=staple$/);
+    await expect(page.getByText("Rice   &   Grains", { exact: true })).toBeVisible();
+    await categorySearch.fill("missing");
+    await expect(
+      page.getByText("No Categories match your search.", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Clear search", exact: true }).click();
+    await expect(categorySearch).toHaveValue("");
+    await expect(page).toHaveURL(/tab=categories$/);
+
     await page.locator("#new-category").click();
     dialog = page.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("RICE   &   GRAINS");

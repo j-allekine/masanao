@@ -7,7 +7,8 @@ import {
 } from "@/features/master-data/components/master-data-list-state";
 import { getUnitResultsSummary } from "@/features/master-data/components/unit-pagination";
 import { filterUnits } from "@/features/master-data/components/unit-filters";
-import type { UnitListItem } from "@/features/master-data/types";
+import { filterCategories } from "@/features/master-data/components/category-filters";
+import type { CategoryListItem, UnitListItem } from "@/features/master-data/types";
 
 const units: UnitListItem[] = [
   { id: "gram", name: "Gram", abbreviation: "g", active: true },
@@ -15,11 +16,40 @@ const units: UnitListItem[] = [
   { id: "piece", name: "Piece", abbreviation: "pc", active: true },
 ];
 
+const categories: CategoryListItem[] = [
+  {
+    id: "dry-goods",
+    name: "Dry Goods",
+    description: "Shelf-stable ingredients",
+    isActive: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "produce",
+    name: "Produce",
+    description: null,
+    isActive: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
 describe("Master Data Units workspace", () => {
   it("matches trimmed, case-insensitive name and abbreviation searches", () => {
     expect(filterUnits(units, { search: "  GRAM  " })).toEqual([units[0]]);
     expect(filterUnits(units, { search: "PC" })).toEqual([units[2]]);
     expect(filterUnits(units, { search: "missing" })).toEqual([]);
+  });
+
+  it("matches trimmed, case-insensitive Category name and description searches", () => {
+    expect(filterCategories(categories, { search: "  DRY  " })).toEqual([
+      categories[0],
+    ]);
+    expect(filterCategories(categories, { search: "SHELF" })).toEqual([
+      categories[0],
+    ]);
+    expect(filterCategories(categories, { search: "missing" })).toEqual([]);
   });
 
   it("keeps the selected tab, search, page, and unrelated query values", () => {
