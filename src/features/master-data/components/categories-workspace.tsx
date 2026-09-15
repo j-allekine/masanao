@@ -1,30 +1,65 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 
 import {
   setCategoryActiveAction,
 } from "../actions";
 import type { CategoryListItem } from "../types";
 import CategoryDialog, { type CategoryDialogState } from "./category-dialog";
+import MasterDataCatalogLayout from "./master-data-catalog-layout";
 import CategoryTable from "./category-table";
+
+type CategoryFocusRequest = {
+  targetId: string;
+  sourceCategories: CategoryListItem[];
+};
+
+function focusCategoryDialogTrigger(targetId: string) {
+  const target = document.getElementById(targetId);
+
+  if (target) {
+    target.focus();
+    return;
+  }
+
+  document.getElementById("category-search")?.focus();
+}
 
 export default function CategoriesWorkspace({
   categories,
+  search,
+  onSearchChange,
+  onClearFilters,
   canManage,
 }: {
   categories: CategoryListItem[];
+  search: string;
+  onSearchChange: (search: string) => void;
+  onClearFilters: () => void;
   canManage: boolean;
 }) {
   const router = useRouter();
   const [dialogState, setDialogState] = useState<CategoryDialogState | null>(
     null,
   );
+  const [pendingFocusRequest, setPendingFocusRequest] =
+    useState<CategoryFocusRequest | null>(null);
   const [isMutating, startMutation] = useTransition();
+
+  useEffect(() => {
+    const request = pendingFocusRequest;
+    if (!request || categories === request.sourceCategories) return;
+
+    const timeoutId = window.setTimeout(() => {
+      focusCategoryDialogTrigger(request.targetId);
+      setPendingFocusRequest(null);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [categories, pendingFocusRequest]);
 
   function openCreateDialog() {
     setDialogState({ mode: "create" });
@@ -43,8 +78,22 @@ export default function CategoriesWorkspace({
         closedDialog?.mode === "edit"
           ? `category-actions-${closedDialog.category.id}`
           : "new-category";
-      document.getElementById(targetId)?.focus();
+      focusCategoryDialogTrigger(targetId);
     }, 0);
+  }
+
+  function closeDialogAfterSuccess() {
+    const closedDialog = dialogState;
+    if (!closedDialog) return;
+
+    setDialogState(null);
+    setPendingFocusRequest({
+      targetId:
+        closedDialog.mode === "edit"
+          ? `category-actions-${closedDialog.category.id}`
+          : "new-category",
+      sourceCategories: categories,
+    });
   }
 
   function handleSetActive(category: CategoryListItem, isActive: boolean) {
@@ -78,26 +127,19 @@ export default function CategoriesWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-heading-3 font-semibold">Categories</h2>
-          <p className="text-body-sm text-muted-foreground">
-            Maintain flat organizational labels for future Items.
-          </p>
-        </div>
-        {canManage ? (
-          <WorkspacePrimaryAction
-            id="new-category"
-            className="sm:min-w-[9rem]"
-            onClick={openCreateDialog}
-          >
-            Add Category
-          </WorkspacePrimaryAction>
-        ) : null}
-      </div>
+    <MasterDataCatalogLayout
+      resourceKey="category"
+      resourceLabels={{ singular: "Category", plural: "Categories" }}
+      search={search}
+      onSearchChange={onSearchChange}
+      canCreate={canManage}
+      onCreate={openCreateDialog}
+      createLabel="Add Category"
+    >
       <CategoryTable
         categories={categories}
+        search={search}
+        onClearFilters={onClearFilters}
         canManage={canManage}
         onNew={openCreateDialog}
         onEdit={openEditDialog}
@@ -110,7 +152,7 @@ export default function CategoriesWorkspace({
         onClose={closeDialog}
         onSuccess={(category) => {
           const mode = dialogState?.mode;
-          closeDialog();
+          closeDialogAfterSuccess();
           toast.success(
             mode === "edit"
               ? `Category “${category.name}” updated`
@@ -118,6 +160,6 @@ export default function CategoriesWorkspace({
           );
         }}
       />
-    </div>
+    </MasterDataCatalogLayout>
   );
 }

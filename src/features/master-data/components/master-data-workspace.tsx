@@ -18,6 +18,7 @@ import type {
   VendorListItem,
 } from "../types";
 import CategoriesWorkspace from "./categories-workspace";
+import { filterCategories } from "./category-filters";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
 import VendorDialog, { type VendorDialogState } from "./vendor-dialog";
 import MasterDataCatalogLayout from "./master-data-catalog-layout";
@@ -110,6 +111,12 @@ export default function MasterDataWorkspace({
       ? { search: initialState.search, page: initialState.page }
       : emptyCatalogListState,
   );
+  const [categoryListState, setCategoryListState] =
+    useState<CatalogListState>(() =>
+      initialState.tab === "categories"
+        ? { search: initialState.search, page: initialState.page }
+        : emptyCatalogListState,
+    );
   const [officeListState, setOfficeListState] = useState<CatalogListState>(() =>
     initialState.tab === "offices"
       ? { search: initialState.search, page: initialState.page }
@@ -157,6 +164,11 @@ export default function MasterDataWorkspace({
           search: initialState.search,
           page: initialState.page,
         });
+      } else if (initialState.tab === "categories") {
+        setCategoryListState({
+          search: initialState.search,
+          page: initialState.page,
+        });
       }
     }, 0);
 
@@ -166,6 +178,7 @@ export default function MasterDataWorkspace({
   const unitSearch = unitListState.search;
   const vendorSearch = vendorListState.search;
   const officeSearch = officeListState.search;
+  const categorySearch = categoryListState.search;
   const filters: UnitFilters = { search: unitSearch };
   const filteredUnits = useMemo(
     () => filterUnits(units, { search: unitSearch }),
@@ -178,6 +191,10 @@ export default function MasterDataWorkspace({
   const filteredOffices = useMemo(
     () => filterOffices(offices, { search: officeSearch }),
     [officeSearch, offices],
+  );
+  const filteredCategories = useMemo(
+    () => filterCategories(categories, { search: categorySearch }),
+    [categories, categorySearch],
   );
   const unitPageCount = Math.max(
     1,
@@ -207,9 +224,11 @@ export default function MasterDataWorkspace({
       ? vendorSearch
       : activeTab === "offices"
         ? officeSearch
-      : activeTab === "units"
-        ? unitSearch
-        : "";
+        : activeTab === "categories"
+          ? categorySearch
+          : activeTab === "units"
+            ? unitSearch
+            : "";
   const firstItemIndex = (unitCurrentPage - 1) * PAGE_SIZE;
   const firstVendorItemIndex = (vendorCurrentPage - 1) * PAGE_SIZE;
   const firstOfficeItemIndex = (officeCurrentPage - 1) * PAGE_SIZE;
@@ -249,6 +268,8 @@ export default function MasterDataWorkspace({
       setVendorListState({ search: nextSearch, page: 1 });
     } else if (activeTab === "offices") {
       setOfficeListState({ search: nextSearch, page: 1 });
+    } else if (activeTab === "categories") {
+      setCategoryListState({ search: nextSearch, page: 1 });
     } else {
       setUnitListState({ search: nextSearch, page: 1 });
     }
@@ -468,9 +489,11 @@ export default function MasterDataWorkspace({
         ? vendorListState
         : value === "offices"
           ? officeListState
-        : value === "units"
-          ? unitListState
-          : emptyCatalogListState;
+          : value === "categories"
+            ? categoryListState
+            : value === "units"
+              ? unitListState
+              : emptyCatalogListState;
     setActiveTab(value);
     router.replace(
       getMasterDataUrl(pathname, currentQuery, {
@@ -520,7 +543,10 @@ export default function MasterDataWorkspace({
         </MasterDataTabContent>
         <MasterDataTabContent value="categories">
           <CategoriesWorkspace
-            categories={categories}
+            categories={filteredCategories}
+            search={categorySearch}
+            onSearchChange={updateSearch}
+            onClearFilters={clearFilters}
             canManage={canManageCategories}
           />
         </MasterDataTabContent>
