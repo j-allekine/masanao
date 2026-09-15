@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { setUnitActiveAction, setVendorActiveAction } from "../actions";
@@ -90,7 +90,6 @@ export default function MasterDataWorkspace({
   canManageVendors: boolean;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -263,6 +262,16 @@ export default function MasterDataWorkspace({
     page: currentPage,
   });
 
+  function replaceListUrl(
+    updates: Parameters<typeof getMasterDataUrl>[2],
+  ) {
+    window.history.replaceState(
+      window.history.state,
+      "",
+      getMasterDataUrl(window.location.pathname, currentQuery, updates),
+    );
+  }
+
   function updateSearch(nextSearch: string) {
     if (activeTab === "vendors") {
       setVendorListState({ search: nextSearch, page: 1 });
@@ -273,14 +282,7 @@ export default function MasterDataWorkspace({
     } else {
       setUnitListState({ search: nextSearch, page: 1 });
     }
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: activeTab,
-        search: nextSearch,
-        page: 1,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({ tab: activeTab, search: nextSearch, page: 1 });
   }
 
   function clearFilters() {
@@ -374,13 +376,7 @@ export default function MasterDataWorkspace({
     const nextPage = Math.min(unitCurrentPage, nextPageCount);
 
     setUnitListState((current) => ({ ...current, page: nextPage }));
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: "units",
-        page: nextPage,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({ tab: "units", page: nextPage });
 
     router.refresh();
     toast.success(`Unit “${unit.name}” deleted`);
@@ -447,13 +443,7 @@ export default function MasterDataWorkspace({
       target: nextFocusTargetId,
       sourceVendors: vendors,
     });
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: "vendors",
-        page: nextPage,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({ tab: "vendors", page: nextPage });
 
     router.refresh();
     toast.success(`Vendor “${vendor.name}” deleted`);
@@ -474,13 +464,7 @@ export default function MasterDataWorkspace({
     } else {
       setUnitListState((current) => ({ ...current, page }));
     }
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: activeTab,
-        page,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({ tab: activeTab, page });
   }
 
   function changeTab(value: MasterDataTab) {
@@ -495,14 +479,11 @@ export default function MasterDataWorkspace({
               ? unitListState
               : emptyCatalogListState;
     setActiveTab(value);
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: value,
-        search: nextListState.search,
-        page: nextListState.page,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({
+      tab: value,
+      search: nextListState.search,
+      page: nextListState.page,
+    });
   }
 
   return (

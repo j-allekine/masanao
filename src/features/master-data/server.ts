@@ -91,6 +91,10 @@ export async function canManageUnits(actor: CurrentActor) {
   return isAdministrator(actor);
 }
 
+export async function canManageMasterData(actor: CurrentActor) {
+  return isAdministrator(actor);
+}
+
 export async function canManageCategories(actor: CurrentActor) {
   return isAdministrator(actor);
 }

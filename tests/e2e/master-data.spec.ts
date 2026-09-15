@@ -128,6 +128,18 @@ async function openCategories(page: Page, username: string, password: string) {
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
 
+function masterDataRouteRequests(page: Page) {
+  const requests: string[] = [];
+
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/master-data") {
+      requests.push(request.url());
+    }
+  });
+
+  return requests;
+}
+
 async function createUnit(page: Page, name: string, abbreviation: string) {
   await page.locator("#new-unit").click();
   const dialog = page.getByRole("dialog");
@@ -258,6 +270,23 @@ async function captureViewportEvidence(page: Page, testInfo: TestInfo) {
 }
 
 test.describe("Master Data Units journey", () => {
+  test("updates local list state without re-requesting the Master Data route", async ({
+    page,
+  }) => {
+    await openMasterData(page, "municipal.admin", adminPassword);
+    const requests = masterDataRouteRequests(page);
+    const tabs = page.getByRole("tablist", { name: "Master Data sections" });
+
+    await tabs.getByRole("tab", { name: "Categories", exact: true }).click();
+    await expect(page).toHaveURL(/\/master-data\?tab=categories$/);
+    await page
+      .getByRole("searchbox", { name: "Search Categories", exact: true })
+      .fill("rice");
+    await expect(page).toHaveURL(/tab=categories&search=rice$/);
+
+    await expect.poll(() => requests).toEqual([]);
+  });
+
   test("lets an administrator maintain Units through the visible workspace", async ({
     page,
   }, testInfo) => {
