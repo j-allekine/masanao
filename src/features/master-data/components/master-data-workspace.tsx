@@ -481,13 +481,7 @@ export default function MasterDataWorkspace({
     });
 
     setCategoryListState((current) => ({ ...current, page: nextPage }));
-    router.replace(
-      getMasterDataUrl(pathname, currentQuery, {
-        tab: "categories",
-        page: nextPage,
-      }),
-      { scroll: false },
-    );
+    replaceListUrl({ tab: "categories", page: nextPage });
     router.refresh();
   }
 
