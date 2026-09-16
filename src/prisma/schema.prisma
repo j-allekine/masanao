@@ -95,6 +95,7 @@ model Unit {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   baseUnitItems          Item[]   @relation("ItemBaseUnit")
+  alternateUnitConversions ItemUnitConversion[] @relation("ItemUnitConversionAlternateUnit")
 
   @@map("unit")
 }
@@ -124,10 +125,27 @@ model Item {
   updatedAt      DateTime @updatedAt
   category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   baseUnit       Unit     @relation("ItemBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  unitConversions ItemUnitConversion[]
 
   @@index([categoryId])
   @@index([baseUnitId])
   @@map("item")
+}
+
+model ItemUnitConversion {
+  id               String   @id
+  itemId           String
+  alternateUnitId  String
+  baseUnitQuantity String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  alternateUnit    Unit     @relation("ItemUnitConversionAlternateUnit", fields: [alternateUnitId], references: [id], onDelete: Restrict)
+
+  @@unique([itemId, alternateUnitId, baseUnitQuantity])
+  @@index([itemId])
+  @@index([alternateUnitId])
+  @@map("item_unit_conversion")
 }
 
 model Office {

@@ -13,6 +13,7 @@ import type {
   UnitListItem,
 } from "../types";
 import ItemCreateDialog from "./item-create-dialog";
+import ItemUnitsSheet from "./item-units-sheet";
 import ItemPagination from "./item-pagination";
 import ItemToolbar from "./item-toolbar";
 import ItemsTable from "./items-table";
@@ -65,6 +66,7 @@ function ItemsWorkspaceContent({
   const router = useRouter();
   const [itemDialogState, setItemDialogState] =
     useState<ItemDialogState | null>(null);
+  const [unitsItem, setUnitsItem] = useState<ItemListItem | null>(null);
   const [searchInput, setSearchInput] = useState(
     () => getItemListState(new URLSearchParams(currentQuery)).search,
   );
@@ -273,7 +275,16 @@ function ItemsWorkspaceContent({
         onEdit={openEditDialog}
         onSetActive={handleSetActive}
         onDeleted={handleDeleted}
+        onUnits={setUnitsItem}
         actionDisabled={isMutating}
+      />
+      <ItemUnitsSheet
+        item={unitsItem}
+        units={units}
+        canManage={canManageItems}
+        open={unitsItem !== null}
+        onOpenChange={(open) => { if (!open) setUnitsItem(null); }}
+        onSaved={() => { setUnitsItem(null); router.refresh(); toast.success("Alternate Unit added"); }}
       />
       <ItemPagination
         page={currentPage}

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   canManageItems,
   createItem,
+  createItemUnitConversion,
   deleteItem,
   listItems,
   setItemActive,
@@ -57,6 +58,7 @@ async function createLookupRecords() {
 
 describe("Master Data Items read path", () => {
   beforeEach(async () => {
+    await prisma.itemUnitConversion.deleteMany();
     await prisma.item.deleteMany();
     await prisma.category.deleteMany();
     await prisma.unit.deleteMany();
@@ -494,5 +496,20 @@ describe("Master Data Items read path", () => {
       kind: "forbidden",
       error: "Administrator access required",
     });
+  });
+
+  it("stores exact Item-specific alternate Units and protects their Base Unit", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+    const sack = await prisma.unit.create({ data: { id: "items-unit-sack", name: "Sack", abbreviation: "sack", normalizedName: "sack", normalizedAbbreviation: "sack" } });
+    const item = await prisma.item.create({ data: { id: "items-conversion-rice", name: "Rice", normalizedName: "rice", categoryId: category.id, baseUnitId: baseUnit.id } });
+
+    await expect(createItemUnitConversion(staffActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25" })).resolves.toMatchObject({ ok: false, kind: "forbidden" });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25.00" })).resolves.toMatchObject({ ok: true, conversion: { baseUnitQuantity: "25", label: "Sack (25 kg)" } });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25" })).resolves.toMatchObject({ ok: false, kind: "duplicate" });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "50" })).resolves.toMatchObject({ ok: true, conversion: { label: "Sack (50 kg)" } });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: baseUnit.id, baseUnitQuantity: "1" })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { alternateUnitId: ["The Base Unit cannot be an alternate Unit."] } });
+    await expect(updateItem(adminActor, item.id, { name: item.name, categoryId: category.id, baseUnitId: sack.id })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] } });
+    await expect(listItems()).resolves.toMatchObject([{ id: item.id, unitConversions: [{ label: "Sack (25 kg)" }, { label: "Sack (50 kg)" }] }]);
   });
 });

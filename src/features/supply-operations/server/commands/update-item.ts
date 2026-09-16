@@ -49,6 +49,12 @@ export async function updateItemCommand(
     const result = await updateItemWithActiveLookups(id, parsedInput.data);
 
     if (result.kind === "not-found") return notFoundResult();
+    if (result.kind === "base-unit-locked") {
+      return validationResult(
+        { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] },
+        "Base Unit is locked because alternate Units are configured for this Item.",
+      );
+    }
     if (result.kind === "duplicate") return duplicateResult();
     if (result.kind === "invalid-lookups") {
       const fields: ItemFieldErrors = {};

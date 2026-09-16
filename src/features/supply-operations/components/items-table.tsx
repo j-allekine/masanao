@@ -40,6 +40,7 @@ function ItemMobileCard({
   onEdit,
   onSetActive,
   onDeleted,
+  onUnits,
   actionDisabled,
 }: {
   item: ItemListItem;
@@ -47,6 +48,7 @@ function ItemMobileCard({
   onEdit: () => void;
   onSetActive: (isActive: boolean) => void;
   onDeleted: () => void;
+  onUnits: () => void;
   actionDisabled: boolean;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -56,8 +58,7 @@ function ItemMobileCard({
       <Card size="sm" data-item-id={item.id}>
         <CardHeader className="flex flex-row items-start justify-between gap-3">
           <CardTitle className="break-words">{item.name}</CardTitle>
-          {canManage ? (
-            <ItemActionsMenu
+          <ItemActionsMenu
               itemId={item.id}
               itemName={item.name}
               isActive={item.isActive}
@@ -65,9 +66,10 @@ function ItemMobileCard({
               onEdit={onEdit}
               onSetActive={onSetActive}
               onDelete={() => setIsDeleteDialogOpen(true)}
+              onUnits={onUnits}
+              canManage={canManage}
               disabled={actionDisabled}
             />
-          ) : null}
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
@@ -90,13 +92,13 @@ function ItemMobileCard({
           </div>
         </CardContent>
       </Card>
-      <DeleteItemDialog
+      {canManage ? <DeleteItemDialog
         key={`${item.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
         item={item}
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onDeleted={onDeleted}
-      />
+      /> : null}
     </>
   );
 }
@@ -107,6 +109,7 @@ function ItemRow({
   onEdit,
   onSetActive,
   onDeleted,
+  onUnits,
   actionDisabled,
 }: {
   item: ItemListItem;
@@ -114,6 +117,7 @@ function ItemRow({
   onEdit: () => void;
   onSetActive: (isActive: boolean) => void;
   onDeleted: () => void;
+  onUnits: () => void;
   actionDisabled: boolean;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -133,8 +137,7 @@ function ItemRow({
         <TableCell className="text-center">
           <ItemStatus isActive={item.isActive} />
         </TableCell>
-        {canManage ? (
-          <TableCell className="text-center">
+        <TableCell className="text-center">
             <ItemActionsMenu
               itemId={item.id}
               itemName={item.name}
@@ -143,18 +146,19 @@ function ItemRow({
               onEdit={onEdit}
               onSetActive={onSetActive}
               onDelete={() => setIsDeleteDialogOpen(true)}
+              onUnits={onUnits}
+              canManage={canManage}
               disabled={actionDisabled}
             />
           </TableCell>
-        ) : null}
       </TableRow>
-      <DeleteItemDialog
+      {canManage ? <DeleteItemDialog
         key={`${item.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
         item={item}
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onDeleted={onDeleted}
-      />
+      /> : null}
     </>
   );
 }
@@ -167,6 +171,7 @@ export default function ItemsTable({
   onEdit,
   onSetActive,
   onDeleted,
+  onUnits,
   actionDisabled,
 }: {
   items: ItemListItem[];
@@ -176,6 +181,7 @@ export default function ItemsTable({
   onEdit: (item: ItemListItem) => void;
   onSetActive: (item: ItemListItem, isActive: boolean) => void;
   onDeleted: (item: ItemListItem) => void;
+  onUnits: (item: ItemListItem) => void;
   actionDisabled: boolean;
 }) {
   if (items.length === 0) {
@@ -216,6 +222,7 @@ export default function ItemsTable({
             onEdit={() => onEdit(item)}
             onSetActive={(isActive) => onSetActive(item, isActive)}
             onDeleted={() => onDeleted(item)}
+            onUnits={() => onUnits(item)}
             actionDisabled={actionDisabled}
           />
         ))}
@@ -236,11 +243,7 @@ export default function ItemsTable({
               <TableHead scope="col" className="text-center">
                 Status
               </TableHead>
-              {canManage ? (
-                <TableHead scope="col" className="text-center">
-                  Actions
-                </TableHead>
-              ) : null}
+              <TableHead scope="col" className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -252,6 +255,7 @@ export default function ItemsTable({
                 onEdit={() => onEdit(item)}
                 onSetActive={(isActive) => onSetActive(item, isActive)}
                 onDeleted={() => onDeleted(item)}
+                onUnits={() => onUnits(item)}
                 actionDisabled={actionDisabled}
               />
             ))}

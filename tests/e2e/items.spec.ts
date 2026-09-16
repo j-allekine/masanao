@@ -90,6 +90,14 @@ function createItemFixtures() {
   const inactiveItemId = randomUUID();
 
   withE2eDatabase((database) => {
+    // Default catalog migrations seed these labels. This isolated journey owns
+    // its fixtures, so remove only the colliding defaults before recreating
+    // the named records that its assertions exercise.
+    database
+      .prepare(
+        'DELETE FROM "unit" WHERE "normalizedName" IN (?, ?, ?, ?) OR "normalizedAbbreviation" IN (?, ?, ?, ?)',
+      )
+      .run("kilogram", "retired unit", "other retired unit", "piece", "kg", "ru", "ou", "pc");
     database
       .prepare(
         `INSERT INTO "category"

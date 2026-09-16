@@ -86,6 +86,7 @@ function LookupField({
   error,
   options,
   onValueChange,
+  disabled = false,
 }: {
   mode: "create" | "edit";
   id: "categoryId" | "baseUnitId";
@@ -95,6 +96,7 @@ function LookupField({
   error?: string[];
   options: Array<{ id: string; label: string }>;
   onValueChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   const inputId = `${mode}-item-${id}`;
   const hasError = Boolean(error?.length);
@@ -111,10 +113,11 @@ function LookupField({
           *
         </span>
       </FieldLabel>
-      <Select
+        <Select
         items={lookupItems}
         value={value || null}
-        onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
+          onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
+          disabled={disabled}
       >
         <SelectTrigger
           id={inputId}
@@ -332,7 +335,11 @@ export default function ItemForm({
             error={fieldErrors.baseUnitId}
             options={unitOptions}
             onValueChange={(value) => updateField("baseUnitId", value)}
+            disabled={mode === "edit" && Boolean(item?.unitConversions?.length)}
           />
+          {mode === "edit" && item?.unitConversions?.length ? (
+            <p className="text-body-sm text-muted-foreground">Base Unit is locked while alternate Units are configured.</p>
+          ) : null}
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
             <FieldLabel htmlFor={`${mode}-item-note`}>

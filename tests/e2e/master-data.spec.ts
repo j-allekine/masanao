@@ -781,7 +781,7 @@ test.describe("Master Data Item reference protection journey", () => {
         .getByRole("button", { name: "Delete Unit", exact: true })
         .click();
       await expect(deleteDialog.getByText(
-        "This Unit cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+        "This Unit cannot be deleted because one or more Items or Item Unit Conversions reference it. Deactivate it instead to keep existing references intact.",
         { exact: true },
       )).toBeVisible();
       await expect(deleteDialog).toBeVisible();

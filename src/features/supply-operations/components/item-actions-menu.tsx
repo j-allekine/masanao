@@ -6,6 +6,7 @@ import {
   Ellipsis,
   Pencil,
   Trash2,
+  Scale,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,15 +27,19 @@ export default function ItemActionsMenu({
   onEdit,
   onSetActive,
   onDelete,
+  onUnits,
+  canManage,
   disabled = false,
 }: {
   itemId: string;
   itemName: string;
   isActive: boolean;
   actionButtonId: string;
-  onEdit: () => void;
-  onSetActive: (isActive: boolean) => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onSetActive?: (isActive: boolean) => void;
+  onDelete?: () => void;
+  onUnits: () => void;
+  canManage: boolean;
   disabled?: boolean;
 }) {
   function openAfterMenuCloses(action: () => void) {
@@ -60,13 +65,21 @@ export default function ItemActionsMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-32">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
+          <DropdownMenuItem onClick={() => openAfterMenuCloses(onUnits)}>
+            <Scale data-icon="inline-start" />
+            {canManage ? "Manage units" : "Units"}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        {canManage ? <>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit!)}>
             <Pencil data-icon="inline-start" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
-              openAfterMenuCloses(() => onSetActive(!isActive))
+              openAfterMenuCloses(() => onSetActive!(!isActive))
             }
           >
             {isActive ? (
@@ -81,12 +94,13 @@ export default function ItemActionsMenu({
         <DropdownMenuGroup>
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => openAfterMenuCloses(onDelete)}
+            onClick={() => openAfterMenuCloses(onDelete!)}
           >
             <Trash2 data-icon="inline-start" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        </> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
