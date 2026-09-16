@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 
 import { setItemActiveAction } from "../actions";
+import { sortItemUnitConversions } from "../domain/item-unit-conversion";
 import type {
   CategoryListItem,
   ItemListItem,
@@ -241,7 +242,10 @@ function ItemsWorkspaceContent({
     setUnitsItem((currentItem) => currentItem
       ? {
         ...currentItem,
-        unitConversions: [...(currentItem.unitConversions ?? []), conversion],
+        unitConversions: sortItemUnitConversions([
+          ...(currentItem.unitConversions ?? []),
+          conversion,
+        ]),
       }
       : null,
     );

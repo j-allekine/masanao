@@ -507,6 +507,8 @@ describe("Master Data Items read path", () => {
     await expect(createItemUnitConversion(staffActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25" })).resolves.toMatchObject({ ok: false, kind: "forbidden" });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25.00" })).resolves.toMatchObject({ ok: true, conversion: { baseUnitQuantity: "25", label: "Sack (25 kg)" } });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25" })).resolves.toMatchObject({ ok: false, kind: "duplicate" });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "2" })).resolves.toMatchObject({ ok: true });
+    await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "10" })).resolves.toMatchObject({ ok: true });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "50" })).resolves.toMatchObject({ ok: true, conversion: { label: "Sack (50 kg)" } });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: baseUnit.id, baseUnitQuantity: "1" })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { alternateUnitId: ["The Base Unit cannot be an alternate Unit."] } });
     await expect(updateItem(adminActor, item.id, { name: item.name, categoryId: category.id, baseUnitId: sack.id })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] } });
@@ -515,7 +517,15 @@ describe("Master Data Items read path", () => {
       kind: "referenced",
       error: "This Item cannot be deleted because operational records or configured alternate Units reference it.",
     });
-    await expect(listItems()).resolves.toMatchObject([{ id: item.id, unitConversions: [{ label: "Sack (25 kg)" }, { label: "Sack (50 kg)" }] }]);
+    await expect(listItems()).resolves.toMatchObject([{
+      id: item.id,
+      unitConversions: [
+        { label: "Sack (2 kg)" },
+        { label: "Sack (10 kg)" },
+        { label: "Sack (25 kg)" },
+        { label: "Sack (50 kg)" },
+      ],
+    }]);
   });
 
   it("rejects invalid quantities and inactive Item or alternate Unit references", async () => {

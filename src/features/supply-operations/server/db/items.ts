@@ -5,6 +5,7 @@ import { prisma } from "@/prisma/client";
 
 import type { ItemInput } from "../../schemas/item";
 import type { ItemListItem, ItemUnitConversionListItem } from "../../types";
+import { sortItemUnitConversions } from "../../domain/item-unit-conversion";
 
 const itemListSelect = {
   id: true,
@@ -34,7 +35,7 @@ const itemListSelect = {
       baseUnitQuantity: true,
       alternateUnit: { select: { id: true, name: true, abbreviation: true, active: true } },
     },
-    orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { baseUnitQuantity: "asc" }, { id: "asc" }] satisfies Prisma.ItemUnitConversionOrderByWithRelationInput[],
+    orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { id: "asc" }] satisfies Prisma.ItemUnitConversionOrderByWithRelationInput[],
   },
 } as const;
 
@@ -69,12 +70,12 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
     isActive: item.isActive,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
-    unitConversions: item.unitConversions.map((conversion) => ({
+    unitConversions: sortItemUnitConversions(item.unitConversions.map((conversion) => ({
       id: conversion.id,
       alternateUnit: conversion.alternateUnit,
       baseUnitQuantity: conversion.baseUnitQuantity,
       label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
-    })),
+    }))),
   };
 }
 
