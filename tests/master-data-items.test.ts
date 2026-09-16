@@ -510,6 +510,71 @@ describe("Master Data Items read path", () => {
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "50" })).resolves.toMatchObject({ ok: true, conversion: { label: "Sack (50 kg)" } });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: baseUnit.id, baseUnitQuantity: "1" })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { alternateUnitId: ["The Base Unit cannot be an alternate Unit."] } });
     await expect(updateItem(adminActor, item.id, { name: item.name, categoryId: category.id, baseUnitId: sack.id })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] } });
+    await expect(deleteItem(adminActor, item.id)).resolves.toMatchObject({
+      ok: false,
+      kind: "referenced",
+      error: "This Item cannot be deleted because operational records or configured alternate Units reference it.",
+    });
     await expect(listItems()).resolves.toMatchObject([{ id: item.id, unitConversions: [{ label: "Sack (25 kg)" }, { label: "Sack (50 kg)" }] }]);
+  });
+
+  it("rejects invalid quantities and inactive Item or alternate Unit references", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+    const sack = await prisma.unit.create({
+      data: {
+        id: "items-unit-inactive-sack",
+        name: "Sack",
+        abbreviation: "sack",
+        normalizedName: "sack",
+        normalizedAbbreviation: "sack",
+        active: false,
+      },
+    });
+    const item = await prisma.item.create({
+      data: {
+        id: "items-conversion-validation",
+        name: "Validation Rice",
+        normalizedName: "validation rice",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+
+    for (const baseUnitQuantity of ["", "0", "0.00", "-1", ".5", "1.", "1e3"]) {
+      await expect(
+        createItemUnitConversion(adminActor, item.id, {
+          alternateUnitId: sack.id,
+          baseUnitQuantity,
+        }),
+      ).resolves.toMatchObject({
+        ok: false,
+        kind: "validation",
+        fields: { baseUnitQuantity: expect.any(Array) },
+      });
+    }
+
+    await expect(
+      createItemUnitConversion(adminActor, item.id, {
+        alternateUnitId: sack.id,
+        baseUnitQuantity: "25",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: { alternateUnitId: ["Select an active alternate Unit."] },
+    });
+
+    await prisma.item.update({ where: { id: item.id }, data: { isActive: false } });
+    await expect(
+      createItemUnitConversion(adminActor, item.id, {
+        alternateUnitId: baseUnit.id,
+        baseUnitQuantity: "25",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "inactive",
+      error: "Alternate Units cannot be added to an Inactive Item.",
+    });
   });
 });

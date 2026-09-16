@@ -10,6 +10,7 @@ import { setItemActiveAction } from "../actions";
 import type {
   CategoryListItem,
   ItemListItem,
+  ItemUnitConversionListItem,
   UnitListItem,
 } from "../types";
 import ItemCreateDialog from "./item-create-dialog";
@@ -236,6 +237,18 @@ function ItemsWorkspaceContent({
     }, 0);
   }
 
+  function handleUnitConversionSaved(conversion: ItemUnitConversionListItem) {
+    setUnitsItem((currentItem) => currentItem
+      ? {
+        ...currentItem,
+        unitConversions: [...(currentItem.unitConversions ?? []), conversion],
+      }
+      : null,
+    );
+    router.refresh();
+    toast.success("Alternate Unit added");
+  }
+
   return (
     <main
       className="flex min-w-0 flex-col gap-6"
@@ -284,7 +297,7 @@ function ItemsWorkspaceContent({
         canManage={canManageItems}
         open={unitsItem !== null}
         onOpenChange={(open) => { if (!open) setUnitsItem(null); }}
-        onSaved={() => { setUnitsItem(null); router.refresh(); toast.success("Alternate Unit added"); }}
+        onSaved={handleUnitConversionSaved}
       />
       <ItemPagination
         page={currentPage}

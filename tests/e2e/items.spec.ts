@@ -83,6 +83,10 @@ function createItemFixtures() {
   const otherInactiveCategoryId = randomUUID();
   const replacementCategoryId = randomUUID();
   const baseUnitId = randomUUID();
+  const alternateUnitId = randomUUID();
+  const inactiveAlternateUnitId = randomUUID();
+  const alternateUnitName = `E2E Sack ${alternateUnitId.slice(0, 8)}`;
+  const inactiveAlternateUnitName = `Retired E2E Sack ${inactiveAlternateUnitId.slice(0, 8)}`;
   const inactiveBaseUnitId = randomUUID();
   const otherInactiveBaseUnitId = randomUUID();
   const replacementBaseUnitId = randomUUID();
@@ -137,6 +141,32 @@ function createItemFixtures() {
          VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(baseUnitId, "Kilogram", "kg", "kilogram", "kg");
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        alternateUnitId,
+        alternateUnitName,
+        "e2esack",
+        alternateUnitName.toLowerCase(),
+        "e2esack",
+      );
+    database
+      .prepare(
+        `INSERT INTO "unit"
+         ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+         VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      )
+      .run(
+        inactiveAlternateUnitId,
+        inactiveAlternateUnitName,
+        "e2ersack",
+        inactiveAlternateUnitName.toLowerCase(),
+        "e2ersack",
+      );
     database
       .prepare(
         `INSERT INTO "unit"
@@ -202,6 +232,10 @@ function createItemFixtures() {
     categoryId,
     inactiveCategoryId,
     baseUnitId,
+    alternateUnitId,
+    inactiveAlternateUnitId,
+    alternateUnitName,
+    inactiveAlternateUnitName,
     inactiveBaseUnitId,
     otherInactiveCategoryId,
     otherInactiveBaseUnitId,
@@ -214,6 +248,9 @@ function removeItemFixtures(
   fixtures: ReturnType<typeof createItemFixtures>,
 ) {
   withE2eDatabase((database) => {
+    const deleteConversionsByItem = database.prepare(
+      'DELETE FROM "item_unit_conversion" WHERE "itemId" = ?',
+    );
     const deleteItemsByCategory = database.prepare(
       'DELETE FROM "item" WHERE "categoryId" = ?',
     );
@@ -234,9 +271,13 @@ function removeItemFixtures(
       fixtures.inactiveBaseUnitId,
       fixtures.otherInactiveBaseUnitId,
       fixtures.replacementBaseUnitId,
+      fixtures.alternateUnitId,
+      fixtures.inactiveAlternateUnitId,
     ];
 
     database.transaction(() => {
+      deleteConversionsByItem.run(fixtures.activeItemId);
+      deleteConversionsByItem.run(fixtures.inactiveItemId);
       for (const categoryId of categoryIds) {
         deleteItemsByCategory.run(categoryId);
       }
@@ -289,6 +330,115 @@ test.describe("Items catalog journey", () => {
 
     removeItemFixtures(fixturesToRemove);
     fixturesToRemove = null;
+  });
+
+  test("keeps an Item Units Sheet open while staff view and administrators add alternate Units", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+
+    await signIn(page);
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    const staffRow = page.getByRole("row").filter({
+      has: page.getByText("Alpha Beans", { exact: true }),
+    });
+    await staffRow
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Units", exact: true }).click();
+
+    const unitsSheet = page.getByRole("dialog").filter({
+      hasText: "Units for Alpha Beans",
+    });
+    await expect(unitsSheet).toBeVisible();
+    await expect(
+      unitsSheet.getByRole("button", { name: "Add alternate Unit", exact: true }),
+    ).toHaveCount(0);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(unitsSheet).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.body.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+
+    await page.context().clearCookies();
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    const adminCard = page.locator(
+      `[data-items-mobile] [data-item-id="${fixtures.activeItemId}"]`,
+    );
+    await adminCard
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: "Manage units", exact: true }).click();
+    await expect(unitsSheet).toBeVisible();
+
+    const addAlternateUnit = unitsSheet.getByRole("button", {
+      name: "Add alternate Unit",
+      exact: true,
+    });
+    await addAlternateUnit.click();
+    const addDialog = page.getByRole("dialog").filter({
+      hasText: "Set how many Base Units one package represents.",
+    });
+    await expect(addDialog).toBeVisible();
+    await addDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(addDialog).toBeHidden();
+    await expect(unitsSheet).toBeVisible();
+    await expect(addAlternateUnit).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(addDialog).toBeVisible();
+    await addDialog.getByRole("combobox", { name: "Alternate Unit" }).click();
+    await expectOpenOptionIsClickable(
+      page,
+      `${fixtures.alternateUnitName} (e2esack)`,
+    );
+    await expect(
+      page.getByRole("option", {
+        name: `${fixtures.inactiveAlternateUnitName} (e2ersack)`,
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("option", {
+        name: `${fixtures.alternateUnitName} (e2esack)`,
+        exact: true,
+      })
+      .click();
+    await addDialog.getByLabel("Base Unit quantity").fill("0");
+    await addDialog
+      .getByRole("button", { name: "Save alternate Unit", exact: true })
+      .click();
+    await expect(
+      addDialog.getByText("Base Unit quantity must be greater than zero.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      addDialog.getByRole("combobox", { name: "Alternate Unit" }),
+    ).toContainText(`${fixtures.alternateUnitName} (e2esack)`);
+    await expect(addDialog.getByLabel("Base Unit quantity")).toHaveValue("0");
+
+    await addDialog.getByLabel("Base Unit quantity").fill("25");
+    await addDialog
+      .getByRole("button", { name: "Save alternate Unit", exact: true })
+      .click();
+    await expect(addDialog).toBeHidden();
+    await expect(unitsSheet).toBeVisible();
+    await expect(
+      unitsSheet.getByText(`${fixtures.alternateUnitName} (25 kg)`, {
+        exact: true,
+      }),
+    ).toBeVisible();
   });
 
   test("lets authenticated staff browse empty and populated Items without mutation controls", async ({

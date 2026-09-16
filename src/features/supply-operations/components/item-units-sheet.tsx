@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 import { Plus, Save } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,10 +14,11 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Spinner } from "@/components/ui/spinner";
 
 import { createItemUnitConversionAction } from "../actions";
-import type { ItemListItem, UnitListItem, ItemUnitConversionFieldErrors } from "../types";
+import type { ItemListItem, ItemUnitConversionFieldErrors, ItemUnitConversionListItem, UnitListItem } from "../types";
 
-export default function ItemUnitsSheet({ item, units, canManage, open, onOpenChange, onSaved }: { item: ItemListItem | null; units: UnitListItem[]; canManage: boolean; open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => void }) {
+export default function ItemUnitsSheet({ item, units, canManage, open, onOpenChange, onSaved }: { item: ItemListItem | null; units: UnitListItem[]; canManage: boolean; open: boolean; onOpenChange: (open: boolean) => void; onSaved: (conversion: ItemUnitConversionListItem) => void }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const addAlternateUnitButtonRef = useRef<HTMLButtonElement>(null);
   const [alternateUnitId, setAlternateUnitId] = useState("");
   const [baseUnitQuantity, setBaseUnitQuantity] = useState("");
   const [errors, setErrors] = useState<ItemUnitConversionFieldErrors>({});
@@ -33,6 +34,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
 
   function closeDialog() {
     setDialogOpen(false); setErrors({}); setFormError(null); setAlternateUnitId(""); setBaseUnitQuantity("");
+    window.setTimeout(() => addAlternateUnitButtonRef.current?.focus(), 0);
   }
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setErrors({}); setFormError(null);
@@ -40,7 +42,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
     startSaving(async () => {
       const result = await createItemUnitConversionAction(formData);
       if (result.status === "error") { setErrors(result.fields); setFormError(result.error); return; }
-      closeDialog(); onSaved();
+      closeDialog(); onSaved(result.conversion);
     });
   }
   return <Sheet open={open} onOpenChange={onOpenChange}>
@@ -48,7 +50,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
       <SheetHeader><SheetTitle>Units for {selectedItem.name}</SheetTitle><SheetDescription>Base Unit: {selectedItem.baseUnit.name} ({selectedItem.baseUnit.abbreviation})</SheetDescription></SheetHeader>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4">
         {conversions.length ? <div className="flex flex-col gap-2" aria-label="Alternate Units">{conversions.map((conversion) => <div key={conversion.id} className="rounded-md border px-3 py-2 text-body"><p className="font-medium">{conversion.label}</p><p className="text-body-sm text-muted-foreground">1 {conversion.alternateUnit.name} equals {conversion.baseUnitQuantity} {selectedItem.baseUnit.abbreviation}</p></div>)}</div> : <Empty className="min-h-44 border"><EmptyHeader><EmptyTitle>No alternate Units yet.</EmptyTitle><EmptyDescription>Base Unit quantities remain authoritative until package sizes are configured.</EmptyDescription></EmptyHeader></Empty>}
-        {canManage && selectedItem.isActive ? <Button type="button" onClick={() => setDialogOpen(true)}><Plus data-icon="inline-start" />Add alternate Unit</Button> : null}
+        {canManage && selectedItem.isActive ? <Button ref={addAlternateUnitButtonRef} type="button" onClick={() => setDialogOpen(true)}><Plus data-icon="inline-start" />Add alternate Unit</Button> : null}
         {canManage && !selectedItem.isActive ? <Alert><AlertTitle>Item is inactive</AlertTitle><AlertDescription>Reactivate this Item before adding alternate Units.</AlertDescription></Alert> : null}
       </div>
     </SheetContent>

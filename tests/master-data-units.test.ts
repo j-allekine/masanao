@@ -124,6 +124,23 @@ describe("Master Data Units gateway", () => {
         baseUnitId: baseUnit.id,
       },
     });
+    const alternateUnit = await prisma.unit.create({
+      data: {
+        id: "unit-conversion-reference",
+        name: "Sack",
+        abbreviation: "sack",
+        normalizedName: "sack",
+        normalizedAbbreviation: "sack",
+      },
+    });
+    await prisma.itemUnitConversion.create({
+      data: {
+        id: "unit-conversion-reference-record",
+        itemId: item.id,
+        alternateUnitId: alternateUnit.id,
+        baseUnitQuantity: "25",
+      },
+    });
 
     await expect(
       prisma.unit.delete({ where: { id: baseUnit.id } }),
@@ -131,6 +148,12 @@ describe("Master Data Units gateway", () => {
       code: expect.stringMatching(/^P20(03|14)$/),
     });
     await expect(deleteUnit(adminActor, baseUnit.id)).resolves.toEqual({
+      ok: false,
+      kind: "referenced",
+      error:
+        "This Unit cannot be deleted because one or more Items or Item Unit Conversions reference it. Deactivate it instead to keep existing references intact.",
+    });
+    await expect(deleteUnit(adminActor, alternateUnit.id)).resolves.toEqual({
       ok: false,
       kind: "referenced",
       error:
