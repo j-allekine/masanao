@@ -62,7 +62,7 @@ export default function DeleteItemDialog({
           <AlertDialogTitle>Delete “{item.name}”?</AlertDialogTitle>
           <AlertDialogDescription>
             This permanently removes the Item from the catalog. An Item that
-            is already referenced by operational records cannot be deleted.
+            is referenced by operational records or configured alternate Units cannot be deleted.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (

@@ -29,7 +29,38 @@ export type ItemListItem = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  unitConversions?: ItemUnitConversionListItem[];
 };
+
+export type ItemUnitConversionListItem = {
+  id: string;
+  alternateUnit: ItemLookupUnit;
+  baseUnitQuantity: string;
+  label: string;
+};
+
+export type ItemUnitConversionField = "alternateUnitId" | "baseUnitQuantity";
+export type ItemUnitConversionFieldErrors = Partial<
+  Record<ItemUnitConversionField | "form", string[]>
+>;
+
+export type ItemUnitConversionCreateResult =
+  | { ok: true; conversion: ItemUnitConversionListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "not-found" | "inactive";
+      error: string;
+      fields: ItemUnitConversionFieldErrors;
+    };
+
+export type ItemUnitConversionActionState =
+  | { status: "success"; conversion: ItemUnitConversionListItem }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "validation" | "duplicate" | "not-found" | "inactive" | "server";
+      error: string;
+      fields: ItemUnitConversionFieldErrors;
+    };
 
 export type ItemField = "name" | "categoryId" | "baseUnitId" | "note";
 export type ItemFieldErrors = Partial<Record<ItemField | "form", string[]>>;

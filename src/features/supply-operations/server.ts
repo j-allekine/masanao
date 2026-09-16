@@ -7,12 +7,14 @@ import { createItemCommand } from "./server/commands/create-item";
 import { deleteItemCommand } from "./server/commands/delete-item";
 import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
+import { createItemUnitConversionCommand } from "./server/commands/create-item-unit-conversion";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
   ItemLifecycleResult,
   ItemUpdateResult,
+  ItemUnitConversionCreateResult,
 } from "./types";
 
 export type { ItemListItem, ItemLookupCategory, ItemLookupUnit } from "./types";
@@ -53,4 +55,11 @@ export async function setItemActive(actor: CurrentActor, id: string, isActive: b
 export async function deleteItem(actor: CurrentActor, id: string): Promise<ItemDeleteResult> {
   const authorizationFailure = await authorizeAdministrator(actor);
   return authorizationFailure ?? deleteItemCommand(id);
+}
+
+export async function createItemUnitConversion(actor: CurrentActor, itemId: string, input: unknown): Promise<ItemUnitConversionCreateResult> {
+  const authorizationFailure = await authorizeAdministrator(actor);
+  return authorizationFailure
+    ? { ...authorizationFailure, fields: {} }
+    : createItemUnitConversionCommand(itemId, input);
 }

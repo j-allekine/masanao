@@ -4,7 +4,8 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { ItemInput } from "../../schemas/item";
-import type { ItemListItem } from "../../types";
+import type { ItemListItem, ItemUnitConversionListItem } from "../../types";
+import { sortItemUnitConversions } from "../../domain/item-unit-conversion";
 
 const itemListSelect = {
   id: true,
@@ -28,6 +29,14 @@ const itemListSelect = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
+  unitConversions: {
+    select: {
+      id: true,
+      baseUnitQuantity: true,
+      alternateUnit: { select: { id: true, name: true, abbreviation: true, active: true } },
+    },
+    orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { id: "asc" }] satisfies Prisma.ItemUnitConversionOrderByWithRelationInput[],
+  },
 } as const;
 
 type ItemListRecord = Prisma.ItemGetPayload<{
@@ -48,6 +57,7 @@ export type ItemUpdateWriteResult =
   | { kind: "updated"; item: ItemListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
+  | { kind: "base-unit-locked" }
   | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
 
 function toItemListItem(item: ItemListRecord): ItemListItem {
@@ -60,7 +70,60 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
     isActive: item.isActive,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
+    unitConversions: sortItemUnitConversions(item.unitConversions.map((conversion) => ({
+      id: conversion.id,
+      alternateUnit: conversion.alternateUnit,
+      baseUnitQuantity: conversion.baseUnitQuantity,
+      label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
+    }))),
   };
+}
+
+const conversionSelect = {
+  id: true,
+  baseUnitQuantity: true,
+  alternateUnit: { select: { id: true, name: true, abbreviation: true, active: true } },
+  item: { select: { baseUnit: { select: { abbreviation: true } } } },
+} as const;
+
+function toConversionListItem(conversion: Prisma.ItemUnitConversionGetPayload<{ select: typeof conversionSelect }>): ItemUnitConversionListItem {
+  return {
+    id: conversion.id,
+    alternateUnit: conversion.alternateUnit,
+    baseUnitQuantity: conversion.baseUnitQuantity,
+    label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${conversion.item.baseUnit.abbreviation})`,
+  };
+}
+
+export async function createItemUnitConversionRecord(input: {
+  itemId: string;
+  alternateUnitId: string;
+  baseUnitQuantity: string;
+}) {
+  return prisma.$transaction(async (transaction) => {
+    const item = await transaction.item.findUnique({
+      where: { id: input.itemId },
+      select: { id: true, baseUnitId: true, isActive: true },
+    });
+    if (!item) return { kind: "not-found" as const };
+    if (!item.isActive) return { kind: "inactive-item" as const };
+    if (item.baseUnitId === input.alternateUnitId) return { kind: "base-unit" as const };
+
+    const alternateUnit = await transaction.unit.findFirst({
+      where: { id: input.alternateUnitId, active: true }, select: { id: true },
+    });
+    if (!alternateUnit) return { kind: "invalid-unit" as const };
+
+    try {
+      const conversion = await transaction.itemUnitConversion.create({
+        data: { id: crypto.randomUUID(), ...input }, select: conversionSelect,
+      });
+      return { kind: "created" as const, conversion: toConversionListItem(conversion) };
+    } catch (error) {
+      if (isUniqueConstraintViolation(error)) return { kind: "duplicate" as const };
+      throw error;
+    }
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export function isUniqueConstraintViolation(
@@ -93,6 +156,7 @@ async function findItemRecord(database: ItemDatabase, id: string) {
       id: true,
       categoryId: true,
       baseUnitId: true,
+      _count: { select: { unitConversions: true } },
     },
   });
 }
@@ -219,6 +283,10 @@ export async function updateItemWithActiveLookups(
     async (transaction) => {
       const existing = await findItemRecord(transaction, id);
       if (!existing) return { kind: "not-found" };
+
+      if (existing._count.unitConversions > 0 && existing.baseUnitId !== input.baseUnitId) {
+        return { kind: "base-unit-locked" as const };
+      }
 
       const [conflict, { category, baseUnit }] = await Promise.all([
         findItemConflictRecord(transaction, input, id),

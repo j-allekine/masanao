@@ -20,7 +20,7 @@ export async function deleteItemCommand(
       ok: false,
       kind: "referenced",
       error:
-        "This Item cannot be deleted because it is already referenced by operational records.",
+        "This Item cannot be deleted because operational records or configured alternate Units reference it.",
     };
   }
 

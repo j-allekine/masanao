@@ -35,6 +35,7 @@ async function createActorUser(actor: CurrentActor, role = "staff") {
 
 describe("Master Data Categories gateway", () => {
   beforeEach(async () => {
+    await prisma.itemUnitConversion.deleteMany();
     await prisma.item.deleteMany();
     await prisma.category.deleteMany();
     await prisma.unit.deleteMany();

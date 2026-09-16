@@ -4,7 +4,9 @@ import { executeCreateItem } from "./server/actions/create-item";
 import { executeDeleteItem } from "./server/actions/delete-item";
 import { executeSetItemActive } from "./server/actions/set-item-active";
 import { executeUpdateItem } from "./server/actions/update-item";
+import { executeCreateItemUnitConversion } from "./server/actions/create-item-unit-conversion";
 import type { ItemDeleteActionState, ItemFormActionState, ItemLifecycleActionState } from "./types";
+import type { ItemUnitConversionActionState } from "./types";
 
 export async function createItemAction(formData: FormData): Promise<ItemFormActionState> {
   return executeCreateItem(formData);
@@ -20,4 +22,8 @@ export async function setItemActiveAction(id: string, isActive: boolean): Promis
 
 export async function deleteItemAction(id: string): Promise<ItemDeleteActionState> {
   return executeDeleteItem(id);
+}
+
+export async function createItemUnitConversionAction(formData: FormData): Promise<ItemUnitConversionActionState> {
+  return executeCreateItemUnitConversion(formData);
 }
