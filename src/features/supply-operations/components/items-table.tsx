@@ -137,7 +137,8 @@ function ItemRow({
         <TableCell className="text-center">
           <ItemStatus isActive={item.isActive} />
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell className="w-24 text-right">
+          <div className="flex justify-end">
             <ItemActionsMenu
               itemId={item.id}
               itemName={item.name}
@@ -150,7 +151,8 @@ function ItemRow({
               canManage={canManage}
               disabled={actionDisabled}
             />
-          </TableCell>
+          </div>
+        </TableCell>
       </TableRow>
       {canManage ? <DeleteItemDialog
         key={`${item.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
@@ -243,7 +245,7 @@ export default function ItemsTable({
               <TableHead scope="col" className="text-center">
                 Status
               </TableHead>
-              <TableHead scope="col" className="text-center">Actions</TableHead>
+              <TableHead scope="col" className="w-24 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

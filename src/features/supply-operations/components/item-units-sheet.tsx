@@ -1,18 +1,19 @@
 "use client";
 
 import { useRef, useState, useTransition, type FormEvent } from "react";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, XIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-
 import { createItemUnitConversionAction } from "../actions";
 import type { ItemListItem, ItemUnitConversionFieldErrors, ItemUnitConversionListItem, UnitListItem } from "../types";
 
@@ -46,13 +47,72 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
     });
   }
   return <Sheet open={open} onOpenChange={onOpenChange}>
-    <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
-      <SheetHeader><SheetTitle>Units for {selectedItem.name}</SheetTitle><SheetDescription>Base Unit: {selectedItem.baseUnit.name} ({selectedItem.baseUnit.abbreviation})</SheetDescription></SheetHeader>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4">
-        {conversions.length ? <div className="flex flex-col gap-2" aria-label="Alternate Units">{conversions.map((conversion) => <div key={conversion.id} className="rounded-md border px-3 py-2 text-body"><p className="font-medium">{conversion.label}</p><p className="text-body-sm text-muted-foreground">1 {conversion.alternateUnit.name} equals {conversion.baseUnitQuantity} {selectedItem.baseUnit.abbreviation}</p></div>)}</div> : <Empty className="min-h-44 border"><EmptyHeader><EmptyTitle>No alternate Units yet.</EmptyTitle><EmptyDescription>Base Unit quantities remain authoritative until package sizes are configured.</EmptyDescription></EmptyHeader></Empty>}
-        {canManage && selectedItem.isActive ? <Button ref={addAlternateUnitButtonRef} type="button" onClick={() => setDialogOpen(true)}><Plus data-icon="inline-start" />Add alternate Unit</Button> : null}
-        {canManage && !selectedItem.isActive ? <Alert><AlertTitle>Item is inactive</AlertTitle><AlertDescription>Reactivate this Item before adding alternate Units.</AlertDescription></Alert> : null}
+    <SheetContent side="right" showCloseButton={false} className="w-full gap-0 p-0 sm:max-w-lg">
+      <SheetHeader className="border-b px-6 py-5 pr-14">
+        <SheetTitle>Units for {selectedItem.name}</SheetTitle>
+        <SheetDescription>Base Unit: {selectedItem.baseUnit.name} ({selectedItem.baseUnit.abbreviation})</SheetDescription>
+      </SheetHeader>
+      <SheetClose
+        render={<Button type="button" variant="ghost" size="icon-lg" className="absolute top-2 right-2 size-10" aria-label="Close Units panel" />}
+      >
+        <XIcon aria-hidden="true" />
+      </SheetClose>
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto bg-muted/20 px-6 py-5">
+        {conversions.length ? (
+          <div className="flex flex-col gap-3" aria-label="Alternate Units">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-body font-semibold">Alternate units</h3>
+                <p className="text-body-sm text-muted-foreground">
+                  Package quantities configured for this Item.
+                </p>
+              </div>
+              <Badge variant="outline">{conversions.length}</Badge>
+            </div>
+            {conversions.map((conversion) => (
+              <Card key={conversion.id} size="sm" className="gap-1.5 bg-card shadow-none">
+                <CardHeader className="px-3">
+                  <CardTitle className="text-body font-semibold">{conversion.label}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3">
+                  <CardDescription className="text-body-sm">
+                    1 {conversion.alternateUnit.name} = {conversion.baseUnitQuantity} {selectedItem.baseUnit.abbreviation}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Empty className="min-h-44 border bg-card">
+            <EmptyHeader>
+              <EmptyTitle>No alternate Units yet.</EmptyTitle>
+              <EmptyDescription>
+                Base Unit quantities remain authoritative until package sizes are configured.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+        {canManage && !selectedItem.isActive ? (
+          <Alert>
+            <AlertTitle>Item is inactive</AlertTitle>
+            <AlertDescription>Reactivate this Item before adding alternate Units.</AlertDescription>
+          </Alert>
+        ) : null}
       </div>
+      {canManage && selectedItem.isActive ? (
+        <SheetFooter className="border-t bg-muted/30 px-6 py-4 sm:flex-row sm:justify-end">
+          <Button
+            ref={addAlternateUnitButtonRef}
+            type="button"
+            size="lg"
+            className="w-full sm:w-auto"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus data-icon="inline-start" />
+            Add alternate Unit
+          </Button>
+        </SheetFooter>
+      ) : null}
     </SheetContent>
     <Dialog open={dialogOpen} onOpenChange={(next) => next ? setDialogOpen(true) : closeDialog()}>
       <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Add alternate Unit</DialogTitle><DialogDescription>Set how many Base Units one package represents.</DialogDescription></DialogHeader>

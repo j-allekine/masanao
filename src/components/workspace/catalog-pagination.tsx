@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Pagination,
   PaginationContent,
@@ -87,17 +88,19 @@ function CatalogPaginationContent({
   onPageChange: (page: number) => void;
 }) {
   return (
-    <PaginationContent className={className}>
+    <PaginationContent className={cn("gap-1", className)}>
       <PaginationItem>
         <Button
           type="button"
           variant="outline"
-          size="icon"
+          size="default"
+          className="min-w-9 px-2 sm:min-w-[5.5rem]"
           disabled={page === 1}
           aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
         >
-          <ChevronLeft aria-hidden="true" />
+          <ChevronLeft data-icon="inline-start" aria-hidden="true" />
+          <span className="hidden sm:inline">Previous</span>
         </Button>
       </PaginationItem>
       {pageItems.map((item, index) =>
@@ -105,11 +108,14 @@ function CatalogPaginationContent({
           <PaginationItem key={item}>
             <Button
               type="button"
-              variant="outline"
+              variant={item === page ? "outline" : "ghost"}
               size="icon"
+              className={cn(
+                "min-w-9",
+                item === page && "bg-muted/40 font-semibold text-primary",
+              )}
               aria-label={`Page ${item} of ${pageCount}`}
               aria-current={item === page ? "page" : undefined}
-              className={item === page ? "border-primary text-primary" : undefined}
               onClick={() => onPageChange(item)}
             >
               {item}
@@ -125,12 +131,14 @@ function CatalogPaginationContent({
         <Button
           type="button"
           variant="outline"
-          size="icon"
+          size="default"
+          className="min-w-9 px-2 sm:min-w-[5.5rem]"
           disabled={page === pageCount}
           aria-label="Next page"
           onClick={() => onPageChange(page + 1)}
         >
-          <ChevronRight aria-hidden="true" />
+          <span className="hidden sm:inline">Next</span>
+          <ChevronRight data-icon="inline-end" aria-hidden="true" />
         </Button>
       </PaginationItem>
     </PaginationContent>
@@ -167,7 +175,7 @@ export default function CatalogPagination({
       <p className="min-w-0 text-body-sm text-muted-foreground" aria-live="polite">
         {resultsSummary}
       </p>
-      <Pagination className="mx-0 w-full shrink-0 justify-start sm:w-auto sm:justify-end">
+      <Pagination className="mx-0 w-full shrink-0 justify-center sm:w-auto sm:justify-end">
         <CatalogPaginationContent
           className="sm:hidden"
           page={page}
