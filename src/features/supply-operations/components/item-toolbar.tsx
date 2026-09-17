@@ -4,7 +4,7 @@ import { ListFilter, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { WorkspaceSearchField } from "@/components/workspace/catalog-controls";
+import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls";
 import {
   Select,
   SelectContent,
@@ -50,88 +50,89 @@ export default function ItemToolbar({
   ];
 
   return (
-    <div
-      aria-label="Item catalog search and filters"
-      className="flex flex-col gap-3 border-b pb-5"
-      role="search"
-    >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        <WorkspaceSearchField
-          id="item-search"
-          label="Search Items"
-          placeholder="Search items by name..."
-          value={filters.search}
-          onValueChange={onSearchChange}
-          className="lg:max-w-[28rem]"
-        />
+    <WorkspaceCatalogToolbar
+      ariaLabel="Item catalog search and filters"
+      searchId="item-search"
+      searchLabel="Search Items"
+      searchPlaceholder="Search items by name..."
+      search={filters.search}
+      onSearchChange={onSearchChange}
+      filterContent={
+        <>
+          <Field className="min-w-0 lg:w-56">
+            <FieldLabel className="sr-only" htmlFor="item-category-filter">
+              Category filter
+            </FieldLabel>
+            <Select
+              items={categoryItems}
+              value={filters.categoryId || "all"}
+              onValueChange={(value) =>
+                onCategoryChange(value === "all" ? "" : (value ?? ""))
+              }
+            >
+              <SelectTrigger
+                id="item-category-filter"
+                className="w-full bg-card"
+              >
+                <ListFilter aria-hidden="true" />
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Category</SelectLabel>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
 
-        <Field className="min-w-0 lg:w-56">
-          <FieldLabel className="sr-only" htmlFor="item-category-filter">
-            Category filter
-          </FieldLabel>
-          <Select
-            items={categoryItems}
-            value={filters.categoryId || "all"}
-            onValueChange={(value) =>
-              onCategoryChange(value === "all" ? "" : (value ?? ""))
-            }
-          >
-            <SelectTrigger id="item-category-filter" className="w-full bg-card">
-              <ListFilter aria-hidden="true" />
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Category</SelectLabel>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
+          <Field className="min-w-0 lg:w-48">
+            <FieldLabel className="sr-only" htmlFor="item-status-filter">
+              Status filter
+            </FieldLabel>
+            <Select
+              items={statusItems}
+              value={filters.status}
+              onValueChange={(value) =>
+                onStatusChange((value as ItemListStatus | null) ?? "all")
+              }
+            >
+              <SelectTrigger
+                id="item-status-filter"
+                className="w-full bg-card"
+              >
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Status</SelectLabel>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active only</SelectItem>
+                  <SelectItem value="inactive">Inactive only</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
 
-        <Field className="min-w-0 lg:w-48">
-          <FieldLabel className="sr-only" htmlFor="item-status-filter">
-            Status filter
-          </FieldLabel>
-          <Select
-            items={statusItems}
-            value={filters.status}
-            onValueChange={(value) =>
-              onStatusChange((value as ItemListStatus | null) ?? "all")
-            }
-          >
-            <SelectTrigger id="item-status-filter" className="w-full bg-card">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Status</SelectLabel>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active only</SelectItem>
-                <SelectItem value="inactive">Inactive only</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        {hasFilters ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-9 shrink-0 justify-start lg:justify-center"
-            onClick={onClearFilters}
-          >
-            <X data-icon="inline-start" />
-            Clear filters
-          </Button>
-        ) : null}
-      </div>
-    </div>
+          {hasFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 shrink-0 justify-start lg:justify-center"
+              onClick={onClearFilters}
+            >
+              <X data-icon="inline-start" />
+              Clear filters
+            </Button>
+          ) : null}
+        </>
+      }
+    />
   );
 }
