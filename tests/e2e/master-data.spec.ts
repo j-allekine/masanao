@@ -318,6 +318,82 @@ async function captureViewportEvidence(page: Page, testInfo: TestInfo) {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
+test.describe("Master Data shared lifecycle controls", () => {
+  test("keeps lifecycle badges and row menus consistent across catalogs", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    await openMasterData(page, "municipal.admin", adminPassword);
+    const tabs = page.getByRole("tablist", { name: "Master Data sections" });
+    let activeBadgeClass: string | null = null;
+
+    for (const tabName of ["Units", "Categories", "Offices", "Vendors"]) {
+      await tabs.getByRole("tab", { name: tabName, exact: true }).click();
+
+      const table = page.getByRole("table");
+      await expect(table).toBeVisible();
+      const row = table.getByRole("row").nth(1);
+      const badge = row.locator('[data-slot="badge"]');
+      await expect(badge).toBeVisible();
+      await expect(badge).toHaveAttribute("data-variant", "default");
+
+      const badgeClass = await badge.getAttribute("class");
+      expect(badgeClass).not.toBeNull();
+      if (activeBadgeClass === null) {
+        activeBadgeClass = badgeClass;
+      } else {
+        expect(badgeClass).toBe(activeBadgeClass);
+      }
+
+      const actionButton = row.getByRole("button", { name: /Actions for/ });
+      await expect(actionButton).toBeVisible();
+      await expect(actionButton).toHaveClass(/size-7/);
+      await actionButton.click();
+
+      const menu = page.getByRole("menu");
+      await expect(menu).toBeVisible();
+      await expect(menu).toHaveClass(/min-w-36/);
+      await expect(menu.getByRole("menuitem")).toHaveCount(3);
+      await expect(
+        menu.getByRole("menuitem", { name: "Delete", exact: true }),
+      ).toHaveAttribute("data-variant", "destructive");
+      await expect(
+        menu.locator('[data-slot="dropdown-menu-separator"]'),
+      ).toHaveCount(1);
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeHidden();
+    }
+
+    const inactiveVendorRow = page
+      .getByRole("row")
+      .filter({ has: page.getByText("Harbor Market", { exact: true }) })
+      .first();
+    await expect(
+      inactiveVendorRow.locator('[data-slot="badge"]'),
+    ).toHaveText("Inactive");
+    await expect(
+      inactiveVendorRow.locator('[data-slot="badge"]'),
+    ).toHaveAttribute("data-variant", "outline");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/master-data?tab=vendors");
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+
+    const mobileActionButton = page.getByRole("button", {
+      name: "Actions for Acme Foods",
+      exact: true,
+    }).first();
+    await expect(mobileActionButton).toBeVisible();
+    await expect(mobileActionButton).toHaveClass(/size-7/);
+    await mobileActionButton.click();
+    const mobileMenu = page.getByRole("menu");
+    await expect(mobileMenu).toBeVisible();
+    await expect(mobileMenu).toHaveClass(/min-w-36/);
+    await page.keyboard.press("Escape");
+  });
+});
+
 test.describe("Master Data Units journey", () => {
   test("updates local list state without re-requesting the Master Data route", async ({
     page,

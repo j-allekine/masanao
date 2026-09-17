@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
   TableCell,
@@ -10,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { OfficeListItem } from "../types";
 import DeleteOfficeDialog from "./delete-office-dialog";
 import { hasOfficeFilters, type OfficeFilters } from "./office-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import MasterDataEmptyState from "./master-data-empty-state";
-import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function OfficeHeadContext({ office }: { office: OfficeListItem }) {
   if (!office.headName && !office.headDesignation) {
@@ -91,9 +91,7 @@ function OfficeRow({
           <OfficeContactContext office={office} />
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={office.isActive ? "default" : "outline"}>
-            {office.isActive ? "Active" : "Inactive"}
-          </Badge>
+          <WorkspaceLifecycleBadge isActive={office.isActive} />
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">

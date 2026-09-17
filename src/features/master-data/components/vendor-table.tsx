@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardAction,
@@ -17,13 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { VendorListItem } from "../types";
 import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteVendorDialog from "./delete-vendor-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
-import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function VendorContactContext({ vendor }: { vendor: VendorListItem }) {
   const context = [vendor.contactNumber, vendor.email, vendor.address].filter(
@@ -77,9 +77,7 @@ function VendorRow({
           <VendorContactContext vendor={vendor} />
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={vendor.isActive ? "default" : "outline"}>
-            {vendor.isActive ? "Active" : "Inactive"}
-          </Badge>
+          <WorkspaceLifecycleBadge isActive={vendor.isActive} />
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">
@@ -152,9 +150,7 @@ function VendorMobileCard({
             <span className="text-label font-semibold text-muted-foreground">
               Status
             </span>
-            <Badge variant={vendor.isActive ? "default" : "outline"}>
-              {vendor.isActive ? "Active" : "Inactive"}
-            </Badge>
+            <WorkspaceLifecycleBadge isActive={vendor.isActive} />
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-label font-semibold text-muted-foreground">
