@@ -97,3 +97,27 @@ export type ItemLifecycleActionState =
 export type ItemDeleteActionState =
   | { status: "success" }
   | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server"; error: string };
+
+export type PurchaseOrderListItem = {
+  id: string;
+  purchaseOrderNo: string;
+  vendor: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  };
+  referenceNumber: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PurchaseOrderField =
+  | "purchaseOrderNo"
+  | "vendorId"
+  | "referenceNumber"
+  | "note";
+
+export type PurchaseOrderFieldErrors = Partial<
+  Record<PurchaseOrderField | "form", string[]>
+>;

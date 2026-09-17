@@ -20,9 +20,9 @@ Activity Designs
                         │   └── Editable ingredient issue lines (from a required Recipe)
                         └── Direct-use Stock Item issue lines
 
-Purchase Order (PO)
-└── Delivery Receipt
-    └── Delivery Receipt Lines (each references a PO line)
+Purchase Order (PO) (vendor/order reference; no expected Item lines)
+└── Delivery Receipt (future receiving record)
+    └── Delivery Receipt Lines (actual Item and quantity data)
         └── Posted delivered quantity → Inventory Ledger
 
 Recipe (master reference)
@@ -95,18 +95,26 @@ The master Recipe remains a reusable reference with multiple ingredient lines. S
 
 ## Partial deliveries
 
-All deliveries are recorded under a PO. A PO has ordered item lines. One PO may have multiple Delivery Receipts, including partial deliveries, and each receipt may contain multiple item lines. Each Delivery Receipt line references an existing PO line.
+The current Purchase Order slice is a lean vendor/order reference. It records
+the municipal Purchase Order No., Vendor, optional external reference number,
+and optional note. It deliberately has no ordered Item lines, expected
+quantities, prices, totals, dates, status, or inventory effect.
+
+Future receiving records will be recorded under a Purchase Order. A Delivery
+Receipt will own the actual Item and quantity lines and may represent a partial
+delivery. Any relationship between delivered quantities and ordered quantities,
+including over-delivery calculations, requires a later explicit receiving
+contract.
 
 ```text
 PO-2026-014
-  Rice          100 kg
-  Cooking oil    20 L
+  Vendor: Municipal Foods
 
-DR-001 (partial)
+DR-001 (future partial)
   Rice           60 kg  → posted to Inventory immediately
   Cooking oil    20 L   → posted to Inventory immediately
 
-DR-002 (later partial)
+DR-002 (future partial)
   Rice           40 kg  → posted to Inventory immediately
 
 PO-2026-014 total received: 100 kg rice, 20 L cooking oil
@@ -114,10 +122,11 @@ PO-2026-014 total received: 100 kg rice, 20 L cooking oil
 
 Working rules confirmed so far:
 
-- A Delivery Receipt may represent part of a PO quantity; later receipts may record the remaining quantity.
-- Multiple receipts may reference the same PO line. This supports separate deliveries or batches.
-- Posting a receipt records its delivered quantity in Inventory immediately.
-- MVP does not block over-delivery. If the posted receipts exceed the ordered PO quantity, the extra quantity is recorded and the system shows a visible warning or variance. Exact over-delivery reporting remains open.
+- A Purchase Order may have multiple future Delivery Receipts.
+- A future Delivery Receipt may represent part of the supplies delivered under a Purchase Order.
+- Delivery Receipt Lines will own actual Item and quantity data; Purchase Order Lines are not part of the current contract.
+- Posting a receipt records its delivered quantity in Inventory immediately once the receiving contract is implemented.
+- Any over-delivery warning or variance requires an explicit ordered-quantity decision later.
 - MVP has one delivery action, labeled either **Save** or **Post**. That single action immediately records the receipt as posted stock-in and creates the inventory stock-in movement. There is no separate draft-save state for Delivery Receipts in this draft.
 - This draft does not define LGU procurement, inspection, acceptance, payment, accounting, or approval procedures. Immediate inventory posting is the Masanao MVP system behavior.
 

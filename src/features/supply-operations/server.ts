@@ -9,6 +9,7 @@ import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
 import { createItemUnitConversionCommand } from "./server/commands/create-item-unit-conversion";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
+import { listPurchaseOrders as listPurchaseOrdersQuery } from "./server/queries/list-purchase-orders";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
@@ -17,10 +18,19 @@ import type {
   ItemUnitConversionCreateResult,
 } from "./types";
 
-export type { ItemListItem, ItemLookupCategory, ItemLookupUnit } from "./types";
+export type {
+  ItemListItem,
+  ItemLookupCategory,
+  ItemLookupUnit,
+  PurchaseOrderListItem,
+} from "./types";
 
 export async function listItems() {
   return listItemsQuery();
+}
+
+export async function listPurchaseOrders() {
+  return listPurchaseOrdersQuery();
 }
 
 export async function canManageItems(actor: CurrentActor) {

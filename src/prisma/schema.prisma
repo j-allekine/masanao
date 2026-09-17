@@ -86,15 +86,15 @@ model Verification {
 }
 
 model Unit {
-  id                     String   @id
-  name                   String
-  abbreviation           String
-  normalizedName         String   @unique
-  normalizedAbbreviation String   @unique
-  active                 Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  baseUnitItems          Item[]   @relation("ItemBaseUnit")
+  id                       String               @id
+  name                     String
+  abbreviation             String
+  normalizedName           String               @unique
+  normalizedAbbreviation   String               @unique
+  active                   Boolean              @default(true)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  baseUnitItems            Item[]               @relation("ItemBaseUnit")
   alternateUnitConversions ItemUnitConversion[] @relation("ItemUnitConversionAlternateUnit")
 
   @@map("unit")
@@ -114,17 +114,17 @@ model Category {
 }
 
 model Item {
-  id             String   @id
-  name           String
-  normalizedName String   @unique(map: "item_normalized_name_key")
-  categoryId     String
-  baseUnitId     String
-  note           String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  baseUnit       Unit     @relation("ItemBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  id              String               @id
+  name            String
+  normalizedName  String               @unique(map: "item_normalized_name_key")
+  categoryId      String
+  baseUnitId      String
+  note            String?
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  category        Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  baseUnit        Unit                 @relation("ItemBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   unitConversions ItemUnitConversion[]
 
   @@index([categoryId])
@@ -167,18 +167,34 @@ model Office {
 }
 
 model Vendor {
-  id             String   @id
+  id             String          @id
   name           String
-  normalizedName String   @unique(map: "vendor_normalized_name_key")
+  normalizedName String          @unique(map: "vendor_normalized_name_key")
   contactPerson  String?
   contactNumber  String?
   email          String?
   address        String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  purchaseOrders PurchaseOrder[]
 
   @@map("vendor")
+}
+
+model PurchaseOrder {
+  id                        String   @id
+  purchaseOrderNo           String
+  normalizedPurchaseOrderNo String   @unique(map: "purchase_order_normalized_no_key")
+  vendorId                  String
+  referenceNumber           String?
+  note                      String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  vendor                    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId])
+  @@map("purchase_order")
 }
 
 model ActivityDesign {
