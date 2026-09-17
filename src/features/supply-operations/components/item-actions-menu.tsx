@@ -54,8 +54,9 @@ export default function ItemActionsMenu({
             type="button"
             id={actionButtonId}
             data-item-action-id={itemId}
-            variant="ghost"
-            size="icon-sm"
+            variant="outline"
+            size="icon-lg"
+            className="bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
             aria-label={`Actions for ${itemName}`}
             disabled={disabled}
           />
@@ -63,9 +64,12 @@ export default function ItemActionsMenu({
       >
         <Ellipsis />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-32">
+      <DropdownMenuContent align="end" className="w-48 min-w-48">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onUnits)}>
+          <DropdownMenuItem
+            className="min-h-9 gap-2 px-2 whitespace-nowrap focus:bg-muted focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground"
+            onClick={() => openAfterMenuCloses(onUnits)}
+          >
             <Scale data-icon="inline-start" />
             {canManage ? "Manage units" : "Units"}
           </DropdownMenuItem>
@@ -73,11 +77,15 @@ export default function ItemActionsMenu({
         {canManage ? <>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit!)}>
+          <DropdownMenuItem
+            className="min-h-9 gap-2 px-2 whitespace-nowrap focus:bg-muted focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground"
+            onClick={() => openAfterMenuCloses(onEdit!)}
+          >
             <Pencil data-icon="inline-start" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
+            className="min-h-9 gap-2 px-2 whitespace-nowrap focus:bg-muted focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground"
             onClick={() =>
               openAfterMenuCloses(() => onSetActive!(!isActive))
             }
@@ -94,6 +102,7 @@ export default function ItemActionsMenu({
         <DropdownMenuGroup>
           <DropdownMenuItem
             variant="destructive"
+            className="min-h-9 gap-2 px-2 whitespace-nowrap"
             onClick={() => openAfterMenuCloses(onDelete!)}
           >
             <Trash2 data-icon="inline-start" />
