@@ -878,6 +878,93 @@ test.describe("Master Data Item reference protection journey", () => {
   });
 });
 
+test.describe("Master Data destructive dialog shell", () => {
+  test("keeps confirmation controls disabled while deleting and shows resource errors without closing", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixture = createReferencedCategoryFixture();
+    const routePattern = "**/master-data**";
+    let releaseAction: (() => void) | undefined;
+    let resolveActionStarted: (() => void) | undefined;
+    const actionStarted = new Promise<void>((resolve) => {
+      resolveActionStarted = resolve;
+    });
+    const actionReleased = new Promise<void>((resolve) => {
+      releaseAction = resolve;
+    });
+
+    await page.route(routePattern, async (route) => {
+      const request = route.request();
+      if (
+        request.method() === "POST" &&
+        request.headers()["next-action"]
+      ) {
+        resolveActionStarted?.();
+        await actionReleased;
+      }
+      await route.continue();
+    });
+
+    try {
+      await openCategories(page, "municipal.admin", adminPassword);
+      await page
+        .getByRole("searchbox", { name: "Search Categories", exact: true })
+        .fill(fixture.categoryName);
+      const categoryRow = page.getByRole("row").filter({
+        has: page.getByText(fixture.categoryName, { exact: true }),
+      });
+      await expect(categoryRow).toBeVisible();
+      await categoryRow
+        .getByRole("button", {
+          name: `Actions for ${fixture.categoryName}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+
+      const deleteDialog = page.getByRole("alertdialog");
+      await deleteDialog
+        .getByRole("button", { name: "Delete Category", exact: true })
+        .click();
+      await actionStarted;
+
+      await expect(
+        deleteDialog.getByRole("button", { name: /Deleting/ }),
+      ).toBeDisabled();
+      await expect(
+        deleteDialog.getByRole("button", { name: "Cancel", exact: true }),
+      ).toBeDisabled();
+
+      releaseAction?.();
+      await expect(
+        deleteDialog.getByText(
+          "This Category cannot be deleted because one or more Items reference it. Deactivate it instead to keep existing Item references intact.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(deleteDialog).toBeVisible();
+      await expect(
+        deleteDialog.getByRole("button", { name: "Cancel", exact: true }),
+      ).toBeEnabled();
+      await deleteDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+      await expect(deleteDialog).toBeHidden();
+      await expect(
+        categoryRow.getByRole("button", {
+          name: `Actions for ${fixture.categoryName}`,
+          exact: true,
+        }),
+      ).toBeFocused();
+    } finally {
+      releaseAction?.();
+      await page.unroute(routePattern);
+      deleteItemReferenceFixture(fixture);
+    }
+  });
+});
+
 test.describe("Master Data Offices journey", () => {
   test("lets an administrator maintain Offices through the visible workspace", async ({
     page,

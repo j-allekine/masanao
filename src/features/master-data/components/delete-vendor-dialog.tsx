@@ -1,20 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deleteVendorAction } from "../actions";
 import type { VendorListItem } from "../types";
@@ -56,38 +44,21 @@ export default function DeleteVendorDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete “{vendor.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently removes the Vendor from the catalog. A Vendor
-            already referenced by procurement or receiving records cannot be
-            deleted.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isDeleting}
-            onClick={handleDelete}
-          >
-            {isDeleting ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 data-icon="inline-start" />
-            )}
-            {isDeleting ? "Deleting…" : "Delete Vendor"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete “${vendor.name}”?`}
+      description={
+        <>
+          This permanently removes the Vendor from the catalog. A Vendor
+          already referenced by procurement or receiving records cannot be
+          deleted.
+        </>
+      }
+      error={error}
+      isPending={isDeleting}
+      onConfirm={handleDelete}
+      confirmLabel="Delete Vendor"
+    />
   );
 }

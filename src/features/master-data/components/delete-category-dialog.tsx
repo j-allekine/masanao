@@ -2,20 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deleteCategoryAction } from "../actions";
 import type { CategoryListItem } from "../types";
@@ -60,37 +48,20 @@ export default function DeleteCategoryDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete “{category.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently removes the Category from the catalog. A Category
-            referenced by an Item cannot be deleted; deactivate it instead.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isDeleting}
-            onClick={handleDelete}
-          >
-            {isDeleting ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 data-icon="inline-start" />
-            )}
-            {isDeleting ? "Deleting…" : "Delete Category"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete “${category.name}”?`}
+      description={
+        <>
+          This permanently removes the Category from the catalog. A Category
+          referenced by an Item cannot be deleted; deactivate it instead.
+        </>
+      }
+      error={error}
+      isPending={isDeleting}
+      onConfirm={handleDelete}
+      confirmLabel="Delete Category"
+    />
   );
 }
