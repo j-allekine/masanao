@@ -5,11 +5,13 @@ import {
 
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -80,8 +82,12 @@ function PurchaseOrderMobileCard({
 
 export default function PurchaseOrdersTable({
   purchaseOrders,
+  hasFilters,
+  onClearFilters,
 }: {
   purchaseOrders: PurchaseOrderListItem[];
+  hasFilters: boolean;
+  onClearFilters: () => void;
 }) {
   if (purchaseOrders.length === 0) {
     return (
@@ -90,11 +96,24 @@ export default function PurchaseOrdersTable({
           <EmptyMedia variant="icon">
             <ClipboardList aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>No Purchase Orders yet.</EmptyTitle>
+          <EmptyTitle>
+            {hasFilters
+              ? "No Purchase Orders match your current search."
+              : "No Purchase Orders yet."}
+          </EmptyTitle>
           <EmptyDescription>
-            Purchase Orders will appear here once an administrator records an order reference.
+            {hasFilters
+              ? "Clear the search to see the complete Purchase Orders list."
+              : "Purchase Orders will appear here once an administrator records an order reference."}
           </EmptyDescription>
         </EmptyHeader>
+        {hasFilters ? (
+          <EmptyContent>
+            <Button type="button" variant="outline" onClick={onClearFilters}>
+              Clear search
+            </Button>
+          </EmptyContent>
+        ) : null}
       </Empty>
     );
   }

@@ -10,6 +10,12 @@ import {
 } from "@/features/supply-operations/schemas/purchase-order";
 import { listPurchaseOrders } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
+import { filterPurchaseOrders } from "@/features/supply-operations/components/purchase-order-filters";
+import {
+  getPurchaseOrderListQuery,
+  getPurchaseOrderListState,
+  getPurchaseOrderListUrl,
+} from "@/features/supply-operations/components/purchase-order-list-state";
 import { prisma } from "@/prisma/client";
 
 async function createVendor(id: string, name: string, isActive = true) {
@@ -60,6 +66,60 @@ describe("Purchase Order input contract", () => {
       referenceNumber: ["Reference number must be 100 characters or fewer"],
       note: ["Note must be 500 characters or fewer"],
     });
+  });
+});
+
+describe("Purchase Order list state", () => {
+  const purchaseOrders = [
+    {
+      id: "po-zulu",
+      purchaseOrderNo: "PO-2026-014",
+      vendor: { id: "vendor-zulu", name: "Zulu Foods", isActive: true },
+      referenceNumber: "ORS-014",
+      note: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-02T00:00:00.000Z",
+    },
+    {
+      id: "po-alpha",
+      purchaseOrderNo: "PO-2026-002",
+      vendor: { id: "vendor-alpha", name: "Alpha Foods", isActive: false },
+      referenceNumber: "APP-002",
+      note: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-03T00:00:00.000Z",
+    },
+  ];
+
+  it("matches PO number, Vendor, and reference searches", () => {
+    expect(filterPurchaseOrders(purchaseOrders, { search: "  zulu  " })).toEqual([
+      purchaseOrders[0],
+    ]);
+    expect(filterPurchaseOrders(purchaseOrders, { search: "app-002" })).toEqual([
+      purchaseOrders[1],
+    ]);
+    expect(filterPurchaseOrders(purchaseOrders, { search: "2026-002" })).toEqual([
+      purchaseOrders[1],
+    ]);
+  });
+
+  it("keeps list state in the URL while preserving unrelated parameters", () => {
+    expect(getPurchaseOrderListState(new URLSearchParams(
+      "view=compact&purchaseOrdersSearch=  vendor  &purchaseOrdersPage=2",
+    ))).toEqual({ search: "  vendor  ", page: 2 });
+    expect(
+      getPurchaseOrderListQuery("view=compact", {
+        search: "acme",
+        page: 2,
+      }),
+    ).toBe("view=compact&purchaseOrdersSearch=acme&purchaseOrdersPage=2");
+    expect(
+      getPurchaseOrderListUrl(
+        "/purchase-orders",
+        "view=compact&purchaseOrdersPage=2",
+        { search: "", page: 1 },
+      ),
+    ).toBe("/purchase-orders?view=compact");
   });
 });
 
