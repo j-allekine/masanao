@@ -26,17 +26,20 @@ import type {
 } from "../types";
 import PurchaseOrderForm from "./purchase-order-form";
 
-export default function PurchaseOrderCreateDialog({
+export default function PurchaseOrderDialog({
   open,
+  purchaseOrder,
   vendors,
   onClose,
   onSuccess,
 }: {
   open: boolean;
+  purchaseOrder?: PurchaseOrderListItem;
   vendors: PurchaseOrderVendorOption[];
   onClose: () => void;
   onSuccess: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
+  const mode = purchaseOrder ? "edit" : "create";
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
@@ -66,13 +69,19 @@ export default function PurchaseOrderCreateDialog({
         {open ? (
           <DialogContent className="max-h-[calc(100svh-2rem)] max-w-lg grid-rows-[auto_minmax(0,1fr)]">
             <DialogHeader>
-              <DialogTitle>Add Purchase Order</DialogTitle>
+              <DialogTitle>
+                {mode === "edit" ? "Edit Purchase Order" : "Add Purchase Order"}
+              </DialogTitle>
               <DialogDescription>
-                Record the vendor and reference used to receive supplies. Items and quantities are recorded when supplies arrive.
+                {mode === "edit"
+                  ? "Correct the Vendor or reference used for this Purchase Order."
+                  : "Record the vendor and reference used to receive supplies. Items and quantities are recorded when supplies arrive."}
               </DialogDescription>
             </DialogHeader>
             <PurchaseOrderForm
-              mode="create"
+              key={purchaseOrder ? `edit-${purchaseOrder.id}` : "create"}
+              mode={mode}
+              purchaseOrder={purchaseOrder}
               vendors={vendors}
               onCancel={requestClose}
               onSuccess={onSuccess}

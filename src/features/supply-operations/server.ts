@@ -11,6 +11,8 @@ import { createItemUnitConversionCommand } from "./server/commands/create-item-u
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import { listPurchaseOrders as listPurchaseOrdersQuery } from "./server/queries/list-purchase-orders";
 import { createPurchaseOrderCommand } from "./server/commands/create-purchase-order";
+import { deletePurchaseOrderCommand } from "./server/commands/delete-purchase-order";
+import { updatePurchaseOrderCommand } from "./server/commands/update-purchase-order";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
@@ -18,6 +20,8 @@ import type {
   ItemUpdateResult,
   ItemUnitConversionCreateResult,
   PurchaseOrderCreateResult,
+  PurchaseOrderDeleteResult,
+  PurchaseOrderUpdateResult,
 } from "./types";
 
 export type {
@@ -26,6 +30,8 @@ export type {
   ItemLookupUnit,
   PurchaseOrderListItem,
   PurchaseOrderCreateResult,
+  PurchaseOrderDeleteResult,
+  PurchaseOrderUpdateResult,
 } from "./types";
 
 export async function listItems() {
@@ -58,6 +64,25 @@ export async function createPurchaseOrder(
   return authorizationFailure
     ? { ...authorizationFailure, fields: {} }
     : createPurchaseOrderCommand(input);
+}
+
+export async function updatePurchaseOrder(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<PurchaseOrderUpdateResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure
+    ? { ...authorizationFailure, fields: {} }
+    : updatePurchaseOrderCommand(id, input);
+}
+
+export async function deletePurchaseOrder(
+  actor: CurrentActor,
+  id: string,
+): Promise<PurchaseOrderDeleteResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure ?? deletePurchaseOrderCommand(id);
 }
 
 export async function canManageItems(actor: CurrentActor) {

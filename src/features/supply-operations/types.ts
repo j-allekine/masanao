@@ -137,6 +137,23 @@ export type PurchaseOrderCreateResult =
       fields: PurchaseOrderFieldErrors;
     };
 
+export type PurchaseOrderUpdateResult =
+  | { ok: true; purchaseOrder: PurchaseOrderListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "not-found";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found" | "referenced";
+      error: string;
+    };
+
 export type PurchaseOrderFormActionState =
   | { status: "success"; purchaseOrder: PurchaseOrderListItem }
   | {
@@ -147,7 +164,16 @@ export type PurchaseOrderFormActionState =
         | "validation"
         | "duplicate"
         | "inactive"
+        | "not-found"
         | "server";
       error: string;
       fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderDeleteActionState =
+  | { status: "success" }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server";
+      error: string;
     };

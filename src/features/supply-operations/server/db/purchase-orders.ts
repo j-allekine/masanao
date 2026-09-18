@@ -85,6 +85,12 @@ export type PurchaseOrderCreateWriteResult =
   | { kind: "duplicate" }
   | { kind: "invalid-vendor" };
 
+export type PurchaseOrderUpdateWriteResult =
+  | { kind: "updated"; purchaseOrder: PurchaseOrderListItem }
+  | { kind: "duplicate" }
+  | { kind: "not-found" }
+  | { kind: "invalid-vendor" };
+
 export async function createPurchaseOrderWithActiveVendor(
   input: PurchaseOrderInput,
 ): Promise<PurchaseOrderCreateWriteResult> {
@@ -121,4 +127,73 @@ export async function createPurchaseOrderWithActiveVendor(
       throw error;
     }
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function updatePurchaseOrderWithEligibleVendor(
+  id: string,
+  input: PurchaseOrderInput,
+): Promise<PurchaseOrderUpdateWriteResult> {
+  return prisma.$transaction(
+    async (transaction) => {
+      const database: PurchaseOrderDatabase = transaction;
+      const existing = await database.purchaseOrder.findUnique({
+        where: { id },
+        select: { vendorId: true },
+      });
+      if (!existing) return { kind: "not-found" as const };
+
+      const vendor = await database.vendor.findFirst({
+        where: {
+          id: input.vendorId,
+          OR: [{ isActive: true }, { id: existing.vendorId }],
+        },
+        select: { id: true },
+      });
+      if (!vendor) return { kind: "invalid-vendor" as const };
+
+      try {
+        const purchaseOrder = await database.purchaseOrder.update({
+          where: { id },
+          data: {
+            purchaseOrderNo: input.purchaseOrderNo,
+            normalizedPurchaseOrderNo: input.normalizedPurchaseOrderNo,
+            vendorId: input.vendorId,
+            referenceNumber: input.referenceNumber,
+            note: input.note,
+          },
+          select: purchaseOrderListSelect,
+        });
+
+        return {
+          kind: "updated" as const,
+          purchaseOrder: toPurchaseOrderListItem(purchaseOrder),
+        };
+      } catch (error) {
+        if (isUniqueConstraintViolation(error)) {
+          return { kind: "duplicate" as const };
+        }
+
+        if (isRecordNotFound(error)) return { kind: "not-found" as const };
+        throw error;
+      }
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export async function deletePurchaseOrderRecord(id: string) {
+  try {
+    await prisma.purchaseOrder.delete({ where: { id } });
+  } catch (error) {
+    if (isRecordNotFound(error)) return null;
+
+    // Future receiving relationships must remain restrictive.
+    if (isRestrictiveRelationViolation(error)) {
+      return { deleted: false as const, referenced: true as const };
+    }
+
+    throw error;
+  }
+
+  return { deleted: true as const };
 }

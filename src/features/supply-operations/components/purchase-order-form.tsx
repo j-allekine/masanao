@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,10 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createPurchaseOrderAction } from "../actions";
+import {
+  createPurchaseOrderAction,
+  updatePurchaseOrderAction,
+} from "../actions";
 import type {
   PurchaseOrderField,
   PurchaseOrderFieldErrors,
@@ -81,18 +84,20 @@ function VendorField({
   value,
   error,
   vendors,
+  currentVendorId,
   onValueChange,
 }: {
   mode: "create" | "edit";
   value: string;
   error?: string[];
   vendors: PurchaseOrderVendorOption[];
+  currentVendorId?: string;
   onValueChange: (value: string) => void;
 }) {
   const inputId = `${mode}-purchase-order-vendorId`;
   const hasError = Boolean(error?.length);
   const vendorOptions = vendors
-    .filter((vendor) => vendor.isActive)
+    .filter((vendor) => vendor.isActive || vendor.id === currentVendorId)
     .map((vendor) => ({
       id: vendor.id,
       label: vendor.name,
@@ -174,11 +179,13 @@ export default function PurchaseOrderForm({
   );
 
   const currentVendor = purchaseOrder
-    ? vendors.find((vendor) => vendor.id === purchaseOrder.vendor.id)
+    ? vendors.find((vendor) => vendor.id === purchaseOrder.vendor.id) ??
+      purchaseOrder.vendor
     : undefined;
-  const vendorOptions = currentVendor?.isActive
-    ? vendors
-    : currentVendor
+  const vendorOptions =
+    currentVendor &&
+    !currentVendor.isActive &&
+    !vendors.some((vendor) => vendor.id === currentVendor.id)
       ? [...vendors, currentVendor]
       : vendors;
 
@@ -234,6 +241,9 @@ export default function PurchaseOrderForm({
     setFormError(null);
 
     const formData = new FormData(event.currentTarget);
+    if (mode === "edit" && purchaseOrder) {
+      formData.set("id", purchaseOrder.id);
+    }
     for (const field of Object.keys(initialFormValues) as PurchaseOrderField[]) {
       if (
         (field === "referenceNumber" || field === "note") &&
@@ -247,7 +257,10 @@ export default function PurchaseOrderForm({
 
     startTransition(async () => {
       try {
-        const result = await createPurchaseOrderAction(formData);
+        const result =
+          mode === "create"
+            ? await createPurchaseOrderAction(formData)
+            : await updatePurchaseOrderAction(formData);
         handleResult(result);
       } catch {
         setFormError(
@@ -265,6 +278,12 @@ export default function PurchaseOrderForm({
   }
 
   if (mode === "edit" && !purchaseOrder) return null;
+
+  const hasEligibleVendor = vendorOptions.some(
+    (vendor) =>
+      vendor.isActive ||
+      (mode === "edit" && vendor.id === purchaseOrder?.vendor.id),
+  );
 
   return (
     <form
@@ -315,6 +334,7 @@ export default function PurchaseOrderForm({
             value={formValues.vendorId}
             error={fieldErrors.vendorId}
             vendors={vendorOptions}
+            currentVendorId={purchaseOrder?.vendor.id}
             onValueChange={(value) => updateField("vendorId", value)}
           />
 
@@ -375,13 +395,19 @@ export default function PurchaseOrderForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting || vendorOptions.every((vendor) => !vendor.isActive)}>
+        <Button type="submit" disabled={isSubmitting || !hasEligibleVendor}>
           {isSubmitting ? (
             <Spinner data-icon="inline-start" />
-          ) : (
+          ) : mode === "create" ? (
             <Plus data-icon="inline-start" />
+          ) : (
+            <Save data-icon="inline-start" />
           )}
-          {isSubmitting ? "Saving..." : "Add Purchase Order"}
+          {isSubmitting
+            ? "Saving..."
+            : mode === "create"
+              ? "Add Purchase Order"
+              : "Save changes"}
         </Button>
       </DialogFooter>
     </form>

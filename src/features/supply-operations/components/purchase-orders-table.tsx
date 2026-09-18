@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ClipboardList,
   FileText,
@@ -28,6 +29,8 @@ import {
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { PurchaseOrderListItem } from "../types";
+import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
+import PurchaseOrderActionsMenu from "./purchase-order-actions-menu";
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   dateStyle: "medium",
@@ -44,13 +47,31 @@ function displayReference(referenceNumber: string | null) {
 
 function PurchaseOrderMobileCard({
   purchaseOrder,
+  canManage,
+  onEdit,
+  onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
+  canManage: boolean;
+  onEdit: () => void;
+  onDeleted: () => void;
 }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   return (
-    <Card size="sm" data-purchase-order-id={purchaseOrder.id}>
-      <CardHeader>
+    <>
+      <Card size="sm" data-purchase-order-id={purchaseOrder.id}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
         <CardTitle className="break-words">{purchaseOrder.purchaseOrderNo}</CardTitle>
+        {canManage ? (
+          <PurchaseOrderActionsMenu
+            purchaseOrderId={purchaseOrder.id}
+            purchaseOrderNo={purchaseOrder.purchaseOrderNo}
+            actionButtonId={`purchase-order-actions-mobile-${purchaseOrder.id}`}
+            onEdit={onEdit}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+          />
+        ) : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
@@ -76,7 +97,81 @@ function PurchaseOrderMobileCard({
           </span>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+      {canManage ? (
+        <DeletePurchaseOrderDialog
+          key={`${purchaseOrder.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
+          purchaseOrder={purchaseOrder}
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onDeleted={onDeleted}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PurchaseOrderRow({
+  purchaseOrder,
+  canManage,
+  onEdit,
+  onDeleted,
+}: {
+  purchaseOrder: PurchaseOrderListItem;
+  canManage: boolean;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <TableRow
+        className="hover:bg-muted/35"
+        data-purchase-order-id={purchaseOrder.id}
+      >
+        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+          <span className="block break-words">
+            <FileText
+              className="mr-2 inline-block align-text-bottom"
+              aria-hidden="true"
+            />
+            {purchaseOrder.purchaseOrderNo}
+          </span>
+        </TableCell>
+        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+          <span className="block break-words">{purchaseOrder.vendor.name}</span>
+        </TableCell>
+        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+          <span className="block break-words">
+            {displayReference(purchaseOrder.referenceNumber)}
+          </span>
+        </TableCell>
+        <TableCell className="whitespace-nowrap align-top">
+          {formatUpdatedAt(purchaseOrder.updatedAt)}
+        </TableCell>
+        {canManage ? (
+          <TableCell className="text-center align-top">
+            <PurchaseOrderActionsMenu
+              purchaseOrderId={purchaseOrder.id}
+              purchaseOrderNo={purchaseOrder.purchaseOrderNo}
+              actionButtonId={`purchase-order-actions-desktop-${purchaseOrder.id}`}
+              onEdit={onEdit}
+              onDelete={() => setIsDeleteDialogOpen(true)}
+            />
+          </TableCell>
+        ) : null}
+      </TableRow>
+      {canManage ? (
+        <DeletePurchaseOrderDialog
+          key={`${purchaseOrder.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
+          purchaseOrder={purchaseOrder}
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onDeleted={onDeleted}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -84,10 +179,16 @@ export default function PurchaseOrdersTable({
   purchaseOrders,
   hasFilters,
   onClearFilters,
+  canManage,
+  onEdit,
+  onDeleted,
 }: {
   purchaseOrders: PurchaseOrderListItem[];
   hasFilters: boolean;
   onClearFilters: () => void;
+  canManage: boolean;
+  onEdit: (purchaseOrder: PurchaseOrderListItem) => void;
+  onDeleted: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
   if (purchaseOrders.length === 0) {
     return (
@@ -125,6 +226,9 @@ export default function PurchaseOrdersTable({
           <PurchaseOrderMobileCard
             key={purchaseOrder.id}
             purchaseOrder={purchaseOrder}
+            canManage={canManage}
+            onEdit={() => onEdit(purchaseOrder)}
+            onDeleted={() => onDeleted(purchaseOrder)}
           />
         ))}
       </div>
@@ -144,33 +248,22 @@ export default function PurchaseOrdersTable({
               <TableHead scope="col" className="text-left">
                 Last updated
               </TableHead>
+              {canManage ? (
+                <TableHead scope="col" className="text-center">
+                  Actions
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {purchaseOrders.map((purchaseOrder) => (
-              <TableRow
+              <PurchaseOrderRow
                 key={purchaseOrder.id}
-                className="hover:bg-muted/35"
-                data-purchase-order-id={purchaseOrder.id}
-              >
-                <TableCell className="max-w-[18rem] whitespace-normal align-top">
-                  <span className="block break-words">
-                    <FileText className="mr-2 inline-block align-text-bottom" aria-hidden="true" />
-                    {purchaseOrder.purchaseOrderNo}
-                  </span>
-                </TableCell>
-                <TableCell className="max-w-[18rem] whitespace-normal align-top">
-                  <span className="block break-words">{purchaseOrder.vendor.name}</span>
-                </TableCell>
-                <TableCell className="max-w-[18rem] whitespace-normal align-top">
-                  <span className="block break-words">
-                    {displayReference(purchaseOrder.referenceNumber)}
-                  </span>
-                </TableCell>
-                <TableCell className="whitespace-nowrap align-top">
-                  {formatUpdatedAt(purchaseOrder.updatedAt)}
-                </TableCell>
-              </TableRow>
+                purchaseOrder={purchaseOrder}
+                canManage={canManage}
+                onEdit={() => onEdit(purchaseOrder)}
+                onDeleted={() => onDeleted(purchaseOrder)}
+              />
             ))}
           </TableBody>
         </WorkspaceTableFrame>

@@ -11,7 +11,9 @@ import {
 import {
   canManagePurchaseOrders,
   createPurchaseOrder,
+  deletePurchaseOrder,
   listPurchaseOrders,
+  updatePurchaseOrder,
 } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { filterPurchaseOrders } from "@/features/supply-operations/components/purchase-order-filters";
@@ -324,6 +326,100 @@ describe("Purchase Order mutation gateway", () => {
       ok: false,
       kind: "forbidden",
       fields: {},
+    });
+  });
+
+  it("updates a Purchase Order, retains its inactive Vendor, and deletes safely", async () => {
+    await createActorUser(adminActor, "admin");
+    await createActorUser(staffActor);
+    const activeVendor = await createVendor(
+      "po-update-active-vendor",
+      "Update Foods",
+    );
+    const replacementVendor = await createVendor(
+      "po-update-replacement-vendor",
+      "Replacement Foods",
+      false,
+    );
+
+    const created = await createPurchaseOrder(adminActor, {
+      purchaseOrderNo: "PO-2026-019",
+      vendorId: activeVendor.id,
+      referenceNumber: "ORS-19",
+    });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    await expect(
+      updatePurchaseOrder(adminActor, created.purchaseOrder.id, {
+        purchaseOrderNo: " PO-2026-020 ",
+        vendorId: activeVendor.id,
+        note: "Updated note",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      purchaseOrder: {
+        purchaseOrderNo: "PO-2026-020",
+        referenceNumber: null,
+        note: "Updated note",
+      },
+    });
+
+    await prisma.vendor.update({
+      where: { id: activeVendor.id },
+      data: { isActive: false },
+    });
+
+    await expect(
+      updatePurchaseOrder(adminActor, created.purchaseOrder.id, {
+        purchaseOrderNo: "PO-2026-020",
+        vendorId: activeVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      purchaseOrder: {
+        vendor: { id: activeVendor.id, isActive: false },
+      },
+    });
+
+    await expect(
+      updatePurchaseOrder(adminActor, created.purchaseOrder.id, {
+        purchaseOrderNo: "PO-2026-021",
+        vendorId: replacementVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "inactive",
+      fields: { vendorId: ["Select an active Vendor."] },
+    });
+
+    await expect(
+      updatePurchaseOrder(staffActor, created.purchaseOrder.id, {
+        purchaseOrderNo: "PO-2026-022",
+        vendorId: activeVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      fields: {},
+    });
+
+    await expect(
+      deletePurchaseOrder(staffActor, created.purchaseOrder.id),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+    });
+    await expect(
+      deletePurchaseOrder(adminActor, created.purchaseOrder.id),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      deletePurchaseOrder(adminActor, created.purchaseOrder.id),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "not-found",
+      error: "The Purchase Order could not be found.",
     });
   });
 });

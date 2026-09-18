@@ -3,12 +3,17 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
+const adminPassword = "administrator-password";
 
-async function signIn(page: Page) {
+async function signIn(
+  page: Page,
+  username = "kitchen.staff",
+  password = staffPassword,
+) {
   const response = await page.request.post("/api/auth/sign-in/username", {
     data: {
-      username: "kitchen.staff",
-      password: staffPassword,
+      username,
+      password,
     },
     headers: {
       origin: process.env.BETTER_AUTH_URL ?? "http://localhost:3019",
@@ -63,9 +68,16 @@ test.describe("Purchase Orders read journey", () => {
     });
 
     await page.reload();
-    await expect(page.getByText("PO-E2E-001", { exact: true })).toBeVisible();
-    await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
-    await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
+    const desktopTable = page.locator("[data-purchase-orders-table-desktop]");
+    await expect(
+      desktopTable.getByText("PO-E2E-001", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      desktopTable.getByText("Acme Foods", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      desktopTable.getByText("ORS-E2E-001", { exact: true }),
+    ).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator("[data-purchase-orders-mobile]")).toBeVisible();
@@ -79,5 +91,151 @@ test.describe("Purchase Orders read journey", () => {
     withE2eDatabase((database) => {
       database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
     });
+  });
+});
+
+test.describe("Purchase Orders administration journey", () => {
+  test("lets administrators create, edit, and delete a Purchase Order", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    try {
+      await signIn(page, "municipal.admin", adminPassword);
+      await page.goto("/purchase-orders");
+      await expect(
+        page.locator('[data-can-manage-purchase-orders="true"]'),
+      ).toBeVisible();
+
+      const addButton = page.getByRole("button", {
+        name: "Add Purchase Order",
+        exact: true,
+      });
+      await expect(addButton).toBeVisible();
+      await addButton.click();
+
+      const dialog = page.getByRole("dialog");
+      await expect(
+        dialog.getByRole("heading", { name: "Add Purchase Order", exact: true }),
+      ).toBeVisible();
+      await dialog
+        .getByRole("textbox", { name: "Purchase Order No.", exact: true })
+        .fill(" PO-E2E-CRUD-001 ");
+      await dialog.getByRole("combobox", { name: "Vendor", exact: true }).click();
+      await expect(
+        page.getByRole("option", { name: "Acme Foods", exact: true }),
+      ).toBeVisible();
+      await page
+        .getByRole("option", { name: "Acme Foods", exact: true })
+        .click();
+      await dialog
+        .getByLabel("Reference number (optional)", { exact: true })
+        .fill(" ORS-E2E-CRUD-001 ");
+      await dialog
+        .getByLabel("Note (optional)", { exact: true })
+        .fill("Kitchen delivery");
+      await dialog
+        .getByRole("button", { name: "Add Purchase Order", exact: true })
+        .click();
+      await expect(dialog).toBeHidden();
+
+      const desktopRow = page.locator(
+        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+      ).filter({ hasText: "PO-E2E-CRUD-001" });
+      await expect(desktopRow).toBeVisible();
+      await expect(desktopRow).toContainText("Acme Foods");
+      await expect(desktopRow).toContainText("ORS-E2E-CRUD-001");
+
+      await addButton.click();
+      const duplicateDialog = page.getByRole("dialog");
+      await duplicateDialog
+        .getByRole("textbox", { name: "Purchase Order No.", exact: true })
+        .fill("po-e2e-crud-001");
+      await duplicateDialog
+        .getByRole("combobox", { name: "Vendor", exact: true })
+        .click();
+      await page
+        .getByRole("option", { name: "Acme Foods", exact: true })
+        .click();
+      await duplicateDialog
+        .getByRole("button", { name: "Add Purchase Order", exact: true })
+        .click();
+      await expect(
+        duplicateDialog.locator(
+          '[data-slot="alert"][role="alert"] [data-slot="alert-description"]',
+        ),
+      ).toBeVisible();
+      await expect(
+        duplicateDialog.locator(
+          '[data-slot="alert"][role="alert"] [data-slot="alert-description"]',
+        ),
+      ).toHaveText("A Purchase Order with that number already exists.");
+      await expect(
+        duplicateDialog.getByRole("textbox", {
+          name: "Purchase Order No.",
+          exact: true,
+        }),
+      ).toHaveValue("po-e2e-crud-001");
+      await duplicateDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Discard changes", exact: true })
+        .click();
+      await expect(duplicateDialog).toBeHidden();
+
+      await desktopRow
+        .getByRole("button", {
+          name: "Actions for PO-E2E-CRUD-001",
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const editDialog = page.getByRole("dialog");
+      await expect(
+        editDialog.getByRole("heading", {
+          name: "Edit Purchase Order",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        editDialog.getByRole("textbox", {
+          name: "Purchase Order No.",
+          exact: true,
+        }),
+      ).toHaveValue("PO-E2E-CRUD-001");
+      await editDialog
+        .getByLabel("Reference number (optional)", { exact: true })
+        .fill("ORS-E2E-CRUD-UPDATED");
+      await editDialog
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+      await expect(editDialog).toBeHidden();
+      await expect(desktopRow).toContainText("ORS-E2E-CRUD-UPDATED");
+
+      await desktopRow
+        .getByRole("button", {
+          name: "Actions for PO-E2E-CRUD-001",
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const deleteDialog = page.getByRole("alertdialog");
+      await expect(deleteDialog).toBeVisible();
+      await deleteDialog
+        .getByRole("button", { name: "Delete Purchase Order", exact: true })
+        .click();
+      await expect(deleteDialog).toBeHidden();
+      await expect(desktopRow).toHaveCount(0);
+    } finally {
+      withE2eDatabase((database) => {
+        database
+          .prepare(
+            'DELETE FROM "purchase_order" WHERE "purchaseOrderNo" = ?',
+          )
+          .run("PO-E2E-CRUD-001");
+      });
+    }
   });
 });

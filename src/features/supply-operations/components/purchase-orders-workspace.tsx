@@ -10,7 +10,7 @@ import type {
   PurchaseOrderListItem,
   PurchaseOrderVendorOption,
 } from "../types";
-import PurchaseOrderCreateDialog from "./purchase-order-create-dialog";
+import PurchaseOrderDialog from "./purchase-order-create-dialog";
 import PurchaseOrderPagination from "./purchase-order-pagination";
 import PurchaseOrderToolbar from "./purchase-order-toolbar";
 import {
@@ -26,6 +26,10 @@ import PurchaseOrdersTable from "./purchase-orders-table";
 
 const PAGE_SIZE = 10;
 const SEARCH_NAVIGATION_DELAY_MS = 250;
+
+type PurchaseOrderDialogState =
+  | { mode: "create" }
+  | { mode: "edit"; purchaseOrder: PurchaseOrderListItem };
 
 export default function PurchaseOrdersWorkspace({
   purchaseOrders,
@@ -45,7 +49,8 @@ export default function PurchaseOrdersWorkspace({
     () => getPurchaseOrderListState(new URLSearchParams(currentQuery)).search,
   );
   const searchNavigationTimeoutRef = useRef<number | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [purchaseOrderDialogState, setPurchaseOrderDialogState] =
+    useState<PurchaseOrderDialogState | null>(null);
   const listState = useMemo(
     () => getPurchaseOrderListState(new URLSearchParams(clientQuery)),
     [clientQuery],
@@ -142,8 +147,36 @@ export default function PurchaseOrdersWorkspace({
     replaceListUrl({ search: searchInput, page: Math.min(Math.max(page, 1), pageCount) });
   }
 
-  function closeCreateDialog() {
-    setIsCreateDialogOpen(false);
+  function closePurchaseOrderDialog() {
+    const closedDialog = purchaseOrderDialogState;
+    setPurchaseOrderDialogState(null);
+    window.setTimeout(() => {
+      if (closedDialog?.mode === "edit") {
+        const actionButtons = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "[data-purchase-order-action-id]",
+          ),
+        ).filter(
+          (button) =>
+            button.dataset.purchaseOrderActionId ===
+            closedDialog.purchaseOrder.id,
+        );
+        const visibleAction = actionButtons.find(
+          (button) => button.offsetWidth > 0 && button.offsetHeight > 0,
+        );
+        visibleAction?.focus();
+        return;
+      }
+
+      document.getElementById("new-purchase-order")?.focus();
+    }, 0);
+  }
+
+  function handleDeleted(purchaseOrder: PurchaseOrderListItem) {
+    router.refresh();
+    toast.success(
+      `Purchase Order “${purchaseOrder.purchaseOrderNo}” deleted`,
+    );
     window.setTimeout(() => {
       document.getElementById("new-purchase-order")?.focus();
     }, 0);
@@ -167,7 +200,7 @@ export default function PurchaseOrdersWorkspace({
           <WorkspacePrimaryAction
             id="new-purchase-order"
             className="sm:min-w-[11rem]"
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={() => setPurchaseOrderDialogState({ mode: "create" })}
           >
             Add Purchase Order
           </WorkspacePrimaryAction>
@@ -181,6 +214,11 @@ export default function PurchaseOrdersWorkspace({
         purchaseOrders={paginatedPurchaseOrders}
         hasFilters={filtersAreActive}
         onClearFilters={clearSearch}
+        canManage={canManagePurchaseOrders}
+        onEdit={(purchaseOrder) =>
+          setPurchaseOrderDialogState({ mode: "edit", purchaseOrder })
+        }
+        onDeleted={handleDeleted}
       />
       <PurchaseOrderPagination
         page={currentPage}
@@ -191,15 +229,21 @@ export default function PurchaseOrdersWorkspace({
         onPageChange={changePage}
       />
       {canManagePurchaseOrders ? (
-        <PurchaseOrderCreateDialog
-          open={isCreateDialogOpen}
+        <PurchaseOrderDialog
+          open={purchaseOrderDialogState !== null}
+          purchaseOrder={
+            purchaseOrderDialogState?.mode === "edit"
+              ? purchaseOrderDialogState.purchaseOrder
+              : undefined
+          }
           vendors={vendors}
-          onClose={closeCreateDialog}
+          onClose={closePurchaseOrderDialog}
           onSuccess={(purchaseOrder) => {
-            closeCreateDialog();
+            const mode = purchaseOrderDialogState?.mode;
+            closePurchaseOrderDialog();
             router.refresh();
             toast.success(
-              `Purchase Order “${purchaseOrder.purchaseOrderNo}” created`,
+              `Purchase Order “${purchaseOrder.purchaseOrderNo}” ${mode === "edit" ? "updated" : "created"}`,
             );
           }}
         />
