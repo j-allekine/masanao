@@ -6,21 +6,6 @@ import boundaries from "eslint-plugin-boundaries";
 const featureTypes = ["feature", "feature-db"];
 const sharedTypes = ["shared", "shared-server"];
 
-const sameFeatureTargets = [
-  {
-    element: {
-      type: "feature",
-      captured: { featureName: "{{ from.element.captured.featureName }}" },
-    },
-  },
-  {
-    element: {
-      type: "feature-db",
-      captured: { featureName: "{{ from.element.captured.featureName }}" },
-    },
-  },
-];
-
 const architectureConfig = {
   files: ["src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
   plugins: { boundaries },
@@ -110,7 +95,7 @@ const architectureConfig = {
           {
             from: { element: { type: featureTypes } },
             to: { element: { type: featureTypes } },
-            allow: { to: sameFeatureTargets },
+            allow: { to: { element: { type: featureTypes } } },
           },
           {
             from: { element: { type: featureTypes } },

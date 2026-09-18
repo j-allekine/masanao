@@ -56,6 +56,19 @@ test("allowed architecture dependencies pass", async () => {
       source: 'import { Button } from "@/components/ui/button";',
     },
     {
+      name: "feature to another feature public gateway",
+      filePath: "src/features/supply-operations/architecture-fixture.ts",
+      source:
+        'import { listUnits } from "@/features/master-data/server";',
+    },
+    {
+      name: "feature to another feature implementation",
+      filePath:
+        "src/features/supply-operations/server/commands/architecture-fixture.ts",
+      source:
+        'import { listUnitRecords } from "@/features/master-data/server/db/units";',
+    },
+    {
       name: "shared to shared import",
       filePath: "src/components/ui/architecture-fixture.tsx",
       source: 'import { cn } from "@/lib/utils";',
@@ -102,12 +115,6 @@ test("forbidden architecture dependencies are rejected", async () => {
       ruleId: "boundaries/dependencies",
     },
     {
-      name: "cross-feature import",
-      filePath: "src/features/access-management/architecture-fixture.ts",
-      source: 'import { listActivityDesigns } from "@/features/activity-planning/server";',
-      ruleId: "boundaries/dependencies",
-    },
-    {
       name: "app deep import into a feature",
       filePath: "src/app/architecture-fixture.ts",
       source:
@@ -146,13 +153,6 @@ test("forbidden architecture dependencies are rejected", async () => {
       filePath:
         "src/features/master-data/server/commands/architecture-fixture.ts",
       source: 'import { prisma } from "@/prisma/client";',
-      ruleId: "boundaries/dependencies",
-    },
-    {
-      name: "Master Data cross-feature import",
-      filePath: "src/features/master-data/architecture-fixture.ts",
-      source:
-        'import { listActivityDesigns } from "@/features/activity-planning/server";',
       ruleId: "boundaries/dependencies",
     },
     {

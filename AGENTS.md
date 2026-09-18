@@ -78,7 +78,10 @@ current change.
   forbidden.
 - A feature may import its own internals and shared code.
 - Shared code may import only shared code.
-- Cross-feature imports are forbidden.
+- Cross-feature imports are allowed. Feature folders define code ownership and
+  placement, not a dependency firewall. Prefer a target feature's public
+  gateway when it provides the needed capability, but direct feature imports
+  are permitted when they keep the server-side workflow simpler.
 - App code imports a feature only through `ui.ts`, `actions.ts`, or `server.ts`.
 - App code must not deep-import feature schemas, commands, queries, policies,
   domain rules, or database modules.
