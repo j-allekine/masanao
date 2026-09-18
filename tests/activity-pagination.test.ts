@@ -50,15 +50,13 @@ describe("Activities pagination", () => {
     ).toBe("Showing 11 to 12 of 12 results");
   });
 
-  it("supports direct desktop page selection and ellipses for long ranges", () => {
+  it("keeps desktop page choices to the current three-page window", () => {
     expect(getCatalogPageItems(6, 12)).toEqual([
-      1,
       "ellipsis-start",
       5,
       6,
       7,
       "ellipsis-end",
-      12,
     ]);
 
     const markup = renderPagination({
@@ -72,7 +70,6 @@ describe("Activities pagination", () => {
     expect(markup).toContain('aria-label="Page 5 of 12"');
     expect(markup).toContain('aria-label="Page 6 of 12"');
     expect(markup).toContain('aria-label="Page 7 of 12"');
-    expect(markup).toContain('aria-label="Page 12 of 12"');
     expect(markup).toContain("More pages");
     expect(markup).toContain(
       'aria-live="polite">Showing 51 to 60 of 120 results',
