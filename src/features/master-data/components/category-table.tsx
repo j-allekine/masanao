@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Tags } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
   TableCell,
@@ -11,13 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { CategoryListItem } from "../types";
 import { hasCategoryFilters } from "./category-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteCategoryDialog from "./delete-category-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
-import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function CategoryRow({
   category,
@@ -48,9 +48,7 @@ function CategoryRow({
           </span>
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={category.isActive ? "default" : "outline"}>
-            {category.isActive ? "Active" : "Inactive"}
-          </Badge>
+          <WorkspaceLifecycleBadge isActive={category.isActive} />
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">

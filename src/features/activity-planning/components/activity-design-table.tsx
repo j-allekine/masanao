@@ -3,23 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ListEmptyState from "@/components/workspace/list-empty-state";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ActivityDesignListItem } from "../types";
 import { hasActivityDesignFilters } from "./activity-design-filters";
@@ -128,75 +120,69 @@ export default function ActivityDesignTable({
 
   if (activityDesigns.length === 0) {
     return (
-      <Empty className="min-h-60 rounded-lg border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <span aria-hidden="true">AD</span>
-          </EmptyMedia>
-          <EmptyTitle>
-            {hasFilters
-              ? "No Activity Designs match your current filters."
-              : "No Activity Designs yet."}
-          </EmptyTitle>
-          <EmptyDescription>
-            {hasFilters
-              ? "Clear filters to see the complete Activity Designs list."
-              : "Create an Activity Design to begin planning."}
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {hasFilters ? (
-            <Button type="button" variant="outline" onClick={onClearFilters}>
-              Clear filters
-            </Button>
-          ) : (
-            <Button type="button" onClick={onNew}>
-              New Activity Design
-            </Button>
-          )}
-        </EmptyContent>
-      </Empty>
+      <ListEmptyState
+        icon={<span aria-hidden="true">AD</span>}
+        hasFilters={hasFilters}
+        filteredState={{
+          title: "No Activity Designs match your current filters.",
+          description:
+            "Clear filters to see the complete Activity Designs list.",
+          action: {
+            label: "Clear filters",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
+        }}
+        emptyState={{
+          title: "No Activity Designs yet.",
+          description: "Create an Activity Design to begin planning.",
+          action: {
+            label: "New Activity Design",
+            onClick: onNew,
+          },
+        }}
+      />
     );
   }
 
   return (
-    <div className="rounded-xl border bg-card shadow-xs">
-      <Table className="min-w-[52rem]">
-        <caption className="sr-only">Activity Designs</caption>
-        <TableHeader className="bg-muted/60">
-          <TableRow>
-            <TableHead scope="col" className="text-left">
-              Design No.
-            </TableHead>
-            <TableHead scope="col" className="text-left">
-              Activity Design
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Fiscal Year
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Activities
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Meal Schedules
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {activityDesigns.map((activityDesign) => (
-            <ActivityDesignRow
-              key={activityDesign.id}
-              activityDesign={activityDesign}
-              onEdit={() => onEdit(activityDesign)}
-              onAddActivity={() => onAddActivity(activityDesign)}
-              onDeleted={() => handleDeleted(activityDesign.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <WorkspaceTableFrame
+      caption="Activity Designs"
+      className="min-w-[52rem]"
+    >
+      <TableHeader className="bg-muted/60">
+        <TableRow>
+          <TableHead scope="col" className="text-left">
+            Design No.
+          </TableHead>
+          <TableHead scope="col" className="text-left">
+            Activity Design
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Fiscal Year
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Activities
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Meal Schedules
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Actions
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {activityDesigns.map((activityDesign) => (
+          <ActivityDesignRow
+            key={activityDesign.id}
+            activityDesign={activityDesign}
+            onEdit={() => onEdit(activityDesign)}
+            onAddActivity={() => onAddActivity(activityDesign)}
+            onDeleted={() => handleDeleted(activityDesign.id)}
+          />
+        ))}
+      </TableBody>
+    </WorkspaceTableFrame>
   );
 }

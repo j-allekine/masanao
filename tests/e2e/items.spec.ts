@@ -441,6 +441,69 @@ test.describe("Items catalog journey", () => {
     ).toBeVisible();
   });
 
+  test("shows the correct empty-state action for empty and filtered Items", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/items");
+
+    const emptyState = page.locator('[data-slot="empty"]');
+    await expect(
+      emptyState.getByText("No Items yet.", { exact: true }),
+    ).toBeVisible();
+    const createFromEmpty = emptyState.getByRole("button", {
+      name: "Add Item",
+      exact: true,
+    });
+    await createFromEmpty.focus();
+    await expect(createFromEmpty).toBeFocused();
+    await createFromEmpty.press("Enter");
+
+    const createDialog = page.getByRole("dialog");
+    await expect(
+      createDialog.getByRole("heading", { name: "Add Item", exact: true }),
+    ).toBeVisible();
+    await createDialog
+      .getByRole("button", { name: "Cancel", exact: true })
+      .click();
+    await expect(createDialog).toBeHidden();
+
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    await page.getByLabel("Search Items").fill("does-not-exist");
+    await expect(page).toHaveURL(/items\?itemsSearch=does-not-exist$/);
+
+    const filteredEmptyState = page.locator('[data-slot="empty"]');
+    await expect(
+      filteredEmptyState.getByText("No Items match your current filters.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      filteredEmptyState.getByRole("button", {
+        name: "Clear filters",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      filteredEmptyState.getByRole("button", { name: "Add Item", exact: true }),
+    ).toHaveCount(0);
+
+    await filteredEmptyState
+      .getByRole("button", { name: "Clear filters", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/items$/);
+    await expect(
+      page.locator("[data-items-table-desktop]").getByText("Alpha Beans", {
+        exact: true,
+      }),
+    ).toBeVisible();
+  });
+
   test("lets authenticated staff browse empty and populated Items without mutation controls", async ({
     page,
   }) => {

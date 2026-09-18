@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
   TableCell,
@@ -10,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { UnitListItem } from "../types";
 import { hasUnitFilters, type UnitFilters } from "./unit-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteUnitDialog from "./delete-unit-dialog";
 import MasterDataEmptyState from "./master-data-empty-state";
-import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 function UnitRow({
   unit,
@@ -45,9 +45,7 @@ function UnitRow({
           {unit.abbreviation}
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={unit.active ? "default" : "outline"}>
-            {unit.active ? "Active" : "Inactive"}
-          </Badge>
+          <WorkspaceLifecycleBadge isActive={unit.active} />
         </TableCell>
         {canManage ? (
           <TableCell className="text-center">

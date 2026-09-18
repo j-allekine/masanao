@@ -1,16 +1,8 @@
 "use client";
 
-import { Ellipsis, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 
 export default function ActivityDesignActionsMenu({
   activityDesignTitle,
@@ -25,47 +17,36 @@ export default function ActivityDesignActionsMenu({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  function openAfterMenuCloses(action: () => void) {
-    window.setTimeout(action, 0);
-  }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            id={actionButtonId}
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Actions for ${activityDesignTitle}`}
-          />
-        }
-      >
-        <Ellipsis />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onAddActivity)}>
-            <Plus />
-            Add Activity
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
-            <Pencil />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => openAfterMenuCloses(onDelete)}
-          >
-            <Trash2 />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <WorkspaceRowActionMenu
+      actionButtonId={actionButtonId}
+      ariaLabel={`Actions for ${activityDesignTitle}`}
+      groups={[
+        {
+          actions: [
+            {
+              label: "Add Activity",
+              icon: <Plus data-icon="inline-start" />,
+              onSelect: onAddActivity,
+            },
+          ],
+        },
+        {
+          actions: [
+            {
+              label: "Edit",
+              icon: <Pencil data-icon="inline-start" />,
+              onSelect: onEdit,
+            },
+            {
+              label: "Delete",
+              icon: <Trash2 data-icon="inline-start" />,
+              onSelect: onDelete,
+              variant: "destructive",
+            },
+          ],
+        },
+      ]}
+    />
   );
 }

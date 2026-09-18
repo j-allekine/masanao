@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Plus, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ export function WorkspaceCatalogToolbar({
   searchPlaceholder,
   search,
   onSearchChange,
+  filterContent,
   action,
 }: {
   ariaLabel: string;
@@ -83,6 +84,7 @@ export function WorkspaceCatalogToolbar({
   searchPlaceholder: string;
   search: string;
   onSearchChange: (search: string) => void;
+  filterContent?: ReactNode;
   action?: {
     id: string;
     label: string;
@@ -96,14 +98,26 @@ export function WorkspaceCatalogToolbar({
       className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between"
       role="search"
     >
-      <WorkspaceSearchField
-        id={searchId}
-        label={searchLabel}
-        placeholder={searchPlaceholder}
-        value={search}
-        onValueChange={onSearchChange}
-        className="sm:max-w-[27rem]"
-      />
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-3",
+          filterContent
+            ? "lg:flex-row lg:items-end"
+            : "sm:flex-row sm:items-end",
+        )}
+      >
+        <WorkspaceSearchField
+          id={searchId}
+          label={searchLabel}
+          placeholder={searchPlaceholder}
+          value={search}
+          onValueChange={onSearchChange}
+          className={cn(
+            filterContent ? "lg:max-w-[28rem]" : "sm:max-w-[27rem]",
+          )}
+        />
+        {filterContent}
+      </div>
       {action ? (
         <WorkspacePrimaryAction
           id={action.id}

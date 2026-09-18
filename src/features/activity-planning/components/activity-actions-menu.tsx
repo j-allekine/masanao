@@ -1,15 +1,8 @@
 "use client";
 
-import { Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 
 export default function ActivityActionsMenu({
   activityName,
@@ -22,40 +15,27 @@ export default function ActivityActionsMenu({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  function openAfterMenuCloses(action: () => void) {
-    window.setTimeout(action, 0);
-  }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            id={actionButtonId}
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Actions for ${activityName}`}
-          />
-        }
-      >
-        <Ellipsis data-icon="inline-start" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-36">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => openAfterMenuCloses(onEdit)}>
-            <Pencil data-icon="inline-start" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => openAfterMenuCloses(onDelete)}
-          >
-            <Trash2 data-icon="inline-start" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <WorkspaceRowActionMenu
+      actionButtonId={actionButtonId}
+      ariaLabel={`Actions for ${activityName}`}
+      groups={[
+        {
+          actions: [
+            {
+              label: "Edit",
+              icon: <Pencil data-icon="inline-start" />,
+              onSelect: onEdit,
+            },
+            {
+              label: "Delete",
+              icon: <Trash2 data-icon="inline-start" />,
+              onSelect: onDelete,
+              variant: "destructive",
+            },
+          ],
+        },
+      ]}
+    />
   );
 }

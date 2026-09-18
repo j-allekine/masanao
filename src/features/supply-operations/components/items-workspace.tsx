@@ -288,6 +288,7 @@ function ItemsWorkspaceContent({
         items={paginatedItems}
         hasFilters={filtersAreActive}
         onClearFilters={clearFilters}
+        onCreate={openCreateDialog}
         canManage={canManageItems}
         onEdit={openEditDialog}
         onSetActive={handleSetActive}

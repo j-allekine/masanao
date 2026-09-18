@@ -2,21 +2,11 @@ import { useState } from "react";
 import { PackageOpen } from "lucide-react";
 
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Button } from "@/components/ui/button";
-import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
   TableCell,
@@ -24,15 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ListEmptyState from "@/components/workspace/list-empty-state";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ItemListItem } from "../types";
 import ItemActionsMenu from "./item-actions-menu";
 import DeleteItemDialog from "./delete-item-dialog";
-import WorkspaceTableFrame from "@/components/workspace/table-frame";
-
-function ItemStatus({ isActive }: { isActive: boolean }) {
-  return <Badge variant={isActive ? "default" : "outline"}>{isActive ? "Active" : "Inactive"}</Badge>;
-}
 
 function ItemMobileCard({
   item,
@@ -88,7 +76,7 @@ function ItemMobileCard({
             <span className="text-label font-semibold text-muted-foreground">
               Status
             </span>
-            <ItemStatus isActive={item.isActive} />
+            <WorkspaceLifecycleBadge isActive={item.isActive} />
           </div>
         </CardContent>
       </Card>
@@ -135,7 +123,7 @@ function ItemRow({
           <span className="block break-words">{item.baseUnit.name}</span>
         </TableCell>
         <TableCell className="text-center">
-          <ItemStatus isActive={item.isActive} />
+          <WorkspaceLifecycleBadge isActive={item.isActive} />
         </TableCell>
         <TableCell className="w-24 text-right">
           <div className="flex justify-end">
@@ -169,6 +157,7 @@ export default function ItemsTable({
   items,
   hasFilters,
   onClearFilters,
+  onCreate,
   canManage,
   onEdit,
   onSetActive,
@@ -179,6 +168,7 @@ export default function ItemsTable({
   items: ItemListItem[];
   hasFilters: boolean;
   onClearFilters: () => void;
+  onCreate: () => void;
   canManage: boolean;
   onEdit: (item: ItemListItem) => void;
   onSetActive: (item: ItemListItem, isActive: boolean) => void;
@@ -188,28 +178,27 @@ export default function ItemsTable({
 }) {
   if (items.length === 0) {
     return (
-      <Empty className="min-h-60 rounded-lg border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <PackageOpen aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle>
-            {hasFilters ? "No Items match your current filters." : "No Items yet."}
-          </EmptyTitle>
-          <EmptyDescription>
-            {hasFilters
-              ? "Clear filters to see the complete Items list."
-              : "Items will appear here once the supply catalog is configured."}
-          </EmptyDescription>
-        </EmptyHeader>
-        {hasFilters ? (
-          <EmptyContent>
-            <Button type="button" variant="outline" onClick={onClearFilters}>
-              Clear filters
-            </Button>
-          </EmptyContent>
-        ) : null}
-      </Empty>
+      <ListEmptyState
+        icon={<PackageOpen aria-hidden="true" />}
+        hasFilters={hasFilters}
+        filteredState={{
+          title: "No Items match your current filters.",
+          description: "Clear filters to see the complete Items list.",
+          action: {
+            label: "Clear filters",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
+        }}
+        emptyState={{
+          title: "No Items yet.",
+          description:
+            "Items will appear here once the supply catalog is configured.",
+          action: canManage
+            ? { label: "Add Item", onClick: onCreate }
+            : undefined,
+        }}
+      />
     );
   }
 

@@ -1,20 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deleteItemAction } from "../actions";
 import type { ItemListItem } from "../types";
@@ -56,37 +44,21 @@ export default function DeleteItemDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete “{item.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently removes the Item from the catalog. An Item that
-            is referenced by operational records or configured alternate Units cannot be deleted.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isDeleting}
-            onClick={handleDelete}
-          >
-            {isDeleting ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 data-icon="inline-start" />
-            )}
-            {isDeleting ? "Deleting..." : "Delete Item"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete “${item.name}”?`}
+      description={
+        <>
+          This permanently removes the Item from the catalog. An Item that is
+          referenced by operational records or configured alternate Units cannot be deleted.
+        </>
+      }
+      error={error}
+      isPending={isDeleting}
+      onConfirm={handleDelete}
+      confirmLabel="Delete Item"
+      pendingLabel="Deleting..."
+    />
   );
 }

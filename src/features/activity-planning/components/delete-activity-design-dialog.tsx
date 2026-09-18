@@ -1,24 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deleteActivityDesignAction } from "../actions";
 import type { ActivityDesignListItem } from "../types";
@@ -73,46 +57,25 @@ export default function DeleteActivityDesignDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isBlocked
-              ? `Activity Design “${activityDesign.title}” cannot be deleted`
-              : `Delete “${activityDesign.title}”?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isBlocked
-              ? blockedMessage(activityCount)
-              : "This permanently removes the planning context. It can only be deleted while it has no Activities."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>
-            {isBlocked ? "Close" : "Cancel"}
-          </AlertDialogCancel>
-          {!isBlocked ? (
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={handleDelete}
-            >
-              {isDeleting ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 data-icon="inline-start" />
-              )}
-              {isDeleting ? "Deleting…" : "Delete Activity Design"}
-            </AlertDialogAction>
-          ) : null}
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        isBlocked
+          ? `Activity Design “${activityDesign.title}” cannot be deleted`
+          : `Delete “${activityDesign.title}”?`
+      }
+      description={
+        isBlocked
+          ? blockedMessage(activityCount)
+          : "This permanently removes the planning context. It can only be deleted while it has no Activities."
+      }
+      error={error}
+      isPending={isDeleting}
+      onConfirm={isBlocked ? undefined : handleDelete}
+      confirmLabel="Delete Activity Design"
+      pendingLabel="Deleting…"
+      cancelLabel={isBlocked ? "Close" : "Cancel"}
+    />
   );
 }
