@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
-import type { PurchaseOrderListItem } from "../types";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+
+import type {
+  PurchaseOrderListItem,
+  PurchaseOrderVendorOption,
+} from "../types";
+import PurchaseOrderCreateDialog from "./purchase-order-create-dialog";
 import PurchaseOrderPagination from "./purchase-order-pagination";
 import PurchaseOrderToolbar from "./purchase-order-toolbar";
 import {
@@ -22,10 +29,15 @@ const SEARCH_NAVIGATION_DELAY_MS = 250;
 
 export default function PurchaseOrdersWorkspace({
   purchaseOrders,
+  vendors,
+  canManagePurchaseOrders,
 }: {
   purchaseOrders: PurchaseOrderListItem[];
+  vendors: PurchaseOrderVendorOption[];
+  canManagePurchaseOrders: boolean;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.toString();
   const [clientQuery, setClientQuery] = useState(currentQuery);
@@ -33,6 +45,7 @@ export default function PurchaseOrdersWorkspace({
     () => getPurchaseOrderListState(new URLSearchParams(currentQuery)).search,
   );
   const searchNavigationTimeoutRef = useRef<number | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const listState = useMemo(
     () => getPurchaseOrderListState(new URLSearchParams(clientQuery)),
     [clientQuery],
@@ -129,15 +142,36 @@ export default function PurchaseOrdersWorkspace({
     replaceListUrl({ search: searchInput, page: Math.min(Math.max(page, 1), pageCount) });
   }
 
+  function closeCreateDialog() {
+    setIsCreateDialogOpen(false);
+    window.setTimeout(() => {
+      document.getElementById("new-purchase-order")?.focus();
+    }, 0);
+  }
+
   return (
-    <main className="flex min-w-0 flex-col gap-6">
-      <div className="flex flex-col gap-3 border-b pb-5">
+    <main
+      className="flex min-w-0 flex-col gap-6"
+      data-can-manage-purchase-orders={
+        canManagePurchaseOrders ? "true" : "false"
+      }
+    >
+      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-heading-1 font-semibold">Purchase Orders</h1>
           <p className="text-body text-muted-foreground">
             View the orders under which supplies are expected and received.
           </p>
         </div>
+        {canManagePurchaseOrders ? (
+          <WorkspacePrimaryAction
+            id="new-purchase-order"
+            className="sm:min-w-[11rem]"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            Add Purchase Order
+          </WorkspacePrimaryAction>
+        ) : null}
       </div>
       <PurchaseOrderToolbar
         search={searchInput}
@@ -156,6 +190,20 @@ export default function PurchaseOrdersWorkspace({
         total={filteredPurchaseOrders.length}
         onPageChange={changePage}
       />
+      {canManagePurchaseOrders ? (
+        <PurchaseOrderCreateDialog
+          open={isCreateDialogOpen}
+          vendors={vendors}
+          onClose={closeCreateDialog}
+          onSuccess={(purchaseOrder) => {
+            closeCreateDialog();
+            router.refresh();
+            toast.success(
+              `Purchase Order “${purchaseOrder.purchaseOrderNo}” created`,
+            );
+          }}
+        />
+      ) : null}
     </main>
   );
 }

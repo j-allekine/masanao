@@ -10,12 +10,14 @@ import { updateItemCommand } from "./server/commands/update-item";
 import { createItemUnitConversionCommand } from "./server/commands/create-item-unit-conversion";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import { listPurchaseOrders as listPurchaseOrdersQuery } from "./server/queries/list-purchase-orders";
+import { createPurchaseOrderCommand } from "./server/commands/create-purchase-order";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
   ItemLifecycleResult,
   ItemUpdateResult,
   ItemUnitConversionCreateResult,
+  PurchaseOrderCreateResult,
 } from "./types";
 
 export type {
@@ -23,6 +25,7 @@ export type {
   ItemLookupCategory,
   ItemLookupUnit,
   PurchaseOrderListItem,
+  PurchaseOrderCreateResult,
 } from "./types";
 
 export async function listItems() {
@@ -31,6 +34,30 @@ export async function listItems() {
 
 export async function listPurchaseOrders() {
   return listPurchaseOrdersQuery();
+}
+
+export async function canManagePurchaseOrders(actor: CurrentActor) {
+  return isCurrentActorAdministrator(actor.id);
+}
+
+async function authorizePurchaseOrderAdministrator(actor: CurrentActor) {
+  if (await canManagePurchaseOrders(actor)) return null;
+
+  return {
+    ok: false as const,
+    kind: "forbidden" as const,
+    error: "Administrator access required",
+  };
+}
+
+export async function createPurchaseOrder(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<PurchaseOrderCreateResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure
+    ? { ...authorizationFailure, fields: {} }
+    : createPurchaseOrderCommand(input);
 }
 
 export async function canManageItems(actor: CurrentActor) {

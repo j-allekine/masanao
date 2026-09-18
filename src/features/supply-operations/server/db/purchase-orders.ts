@@ -3,9 +3,10 @@ import "server-only";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
+import type { PurchaseOrderInput } from "../../schemas/purchase-order";
 import type { PurchaseOrderListItem } from "../../types";
 
-const purchaseOrderListSelect = {
+export const purchaseOrderListSelect = {
   id: true,
   purchaseOrderNo: true,
   referenceNumber: true,
@@ -48,7 +49,7 @@ export function isRestrictiveRelationViolation(error: unknown) {
   );
 }
 
-function toPurchaseOrderListItem(
+export function toPurchaseOrderListItem(
   purchaseOrder: PurchaseOrderListRecord,
 ): PurchaseOrderListItem {
   return {
@@ -72,4 +73,52 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
   });
 
   return purchaseOrders.map(toPurchaseOrderListItem);
+}
+
+type PurchaseOrderDatabase = Pick<
+  Prisma.TransactionClient,
+  "purchaseOrder" | "vendor"
+>;
+
+export type PurchaseOrderCreateWriteResult =
+  | { kind: "created"; purchaseOrder: PurchaseOrderListItem }
+  | { kind: "duplicate" }
+  | { kind: "invalid-vendor" };
+
+export async function createPurchaseOrderWithActiveVendor(
+  input: PurchaseOrderInput,
+): Promise<PurchaseOrderCreateWriteResult> {
+  return prisma.$transaction(async (transaction) => {
+    const database: PurchaseOrderDatabase = transaction;
+    const vendor = await database.vendor.findFirst({
+      where: { id: input.vendorId, isActive: true },
+      select: { id: true },
+    });
+    if (!vendor) return { kind: "invalid-vendor" as const };
+
+    try {
+      const purchaseOrder = await database.purchaseOrder.create({
+        data: {
+          id: crypto.randomUUID(),
+          purchaseOrderNo: input.purchaseOrderNo,
+          normalizedPurchaseOrderNo: input.normalizedPurchaseOrderNo,
+          vendorId: input.vendorId,
+          referenceNumber: input.referenceNumber,
+          note: input.note,
+        },
+        select: purchaseOrderListSelect,
+      });
+
+      return {
+        kind: "created" as const,
+        purchaseOrder: toPurchaseOrderListItem(purchaseOrder),
+      };
+    } catch (error) {
+      if (isUniqueConstraintViolation(error)) {
+        return { kind: "duplicate" as const };
+      }
+
+      throw error;
+    }
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

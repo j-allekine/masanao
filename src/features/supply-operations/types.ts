@@ -121,3 +121,33 @@ export type PurchaseOrderField =
 export type PurchaseOrderFieldErrors = Partial<
   Record<PurchaseOrderField | "form", string[]>
 >;
+
+export type PurchaseOrderVendorOption = {
+  id: string;
+  name: string;
+  isActive: boolean;
+};
+
+export type PurchaseOrderCreateResult =
+  | { ok: true; purchaseOrder: PurchaseOrderListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "inactive";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderFormActionState =
+  | { status: "success"; purchaseOrder: PurchaseOrderListItem }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "validation"
+        | "duplicate"
+        | "inactive"
+        | "server";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };

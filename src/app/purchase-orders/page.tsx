@@ -3,8 +3,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
+import { listVendors } from "@/features/master-data/server";
+import {
+  canManagePurchaseOrders,
+  listPurchaseOrders,
+} from "@/features/supply-operations/server";
 import { PurchaseOrdersContent } from "@/features/supply-operations/ui";
-import { listPurchaseOrders } from "@/features/supply-operations/server";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {
@@ -21,7 +25,17 @@ export default async function PurchaseOrdersRoute() {
     redirect("/");
   }
 
-  const purchaseOrders = await listPurchaseOrders();
+  const actor = {
+    id: session.user.id,
+    name: session.user.name ?? session.user.username ?? "Municipal staff",
+    username: session.user.username ?? null,
+  };
+  const [purchaseOrders, vendors, canManagePurchaseOrdersResult] =
+    await Promise.all([
+      listPurchaseOrders(),
+      listVendors(),
+      canManagePurchaseOrders(actor),
+    ]);
 
   return (
     <WorkspaceShell
@@ -31,7 +45,11 @@ export default async function PurchaseOrdersRoute() {
       }}
       activeSection="purchase-orders"
     >
-      <PurchaseOrdersContent purchaseOrders={purchaseOrders} />
+      <PurchaseOrdersContent
+        purchaseOrders={purchaseOrders}
+        vendors={vendors}
+        canManagePurchaseOrders={canManagePurchaseOrdersResult}
+      />
     </WorkspaceShell>
   );
 }

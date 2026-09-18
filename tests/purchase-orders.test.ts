@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   normalizePurchaseOrderNo,
@@ -8,7 +8,11 @@ import {
   purchaseOrderFieldErrors,
   purchaseOrderSchema,
 } from "@/features/supply-operations/schemas/purchase-order";
-import { listPurchaseOrders } from "@/features/supply-operations/server";
+import {
+  canManagePurchaseOrders,
+  createPurchaseOrder,
+  listPurchaseOrders,
+} from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { filterPurchaseOrders } from "@/features/supply-operations/components/purchase-order-filters";
 import {
@@ -17,6 +21,18 @@ import {
   getPurchaseOrderListUrl,
 } from "@/features/supply-operations/components/purchase-order-list-state";
 import { prisma } from "@/prisma/client";
+import type { CurrentActor } from "@/server/auth";
+
+const adminActor: CurrentActor = {
+  id: "purchase-orders-admin",
+  name: "Municipal administrator",
+  username: "purchase.orders.admin",
+};
+const staffActor: CurrentActor = {
+  id: "purchase-orders-staff",
+  name: "Kitchen staff",
+  username: "purchase.orders.staff",
+};
 
 async function createVendor(id: string, name: string, isActive = true) {
   return prisma.vendor.create({
@@ -27,6 +43,25 @@ async function createVendor(id: string, name: string, isActive = true) {
       isActive,
     },
   });
+}
+
+async function createActorUser(actor: CurrentActor, role = "staff") {
+  await prisma.user.create({
+    data: {
+      id: actor.id,
+      name: actor.name,
+      email: `${actor.username}@internal.masanao`,
+      username: actor.username,
+      role,
+    },
+  });
+}
+
+async function clearPurchaseOrderRecords() {
+  await prisma.purchaseOrder.deleteMany();
+  await prisma.vendor.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
 }
 
 describe("Purchase Order input contract", () => {
@@ -201,5 +236,94 @@ describe("Purchase Orders read and persistence contract", () => {
     await expect(
       prisma.vendor.delete({ where: { id: "po-vendor-restrict" } }),
     ).rejects.toMatchObject({ code: "P2003" });
+  });
+});
+
+describe("Purchase Order mutation gateway", () => {
+  beforeEach(clearPurchaseOrderRecords);
+
+  it("exposes the administrator capability and creates normalized records", async () => {
+    await createActorUser(adminActor, "admin");
+    await createActorUser(staffActor);
+    const vendor = await createVendor(
+      "po-create-vendor",
+      "Acme Foods",
+    );
+
+    await expect(canManagePurchaseOrders(adminActor)).resolves.toBe(true);
+    await expect(canManagePurchaseOrders(staffActor)).resolves.toBe(false);
+
+    await expect(
+      createPurchaseOrder(adminActor, {
+        purchaseOrderNo: "  PO-2026-015  ",
+        vendorId: ` ${vendor.id} `,
+        referenceNumber: "  ORS-15 ",
+        note: "  Receive at the kitchen dock.  ",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      purchaseOrder: {
+        purchaseOrderNo: "PO-2026-015",
+        vendor: { id: vendor.id, name: "Acme Foods", isActive: true },
+        referenceNumber: "ORS-15",
+        note: "Receive at the kitchen dock.",
+      },
+    });
+  });
+
+  it("rejects duplicates, inactive Vendors, and staff writes", async () => {
+    await createActorUser(adminActor, "admin");
+    await createActorUser(staffActor);
+    const activeVendor = await createVendor(
+      "po-active-vendor",
+      "Active Foods",
+    );
+    const inactiveVendor = await createVendor(
+      "po-inactive-vendor",
+      "Inactive Foods",
+      false,
+    );
+
+    await expect(
+      createPurchaseOrder(adminActor, {
+        purchaseOrderNo: "PO-2026-016",
+        vendorId: activeVendor.id,
+      }),
+    ).resolves.toMatchObject({ ok: true });
+
+    await expect(
+      createPurchaseOrder(adminActor, {
+        purchaseOrderNo: " po-2026-016 ",
+        vendorId: activeVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: {
+        purchaseOrderNo: ["A Purchase Order with that number already exists."],
+      },
+    });
+
+    await expect(
+      createPurchaseOrder(adminActor, {
+        purchaseOrderNo: "PO-2026-017",
+        vendorId: inactiveVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "inactive",
+      fields: { vendorId: ["Select an active Vendor."] },
+    });
+
+    await expect(
+      createPurchaseOrder(staffActor, {
+        purchaseOrderNo: "PO-2026-018",
+        vendorId: activeVendor.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "forbidden",
+      fields: {},
+    });
   });
 });

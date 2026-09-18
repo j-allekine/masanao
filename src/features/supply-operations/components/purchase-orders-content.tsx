@@ -4,13 +4,20 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import WorkspaceTableSkeleton from "@/components/workspace/workspace-table-skeleton";
 
-import type { PurchaseOrderListItem } from "../types";
+import type {
+  PurchaseOrderListItem,
+  PurchaseOrderVendorOption,
+} from "../types";
 import PurchaseOrdersWorkspace from "./purchase-orders-workspace";
 
 export default function PurchaseOrdersContent({
   purchaseOrders,
+  vendors,
+  canManagePurchaseOrders,
 }: {
   purchaseOrders: PurchaseOrderListItem[];
+  vendors: PurchaseOrderVendorOption[];
+  canManagePurchaseOrders: boolean;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -40,7 +47,11 @@ export default function PurchaseOrdersContent({
             />
           }
         >
-          <PurchaseOrdersWorkspace purchaseOrders={purchaseOrders} />
+          <PurchaseOrdersWorkspace
+            purchaseOrders={purchaseOrders}
+            vendors={vendors}
+            canManagePurchaseOrders={canManagePurchaseOrders}
+          />
         </Suspense>
       </div>
     </div>
