@@ -91,16 +91,15 @@ describe("Master Data Units workspace", () => {
     );
   });
 
-  it("shows every short page range and keeps long ranges compact", () => {
+  it("keeps desktop page choices to the current three-page window", () => {
     expect(getCatalogPageItems(2, 3)).toEqual([1, 2, 3]);
+    expect(getCatalogPageItems(2, 4)).toEqual([1, 2, 3, "ellipsis-end"]);
     expect(getCatalogPageItems(6, 12)).toEqual([
-      1,
       "ellipsis-start",
       5,
       6,
       7,
       "ellipsis-end",
-      12,
     ]);
   });
 

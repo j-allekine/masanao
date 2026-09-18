@@ -33,15 +33,13 @@ describe("Activity Designs pagination adapter", () => {
     expect(getActivityDesignResultsSummary).toBe(getCatalogResultsSummary);
   });
 
-  it("keeps desktop page choices direct while using ellipses for long ranges", () => {
+  it("keeps desktop page choices to the current three-page window", () => {
     expect(getCatalogPageItems(6, 12)).toEqual([
-      1,
       "ellipsis-start",
       5,
       6,
       7,
       "ellipsis-end",
-      12,
     ]);
   });
 

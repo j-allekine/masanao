@@ -33,16 +33,21 @@ export function getCatalogPageItems(
   page: number,
   pageCount: number,
 ): CatalogPageItem[] {
-  if (pageCount <= 7) {
+  if (pageCount <= 3) {
     return Array.from({ length: pageCount }, (_, index) => index + 1);
   }
 
-  if (page <= 4) return [1, 2, 3, 4, 5, "ellipsis-end", pageCount];
-  if (page >= pageCount - 3) {
-    return [1, "ellipsis-start", pageCount - 4, pageCount - 3, pageCount - 2, pageCount - 1, pageCount];
-  }
+  const firstPage = Math.max(1, Math.min(page - 1, pageCount - 2));
+  const lastPage = firstPage + 2;
+  const pageItems: CatalogPageItem[] = Array.from(
+    { length: 3 },
+    (_, index) => firstPage + index,
+  );
 
-  return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", pageCount];
+  if (firstPage > 1) pageItems.unshift("ellipsis-start");
+  if (lastPage < pageCount) pageItems.push("ellipsis-end");
+
+  return pageItems;
 }
 
 export function getMobileCatalogPageItems(

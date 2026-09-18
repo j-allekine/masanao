@@ -145,9 +145,11 @@ type PaginationUnitFixture = {
   search: string;
 };
 
-function createPaginationUnitFixtures(): PaginationUnitFixture {
+function createPaginationUnitFixtures(
+  count = 11,
+): PaginationUnitFixture {
   const search = `Regression Pagination ${randomUUID().slice(0, 8)}`;
-  const records = Array.from({ length: 11 }, (_, index) => {
+  const records = Array.from({ length: count }, (_, index) => {
     const id = randomUUID();
     const name = `${search} ${index + 1}`;
     return {
@@ -407,9 +409,12 @@ test.describe("Master Data Units journey", () => {
 
       await tabs.getByRole("tab", { name: "Categories", exact: true }).click();
       await expect(page).toHaveURL(/\/master-data\?tab=categories$/);
-      await page
-        .getByRole("searchbox", { name: "Search Categories", exact: true })
-        .fill("rice");
+      const categorySearch = page.getByRole("searchbox", {
+        name: "Search Categories",
+        exact: true,
+      });
+      await categorySearch.fill("rice");
+      await expect(categorySearch).toBeFocused();
       await expect(page).toHaveURL(/tab=categories&search=rice$/);
 
       await tabs.getByRole("tab", { name: "Units", exact: true }).click();
@@ -426,6 +431,40 @@ test.describe("Master Data Units journey", () => {
       ).toBeVisible();
 
       await expect.poll(() => requests).toEqual([]);
+    } finally {
+      deletePaginationUnitFixtures(fixture);
+    }
+  });
+
+  test("keeps desktop pagination to the nearby pages and an ellipsis", async ({
+    page,
+  }) => {
+    const fixture = createPaginationUnitFixtures(41);
+
+    try {
+      await openMasterData(page, "municipal.admin", adminPassword);
+      await page
+        .getByRole("searchbox", { name: "Search Units", exact: true })
+        .fill(fixture.search);
+
+      await expect(
+        page.getByText("Showing 1 to 10 of 41 results", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Page 1 of 5", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Page 2 of 5", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Page 3 of 5", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Page 4 of 5", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.locator('[data-slot="pagination-ellipsis"]:visible'),
+      ).toHaveCount(1);
     } finally {
       deletePaginationUnitFixtures(fixture);
     }

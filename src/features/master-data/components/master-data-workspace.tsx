@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   useTransition,
@@ -40,6 +41,7 @@ import {
 } from "./master-data-list-state";
 
 const PAGE_SIZE = 10;
+const SEARCH_URL_SYNC_DELAY_MS = 250;
 
 function findVisibleVendorAction(vendorId: string) {
   const actionButtons = document.querySelectorAll<HTMLElement>(
@@ -130,6 +132,16 @@ export default function MasterDataWorkspace({
     useState<VendorFocusRequest | null>(null);
   const [isUnitMutating, startUnitMutation] = useTransition();
   const [isVendorMutating, startVendorMutation] = useTransition();
+  const searchUrlSyncTimeoutRef = useRef<number | null>(null);
+
+  function clearPendingSearchUrlSync() {
+    if (searchUrlSyncTimeoutRef.current === null) return;
+
+    window.clearTimeout(searchUrlSyncTimeoutRef.current);
+    searchUrlSyncTimeoutRef.current = null;
+  }
+
+  useEffect(() => clearPendingSearchUrlSync, []);
 
   useEffect(() => {
     const request = pendingVendorFocusRequest;
@@ -287,6 +299,8 @@ export default function MasterDataWorkspace({
   });
 
   useEffect(() => {
+    if (searchUrlSyncTimeoutRef.current !== null) return;
+
     const actualQuery = new URLSearchParams(window.location.search);
     const expectedQuery = new URLSearchParams(currentQuery);
 
@@ -319,7 +333,10 @@ export default function MasterDataWorkspace({
     );
   }
 
-  function updateSearch(nextSearch: string) {
+  function updateSearch(
+    nextSearch: string,
+    { syncImmediately = false }: { syncImmediately?: boolean } = {},
+  ) {
     if (activeTab === "vendors") {
       setVendorListState({ search: nextSearch, page: 1 });
     } else if (activeTab === "offices") {
@@ -329,11 +346,20 @@ export default function MasterDataWorkspace({
     } else {
       setUnitListState({ search: nextSearch, page: 1 });
     }
-    replaceListUrl({ tab: activeTab, search: nextSearch, page: 1 });
+    clearPendingSearchUrlSync();
+    if (syncImmediately) {
+      replaceListUrl({ tab: activeTab, search: nextSearch, page: 1 });
+      return;
+    }
+
+    searchUrlSyncTimeoutRef.current = window.setTimeout(() => {
+      replaceListUrl({ tab: activeTab, search: nextSearch, page: 1 });
+      searchUrlSyncTimeoutRef.current = null;
+    }, SEARCH_URL_SYNC_DELAY_MS);
   }
 
   function clearFilters() {
-    updateSearch("");
+    updateSearch("", { syncImmediately: true });
   }
 
   function openCreateDialog() {
@@ -509,6 +535,7 @@ export default function MasterDataWorkspace({
   }
 
   function changePage(nextPage: number) {
+    clearPendingSearchUrlSync();
     const pageCount =
       activeTab === "vendors"
         ? vendorPageCount
@@ -531,6 +558,7 @@ export default function MasterDataWorkspace({
   }
 
   function changeTab(value: MasterDataTab) {
+    clearPendingSearchUrlSync();
     const nextListState =
       value === "vendors"
         ? vendorListState
