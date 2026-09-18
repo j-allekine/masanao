@@ -50,7 +50,6 @@ export default function ItemsWorkspace(props: ItemsWorkspaceProps) {
 
   return (
     <ItemsWorkspaceContent
-      key={currentQuery}
       {...props}
       currentQuery={currentQuery}
     />
@@ -102,6 +101,15 @@ function ItemsWorkspaceContent({
     paginatedItems.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedItems.length;
   const filtersAreActive = hasItemListFilters(filters);
+
+  useEffect(() => {
+    const syncSearchInputTimeout = window.setTimeout(() => {
+      setSearchInput(getItemListState(new URLSearchParams(currentQuery)).search);
+      latestQueryRef.current = currentQuery;
+    }, 0);
+
+    return () => window.clearTimeout(syncSearchInputTimeout);
+  }, [currentQuery]);
 
   useEffect(() => {
     return () => {
