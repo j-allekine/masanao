@@ -287,9 +287,19 @@ export default function MasterDataWorkspace({
   });
 
   useEffect(() => {
+    const actualQuery = new URLSearchParams(window.location.search);
+    const expectedQuery = new URLSearchParams(currentQuery);
+
+    // Units is the default tab. Preserve a bare /master-data URL when the
+    // user did not explicitly include tab=units, while retaining an
+    // explicit tab=units query when it is already part of the URL.
+    if (activeTab === "units" && !actualQuery.has("tab")) {
+      expectedQuery.delete("tab");
+    }
+
     const expectedUrl = getMasterDataUrl(
       window.location.pathname,
-      currentQuery,
+      expectedQuery.toString(),
       {},
     );
     const actualUrl = `${window.location.pathname}${window.location.search}`;
@@ -297,7 +307,7 @@ export default function MasterDataWorkspace({
     if (actualUrl !== expectedUrl) {
       window.history.replaceState(window.history.state, "", expectedUrl);
     }
-  }, [categories, currentQuery, offices, units, vendors]);
+  }, [activeTab, categories, currentQuery, offices, units, vendors]);
 
   function replaceListUrl(
     updates: Parameters<typeof getMasterDataUrl>[2],
