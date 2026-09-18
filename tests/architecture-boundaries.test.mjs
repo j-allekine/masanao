@@ -4,11 +4,13 @@ import { ESLint } from "eslint";
 
 const eslint = new ESLint({ cwd: process.cwd() });
 
-async function boundaryMessages(filePath, source) {
+async function architectureMessages(filePath, source) {
   const [result] = await eslint.lintText(source, { filePath });
 
-  return result.messages.filter((message) =>
-    message.ruleId?.startsWith("boundaries/"),
+  return result.messages.filter(
+    (message) =>
+      message.ruleId?.startsWith("boundaries/") ||
+      message.ruleId === "masanao/no-client-server-import",
   );
 }
 
@@ -99,7 +101,7 @@ test("allowed architecture dependencies pass", async () => {
 
   for (const testCase of cases) {
     assert.deepEqual(
-      await boundaryMessages(testCase.filePath, testCase.source),
+      await architectureMessages(testCase.filePath, testCase.source),
       [],
       testCase.name,
     );
@@ -149,6 +151,14 @@ test("forbidden architecture dependencies are rejected", async () => {
       ruleId: "boundaries/dependencies",
     },
     {
+      name: "client component importing another feature server implementation",
+      filePath:
+        "src/features/supply-operations/components/architecture-client-fixture.tsx",
+      source:
+        '"use client";\nimport { listUnitRecords } from "@/features/master-data/server/db/units";',
+      ruleId: "masanao/no-client-server-import",
+    },
+    {
       name: "Master Data command importing Prisma",
       filePath:
         "src/features/master-data/server/commands/architecture-fixture.ts",
@@ -170,7 +180,7 @@ test("forbidden architecture dependencies are rejected", async () => {
   ];
 
   for (const testCase of cases) {
-    const messages = await boundaryMessages(testCase.filePath, testCase.source);
+    const messages = await architectureMessages(testCase.filePath, testCase.source);
 
     assert.ok(
       messages.some((message) => message.ruleId === testCase.ruleId),

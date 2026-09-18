@@ -6,9 +6,45 @@ import boundaries from "eslint-plugin-boundaries";
 const featureTypes = ["feature", "feature-db"];
 const sharedTypes = ["shared", "shared-server"];
 
+function isServerModuleSpecifier(specifier) {
+  return /(^|\/)server(?:\/|(?:\.[cm]?[jt]sx?)?$)/.test(specifier);
+}
+
+const masanaoRules = {
+  rules: {
+    "no-client-server-import": {
+      meta: {
+        type: "problem",
+        schema: [],
+        messages: {
+          noClientServerImport:
+            'Client Components must not import server modules. Pass data as props or use a "use server" action gateway.',
+        },
+      },
+      create(context) {
+        const isClientComponent = context.sourceCode.ast.body.some(
+          (node) =>
+            node.type === "ExpressionStatement" &&
+            node.directive === "use client",
+        );
+
+        if (!isClientComponent) return {};
+
+        return {
+          ImportDeclaration(node) {
+            if (!isServerModuleSpecifier(node.source.value)) return;
+
+            context.report({ node, messageId: "noClientServerImport" });
+          },
+        };
+      },
+    },
+  },
+};
+
 const architectureConfig = {
   files: ["src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
-  plugins: { boundaries },
+  plugins: { boundaries, masanao: masanaoRules },
   settings: {
     "boundaries/elements": [
       {
@@ -59,6 +95,7 @@ const architectureConfig = {
     },
   },
   rules: {
+    "masanao/no-client-server-import": "error",
     "boundaries/dependencies": [
       "error",
       {
