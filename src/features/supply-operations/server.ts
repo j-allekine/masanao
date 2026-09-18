@@ -9,18 +9,80 @@ import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
 import { createItemUnitConversionCommand } from "./server/commands/create-item-unit-conversion";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
+import { listPurchaseOrders as listPurchaseOrdersQuery } from "./server/queries/list-purchase-orders";
+import { createPurchaseOrderCommand } from "./server/commands/create-purchase-order";
+import { deletePurchaseOrderCommand } from "./server/commands/delete-purchase-order";
+import { updatePurchaseOrderCommand } from "./server/commands/update-purchase-order";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
   ItemLifecycleResult,
   ItemUpdateResult,
   ItemUnitConversionCreateResult,
+  PurchaseOrderCreateResult,
+  PurchaseOrderDeleteResult,
+  PurchaseOrderUpdateResult,
 } from "./types";
 
-export type { ItemListItem, ItemLookupCategory, ItemLookupUnit } from "./types";
+export type {
+  ItemListItem,
+  ItemLookupCategory,
+  ItemLookupUnit,
+  PurchaseOrderListItem,
+  PurchaseOrderCreateResult,
+  PurchaseOrderDeleteResult,
+  PurchaseOrderUpdateResult,
+} from "./types";
 
 export async function listItems() {
   return listItemsQuery();
+}
+
+export async function listPurchaseOrders() {
+  return listPurchaseOrdersQuery();
+}
+
+export async function canManagePurchaseOrders(actor: CurrentActor) {
+  return isCurrentActorAdministrator(actor.id);
+}
+
+async function authorizePurchaseOrderAdministrator(actor: CurrentActor) {
+  if (await canManagePurchaseOrders(actor)) return null;
+
+  return {
+    ok: false as const,
+    kind: "forbidden" as const,
+    error: "Administrator access required",
+  };
+}
+
+export async function createPurchaseOrder(
+  actor: CurrentActor,
+  input: unknown,
+): Promise<PurchaseOrderCreateResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure
+    ? { ...authorizationFailure, fields: {} }
+    : createPurchaseOrderCommand(input);
+}
+
+export async function updatePurchaseOrder(
+  actor: CurrentActor,
+  id: string,
+  input: unknown,
+): Promise<PurchaseOrderUpdateResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure
+    ? { ...authorizationFailure, fields: {} }
+    : updatePurchaseOrderCommand(id, input);
+}
+
+export async function deletePurchaseOrder(
+  actor: CurrentActor,
+  id: string,
+): Promise<PurchaseOrderDeleteResult> {
+  const authorizationFailure = await authorizePurchaseOrderAdministrator(actor);
+  return authorizationFailure ?? deletePurchaseOrderCommand(id);
 }
 
 export async function canManageItems(actor: CurrentActor) {

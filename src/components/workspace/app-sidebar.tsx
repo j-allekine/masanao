@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronDown,
   Package,
+  ClipboardList,
 } from "lucide-react"
 
 import {
@@ -52,6 +53,7 @@ const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   "activity-designs": CalendarDays,
   "master-data": Database,
   items: Package,
+  "purchase-orders": ClipboardList,
 }
 
 function getInitials(name: string) {

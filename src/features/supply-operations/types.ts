@@ -97,3 +97,83 @@ export type ItemLifecycleActionState =
 export type ItemDeleteActionState =
   | { status: "success" }
   | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server"; error: string };
+
+export type PurchaseOrderListItem = {
+  id: string;
+  purchaseOrderNo: string;
+  vendor: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  };
+  referenceNumber: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PurchaseOrderField =
+  | "purchaseOrderNo"
+  | "vendorId"
+  | "referenceNumber"
+  | "note";
+
+export type PurchaseOrderFieldErrors = Partial<
+  Record<PurchaseOrderField | "form", string[]>
+>;
+
+export type PurchaseOrderVendorOption = {
+  id: string;
+  name: string;
+  isActive: boolean;
+};
+
+export type PurchaseOrderCreateResult =
+  | { ok: true; purchaseOrder: PurchaseOrderListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "inactive";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderUpdateResult =
+  | { ok: true; purchaseOrder: PurchaseOrderListItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "not-found";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      kind: "forbidden" | "not-found" | "referenced";
+      error: string;
+    };
+
+export type PurchaseOrderFormActionState =
+  | { status: "success"; purchaseOrder: PurchaseOrderListItem }
+  | {
+      status: "error";
+      kind:
+        | "authentication"
+        | "forbidden"
+        | "validation"
+        | "duplicate"
+        | "inactive"
+        | "not-found"
+        | "server";
+      error: string;
+      fields: PurchaseOrderFieldErrors;
+    };
+
+export type PurchaseOrderDeleteActionState =
+  | { status: "success" }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server";
+      error: string;
+    };

@@ -73,16 +73,22 @@ A record of supplies associated with a Meal Schedule. A Meal Schedule can have z
 ### Purchasing and inventory
 
 **Purchase Order**:
-The order under which supplies are expected and Delivery Receipts are recorded.
+The vendor and order reference under which supplies are expected and Delivery
+Receipts are recorded. A Purchase Order does not carry expected Item quantities
+in the current workflow.
 
 **Delivery Receipt**:
 A record of items delivered under a Purchase Order.
 
 **Partial Delivery**:
-A Delivery Receipt representing only part of the quantity ordered on a Purchase Order line or group of lines.
+A Delivery Receipt representing only part of the supplies delivered under a
+Purchase Order. Expected quantities are owned by a future receiving contract,
+not by the Purchase Order reference.
 
 **Over-delivery**:
-A condition where posted Delivery Receipts record more of an item than the referenced Purchase Order line ordered.
+A future receiving condition where posted Delivery Receipts record more of an
+Item than the accepted receiving quantity. It is not modeled by the current
+Purchase Order reference slice.
 
 **Inventory Ledger**:
 The accountable record of posted inventory movements.
