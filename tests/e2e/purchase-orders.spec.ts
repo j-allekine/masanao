@@ -88,6 +88,18 @@ test.describe("Purchase Orders read journey", () => {
         populatedRow.getByText("ORS-E2E-001", { exact: true }),
       ).toBeVisible();
       await expect(
+        page.locator('[data-can-manage-purchase-orders="false"]'),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Add Purchase Order", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        desktopTable.getByRole("columnheader", {
+          name: "Actions",
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      await expect(
         page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
       ).toBeVisible();
 
@@ -171,12 +183,19 @@ test.describe("Purchase Orders administration journey", () => {
         exact: true,
       });
       await expect(addButton).toBeVisible();
-      await addButton.click();
+      await addButton.focus();
+      await page.keyboard.press("Enter");
 
       const dialog = page.getByRole("dialog");
       await expect(
         dialog.getByRole("heading", { name: "Add Purchase Order", exact: true }),
       ).toBeVisible();
+      await expect(
+        dialog.getByRole("textbox", {
+          name: "Purchase Order No.",
+          exact: true,
+        }),
+      ).toBeFocused();
       await dialog
         .getByRole("textbox", { name: "Purchase Order No.", exact: true })
         .fill(" PO-E2E-CRUD-001 ");
@@ -184,6 +203,9 @@ test.describe("Purchase Orders administration journey", () => {
       await expect(
         page.getByRole("option", { name: "Acme Foods", exact: true }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("option", { name: "Harbor Market", exact: true }),
+      ).toHaveCount(0);
       await page
         .getByRole("option", { name: "Acme Foods", exact: true })
         .click();
@@ -192,7 +214,7 @@ test.describe("Purchase Orders administration journey", () => {
         .fill(" ORS-E2E-CRUD-001 ");
       await dialog
         .getByLabel("Note (optional)", { exact: true })
-        .fill("Kitchen delivery");
+        .fill("  Kitchen delivery  ");
       await dialog
         .getByRole("button", { name: "Add Purchase Order", exact: true })
         .click();
@@ -204,6 +226,27 @@ test.describe("Purchase Orders administration journey", () => {
       await expect(desktopRow).toBeVisible();
       await expect(desktopRow).toContainText("Acme Foods");
       await expect(desktopRow).toContainText("ORS-E2E-CRUD-001");
+
+      await desktopRow
+        .getByRole("button", {
+          name: "Actions for PO-E2E-CRUD-001",
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const normalizedDialog = page.getByRole("dialog");
+      await expect(
+        normalizedDialog.getByLabel("Reference number (optional)", {
+          exact: true,
+        }),
+      ).toHaveValue("ORS-E2E-CRUD-001");
+      await expect(
+        normalizedDialog.getByLabel("Note (optional)", { exact: true }),
+      ).toHaveValue("Kitchen delivery");
+      await normalizedDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+      await expect(normalizedDialog).toBeHidden();
 
       await addButton.click();
       const duplicateDialog = page.getByRole("dialog");
@@ -278,6 +321,12 @@ test.describe("Purchase Orders administration journey", () => {
           exact: true,
         }),
       ).toBeFocused();
+
+      await page.reload();
+      await expect(
+        page.locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
+          .filter({ hasText: "PO-E2E-CRUD-001" }),
+      ).toContainText("ORS-E2E-CRUD-UPDATED");
 
       await desktopRow
         .getByRole("button", {

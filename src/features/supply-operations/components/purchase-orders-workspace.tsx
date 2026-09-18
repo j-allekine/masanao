@@ -48,6 +48,7 @@ export default function PurchaseOrdersWorkspace({
   const [searchInput, setSearchInput] = useState(
     () => getPurchaseOrderListState(new URLSearchParams(currentQuery)).search,
   );
+  const latestQueryRef = useRef(currentQuery);
   const searchNavigationTimeoutRef = useRef<number | null>(null);
   const [purchaseOrderDialogState, setPurchaseOrderDialogState] =
     useState<PurchaseOrderDialogState | null>(null);
@@ -81,6 +82,7 @@ export default function PurchaseOrdersWorkspace({
   useEffect(() => {
     function handlePopState() {
       const nextQuery = window.location.search.slice(1);
+      latestQueryRef.current = nextQuery;
       setClientQuery(nextQuery);
       setSearchInput(
         getPurchaseOrderListState(new URLSearchParams(nextQuery)).search,
@@ -105,15 +107,22 @@ export default function PurchaseOrdersWorkspace({
     const nextUrl = getPurchaseOrderListUrl(pathname, clientQuery, {
       page: pageCount,
     });
+    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
+    latestQueryRef.current = nextQuery;
     window.history.replaceState(null, "", nextUrl);
   }, [clientQuery, listState.page, pageCount, pathname]);
 
   function replaceListUrl(
     updates: Parameters<typeof getPurchaseOrderListQuery>[1],
   ) {
-    const nextUrl = getPurchaseOrderListUrl(pathname, clientQuery, updates);
+    const nextUrl = getPurchaseOrderListUrl(
+      pathname,
+      latestQueryRef.current,
+      updates,
+    );
     const nextQuery = nextUrl.split("?", 2)[1] ?? "";
 
+    latestQueryRef.current = nextQuery;
     window.history.replaceState(null, "", nextUrl);
     setClientQuery(nextQuery);
   }
@@ -164,8 +173,10 @@ export default function PurchaseOrdersWorkspace({
         const visibleAction = actionButtons.find(
           (button) => button.offsetWidth > 0 && button.offsetHeight > 0,
         );
-        visibleAction?.focus();
-        return;
+        if (visibleAction) {
+          visibleAction.focus();
+          return;
+        }
       }
 
       document.getElementById("new-purchase-order")?.focus();
