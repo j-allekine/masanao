@@ -1,20 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deletePurchaseOrderAction } from "../actions";
 import type { PurchaseOrderListItem } from "../types";
@@ -56,38 +44,16 @@ export default function DeletePurchaseOrderDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Delete “{purchaseOrder.purchaseOrderNo}”?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently removes the Purchase Order reference. Future receiving records that reference it will prevent deletion.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isDeleting}
-            onClick={handleDelete}
-          >
-            {isDeleting ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 data-icon="inline-start" />
-            )}
-            {isDeleting ? "Deleting..." : "Delete Purchase Order"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete “${purchaseOrder.purchaseOrderNo}”?`}
+      description="This permanently removes the Purchase Order reference. Future receiving records that reference it will prevent deletion."
+      error={error}
+      isPending={isDeleting}
+      onConfirm={handleDelete}
+      confirmLabel="Delete Purchase Order"
+      pendingLabel="Deleting..."
+    />
   );
 }

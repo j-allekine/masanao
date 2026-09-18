@@ -51,6 +51,15 @@ export const purchaseOrderSchema = z
     ),
     note: optionalTextSchema("Note", PURCHASE_ORDER_NOTE_MAX_LENGTH),
   })
+  .refine(
+    (value) =>
+      normalizePurchaseOrderNoKey(value.purchaseOrderNo).length <=
+      PURCHASE_ORDER_NUMBER_MAX_LENGTH,
+    {
+      path: ["purchaseOrderNo"],
+      message: `Purchase Order No. must be ${PURCHASE_ORDER_NUMBER_MAX_LENGTH} characters or fewer`,
+    },
+  )
   .transform((value) => ({
     ...value,
     normalizedPurchaseOrderNo: normalizePurchaseOrderNoKey(value.purchaseOrderNo),

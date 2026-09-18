@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import { getCatalogPageAfterDeletion } from "@/components/workspace/catalog-pagination";
 
 import type {
   PurchaseOrderListItem,
@@ -42,6 +50,11 @@ export default function PurchaseOrdersWorkspace({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const searchParams = useSearchParams();
   const currentQuery = searchParams.toString();
   const [clientQuery, setClientQuery] = useState(currentQuery);
@@ -79,8 +92,31 @@ export default function PurchaseOrdersWorkspace({
   const resultEnd = firstPurchaseOrderIndex + paginatedPurchaseOrders.length;
   const filtersAreActive = hasPurchaseOrderListFilters(filters);
 
+  const replaceListUrl = useCallback((
+    updates: Parameters<typeof getPurchaseOrderListQuery>[1],
+  ) => {
+    const nextUrl = getPurchaseOrderListUrl(
+      pathname,
+      latestQueryRef.current,
+      updates,
+    );
+    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
+
+    latestQueryRef.current = nextQuery;
+    window.history.replaceState(window.history.state, "", nextUrl);
+    setClientQuery(nextQuery);
+  }, [pathname]);
+
+  function clearPendingSearchUrlSync() {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+  }
+
   useEffect(() => {
     function handlePopState() {
+      clearPendingSearchUrlSync();
       const nextQuery = window.location.search.slice(1);
       latestQueryRef.current = nextQuery;
       setClientQuery(nextQuery);
@@ -94,44 +130,22 @@ export default function PurchaseOrdersWorkspace({
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (searchNavigationTimeoutRef.current !== null) {
-        window.clearTimeout(searchNavigationTimeoutRef.current);
-      }
-    };
+    return clearPendingSearchUrlSync;
   }, []);
 
   useEffect(() => {
     if (listState.page <= pageCount) return;
 
-    const nextUrl = getPurchaseOrderListUrl(pathname, clientQuery, {
-      page: pageCount,
-    });
-    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
-    latestQueryRef.current = nextQuery;
-    window.history.replaceState(null, "", nextUrl);
-  }, [clientQuery, listState.page, pageCount, pathname]);
+    const timeoutId = window.setTimeout(() => {
+      replaceListUrl({ page: pageCount });
+    }, 0);
 
-  function replaceListUrl(
-    updates: Parameters<typeof getPurchaseOrderListQuery>[1],
-  ) {
-    const nextUrl = getPurchaseOrderListUrl(
-      pathname,
-      latestQueryRef.current,
-      updates,
-    );
-    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
-
-    latestQueryRef.current = nextQuery;
-    window.history.replaceState(null, "", nextUrl);
-    setClientQuery(nextQuery);
-  }
+    return () => window.clearTimeout(timeoutId);
+  }, [clientQuery, listState.page, pageCount, pathname, replaceListUrl]);
 
   function updateSearch(search: string) {
     setSearchInput(search);
-    if (searchNavigationTimeoutRef.current !== null) {
-      window.clearTimeout(searchNavigationTimeoutRef.current);
-    }
+    clearPendingSearchUrlSync();
 
     searchNavigationTimeoutRef.current = window.setTimeout(() => {
       replaceListUrl({ search, page: 1 });
@@ -140,19 +154,13 @@ export default function PurchaseOrdersWorkspace({
   }
 
   function clearSearch() {
-    if (searchNavigationTimeoutRef.current !== null) {
-      window.clearTimeout(searchNavigationTimeoutRef.current);
-      searchNavigationTimeoutRef.current = null;
-    }
+    clearPendingSearchUrlSync();
     setSearchInput("");
     replaceListUrl({ search: "", page: 1 });
   }
 
   function changePage(page: number) {
-    if (searchNavigationTimeoutRef.current !== null) {
-      window.clearTimeout(searchNavigationTimeoutRef.current);
-      searchNavigationTimeoutRef.current = null;
-    }
+    clearPendingSearchUrlSync();
     replaceListUrl({ search: searchInput, page: Math.min(Math.max(page, 1), pageCount) });
   }
 
@@ -184,6 +192,12 @@ export default function PurchaseOrdersWorkspace({
   }
 
   function handleDeleted(purchaseOrder: PurchaseOrderListItem) {
+    const page = getCatalogPageAfterDeletion({
+      page: currentPage,
+      total: filteredPurchaseOrders.length,
+      pageSize: PAGE_SIZE,
+    });
+    replaceListUrl({ search: searchInput, page });
     router.refresh();
     toast.success(
       `Purchase Order “${purchaseOrder.purchaseOrderNo}” deleted`,
@@ -199,6 +213,7 @@ export default function PurchaseOrdersWorkspace({
       data-can-manage-purchase-orders={
         canManagePurchaseOrders ? "true" : "false"
       }
+      data-client-ready={isHydrated ? "true" : undefined}
     >
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">

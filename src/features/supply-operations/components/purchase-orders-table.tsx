@@ -5,15 +5,6 @@ import {
 } from "lucide-react";
 
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Button } from "@/components/ui/button";
-import {
   Card,
   CardContent,
   CardHeader,
@@ -27,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
+import { ListEmptyState } from "@/components/workspace/list-empty-state";
 
 import type { PurchaseOrderListItem } from "../types";
 import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
@@ -192,30 +184,24 @@ export default function PurchaseOrdersTable({
 }) {
   if (purchaseOrders.length === 0) {
     return (
-      <Empty className="min-h-60 rounded-lg border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <ClipboardList aria-hidden="true" />
-          </EmptyMedia>
-          <EmptyTitle>
-            {hasFilters
-              ? "No Purchase Orders match your current search."
-              : "No Purchase Orders yet."}
-          </EmptyTitle>
-          <EmptyDescription>
-            {hasFilters
-              ? "Clear the search to see the complete Purchase Orders list."
-              : "Purchase Orders will appear here once an administrator records an order reference."}
-          </EmptyDescription>
-        </EmptyHeader>
-        {hasFilters ? (
-          <EmptyContent>
-            <Button type="button" variant="outline" onClick={onClearFilters}>
-              Clear search
-            </Button>
-          </EmptyContent>
-        ) : null}
-      </Empty>
+      <ListEmptyState
+        icon={<ClipboardList aria-hidden="true" />}
+        hasFilters={hasFilters}
+        filteredState={{
+          title: "No Purchase Orders match your current search.",
+          description: "Clear the search to see the complete Purchase Orders list.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
+        }}
+        emptyState={{
+          title: "No Purchase Orders yet.",
+          description:
+            "Purchase Orders will appear here once an administrator records an order reference.",
+        }}
+      />
     );
   }
 

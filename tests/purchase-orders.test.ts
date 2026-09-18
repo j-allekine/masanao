@@ -104,6 +104,20 @@ describe("Purchase Order input contract", () => {
       note: ["Note must be 500 characters or fewer"],
     });
   });
+
+  it("rejects a display number whose normalized key exceeds the storage limit", () => {
+    const parsed = purchaseOrderSchema.safeParse({
+      purchaseOrderNo: "İ".repeat(51),
+      vendorId: "vendor-1",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+
+    expect(purchaseOrderFieldErrors(parsed.error)).toEqual({
+      purchaseOrderNo: ["Purchase Order No. must be 100 characters or fewer"],
+    });
+  });
 });
 
 describe("Purchase Order list state", () => {

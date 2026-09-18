@@ -327,8 +327,15 @@ test.describe("Purchase Orders administration journey", () => {
         page.locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
           .filter({ hasText: "PO-E2E-CRUD-001" }),
       ).toContainText("ORS-E2E-CRUD-UPDATED");
+      await expect(
+        page.locator('[data-client-ready="true"]'),
+      ).toBeVisible();
 
-      await desktopRow
+      const refreshedDesktopRow = page
+        .locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
+        .filter({ hasText: "PO-E2E-CRUD-001" });
+
+      await refreshedDesktopRow
         .getByRole("button", {
           name: "Actions for PO-E2E-CRUD-001",
           exact: true,
@@ -341,7 +348,7 @@ test.describe("Purchase Orders administration journey", () => {
         .getByRole("button", { name: "Delete Purchase Order", exact: true })
         .click();
       await expect(deleteDialog).toBeHidden();
-      await expect(desktopRow).toHaveCount(0);
+      await expect(refreshedDesktopRow).toHaveCount(0);
       await expect(addButton).toBeFocused();
     } finally {
       withE2eDatabase((database) => {
