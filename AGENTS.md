@@ -18,7 +18,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - If the required shadcn/ui component is not installed, add the official component through the shadcn CLI using the project's package manager.
 - Treat the generated shadcn/ui component as the canonical starting point. Do not recreate its markup, behavior, interaction states, or accessibility behavior with custom native controls.
 - Start from the official shadcn/ui implementation and default styling, then adapt it to Masanao using semantic design tokens, supported variants, composition, and `className`.
-- Prefer extending an existing shared component or adding a reusable variant when customization will be reused across multiple features.
+- Before creating feature-local catalog or list UI, inspect sibling routes and `src/components/workspace/` for an existing shared presentation pattern. Prefer extending an existing shared component or adding a reusable variant when the same interaction chrome is used across multiple features.
+- Shared catalog components may own presentation and interaction chrome—such as pagination, toolbars, table frames, empty states, row-action menus, lifecycle badges, and destructive dialogs—but features must continue to own their labels, filters, permissions, data, handlers, mutations, and domain rules.
 - Page-specific CSS may control page layout, positioning, responsive composition, spacing, branding, and decorative treatment.
 - Page-specific CSS MUST NOT recreate or replace the structure, interaction states, or behavior of an existing shadcn/ui control.
 - Do not use native HTML interactive controls such as `button`, `input`, `textarea`, `select`, `checkbox`, or similar controls directly in application UI when an equivalent shadcn/ui primitive exists.
