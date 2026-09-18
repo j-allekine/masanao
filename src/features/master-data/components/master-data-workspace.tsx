@@ -286,6 +286,19 @@ export default function MasterDataWorkspace({
     page: currentPage,
   });
 
+  useEffect(() => {
+    const expectedUrl = getMasterDataUrl(
+      window.location.pathname,
+      currentQuery,
+      {},
+    );
+    const actualUrl = `${window.location.pathname}${window.location.search}`;
+
+    if (actualUrl !== expectedUrl) {
+      window.history.replaceState(window.history.state, "", expectedUrl);
+    }
+  }, [categories, currentQuery, offices, units, vendors]);
+
   function replaceListUrl(
     updates: Parameters<typeof getMasterDataUrl>[2],
   ) {
