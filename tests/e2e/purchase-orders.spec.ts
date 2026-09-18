@@ -39,7 +39,9 @@ test.describe("Purchase Orders read journey", () => {
   test("lets staff open the responsive catalog and retain Vendor context", async ({
     page,
   }) => {
-    const purchaseOrderId = randomUUID();
+    test.setTimeout(120_000);
+
+    const purchaseOrderIds = Array.from({ length: 11 }, () => randomUUID());
     const vendorId = "e2e-vendor-acme";
 
     await signIn(page);
@@ -50,47 +52,104 @@ test.describe("Purchase Orders read journey", () => {
       page.getByRole("link", { name: "Purchase Orders", exact: true }),
     ).toHaveAttribute("aria-current", "page");
 
-    withE2eDatabase((database) => {
-      database
-        .prepare(
+    try {
+      withE2eDatabase((database) => {
+        const insertPurchaseOrder = database.prepare(
           `INSERT INTO "purchase_order"
            ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "referenceNumber", "note", "createdAt", "updatedAt")
            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        )
-        .run(
-          purchaseOrderId,
-          "PO-E2E-001",
-          "po-e2e-001",
-          vendorId,
-          "ORS-E2E-001",
-          "Kitchen delivery",
         );
-    });
 
-    await page.reload();
-    const desktopTable = page.locator("[data-purchase-orders-table-desktop]");
-    await expect(
-      desktopTable.getByText("PO-E2E-001", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      desktopTable.getByText("Acme Foods", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      desktopTable.getByText("ORS-E2E-001", { exact: true }),
-    ).toBeVisible();
+        purchaseOrderIds.forEach((purchaseOrderId, index) => {
+          const purchaseOrderNo = `PO-E2E-${String(index + 1).padStart(3, "0")}`;
+          insertPurchaseOrder.run(
+            purchaseOrderId,
+            purchaseOrderNo,
+            purchaseOrderNo.toLowerCase(),
+            vendorId,
+            `ORS-E2E-${String(index + 1).padStart(3, "0")}`,
+            index === 0 ? "Kitchen delivery" : null,
+          );
+        });
+      });
 
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator("[data-purchase-orders-mobile]")).toBeVisible();
-    await expect(page.locator("[data-purchase-orders-table-desktop]")).toBeHidden();
-    expect(
-      await page.evaluate(
-        () => document.body.scrollWidth <= document.documentElement.clientWidth,
-      ),
-    ).toBe(true);
+      await page.reload();
+      const desktopTable = page.locator("[data-purchase-orders-table-desktop]");
+      const populatedRow = desktopTable
+        .locator("[data-purchase-order-id]")
+        .filter({ hasText: "PO-E2E-001" });
+      await expect(
+        populatedRow.getByText("PO-E2E-001", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        populatedRow.getByText("Acme Foods", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        populatedRow.getByText("ORS-E2E-001", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
+      ).toBeVisible();
 
-    withE2eDatabase((database) => {
-      database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
-    });
+      await page
+        .getByRole("button", { name: "Page 2 of 2", exact: true })
+        .click();
+      await expect(page).toHaveURL(/purchaseOrdersPage=2$/);
+      await expect(
+        page.getByText("Showing 11 to 11 of 11 results", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator("[data-purchase-orders-table-desktop]").getByText(
+          "PO-E2E-011",
+          { exact: true },
+        ),
+      ).toBeVisible();
+
+      const search = page.getByRole("searchbox", {
+        name: "Search Purchase Orders",
+        exact: true,
+      });
+      await search.fill("PO-E2E-001");
+      await expect(page).toHaveURL(/purchaseOrdersSearch=PO-E2E-001/);
+      await expect(
+        page.getByText("Showing 1 result", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator("[data-purchase-orders-table-desktop]").getByText(
+          "PO-E2E-001",
+          { exact: true },
+        ),
+      ).toBeVisible();
+
+      await search.fill("does-not-exist");
+      await expect(
+        page.getByText("No Purchase Orders match your current search.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+      await search.fill("");
+      await expect(
+        page.getByText("Showing 1 to 10 of 11 results", { exact: true }),
+      ).toBeVisible();
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.locator("[data-purchase-orders-mobile]")).toBeVisible();
+      await expect(page.locator("[data-purchase-orders-table-desktop]")).toBeHidden();
+      expect(
+        await page.evaluate(
+          () => document.body.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+    } finally {
+      withE2eDatabase((database) => {
+        const deletePurchaseOrder = database.prepare(
+          'DELETE FROM "purchase_order" WHERE "id" = ?',
+        );
+        purchaseOrderIds.forEach((purchaseOrderId) => {
+          deletePurchaseOrder.run(purchaseOrderId);
+        });
+      });
+    }
   });
 });
 
@@ -213,6 +272,12 @@ test.describe("Purchase Orders administration journey", () => {
         .click();
       await expect(editDialog).toBeHidden();
       await expect(desktopRow).toContainText("ORS-E2E-CRUD-UPDATED");
+      await expect(
+        desktopRow.getByRole("button", {
+          name: "Actions for PO-E2E-CRUD-001",
+          exact: true,
+        }),
+      ).toBeFocused();
 
       await desktopRow
         .getByRole("button", {
@@ -228,6 +293,7 @@ test.describe("Purchase Orders administration journey", () => {
         .click();
       await expect(deleteDialog).toBeHidden();
       await expect(desktopRow).toHaveCount(0);
+      await expect(addButton).toBeFocused();
     } finally {
       withE2eDatabase((database) => {
         database

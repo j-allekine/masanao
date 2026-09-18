@@ -10,7 +10,7 @@ import type {
   PurchaseOrderListItem,
   PurchaseOrderVendorOption,
 } from "../types";
-import PurchaseOrderDialog from "./purchase-order-create-dialog";
+import PurchaseOrderDialog from "./purchase-order-dialog";
 import PurchaseOrderPagination from "./purchase-order-pagination";
 import PurchaseOrderToolbar from "./purchase-order-toolbar";
 import {
