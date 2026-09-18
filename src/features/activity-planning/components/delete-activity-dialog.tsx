@@ -1,24 +1,8 @@
 "use client";
 
 import { useState, useTransition, type MouseEvent } from "react";
-import { Trash2 } from "lucide-react";
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import DestructiveDialog from "@/components/workspace/destructive-dialog";
 
 import { deleteActivityAction } from "../actions";
 import {
@@ -46,7 +30,8 @@ export default function DeleteActivityDialog({
   const [isDeleting, startDeleteTransition] = useTransition();
   const mealScheduleCount =
     serverMealScheduleCount ?? activity.mealScheduleCount;
-  const isBlocked = isServerBlocked || isActivityDeletionBlocked(mealScheduleCount);
+  const isBlocked =
+    isServerBlocked || isActivityDeletionBlocked(mealScheduleCount);
 
   function handleDelete(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -80,46 +65,25 @@ export default function DeleteActivityDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isBlocked
-              ? `Activity “${activity.name}” cannot be deleted`
-              : `Delete “${activity.name}”?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isBlocked
-              ? getActivityDeletionBlockMessage(mealScheduleCount)
-              : "This permanently removes the Activity and its planning details. It can only be deleted while it has no Meal Schedules."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Deletion failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>
-            {isBlocked ? "Close" : "Cancel"}
-          </AlertDialogCancel>
-          {!isBlocked ? (
-            <AlertDialogAction
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={handleDelete}
-            >
-              {isDeleting ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 data-icon="inline-start" />
-              )}
-              {isDeleting ? "Deleting…" : "Delete Activity"}
-            </AlertDialogAction>
-          ) : null}
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DestructiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        isBlocked
+          ? `Activity “${activity.name}” cannot be deleted`
+          : `Delete “${activity.name}”?`
+      }
+      description={
+        isBlocked
+          ? getActivityDeletionBlockMessage(mealScheduleCount)
+          : "This permanently removes the Activity and its planning details. It can only be deleted while it has no Meal Schedules."
+      }
+      error={error}
+      isPending={isDeleting}
+      onConfirm={isBlocked ? undefined : handleDelete}
+      confirmLabel="Delete Activity"
+      pendingLabel="Deleting…"
+      cancelLabel={isBlocked ? "Close" : "Cancel"}
+    />
   );
 }

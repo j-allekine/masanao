@@ -2,23 +2,15 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ListEmptyState from "@/components/workspace/list-empty-state";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ActivityWorkspaceListItem } from "../types";
 import {
@@ -96,64 +88,55 @@ export default function ActivitiesTable({
 
   if (activities.length === 0) {
     return (
-      <Empty className="min-h-60 rounded-lg border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <span aria-hidden="true">A</span>
-          </EmptyMedia>
-          <EmptyTitle>
-            {hasFilters
-              ? "No Activities match your current search."
-              : "No Activities yet."}
-          </EmptyTitle>
-          <EmptyDescription>
-            {hasFilters
-              ? "Clear the search to see the complete Activities list."
-              : "Activities created under Activity Designs will appear here."}
-          </EmptyDescription>
-        </EmptyHeader>
-        {hasFilters ? (
-          <EmptyContent>
-            <Button type="button" variant="outline" onClick={onClearSearch}>
-              Clear search
-            </Button>
-          </EmptyContent>
-        ) : null}
-      </Empty>
+      <ListEmptyState
+        icon={<span aria-hidden="true">A</span>}
+        hasFilters={hasFilters}
+        filteredState={{
+          title: "No Activities match your current search.",
+          description: "Clear the search to see the complete Activities list.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearSearch,
+          },
+        }}
+        emptyState={{
+          title: "No Activities yet.",
+          description:
+            "Activities created under Activity Designs will appear here.",
+        }}
+      />
     );
   }
 
   return (
-    <div className="rounded-xl border bg-card shadow-xs">
-      <Table className="min-w-[44rem]">
-        <caption className="sr-only">Activities</caption>
-        <TableHeader className="bg-muted/60">
-          <TableRow>
-            <TableHead scope="col" className="text-left">
-              Activity name
-            </TableHead>
-            <TableHead scope="col" className="text-left">
-              Activity Design title
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Meal Schedule count
-            </TableHead>
-            <TableHead scope="col" className="text-center">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {activities.map((activity) => (
-            <ActivityRow
-              key={activity.id}
-              activity={activity}
-              onEdit={() => onEdit(activity)}
-              onDelete={() => onDeleted(activity.id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <WorkspaceTableFrame caption="Activities" className="min-w-[44rem]">
+      <TableHeader className="bg-muted/60">
+        <TableRow>
+          <TableHead scope="col" className="text-left">
+            Activity name
+          </TableHead>
+          <TableHead scope="col" className="text-left">
+            Activity Design title
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Meal Schedule count
+          </TableHead>
+          <TableHead scope="col" className="text-center">
+            Actions
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {activities.map((activity) => (
+          <ActivityRow
+            key={activity.id}
+            activity={activity}
+            onEdit={() => onEdit(activity)}
+            onDelete={() => onDeleted(activity.id)}
+          />
+        ))}
+      </TableBody>
+    </WorkspaceTableFrame>
   );
 }

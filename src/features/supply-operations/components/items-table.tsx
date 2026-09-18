@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   TableBody,
   TableCell,
@@ -16,15 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ListEmptyState from "@/components/workspace/list-empty-state";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ItemListItem } from "../types";
 import ItemActionsMenu from "./item-actions-menu";
 import DeleteItemDialog from "./delete-item-dialog";
-
-function ItemStatus({ isActive }: { isActive: boolean }) {
-  return <Badge variant={isActive ? "default" : "outline"}>{isActive ? "Active" : "Inactive"}</Badge>;
-}
 
 function ItemMobileCard({
   item,
@@ -80,7 +76,7 @@ function ItemMobileCard({
             <span className="text-label font-semibold text-muted-foreground">
               Status
             </span>
-            <ItemStatus isActive={item.isActive} />
+            <WorkspaceLifecycleBadge isActive={item.isActive} />
           </div>
         </CardContent>
       </Card>
@@ -127,7 +123,7 @@ function ItemRow({
           <span className="block break-words">{item.baseUnit.name}</span>
         </TableCell>
         <TableCell className="text-center">
-          <ItemStatus isActive={item.isActive} />
+          <WorkspaceLifecycleBadge isActive={item.isActive} />
         </TableCell>
         <TableCell className="w-24 text-right">
           <div className="flex justify-end">

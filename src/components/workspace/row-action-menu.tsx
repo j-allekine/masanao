@@ -1,7 +1,7 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type ComponentProps, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+
+type WorkspaceRowActionTriggerProps = Omit<
+  ComponentProps<typeof Button>,
+  | "type"
+  | "id"
+  | "aria-label"
+  | "disabled"
+  | "variant"
+  | "size"
+  | "children"
+> & {
+  [key: `data-${string}`]: string | undefined;
+};
 
 export type WorkspaceRowAction = {
   label: string;
@@ -30,11 +44,13 @@ export default function WorkspaceRowActionMenu({
   ariaLabel,
   groups,
   disabled = false,
+  triggerProps,
 }: {
   actionButtonId: string;
   ariaLabel: string;
   groups: readonly WorkspaceRowActionGroup[];
   disabled?: boolean;
+  triggerProps?: WorkspaceRowActionTriggerProps;
 }) {
   function openAfterMenuCloses(action: () => void) {
     window.setTimeout(action, 0);
@@ -53,6 +69,8 @@ export default function WorkspaceRowActionMenu({
             size="icon-sm"
             aria-label={ariaLabel}
             disabled={disabled}
+            {...triggerProps}
+            className={cn(triggerProps?.className)}
           />
         }
       >

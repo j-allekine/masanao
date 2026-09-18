@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -23,9 +23,10 @@ export type DestructiveDialogProps = {
   description: ReactNode;
   error?: ReactNode;
   isPending: boolean;
-  onConfirm: () => void;
-  confirmLabel: string;
+  onConfirm?: (event: MouseEvent<HTMLButtonElement>) => void;
+  confirmLabel?: string;
   pendingLabel?: string;
+  cancelLabel?: string;
 };
 
 export default function DestructiveDialog({
@@ -36,8 +37,9 @@ export default function DestructiveDialog({
   error,
   isPending,
   onConfirm,
-  confirmLabel,
+  confirmLabel = "Delete",
   pendingLabel = "Deleting…",
+  cancelLabel = "Cancel",
 }: DestructiveDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -53,19 +55,21 @@ export default function DestructiveDialog({
           </Alert>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={isPending}
-            onClick={onConfirm}
-          >
-            {isPending ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 data-icon="inline-start" />
-            )}
-            {isPending ? pendingLabel : confirmLabel}
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={isPending}>{cancelLabel}</AlertDialogCancel>
+          {onConfirm ? (
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isPending}
+              onClick={onConfirm}
+            >
+              {isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2 data-icon="inline-start" />
+              )}
+              {isPending ? pendingLabel : confirmLabel}
+            </AlertDialogAction>
+          ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
