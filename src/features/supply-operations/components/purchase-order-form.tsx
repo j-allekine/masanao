@@ -100,7 +100,7 @@ function VendorField({
     .filter((vendor) => vendor.isActive || vendor.id === currentVendorId)
     .map((vendor) => ({
       id: vendor.id,
-      label: vendor.name,
+      label: `${vendor.name}${vendor.isActive ? "" : " (Inactive)"}`,
     }));
   const lookupItems =
     vendorOptions.length > 0
