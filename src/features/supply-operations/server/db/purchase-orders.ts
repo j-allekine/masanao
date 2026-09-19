@@ -4,7 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { PurchaseOrderInput } from "../../schemas/purchase-order";
-import type { PurchaseOrderListItem } from "../../types";
+import type { PurchaseOrderDetailItem, PurchaseOrderListItem } from "../../types";
 
 export const purchaseOrderListSelect = {
   id: true,
@@ -20,6 +20,11 @@ export const purchaseOrderListSelect = {
       isActive: true,
     },
   },
+} as const;
+
+const purchaseOrderDetailSelect = {
+  ...purchaseOrderListSelect,
+  deliveryReceipts: { select: { id: true, receiptNo: true, receiptDate: true, postedAt: true, _count: { select: { lines: true } } }, orderBy: { postedAt: "desc" as const } },
 } as const;
 
 type PurchaseOrderListRecord = Prisma.PurchaseOrderGetPayload<{
@@ -77,13 +82,16 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
 
 export async function getPurchaseOrderRecord(
   id: string,
-): Promise<PurchaseOrderListItem | null> {
+): Promise<PurchaseOrderDetailItem | null> {
   const purchaseOrder = await prisma.purchaseOrder.findUnique({
     where: { id },
-    select: purchaseOrderListSelect,
+    select: purchaseOrderDetailSelect,
   });
 
-  return purchaseOrder ? toPurchaseOrderListItem(purchaseOrder) : null;
+  return purchaseOrder ? {
+    ...toPurchaseOrderListItem(purchaseOrder),
+    deliveryReceipts: purchaseOrder.deliveryReceipts.map((receipt) => ({ id: receipt.id, receiptNo: receipt.receiptNo, receiptDate: receipt.receiptDate.toISOString(), postedAt: receipt.postedAt.toISOString(), lineCount: receipt._count.lines })),
+  } : null;
 }
 
 type PurchaseOrderDatabase = Pick<

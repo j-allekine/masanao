@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, FileText, Inbox } from "lucide-react";
+import { ClipboardList, FilePlus2, FileText, Inbox } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -18,9 +18,10 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-import type { PurchaseOrderListItem } from "../types";
+import type { PurchaseOrderDetailItem } from "../types";
 
 function displayValue(value: string | null) {
   return value ?? "Not recorded";
@@ -29,7 +30,7 @@ function displayValue(value: string | null) {
 export default function PurchaseOrderDetailContent({
   purchaseOrder,
 }: {
-  purchaseOrder: PurchaseOrderListItem;
+  purchaseOrder: PurchaseOrderDetailItem;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -95,15 +96,21 @@ export default function PurchaseOrderDetailContent({
         </Card>
 
         <section aria-labelledby="delivery-receipt-history-title" className="flex flex-col gap-3">
-          <div>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
             <h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">
               Delivery Receipt history
             </h2>
             <p className="text-body text-muted-foreground">
               Posted receipts will remain visible here as this order is received.
             </p>
+            </div>
+            <Link href={`/purchase-orders/${purchaseOrder.id}/record-delivery`} className={buttonVariants({ variant: "default" })}>
+              <FilePlus2 data-icon="inline-start" aria-hidden="true" />
+              Record delivery
+            </Link>
           </div>
-          <Empty className="min-h-60 rounded-lg border bg-background" data-delivery-receipt-history="empty">
+          {purchaseOrder.deliveryReceipts.length === 0 ? <Empty className="min-h-60 rounded-lg border bg-background" data-delivery-receipt-history="empty">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <Inbox aria-hidden="true" />
@@ -113,7 +120,7 @@ export default function PurchaseOrderDetailContent({
                 Record a Delivery Receipt when supplies arrive for this Purchase Order.
               </EmptyDescription>
             </EmptyHeader>
-          </Empty>
+          </Empty> : <div className="overflow-x-auto rounded-lg border"><Table><TableHeader><TableRow><TableHead>Receipt number</TableHead><TableHead>Receipt date</TableHead><TableHead>Lines</TableHead><TableHead>Posted</TableHead></TableRow></TableHeader><TableBody>{purchaseOrder.deliveryReceipts.map((receipt) => <TableRow key={receipt.id} id={`delivery-receipt-${receipt.id}`}><TableCell className="font-medium">{receipt.receiptNo}</TableCell><TableCell>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(receipt.receiptDate))}</TableCell><TableCell>{receipt.lineCount}</TableCell><TableCell>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(receipt.postedAt))}</TableCell></TableRow>)}</TableBody></Table></div>}
         </section>
       </main>
     </div>

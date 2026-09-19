@@ -8,6 +8,7 @@ import { executeCreateItemUnitConversion } from "./server/actions/create-item-un
 import { executeCreatePurchaseOrder } from "./server/actions/create-purchase-order";
 import { executeDeletePurchaseOrder } from "./server/actions/delete-purchase-order";
 import { executeUpdatePurchaseOrder } from "./server/actions/update-purchase-order";
+import { executePostDeliveryReceipt } from "./server/actions/post-delivery-receipt";
 import type {
   ItemDeleteActionState,
   ItemFormActionState,
@@ -16,6 +17,7 @@ import type {
   PurchaseOrderDeleteActionState,
 } from "./types";
 import type { ItemUnitConversionActionState } from "./types";
+import type { DeliveryReceiptPostActionState } from "./types";
 
 export async function createItemAction(formData: FormData): Promise<ItemFormActionState> {
   return executeCreateItem(formData);
@@ -53,4 +55,8 @@ export async function deletePurchaseOrderAction(
   id: string,
 ): Promise<PurchaseOrderDeleteActionState> {
   return executeDeletePurchaseOrder(id);
+}
+
+export async function postDeliveryReceiptAction(formData: FormData): Promise<DeliveryReceiptPostActionState> {
+  return executePostDeliveryReceipt(formData);
 }
