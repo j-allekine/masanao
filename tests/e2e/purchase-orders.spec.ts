@@ -200,6 +200,82 @@ test.describe("Purchase Orders read journey", () => {
 });
 
 test.describe("Purchase Orders administration journey", () => {
+  test("locks the Vendor and delete workflow after a Delivery Receipt is posted", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const purchaseOrderId = randomUUID();
+    const receiptId = randomUUID();
+
+    try {
+      withE2eDatabase((database) => {
+        database.prepare(
+          `INSERT INTO "purchase_order"
+           ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "referenceNumber", "note", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        ).run(
+          purchaseOrderId,
+          "PO-E2E-LOCKED-ORIGINAL",
+          "po-e2e-locked-original",
+          "e2e-vendor-acme",
+          "ORS-E2E-LOCKED-ORIGINAL",
+          "Original note",
+        );
+        database.prepare(
+          `INSERT INTO "delivery_receipt"
+           ("id", "purchaseOrderId", "vendorId", "vendorName", "purchaseOrderNo", "receiptNo", "normalizedReceiptNo", "receiptDate", "postedAt")
+           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        ).run(
+          receiptId,
+          purchaseOrderId,
+          "e2e-vendor-acme",
+          "Acme Foods",
+          "PO-E2E-LOCKED-ORIGINAL",
+          "DR-E2E-LOCKED-1",
+          "dr-e2e-locked-1",
+        );
+      });
+
+      await signIn(page, "municipal.admin", adminPassword);
+      await page.goto("/purchase-orders");
+      const row = page.locator(
+        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+      ).filter({ hasText: "PO-E2E-LOCKED-ORIGINAL" });
+      await expect(row).toBeVisible();
+      await row.getByRole("button", {
+        name: "Actions for PO-E2E-LOCKED-ORIGINAL",
+        exact: true,
+      }).click();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toHaveCount(0);
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByRole("combobox", { name: "Vendor", exact: true })).toBeDisabled();
+      await expect(dialog.getByText("Vendor is locked after a Delivery Receipt is posted.", { exact: true })).toBeVisible();
+      await dialog.getByRole("textbox", { name: "Purchase Order No.", exact: true }).fill("PO-E2E-LOCKED-CORRECTED");
+      await dialog.getByLabel("Reference number (optional)", { exact: true }).fill("ORS-E2E-LOCKED-CORRECTED");
+      await dialog.getByLabel("Note (optional)", { exact: true }).fill("Corrected note");
+      await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator(
+        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+      ).filter({ hasText: "PO-E2E-LOCKED-CORRECTED" })).toBeVisible();
+
+      expect(withE2eDatabase((database) => database.prepare(
+        'SELECT "purchaseOrderNo", "vendorId", "vendorName" FROM "delivery_receipt" WHERE "id" = ?',
+      ).get(receiptId))).toEqual({
+        purchaseOrderNo: "PO-E2E-LOCKED-ORIGINAL",
+        vendorId: "e2e-vendor-acme",
+        vendorName: "Acme Foods",
+      });
+    } finally {
+      withE2eDatabase((database) => {
+        database.prepare('DELETE FROM "delivery_receipt" WHERE "id" = ?').run(receiptId);
+        database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
+      });
+    }
+  });
+
   test("lets administrators create, edit, and delete a Purchase Order", async ({
     page,
   }) => {

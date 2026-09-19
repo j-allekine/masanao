@@ -59,6 +59,15 @@ export async function updatePurchaseOrderCommand(
 
     if (result.kind === "not-found") return notFoundResult();
     if (result.kind === "duplicate") return duplicateResult();
+    if (result.kind === "vendor-locked") {
+      const message = "Vendor cannot be changed after a Delivery Receipt has been posted.";
+      return {
+        ok: false,
+        kind: "locked",
+        error: message,
+        fields: { vendorId: [message] },
+      };
+    }
     if (result.kind === "invalid-vendor") {
       return {
         ok: false,

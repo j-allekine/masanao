@@ -13,6 +13,11 @@ export const purchaseOrderListSelect = {
   note: true,
   createdAt: true,
   updatedAt: true,
+  _count: {
+    select: {
+      deliveryReceipts: true,
+    },
+  },
   vendor: {
     select: {
       id: true,
@@ -65,6 +70,7 @@ export function toPurchaseOrderListItem(
     note: purchaseOrder.note,
     createdAt: purchaseOrder.createdAt.toISOString(),
     updatedAt: purchaseOrder.updatedAt.toISOString(),
+    hasPostedReceipts: purchaseOrder._count.deliveryReceipts > 0,
   };
 }
 
@@ -96,7 +102,7 @@ export async function getPurchaseOrderRecord(
 
 type PurchaseOrderDatabase = Pick<
   Prisma.TransactionClient,
-  "purchaseOrder" | "vendor"
+  "purchaseOrder" | "vendor" | "deliveryReceipt"
 >;
 
 export type PurchaseOrderCreateWriteResult =
@@ -108,6 +114,7 @@ export type PurchaseOrderUpdateWriteResult =
   | { kind: "updated"; purchaseOrder: PurchaseOrderListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
+  | { kind: "vendor-locked" }
   | { kind: "invalid-vendor" };
 
 export async function createPurchaseOrderWithActiveVendor(
@@ -157,9 +164,16 @@ export async function updatePurchaseOrderWithEligibleVendor(
       const database: PurchaseOrderDatabase = transaction;
       const existing = await database.purchaseOrder.findUnique({
         where: { id },
-        select: { vendorId: true },
+        select: { vendorId: true, _count: { select: { deliveryReceipts: true } } },
       });
       if (!existing) return { kind: "not-found" as const };
+
+      if (
+        existing._count.deliveryReceipts > 0 &&
+        input.vendorId !== existing.vendorId
+      ) {
+        return { kind: "vendor-locked" as const };
+      }
 
       const vendor = await database.vendor.findFirst({
         where: {
@@ -201,6 +215,12 @@ export async function updatePurchaseOrderWithEligibleVendor(
 }
 
 export async function deletePurchaseOrderRecord(id: string) {
+  const hasPostedReceipts = await prisma.deliveryReceipt.findFirst({
+    where: { purchaseOrderId: id },
+    select: { id: true },
+  });
+  if (hasPostedReceipts) return { deleted: false as const, referenced: true as const };
+
   try {
     await prisma.purchaseOrder.delete({ where: { id } });
   } catch (error) {

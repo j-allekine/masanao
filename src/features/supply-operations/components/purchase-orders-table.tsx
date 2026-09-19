@@ -70,6 +70,7 @@ function PurchaseOrderMobileCard({
             actionButtonId={`purchase-order-actions-mobile-${purchaseOrder.id}`}
             onEdit={onEdit}
             onDelete={() => setIsDeleteDialogOpen(true)}
+            canDelete={!purchaseOrder.hasPostedReceipts}
           />
         ) : null}
       </CardHeader>
@@ -160,7 +161,8 @@ function PurchaseOrderRow({
               purchaseOrderNo={purchaseOrder.purchaseOrderNo}
               actionButtonId={`purchase-order-actions-desktop-${purchaseOrder.id}`}
               onEdit={onEdit}
-              onDelete={() => setIsDeleteDialogOpen(true)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            canDelete={!purchaseOrder.hasPostedReceipts}
             />
           </TableCell>
         ) : null}
