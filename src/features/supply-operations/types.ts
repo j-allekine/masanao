@@ -177,3 +177,14 @@ export type PurchaseOrderDeleteActionState =
       kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server";
       error: string;
     };
+
+export type DeliveryReceiptField = "receiptNo" | "receiptDate" | "note" | "itemId" | "quantity";
+export type DeliveryReceiptFieldErrors = Partial<Record<DeliveryReceiptField | "form", string[]>>;
+export type DeliveryReceiptPostResult =
+  | { ok: true; receipt: { id: string; receiptNo: string } }
+  | { ok: false; kind: "validation" | "duplicate" | "inactive" | "not-found" | "forbidden"; error: string; fields: DeliveryReceiptFieldErrors };
+export type DeliveryReceiptPostActionState =
+  | { status: "success"; receipt: { id: string; receiptNo: string } }
+  | { status: "error"; kind: "authentication" | "validation" | "duplicate" | "inactive" | "not-found" | "forbidden" | "server"; error: string; fields: DeliveryReceiptFieldErrors };
+export type DeliveryReceiptHistoryItem = { id: string; receiptNo: string; receiptDate: string; lineCount: number; postedAt: string };
+export type PurchaseOrderDetailItem = PurchaseOrderListItem & { deliveryReceipts: DeliveryReceiptHistoryItem[] };

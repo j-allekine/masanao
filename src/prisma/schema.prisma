@@ -96,6 +96,9 @@ model Unit {
   updatedAt                DateTime             @updatedAt
   baseUnitItems            Item[]               @relation("ItemBaseUnit")
   alternateUnitConversions ItemUnitConversion[] @relation("ItemUnitConversionAlternateUnit")
+  selectedDeliveryReceiptLines DeliveryReceiptLine[] @relation("DeliveryReceiptLineSelectedUnit")
+  baseDeliveryReceiptLines     DeliveryReceiptLine[] @relation("DeliveryReceiptLineBaseUnit")
+  inventoryLedgerMovements     InventoryLedgerMovement[] @relation("InventoryLedgerMovementBaseUnit")
 
   @@map("unit")
 }
@@ -126,6 +129,8 @@ model Item {
   category        Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   baseUnit        Unit                 @relation("ItemBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   unitConversions ItemUnitConversion[]
+  deliveryReceiptLines DeliveryReceiptLine[]
+  inventoryLedgerMovements InventoryLedgerMovement[] @relation("InventoryLedgerMovementItem")
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -178,6 +183,7 @@ model Vendor {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   purchaseOrders PurchaseOrder[]
+  deliveryReceipts DeliveryReceipt[]
 
   @@map("vendor")
 }
@@ -192,9 +198,71 @@ model PurchaseOrder {
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
   vendor                    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  deliveryReceipts          DeliveryReceipt[]
 
   @@index([vendorId])
   @@map("purchase_order")
+}
+
+model DeliveryReceipt {
+  id                      String                @id
+  purchaseOrderId         String
+  vendorId                String
+  vendorName              String
+  purchaseOrderNo         String
+  receiptNo               String
+  normalizedReceiptNo     String
+  receiptDate             DateTime
+  note                    String?
+  postedAt                DateTime              @default(now())
+  purchaseOrder           PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  vendor                  Vendor                @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  lines                   DeliveryReceiptLine[]
+
+  @@unique([vendorId, normalizedReceiptNo])
+  @@index([purchaseOrderId])
+  @@map("delivery_receipt")
+}
+
+model DeliveryReceiptLine {
+  id                              String          @id
+  deliveryReceiptId               String
+  itemId                          String
+  selectedUnitId                  String
+  baseUnitId                      String
+  itemName                        String
+  selectedUnitName                String
+  baseUnitName                    String
+  enteredQuantity                 String
+  conversionFactor                String
+  calculatedBaseUnitQuantity      String
+  actualReceivedBaseUnitQuantity  String
+  varianceNote                    String?
+  deliveryReceipt                 DeliveryReceipt @relation(fields: [deliveryReceiptId], references: [id], onDelete: Restrict)
+  item                            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit                    Unit            @relation("DeliveryReceiptLineSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit                        Unit            @relation("DeliveryReceiptLineBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  inventoryLedgerMovements        InventoryLedgerMovement[]
+
+  @@index([deliveryReceiptId])
+  @@index([itemId])
+  @@map("delivery_receipt_line")
+}
+
+model InventoryLedgerMovement {
+  id                    String              @id
+  deliveryReceiptLineId String              @unique
+  itemId                String
+  baseUnitId            String
+  quantity              String
+  movementType          String
+  occurredAt            DateTime
+  deliveryReceiptLine   DeliveryReceiptLine @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+  item                  Item                @relation("InventoryLedgerMovementItem", fields: [itemId], references: [id], onDelete: Restrict)
+  baseUnit              Unit                @relation("InventoryLedgerMovementBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+
+  @@index([itemId])
+  @@map("inventory_ledger_movement")
 }
 
 model ActivityDesign {
