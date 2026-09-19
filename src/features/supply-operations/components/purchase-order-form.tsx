@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -85,6 +86,7 @@ function VendorField({
   error,
   vendors,
   currentVendorId,
+  isLocked,
   onValueChange,
 }: {
   mode: "create" | "edit";
@@ -92,6 +94,7 @@ function VendorField({
   error?: string[];
   vendors: PurchaseOrderVendorOption[];
   currentVendorId?: string;
+  isLocked: boolean;
   onValueChange: (value: string) => void;
 }) {
   const inputId = `${mode}-purchase-order-vendorId`;
@@ -122,7 +125,7 @@ function VendorField({
         items={lookupItems}
         value={value || null}
         onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
-        disabled={vendorOptions.length === 0}
+        disabled={isLocked || vendorOptions.length === 0}
       >
         <SelectTrigger
           id={inputId}
@@ -148,6 +151,11 @@ function VendorField({
           </SelectGroup>
         </SelectContent>
       </Select>
+      {isLocked ? (
+        <FieldDescription>
+          Vendor is locked after a Delivery Receipt is posted.
+        </FieldDescription>
+      ) : null}
       <PurchaseOrderFieldError id={inputId} errors={error} />
     </Field>
   );
@@ -335,6 +343,7 @@ export default function PurchaseOrderForm({
             error={fieldErrors.vendorId}
             vendors={vendorOptions}
             currentVendorId={purchaseOrder?.vendor.id}
+            isLocked={Boolean(purchaseOrder?.hasPostedReceipts)}
             onValueChange={(value) => updateField("vendorId", value)}
           />
 

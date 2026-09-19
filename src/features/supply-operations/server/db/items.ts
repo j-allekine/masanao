@@ -37,6 +37,9 @@ const itemListSelect = {
     },
     orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { id: "asc" }] satisfies Prisma.ItemUnitConversionOrderByWithRelationInput[],
   },
+  _count: {
+    select: { deliveryReceiptLines: true },
+  },
 } as const;
 
 type ItemListRecord = Prisma.ItemGetPayload<{
@@ -57,7 +60,7 @@ export type ItemUpdateWriteResult =
   | { kind: "updated"; item: ItemListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
-  | { kind: "base-unit-locked" }
+  | { kind: "base-unit-locked"; reason: "alternate-units" | "stock-activity" }
   | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
 
 function toItemListItem(item: ItemListRecord): ItemListItem {
@@ -76,6 +79,7 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
       baseUnitQuantity: conversion.baseUnitQuantity,
       label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
     }))),
+    hasPostedDeliveryReceiptLines: item._count.deliveryReceiptLines > 0,
   };
 }
 
@@ -156,7 +160,7 @@ async function findItemRecord(database: ItemDatabase, id: string) {
       id: true,
       categoryId: true,
       baseUnitId: true,
-      _count: { select: { unitConversions: true } },
+      _count: { select: { unitConversions: true, deliveryReceiptLines: true } },
     },
   });
 }
@@ -284,8 +288,13 @@ export async function updateItemWithActiveLookups(
       const existing = await findItemRecord(transaction, id);
       if (!existing) return { kind: "not-found" };
 
-      if (existing._count.unitConversions > 0 && existing.baseUnitId !== input.baseUnitId) {
-        return { kind: "base-unit-locked" as const };
+      if (existing.baseUnitId !== input.baseUnitId) {
+        if (existing._count.unitConversions > 0) {
+          return { kind: "base-unit-locked" as const, reason: "alternate-units" as const };
+        }
+        if (existing._count.deliveryReceiptLines > 0) {
+          return { kind: "base-unit-locked" as const, reason: "stock-activity" as const };
+        }
       }
 
       const [conflict, { category, baseUnit }] = await Promise.all([
@@ -312,13 +321,23 @@ export async function updateItemWithActiveLookups(
 }
 
 export async function setItemActiveRecord(id: string, isActive: boolean) {
-  const item = await prisma.item.update({
-    where: { id },
-    data: { isActive },
-    select: itemListSelect,
-  });
+  return prisma.$transaction(async (transaction) => {
+    if (!isActive) {
+      const receiptLine = await transaction.deliveryReceiptLine.findFirst({
+        where: { itemId: id },
+        select: { id: true },
+      });
+      if (receiptLine) return { kind: "referenced" as const };
+    }
 
-  return toItemListItem(item);
+    const item = await transaction.item.update({
+      where: { id },
+      data: { isActive },
+      select: itemListSelect,
+    });
+
+    return { kind: "updated" as const, item: toItemListItem(item) };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export async function deleteItemRecord(id: string) {

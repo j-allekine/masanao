@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import {
   ClipboardList,
   FileText,
@@ -54,7 +55,14 @@ function PurchaseOrderMobileCard({
     <>
       <Card size="sm" data-purchase-order-id={purchaseOrder.id}>
       <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <CardTitle className="break-words">{purchaseOrder.purchaseOrderNo}</CardTitle>
+        <CardTitle className="break-words">
+          <Link
+            href={`/purchase-orders/${purchaseOrder.id}`}
+            className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {purchaseOrder.purchaseOrderNo}
+          </Link>
+        </CardTitle>
         {canManage ? (
           <PurchaseOrderActionsMenu
             purchaseOrderId={purchaseOrder.id}
@@ -62,6 +70,7 @@ function PurchaseOrderMobileCard({
             actionButtonId={`purchase-order-actions-mobile-${purchaseOrder.id}`}
             onEdit={onEdit}
             onDelete={() => setIsDeleteDialogOpen(true)}
+            canDelete={!purchaseOrder.hasPostedReceipts}
           />
         ) : null}
       </CardHeader>
@@ -123,13 +132,16 @@ function PurchaseOrderRow({
         data-purchase-order-id={purchaseOrder.id}
       >
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
-          <span className="block break-words">
+          <Link
+            href={`/purchase-orders/${purchaseOrder.id}`}
+            className="block break-words rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
             <FileText
               className="mr-2 inline-block align-text-bottom"
               aria-hidden="true"
             />
             {purchaseOrder.purchaseOrderNo}
-          </span>
+          </Link>
         </TableCell>
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
           <span className="block break-words">{purchaseOrder.vendor.name}</span>
@@ -149,7 +161,8 @@ function PurchaseOrderRow({
               purchaseOrderNo={purchaseOrder.purchaseOrderNo}
               actionButtonId={`purchase-order-actions-desktop-${purchaseOrder.id}`}
               onEdit={onEdit}
-              onDelete={() => setIsDeleteDialogOpen(true)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+            canDelete={!purchaseOrder.hasPostedReceipts}
             />
           </TableCell>
         ) : null}

@@ -30,6 +30,7 @@ export type ItemListItem = {
   createdAt: string;
   updatedAt: string;
   unitConversions?: ItemUnitConversionListItem[];
+  hasPostedDeliveryReceiptLines: boolean;
 };
 
 export type ItemUnitConversionListItem = {
@@ -75,7 +76,7 @@ export type ItemUpdateResult =
 
 export type ItemLifecycleResult =
   | { ok: true; item: ItemListItem }
-  | { ok: false; kind: "forbidden" | "not-found"; error: string };
+  | { ok: false; kind: "forbidden" | "not-found" | "referenced"; error: string };
 
 export type ItemDeleteResult =
   | { ok: true }
@@ -92,7 +93,7 @@ export type ItemFormActionState =
 
 export type ItemLifecycleActionState =
   | { status: "success"; item: ItemListItem }
-  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "server"; error: string };
+  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server"; error: string };
 
 export type ItemDeleteActionState =
   | { status: "success" }
@@ -110,6 +111,7 @@ export type PurchaseOrderListItem = {
   note: string | null;
   createdAt: string;
   updatedAt: string;
+  hasPostedReceipts: boolean;
 };
 
 export type PurchaseOrderField =
@@ -141,7 +143,7 @@ export type PurchaseOrderUpdateResult =
   | { ok: true; purchaseOrder: PurchaseOrderListItem }
   | {
       ok: false;
-      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "not-found";
+      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "locked" | "not-found";
       error: string;
       fields: PurchaseOrderFieldErrors;
     };
@@ -164,6 +166,7 @@ export type PurchaseOrderFormActionState =
         | "validation"
         | "duplicate"
         | "inactive"
+        | "locked"
         | "not-found"
         | "server";
       error: string;
@@ -177,3 +180,14 @@ export type PurchaseOrderDeleteActionState =
       kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server";
       error: string;
     };
+
+export type DeliveryReceiptField = "receiptNo" | "receiptDate" | "note" | "itemId" | "selectedUnitId" | "quantity" | "actualReceivedBaseUnitQuantity" | "varianceNote";
+export type DeliveryReceiptFieldErrors = Partial<Record<DeliveryReceiptField | "form", string[]>>;
+export type DeliveryReceiptPostResult =
+  | { ok: true; receipt: { id: string; receiptNo: string } }
+  | { ok: false; kind: "validation" | "duplicate" | "inactive" | "not-found" | "forbidden"; error: string; fields: DeliveryReceiptFieldErrors };
+export type DeliveryReceiptPostActionState =
+  | { status: "success"; receipt: { id: string; receiptNo: string } }
+  | { status: "error"; kind: "authentication" | "validation" | "duplicate" | "inactive" | "not-found" | "forbidden" | "server"; error: string; fields: DeliveryReceiptFieldErrors };
+export type DeliveryReceiptHistoryItem = { id: string; receiptNo: string; receiptDate: string; lineCount: number; postedAt: string };
+export type PurchaseOrderDetailItem = PurchaseOrderListItem & { deliveryReceipts: DeliveryReceiptHistoryItem[] };

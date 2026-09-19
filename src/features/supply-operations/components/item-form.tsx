@@ -335,10 +335,14 @@ export default function ItemForm({
             error={fieldErrors.baseUnitId}
             options={unitOptions}
             onValueChange={(value) => updateField("baseUnitId", value)}
-            disabled={mode === "edit" && Boolean(item?.unitConversions?.length)}
+            disabled={mode === "edit" && Boolean(item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines)}
           />
-          {mode === "edit" && item?.unitConversions?.length ? (
-            <p className="text-body-sm text-muted-foreground">Base Unit is locked while alternate Units are configured.</p>
+          {mode === "edit" && (item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines) ? (
+            <p className="text-body-sm text-muted-foreground">
+              {item.hasPostedDeliveryReceiptLines
+                ? "Base Unit is locked because stock activity was posted for this Item."
+                : "Base Unit is locked while alternate Units are configured."}
+            </p>
           ) : null}
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>

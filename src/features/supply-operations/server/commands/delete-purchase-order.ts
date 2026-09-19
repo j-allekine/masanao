@@ -20,7 +20,7 @@ export async function deletePurchaseOrderCommand(
       ok: false,
       kind: "referenced",
       error:
-        "This Purchase Order cannot be deleted because receiving records reference it.",
+        "This Purchase Order cannot be deleted because it has posted Delivery Receipts.",
     };
   }
 

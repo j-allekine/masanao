@@ -4,7 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { PurchaseOrderInput } from "../../schemas/purchase-order";
-import type { PurchaseOrderListItem } from "../../types";
+import type { PurchaseOrderDetailItem, PurchaseOrderListItem } from "../../types";
 
 export const purchaseOrderListSelect = {
   id: true,
@@ -13,6 +13,11 @@ export const purchaseOrderListSelect = {
   note: true,
   createdAt: true,
   updatedAt: true,
+  _count: {
+    select: {
+      deliveryReceipts: true,
+    },
+  },
   vendor: {
     select: {
       id: true,
@@ -20,6 +25,11 @@ export const purchaseOrderListSelect = {
       isActive: true,
     },
   },
+} as const;
+
+const purchaseOrderDetailSelect = {
+  ...purchaseOrderListSelect,
+  deliveryReceipts: { select: { id: true, receiptNo: true, receiptDate: true, postedAt: true, _count: { select: { lines: true } } }, orderBy: { postedAt: "desc" as const } },
 } as const;
 
 type PurchaseOrderListRecord = Prisma.PurchaseOrderGetPayload<{
@@ -60,6 +70,7 @@ export function toPurchaseOrderListItem(
     note: purchaseOrder.note,
     createdAt: purchaseOrder.createdAt.toISOString(),
     updatedAt: purchaseOrder.updatedAt.toISOString(),
+    hasPostedReceipts: purchaseOrder._count.deliveryReceipts > 0,
   };
 }
 
@@ -75,9 +86,23 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
   return purchaseOrders.map(toPurchaseOrderListItem);
 }
 
+export async function getPurchaseOrderRecord(
+  id: string,
+): Promise<PurchaseOrderDetailItem | null> {
+  const purchaseOrder = await prisma.purchaseOrder.findUnique({
+    where: { id },
+    select: purchaseOrderDetailSelect,
+  });
+
+  return purchaseOrder ? {
+    ...toPurchaseOrderListItem(purchaseOrder),
+    deliveryReceipts: purchaseOrder.deliveryReceipts.map((receipt) => ({ id: receipt.id, receiptNo: receipt.receiptNo, receiptDate: receipt.receiptDate.toISOString(), postedAt: receipt.postedAt.toISOString(), lineCount: receipt._count.lines })),
+  } : null;
+}
+
 type PurchaseOrderDatabase = Pick<
   Prisma.TransactionClient,
-  "purchaseOrder" | "vendor"
+  "purchaseOrder" | "vendor" | "deliveryReceipt"
 >;
 
 export type PurchaseOrderCreateWriteResult =
@@ -89,6 +114,7 @@ export type PurchaseOrderUpdateWriteResult =
   | { kind: "updated"; purchaseOrder: PurchaseOrderListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
+  | { kind: "vendor-locked" }
   | { kind: "invalid-vendor" };
 
 export async function createPurchaseOrderWithActiveVendor(
@@ -138,9 +164,16 @@ export async function updatePurchaseOrderWithEligibleVendor(
       const database: PurchaseOrderDatabase = transaction;
       const existing = await database.purchaseOrder.findUnique({
         where: { id },
-        select: { vendorId: true },
+        select: { vendorId: true, _count: { select: { deliveryReceipts: true } } },
       });
       if (!existing) return { kind: "not-found" as const };
+
+      if (
+        existing._count.deliveryReceipts > 0 &&
+        input.vendorId !== existing.vendorId
+      ) {
+        return { kind: "vendor-locked" as const };
+      }
 
       const vendor = await database.vendor.findFirst({
         where: {
@@ -182,6 +215,12 @@ export async function updatePurchaseOrderWithEligibleVendor(
 }
 
 export async function deletePurchaseOrderRecord(id: string) {
+  const hasPostedReceipts = await prisma.deliveryReceipt.findFirst({
+    where: { purchaseOrderId: id },
+    select: { id: true },
+  });
+  if (hasPostedReceipts) return { deleted: false as const, referenced: true as const };
+
   try {
     await prisma.purchaseOrder.delete({ where: { id } });
   } catch (error) {
