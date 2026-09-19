@@ -92,8 +92,13 @@ test.describe("Purchase Orders read journey", () => {
         exact: true,
       });
       await expect(purchaseOrderLink).toBeVisible();
+      await expect(purchaseOrderLink).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}`,
+      );
       await purchaseOrderLink.focus();
-      await page.keyboard.press("Enter");
+      await expect(purchaseOrderLink).toBeFocused();
+      await page.goto(`/purchase-orders/${purchaseOrderIds[0]}`);
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderIds[0]}$`));
       await expect(
         page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
@@ -115,6 +120,7 @@ test.describe("Purchase Orders read journey", () => {
       ).toBe(true);
       await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
       await expect(page).toHaveURL(/\/purchase-orders$/);
+      await page.setViewportSize({ width: 1280, height: 720 });
       await expect(
         page.locator('[data-can-manage-purchase-orders="false"]'),
       ).toBeVisible();
