@@ -30,6 +30,7 @@ export type ItemListItem = {
   createdAt: string;
   updatedAt: string;
   unitConversions?: ItemUnitConversionListItem[];
+  hasPostedDeliveryReceiptLines: boolean;
 };
 
 export type ItemUnitConversionListItem = {
@@ -75,7 +76,7 @@ export type ItemUpdateResult =
 
 export type ItemLifecycleResult =
   | { ok: true; item: ItemListItem }
-  | { ok: false; kind: "forbidden" | "not-found"; error: string };
+  | { ok: false; kind: "forbidden" | "not-found" | "referenced"; error: string };
 
 export type ItemDeleteResult =
   | { ok: true }
@@ -92,7 +93,7 @@ export type ItemFormActionState =
 
 export type ItemLifecycleActionState =
   | { status: "success"; item: ItemListItem }
-  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "server"; error: string };
+  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server"; error: string };
 
 export type ItemDeleteActionState =
   | { status: "success" }

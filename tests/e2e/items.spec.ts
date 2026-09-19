@@ -294,6 +294,52 @@ function removeItemFixtures(
   });
 }
 
+function createStockLockedItemFixtures() {
+  const itemFixtures = createItemFixtures();
+  const vendorId = randomUUID();
+  const purchaseOrderId = randomUUID();
+  const receiptId = randomUUID();
+  const receiptLineId = randomUUID();
+
+  withE2eDatabase((database) => {
+    database.prepare(
+      `INSERT INTO "vendor" ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    ).run(vendorId, `Receipt vendor ${vendorId.slice(0, 8)}`, `receipt vendor ${vendorId}`);
+    database.prepare(
+      `INSERT INTO "purchase_order" ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    ).run(purchaseOrderId, `PO-${purchaseOrderId.slice(0, 8)}`, `po-${purchaseOrderId}`, vendorId);
+    database.prepare(
+      `INSERT INTO "delivery_receipt" ("id", "purchaseOrderId", "vendorId", "vendorName", "purchaseOrderNo", "receiptNo", "normalizedReceiptNo", "receiptDate", "postedAt")
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    ).run(receiptId, purchaseOrderId, vendorId, `Receipt vendor ${vendorId.slice(0, 8)}`, `PO-${purchaseOrderId.slice(0, 8)}`, `DR-${receiptId.slice(0, 8)}`, `dr-${receiptId}`);
+    database.prepare(
+      `INSERT INTO "delivery_receipt_line" ("id", "deliveryReceiptId", "itemId", "selectedUnitId", "baseUnitId", "itemName", "selectedUnitName", "baseUnitName", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity")
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1', '1', '1', '1')`,
+    ).run(receiptLineId, receiptId, itemFixtures.activeItemId, itemFixtures.baseUnitId, itemFixtures.baseUnitId, "Alpha Beans", "Kilogram", "Kilogram");
+    database.prepare(
+      `INSERT INTO "inventory_ledger_movement" ("id", "deliveryReceiptLineId", "itemId", "baseUnitId", "quantity", "movementType", "occurredAt")
+       VALUES (?, ?, ?, ?, '1', 'stock-in', CURRENT_TIMESTAMP)`,
+    ).run(randomUUID(), receiptLineId, itemFixtures.activeItemId, itemFixtures.baseUnitId);
+  });
+
+  return { itemFixtures, vendorId, purchaseOrderId, receiptId, receiptLineId };
+}
+
+function removeStockLockedItemFixtures(fixtures: ReturnType<typeof createStockLockedItemFixtures>) {
+  withE2eDatabase((database) => {
+    database.transaction(() => {
+      database.prepare('DELETE FROM "inventory_ledger_movement" WHERE "deliveryReceiptLineId" = ?').run(fixtures.receiptLineId);
+      database.prepare('DELETE FROM "delivery_receipt_line" WHERE "id" = ?').run(fixtures.receiptLineId);
+      database.prepare('DELETE FROM "delivery_receipt" WHERE "id" = ?').run(fixtures.receiptId);
+      database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(fixtures.purchaseOrderId);
+      database.prepare('DELETE FROM "vendor" WHERE "id" = ?').run(fixtures.vendorId);
+    })();
+  });
+  removeItemFixtures(fixtures.itemFixtures);
+}
+
 function createPagingFixtures(categoryId: string, baseUnitId: string) {
   const names = [
     "Apple Sauce",
@@ -324,12 +370,40 @@ function createPagingFixtures(categoryId: string, baseUnitId: string) {
 
 test.describe("Items catalog journey", () => {
   let fixturesToRemove: ReturnType<typeof createItemFixtures> | null = null;
+  let stockLockedFixturesToRemove: ReturnType<typeof createStockLockedItemFixtures> | null = null;
 
   test.afterEach(() => {
+    if (stockLockedFixturesToRemove) {
+      removeStockLockedItemFixtures(stockLockedFixturesToRemove);
+      stockLockedFixturesToRemove = null;
+    }
     if (!fixturesToRemove) return;
 
     removeItemFixtures(fixturesToRemove);
     fixturesToRemove = null;
+  });
+
+  test("explains the posted-stock locks in the Item lifecycle UI", async ({ page }) => {
+    test.setTimeout(120_000);
+    const fixtures = createStockLockedItemFixtures();
+    stockLockedFixturesToRemove = fixtures;
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    const row = page.getByRole("row").filter({
+      has: page.getByText("Alpha Beans", { exact: true }),
+    });
+    await row.getByRole("button", { name: "Actions for Alpha Beans", exact: true }).click();
+    await expect(
+      page.getByRole("menuitem", { name: "Deactivate (stock activity)", exact: true }),
+    ).toBeDisabled();
+
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("combobox", { name: "Base Unit", exact: true })).toBeDisabled();
+    await expect(dialog.getByText("Base Unit is locked because stock activity was posted for this Item.")).toBeVisible();
   });
 
   test("keeps an Item Units Sheet open while staff view and administrators add alternate Units", async ({

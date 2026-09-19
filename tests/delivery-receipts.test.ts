@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
-import { postDeliveryReceipt } from "@/features/supply-operations/server";
+import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 
 const staff: CurrentActor = { id: "receipt-staff", name: "Kitchen staff", username: "receipt.staff" };
+const administrator: CurrentActor = { id: "receipt-admin", name: "Receipt administrator", username: "receipt.admin" };
 
 async function clearRecords() {
   await prisma.inventoryLedgerMovement.deleteMany();
@@ -49,5 +50,34 @@ describe("Delivery Receipt direct Base Unit posting", () => {
     await expect(postDeliveryReceipt(staff, { ...first, receiptNo: " dr-20 ", receiptDate: "2026-09-19", quantity: "1" })).resolves.toMatchObject({ ok: false, kind: "duplicate" });
     await expect(postDeliveryReceipt(staff, { ...second, receiptNo: "dr-20", receiptDate: "2026-09-19", quantity: "1" })).resolves.toMatchObject({ ok: true });
     await expect(prisma.inventoryLedgerMovement.count()).resolves.toBe(2);
+  });
+
+  it("prevents Item deactivation and Base Unit changes after posting", async () => {
+    const { purchaseOrderId, itemId } = await receiptContext();
+    await prisma.user.create({ data: { id: administrator.id, name: administrator.name, email: "receipt.admin@internal.masanao", username: administrator.username, role: "admin" } });
+    const replacementUnit = await prisma.unit.create({ data: { id: "receipt-replacement-unit", name: "Piece", abbreviation: "pc", normalizedName: "piece", normalizedAbbreviation: "pc" } });
+
+    await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, receiptNo: "DR-30", receiptDate: "2026-09-19", quantity: "1" })).resolves.toMatchObject({ ok: true });
+
+    await expect(setItemActive(administrator, itemId, false)).resolves.toEqual({
+      ok: false,
+      kind: "referenced",
+      error: "This Item cannot be deactivated because posted Delivery Receipts reference it.",
+    });
+    await expect(updateItem(administrator, itemId, {
+      name: "Rice",
+      categoryId: "receipt-vendor-category",
+      baseUnitId: replacementUnit.id,
+    })).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: {
+        baseUnitId: ["Base Unit cannot change after stock activity is posted."],
+      },
+    });
+    await expect(prisma.item.findUnique({ where: { id: itemId } })).resolves.toMatchObject({
+      isActive: true,
+      baseUnitId: "receipt-vendor-unit",
+    });
   });
 });
