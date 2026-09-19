@@ -9,7 +9,9 @@ export async function executePostDeliveryReceipt(formData: FormData): Promise<De
   const actor = await getCurrentSupplyOperationsActor();
   if (!actor) return { status: "error", kind: "authentication", error: "Authentication required", fields: {} };
   try {
-    const result = await postDeliveryReceipt(actor, Object.fromEntries(formData.entries()));
+    const input = Object.fromEntries(formData.entries());
+    if (typeof input.lines === "string") input.lines = JSON.parse(input.lines);
+    const result = await postDeliveryReceipt(actor, input);
     if (!result.ok) return { status: "error", kind: result.kind, error: result.error, fields: result.fields };
     revalidatePath(`/purchase-orders/${formData.get("purchaseOrderId")}`);
     return { status: "success", receipt: result.receipt };
