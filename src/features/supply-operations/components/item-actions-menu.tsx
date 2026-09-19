@@ -20,6 +20,7 @@ export default function ItemActionsMenu({
   onDelete,
   onUnits,
   canManage,
+  isDeactivationLocked = false,
   disabled = false,
 }: {
   itemId: string;
@@ -31,6 +32,7 @@ export default function ItemActionsMenu({
   onDelete?: () => void;
   onUnits: () => void;
   canManage: boolean;
+  isDeactivationLocked?: boolean;
   disabled?: boolean;
 }) {
   return (
@@ -59,13 +61,14 @@ export default function ItemActionsMenu({
                     onSelect: onEdit!,
                   },
                   {
-                    label: isActive ? "Deactivate" : "Activate",
+                    label: isActive && isDeactivationLocked ? "Deactivate (stock activity)" : isActive ? "Deactivate" : "Activate",
                     icon: isActive ? (
                       <CircleOff data-icon="inline-start" />
                     ) : (
                       <CheckCircle2 data-icon="inline-start" />
                     ),
                     onSelect: () => onSetActive!(!isActive),
+                    disabled: isActive && isDeactivationLocked,
                   },
                 ],
               },

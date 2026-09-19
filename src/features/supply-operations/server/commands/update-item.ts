@@ -50,9 +50,14 @@ export async function updateItemCommand(
 
     if (result.kind === "not-found") return notFoundResult();
     if (result.kind === "base-unit-locked") {
+      const message = result.reason === "stock-activity"
+        ? "Base Unit cannot change after stock activity is posted."
+        : "Base Unit cannot change after alternate Units are configured.";
       return validationResult(
-        { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] },
-        "Base Unit is locked because alternate Units are configured for this Item.",
+        { baseUnitId: [message] },
+        result.reason === "stock-activity"
+          ? "Base Unit is locked because stock activity is posted for this Item."
+          : "Base Unit is locked because alternate Units are configured for this Item.",
       );
     }
     if (result.kind === "duplicate") return duplicateResult();
