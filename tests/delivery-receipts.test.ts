@@ -88,7 +88,7 @@ describe("Delivery Receipt direct Base Unit posting", () => {
     await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, receiptNo: "DR-VAR-1", receiptDate: "2026-09-19", quantity: "100", actualReceivedBaseUnitQuantity: "100.0" })).resolves.toMatchObject({ ok: true });
     await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, receiptNo: "DR-VAR-2", receiptDate: "2026-09-19", quantity: "10", actualReceivedBaseUnitQuantity: "9" })).resolves.toMatchObject({ ok: false, fields: { varianceNote: expect.any(Array) } });
     await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, receiptNo: "DR-VAR-3", receiptDate: "2026-09-19", quantity: "10", actualReceivedBaseUnitQuantity: "9", varianceNote: "One kilogram was rejected" })).resolves.toMatchObject({ ok: true });
-    await expect(prisma.deliveryReceiptLine.findFirst({ where: { receipt: { receiptNo: "DR-VAR-3" } }, include: { inventoryLedgerMovements: true } })).resolves.toMatchObject({ calculatedBaseUnitQuantity: "10", actualReceivedBaseUnitQuantity: "9", varianceNote: "One kilogram was rejected", inventoryLedgerMovements: [{ quantity: "9" }] });
+    await expect(prisma.deliveryReceiptLine.findFirst({ where: { deliveryReceipt: { receiptNo: "DR-VAR-3" } }, include: { inventoryLedgerMovements: true } })).resolves.toMatchObject({ calculatedBaseUnitQuantity: "10", actualReceivedBaseUnitQuantity: "9", varianceNote: "One kilogram was rejected", inventoryLedgerMovements: [{ quantity: "9" }] });
   });
 });
 
