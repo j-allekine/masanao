@@ -111,6 +111,7 @@ export type PurchaseOrderListItem = {
   note: string | null;
   createdAt: string;
   updatedAt: string;
+  hasPostedReceipts: boolean;
 };
 
 export type PurchaseOrderField =
@@ -142,7 +143,7 @@ export type PurchaseOrderUpdateResult =
   | { ok: true; purchaseOrder: PurchaseOrderListItem }
   | {
       ok: false;
-      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "not-found";
+      kind: "forbidden" | "validation" | "duplicate" | "inactive" | "locked" | "not-found";
       error: string;
       fields: PurchaseOrderFieldErrors;
     };
@@ -165,6 +166,7 @@ export type PurchaseOrderFormActionState =
         | "validation"
         | "duplicate"
         | "inactive"
+        | "locked"
         | "not-found"
         | "server";
       error: string;

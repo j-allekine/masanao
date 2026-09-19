@@ -12,7 +12,9 @@ import {
   canManagePurchaseOrders,
   createPurchaseOrder,
   deletePurchaseOrder,
+  getPurchaseOrder,
   listPurchaseOrders,
+  postDeliveryReceipt,
   updatePurchaseOrder,
 } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
@@ -60,6 +62,9 @@ async function createActorUser(actor: CurrentActor, role = "staff") {
 }
 
 async function clearPurchaseOrderRecords() {
+  await prisma.inventoryLedgerMovement.deleteMany();
+  await prisma.deliveryReceiptLine.deleteMany();
+  await prisma.deliveryReceipt.deleteMany();
   await prisma.purchaseOrder.deleteMany();
   await prisma.vendor.deleteMany();
   await prisma.session.deleteMany();
@@ -130,6 +135,7 @@ describe("Purchase Order list state", () => {
       note: null,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-02T00:00:00.000Z",
+      hasPostedReceipts: false,
     },
     {
       id: "po-alpha",
@@ -139,6 +145,7 @@ describe("Purchase Order list state", () => {
       note: null,
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-03T00:00:00.000Z",
+      hasPostedReceipts: false,
     },
   ];
 
@@ -434,6 +441,75 @@ describe("Purchase Order mutation gateway", () => {
       ok: false,
       kind: "not-found",
       error: "The Purchase Order could not be found.",
+    });
+  });
+
+  it("locks the Vendor after receiving while retaining editable PO details and receipt snapshots", async () => {
+    await createActorUser(adminActor, "admin");
+    const originalVendor = await createVendor("po-receipt-original-vendor", "Original Foods");
+    const replacementVendor = await createVendor("po-receipt-replacement-vendor", "Replacement Foods");
+    const purchaseOrder = await prisma.purchaseOrder.create({
+      data: {
+        id: "po-receipt-locked",
+        purchaseOrderNo: "PO-RECEIPT-ORIGINAL",
+        normalizedPurchaseOrderNo: "po-receipt-original",
+        vendorId: originalVendor.id,
+        referenceNumber: "ORS-ORIGINAL",
+        note: "Original note",
+      },
+    });
+    await prisma.unit.create({ data: { id: "po-receipt-unit", name: "Kilogram", abbreviation: "kg", normalizedName: "po-receipt-unit", normalizedAbbreviation: "po-receipt-kg" } });
+    await prisma.category.create({ data: { id: "po-receipt-category", name: "Staples", normalizedName: "po-receipt-category" } });
+    await prisma.item.create({ data: { id: "po-receipt-item", name: "Rice", normalizedName: "po-receipt-item", categoryId: "po-receipt-category", baseUnitId: "po-receipt-unit" } });
+
+    await expect(postDeliveryReceipt(staffActor, {
+      purchaseOrderId: purchaseOrder.id,
+      receiptNo: "DR-LOCKED-1",
+      receiptDate: "2026-09-19",
+      itemId: "po-receipt-item",
+      quantity: "1",
+    })).resolves.toMatchObject({ ok: true });
+
+    await expect(updatePurchaseOrder(adminActor, purchaseOrder.id, {
+      purchaseOrderNo: "PO-RECEIPT-CORRECTED",
+      vendorId: replacementVendor.id,
+      referenceNumber: "ORS-CORRECTED",
+      note: "Corrected note",
+    })).resolves.toEqual({
+      ok: false,
+      kind: "locked",
+      error: "Vendor cannot be changed after a Delivery Receipt has been posted.",
+      fields: { vendorId: ["Vendor cannot be changed after a Delivery Receipt has been posted."] },
+    });
+
+    await expect(updatePurchaseOrder(adminActor, purchaseOrder.id, {
+      purchaseOrderNo: "PO-RECEIPT-CORRECTED",
+      vendorId: originalVendor.id,
+      referenceNumber: "ORS-CORRECTED",
+      note: "Corrected note",
+    })).resolves.toMatchObject({
+      ok: true,
+      purchaseOrder: {
+        purchaseOrderNo: "PO-RECEIPT-CORRECTED",
+        referenceNumber: "ORS-CORRECTED",
+        note: "Corrected note",
+        hasPostedReceipts: true,
+      },
+    });
+
+    await expect(prisma.deliveryReceipt.findUnique({
+      where: { vendorId_normalizedReceiptNo: { vendorId: originalVendor.id, normalizedReceiptNo: "dr-locked-1" } },
+      select: { purchaseOrderNo: true, vendorId: true, vendorName: true },
+    })).resolves.toEqual({
+      purchaseOrderNo: "PO-RECEIPT-ORIGINAL",
+      vendorId: originalVendor.id,
+      vendorName: "Original Foods",
+    });
+    await expect(getPurchaseOrder(purchaseOrder.id)).resolves.toMatchObject({ hasPostedReceipts: true });
+    await expect(deletePurchaseOrder(adminActor, purchaseOrder.id)).resolves.toEqual({
+      ok: false,
+      kind: "referenced",
+      error: "This Purchase Order cannot be deleted because it has posted Delivery Receipts.",
     });
   });
 });
