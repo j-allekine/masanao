@@ -24,6 +24,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
   const [itemId, setItemId] = useState("");
   const [selectedUnitValue, setSelectedUnitValue] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [actualReceivedQuantity, setActualReceivedQuantity] = useState("");
   const [receiptDate, setReceiptDate] = useState(() => new Date().toISOString().slice(0, 10));
   const selectedItem = items.find((item) => item.id === itemId);
   const selectedConversion = selectedItem?.unitConversions?.find((conversion) => `${conversion.alternateUnit.id}:${conversion.id}` === selectedUnitValue);
@@ -31,6 +32,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
   const calculatedBaseUnitQuantity = /^\d+(?:\.\d+)?$/.test(quantity) && /[1-9]/.test(quantity)
     ? multiplyExactPositiveDecimals(quantity, conversionFactor)
     : null;
+  const actualQuantityDiffers = Boolean(actualReceivedQuantity && calculatedBaseUnitQuantity && actualReceivedQuantity.replace(/(?:\.0+|(?<=\..*?)0+)$/, "") !== calculatedBaseUnitQuantity.replace(/(?:\.0+|(?<=\..*?)0+)$/, ""));
 
   function clearError(field: DeliveryReceiptField) {
     setErrors((current) => { if (!current[field]) return current; const next = { ...current }; delete next[field]; return next; });
@@ -42,7 +44,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
   }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setErrors({}); setFormError(null);
-    const formData = new FormData(event.currentTarget); formData.set("purchaseOrderId", purchaseOrderId); formData.set("itemId", itemId); formData.set("receiptDate", receiptDate);
+    const formData = new FormData(event.currentTarget); formData.set("purchaseOrderId", purchaseOrderId); formData.set("itemId", itemId); formData.set("receiptDate", receiptDate); if (!actualReceivedQuantity) formData.delete("actualReceivedBaseUnitQuantity");
     const [selectedUnitId, conversionId] = selectedUnitValue.split(":"); formData.set("selectedUnitId", selectedUnitId ?? ""); if (conversionId) formData.set("conversionId", conversionId);
     startTransition(async () => {
       const result = await postDeliveryReceiptAction(formData);
@@ -60,6 +62,8 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
       <Field data-invalid={Boolean(errors.selectedUnitId?.length)}><FieldLabel htmlFor="delivery-receipt-selectedUnitId">Unit <span className="text-destructive" aria-hidden="true">*</span></FieldLabel><Select value={selectedUnitValue || null} disabled={!selectedItem} onValueChange={(value) => { setSelectedUnitValue(value ?? ""); clearError("selectedUnitId"); }}><SelectTrigger id="delivery-receipt-selectedUnitId" className="w-full" aria-invalid={Boolean(errors.selectedUnitId?.length)} aria-describedby={errors.selectedUnitId?.length ? "delivery-receipt-selectedUnitId-error" : undefined}><SelectValue placeholder="Select an Item first" /></SelectTrigger><SelectContent><SelectGroup>{selectedItem ? <><SelectItem value={`${selectedItem.baseUnit.id}:`}>{selectedItem.baseUnit.name} ({selectedItem.baseUnit.abbreviation})</SelectItem>{selectedItem.unitConversions?.filter((conversion) => conversion.alternateUnit.active).map((conversion) => <SelectItem key={conversion.id} value={`${conversion.alternateUnit.id}:${conversion.id}`}>{conversion.label}</SelectItem>)}</> : null}</SelectGroup></SelectContent></Select>{fieldError("selectedUnitId")}</Field>
       <Field data-invalid={Boolean(errors.quantity?.length)}><FieldLabel htmlFor="delivery-receipt-quantity">Quantity <span className="text-destructive" aria-hidden="true">*</span></FieldLabel><Input id="delivery-receipt-quantity" name="quantity" inputMode="decimal" value={quantity} required aria-invalid={Boolean(errors.quantity?.length)} aria-describedby={errors.quantity?.length ? "delivery-receipt-quantity-error" : undefined} onChange={(event) => { setQuantity(event.target.value); clearError("quantity"); }} />{fieldError("quantity")}</Field>
       <Field><FieldLabel htmlFor="delivery-receipt-calculatedBaseUnitQuantity">Calculated Base Unit quantity</FieldLabel><Input id="delivery-receipt-calculatedBaseUnitQuantity" value={calculatedBaseUnitQuantity ?? "Enter a positive quantity"} readOnly aria-label="Calculated Base Unit quantity" /></Field>
+      <Field data-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)}><FieldLabel htmlFor="delivery-receipt-actualReceivedBaseUnitQuantity">Actual received Base Unit quantity <span className="text-muted-foreground">(defaults to calculation)</span></FieldLabel><Input id="delivery-receipt-actualReceivedBaseUnitQuantity" name="actualReceivedBaseUnitQuantity" inputMode="decimal" value={actualReceivedQuantity} placeholder={calculatedBaseUnitQuantity ?? "Enter a positive quantity first"} aria-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)} onChange={(event) => { setActualReceivedQuantity(event.target.value); clearError("actualReceivedBaseUnitQuantity"); }} />{fieldError("actualReceivedBaseUnitQuantity")}</Field>
+      {actualQuantityDiffers ? <Field data-invalid={Boolean(errors.varianceNote?.length)}><FieldLabel htmlFor="delivery-receipt-varianceNote">Variance note <span className="text-destructive" aria-hidden="true">*</span></FieldLabel><Textarea id="delivery-receipt-varianceNote" name="varianceNote" rows={2} maxLength={500} required aria-invalid={Boolean(errors.varianceNote?.length)} onChange={() => clearError("varianceNote")} />{fieldError("varianceNote")}</Field> : null}
     </FieldGroup>
     <div className="flex flex-wrap justify-end gap-3"><Button type="button" variant="outline" disabled={isPosting} onClick={() => router.push(`/purchase-orders/${purchaseOrderId}`)}>Cancel</Button><Button type="submit" disabled={isPosting || items.length === 0}>{isPosting ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />} {isPosting ? "Posting..." : "Post delivery"}</Button></div>
   </form>;

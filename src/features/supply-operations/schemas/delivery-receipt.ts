@@ -26,6 +26,8 @@ export const deliveryReceiptSchema = z.object({
   selectedUnitId: z.string().trim().min(1, "Select a Unit").optional(),
   conversionId: z.string().trim().min(1).optional(),
   quantity: positiveQuantitySchema,
+  actualReceivedBaseUnitQuantity: positiveQuantitySchema.optional(),
+  varianceNote: z.string().optional().transform((value) => normalizeDeliveryReceiptOptionalValue(value ?? "")).pipe(z.string().max(500, "Variance note must be 500 characters or fewer")).transform((value) => value || null),
 }).transform((value) => ({ ...value, normalizedReceiptNo: normalizeDeliveryReceiptNoKey(value.receiptNo) }));
 
 export type DeliveryReceiptInput = z.infer<typeof deliveryReceiptSchema>;
@@ -34,7 +36,7 @@ export function deliveryReceiptFieldErrors(error: z.ZodError): DeliveryReceiptFi
   const fields: DeliveryReceiptFieldErrors = {};
   for (const issue of error.issues) {
     const field = issue.path[0];
-    const key = field === "receiptNo" || field === "receiptDate" || field === "note" || field === "itemId" || field === "selectedUnitId" || field === "quantity" ? field : "form";
+    const key = field === "receiptNo" || field === "receiptDate" || field === "note" || field === "itemId" || field === "selectedUnitId" || field === "quantity" || field === "actualReceivedBaseUnitQuantity" || field === "varianceNote" ? field : "form";
     fields[key] ??= [];
     fields[key]?.push(issue.message);
   }

@@ -6,6 +6,11 @@ import { prisma } from "@/prisma/client";
 import type { DeliveryReceiptInput } from "../../schemas/delivery-receipt";
 import { isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
 
+function normalizedDecimal(value: string) {
+  const [whole, fractional = ""] = value.split(".");
+  return `${whole.replace(/^0+(?=\d)/, "") || "0"}.${fractional.replace(/0+$/, "")}`;
+}
+
 export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceiptInput) {
   return prisma.$transaction(async (database) => {
     const purchaseOrder = await database.purchaseOrder.findUnique({
@@ -39,6 +44,9 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
     const selectedUnitName = conversion?.alternateUnit.name ?? item.baseUnit.name;
     const conversionFactor = conversion?.baseUnitQuantity ?? "1";
     const calculatedBaseUnitQuantity = multiplyExactPositiveDecimals(input.quantity, conversionFactor);
+    const actualReceivedBaseUnitQuantity = input.actualReceivedBaseUnitQuantity ?? calculatedBaseUnitQuantity;
+    const hasVariance = normalizedDecimal(actualReceivedBaseUnitQuantity) !== normalizedDecimal(calculatedBaseUnitQuantity);
+    if (hasVariance && !input.varianceNote) return { kind: "variance-note-required" as const };
 
     try {
       const receipt = await database.deliveryReceipt.create({
@@ -50,9 +58,9 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
           lines: { create: { id: crypto.randomUUID(), itemId: item.id, selectedUnitId: postedSelectedUnitId,
             baseUnitId: item.baseUnitId, itemName: item.name, selectedUnitName,
             baseUnitName: item.baseUnit.name, enteredQuantity: input.quantity, conversionFactor,
-            calculatedBaseUnitQuantity, actualReceivedBaseUnitQuantity: calculatedBaseUnitQuantity,
+            calculatedBaseUnitQuantity, actualReceivedBaseUnitQuantity, varianceNote: input.varianceNote,
             inventoryLedgerMovements: { create: { id: crypto.randomUUID(), itemId: item.id, baseUnitId: item.baseUnitId,
-              quantity: calculatedBaseUnitQuantity, movementType: "stock-in", occurredAt: new Date(`${input.receiptDate}T00:00:00.000Z`) } },
+              quantity: actualReceivedBaseUnitQuantity, movementType: "stock-in", occurredAt: new Date(`${input.receiptDate}T00:00:00.000Z`) } },
           } },
         }, select: { id: true, receiptNo: true },
       });

@@ -181,7 +181,7 @@ export type PurchaseOrderDeleteActionState =
       error: string;
     };
 
-export type DeliveryReceiptField = "receiptNo" | "receiptDate" | "note" | "itemId" | "selectedUnitId" | "quantity";
+export type DeliveryReceiptField = "receiptNo" | "receiptDate" | "note" | "itemId" | "selectedUnitId" | "quantity" | "actualReceivedBaseUnitQuantity" | "varianceNote";
 export type DeliveryReceiptFieldErrors = Partial<Record<DeliveryReceiptField | "form", string[]>>;
 export type DeliveryReceiptPostResult =
   | { ok: true; receipt: { id: string; receiptNo: string } }

@@ -12,5 +12,6 @@ export async function postDeliveryReceiptCommand(input: unknown): Promise<Delive
   if (result.kind === "duplicate") return { ok: false, kind: "duplicate", error: "A Delivery Receipt with that number already exists for this Vendor.", fields: { receiptNo: ["A Delivery Receipt with that number already exists for this Vendor."] } };
   if (result.kind === "inactive-item") return { ok: false, kind: "inactive", error: "Select an active Item.", fields: { itemId: ["Select an active Item."] } };
   if (result.kind === "invalid-unit") return { ok: false, kind: "inactive", error: "Select an available Unit for this Item.", fields: { selectedUnitId: ["Select an available Unit for this Item."] } };
+  if (result.kind === "variance-note-required") return { ok: false, kind: "validation", error: "Explain why the actual received quantity differs.", fields: { varianceNote: ["Enter a variance note when the actual quantity differs."] } };
   return { ok: false, kind: "not-found", error: "The Purchase Order could not be found.", fields: {} };
 }
