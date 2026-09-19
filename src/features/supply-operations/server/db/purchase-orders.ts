@@ -75,6 +75,17 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
   return purchaseOrders.map(toPurchaseOrderListItem);
 }
 
+export async function getPurchaseOrderRecord(
+  id: string,
+): Promise<PurchaseOrderListItem | null> {
+  const purchaseOrder = await prisma.purchaseOrder.findUnique({
+    where: { id },
+    select: purchaseOrderListSelect,
+  });
+
+  return purchaseOrder ? toPurchaseOrderListItem(purchaseOrder) : null;
+}
+
 type PurchaseOrderDatabase = Pick<
   Prisma.TransactionClient,
   "purchaseOrder" | "vendor"
