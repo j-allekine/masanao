@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
+import { multiplyExactPositiveDecimals } from "@/features/supply-operations/domain/delivery-receipt";
 import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { prisma } from "@/prisma/client";
@@ -14,6 +15,7 @@ async function clearRecords() {
   await prisma.deliveryReceiptLine.deleteMany();
   await prisma.deliveryReceipt.deleteMany();
   await prisma.purchaseOrder.deleteMany();
+  await prisma.itemUnitConversion.deleteMany();
   await prisma.item.deleteMany();
   await prisma.category.deleteMany();
   await prisma.unit.deleteMany();
@@ -79,5 +81,34 @@ describe("Delivery Receipt direct Base Unit posting", () => {
       isActive: true,
       baseUnitId: "receipt-vendor-unit",
     });
+  });
+});
+
+describe("Delivery Receipt alternate Unit posting", () => {
+  it("calculates positive exact decimals without floating point rounding", () => {
+    expect(multiplyExactPositiveDecimals("2.50", "25")).toBe("62.5");
+    expect(multiplyExactPositiveDecimals("0.1", "0.2")).toBe("0.02");
+    expect(multiplyExactPositiveDecimals("12345678901234567890.1", "2")).toBe("24691357802469135780.2");
+  });
+
+  it("posts an active configured alternate Unit using immutable calculation snapshots", async () => {
+    const { purchaseOrderId, itemId } = await receiptContext("alternate-vendor");
+    await prisma.unit.create({ data: { id: "alternate-vendor-sack", name: "Sack", abbreviation: "sack", normalizedName: "alternate-vendor-sack", normalizedAbbreviation: "alternate-vendor-sack-abbr" } });
+    await prisma.itemUnitConversion.create({ data: { id: "alternate-vendor-conversion", itemId, alternateUnitId: "alternate-vendor-sack", baseUnitQuantity: "25" } });
+
+    await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, selectedUnitId: "alternate-vendor-sack", conversionId: "alternate-vendor-conversion", receiptNo: "DR-ALT-1", receiptDate: "2026-09-19", quantity: "2.50" })).resolves.toMatchObject({ ok: true });
+    await expect(prisma.deliveryReceiptLine.findFirstOrThrow({ include: { inventoryLedgerMovements: true } })).resolves.toMatchObject({
+      itemName: "Rice", selectedUnitName: "Sack", baseUnitName: "Kilogram", enteredQuantity: "2.50", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5", actualReceivedBaseUnitQuantity: "62.5", inventoryLedgerMovements: [{ quantity: "62.5", movementType: "stock-in" }],
+    });
+  });
+
+  it("rejects inactive or mismatched alternate Units without posting anything", async () => {
+    const { purchaseOrderId, itemId } = await receiptContext("unavailable-vendor");
+    await prisma.unit.create({ data: { id: "unavailable-vendor-sack", name: "Sack", abbreviation: "sack", normalizedName: "unavailable-vendor-sack", normalizedAbbreviation: "unavailable-vendor-sack-abbr", active: false } });
+    await prisma.itemUnitConversion.create({ data: { id: "unavailable-vendor-conversion", itemId, alternateUnitId: "unavailable-vendor-sack", baseUnitQuantity: "25" } });
+
+    await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, selectedUnitId: "unavailable-vendor-sack", conversionId: "unavailable-vendor-conversion", receiptNo: "DR-ALT-2", receiptDate: "2026-09-19", quantity: "1" })).resolves.toMatchObject({ ok: false, kind: "inactive", fields: { selectedUnitId: expect.any(Array) } });
+    await expect(prisma.deliveryReceipt.count()).resolves.toBe(0);
+    await expect(prisma.inventoryLedgerMovement.count()).resolves.toBe(0);
   });
 });

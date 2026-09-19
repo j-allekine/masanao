@@ -471,3 +471,67 @@ test.describe("Purchase Orders administration journey", () => {
     }
   });
 });
+
+test.describe("Delivery Receipt alternate Unit journey", () => {
+  test("lets authenticated staff post configured alternate and Base Unit quantities", async ({ page }) => {
+    test.setTimeout(120_000);
+    const purchaseOrderId = randomUUID();
+    const itemId = randomUUID();
+    const categoryId = randomUUID();
+    const baseUnitId = randomUUID();
+    const alternateUnitId = randomUUID();
+    const conversionId = randomUUID();
+
+    try {
+      withE2eDatabase((database) => {
+        database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(baseUnitId, "Kilogram", "kg", `kg-${baseUnitId}`, `kg-${baseUnitId}`);
+        database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(alternateUnitId, "Sack", "sack", `sack-${alternateUnitId}`, `sack-${alternateUnitId}`);
+        database.prepare('INSERT INTO "category" ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(categoryId, "Rice", `rice-${categoryId}`);
+        database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(itemId, "E2E Rice", `e2e-rice-${itemId}`, categoryId, baseUnitId);
+        database.prepare('INSERT INTO "item_unit_conversion" ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(conversionId, itemId, alternateUnitId, "25");
+        database.prepare('INSERT INTO "purchase_order" ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(purchaseOrderId, "PO-E2E-RECEIPT-ALT", "po-e2e-receipt-alt", "e2e-vendor-acme");
+      });
+
+      await signIn(page);
+      await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
+      await expect(page.getByRole("heading", { name: "Record delivery", exact: true })).toBeVisible();
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await page.getByLabel("Quantity", { exact: true }).fill("2.5");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+
+      await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
+      await page.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await page.getByLabel("Quantity", { exact: true }).fill("3");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+
+      withE2eDatabase((database) => {
+        const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
+        expect(lines).toEqual([
+          { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5" },
+          { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3" },
+        ]);
+      });
+    } finally {
+      withE2eDatabase((database) => {
+        database.prepare('DELETE FROM "inventory_ledger_movement" WHERE "itemId" = ?').run(itemId);
+        database.prepare('DELETE FROM "delivery_receipt_line" WHERE "itemId" = ?').run(itemId);
+        database.prepare('DELETE FROM "delivery_receipt" WHERE "purchaseOrderId" = ?').run(purchaseOrderId);
+        database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
+        database.prepare('DELETE FROM "item_unit_conversion" WHERE "id" = ?').run(conversionId);
+        database.prepare('DELETE FROM "item" WHERE "id" = ?').run(itemId);
+        database.prepare('DELETE FROM "category" WHERE "id" = ?').run(categoryId);
+        database.prepare('DELETE FROM "unit" WHERE "id" IN (?, ?)').run(baseUnitId, alternateUnitId);
+      });
+    }
+  });
+});
