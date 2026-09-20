@@ -17,6 +17,14 @@ export function isPositiveExactDecimal(value: string) {
   return /^\d+(?:\.\d+)?$/.test(value) && /[1-9]/.test(value);
 }
 
+export function exactDecimalsEqual(left: string, right: string) {
+  const normalize = (value: string) => {
+    const [whole, fractional = ""] = value.split(".");
+    return `${whole.replace(/^0+(?=\d)/, "") || "0"}.${fractional.replace(/0+$/, "")}`;
+  };
+  return normalize(left) === normalize(right);
+}
+
 export function multiplyExactPositiveDecimals(left: string, right: string) {
   const [leftWhole, leftFraction = ""] = left.split(".");
   const [rightWhole, rightFraction = ""] = right.split(".");

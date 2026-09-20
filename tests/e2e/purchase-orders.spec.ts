@@ -495,6 +495,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await signIn(page);
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.getByRole("heading", { name: "Record delivery", exact: true })).toBeVisible();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
@@ -502,23 +503,43 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5");
+      await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
+      await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+      await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await page.getByLabel("Quantity", { exact: true }).fill("2.5");
+      await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
+      await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
       await page.getByLabel("Quantity", { exact: true }).fill("3");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page.locator('[data-slot="alert"]')).toContainText("A Delivery Receipt with that number already exists for this Vendor.");
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
 
       withE2eDatabase((database) => {
-        const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
+        const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity", "varianceNote" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
         expect(lines).toEqual([
-          { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5" },
-          { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3" },
+          { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5", actualReceivedBaseUnitQuantity: "60", varianceNote: "2.5 kg rejected at inspection" },
+          { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3", actualReceivedBaseUnitQuantity: "3", varianceNote: null },
         ]);
       });
     } finally {

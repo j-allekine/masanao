@@ -4,12 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { DeliveryReceiptInput } from "../../schemas/delivery-receipt";
-import { isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
-
-function normalizedDecimal(value: string) {
-  const [whole, fractional = ""] = value.split(".");
-  return `${whole.replace(/^0+(?=\d)/, "") || "0"}.${fractional.replace(/0+$/, "")}`;
-}
+import { exactDecimalsEqual, isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
 
 export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceiptInput) {
   return prisma.$transaction(async (database) => {
@@ -30,7 +25,7 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
       const conversionFactor = conversion?.baseUnitQuantity ?? "1";
       const calculatedBaseUnitQuantity = multiplyExactPositiveDecimals(line.quantity, conversionFactor);
       const actualReceivedBaseUnitQuantity = line.actualReceivedBaseUnitQuantity ?? calculatedBaseUnitQuantity;
-      if (normalizedDecimal(actualReceivedBaseUnitQuantity) !== normalizedDecimal(calculatedBaseUnitQuantity) && !line.varianceNote) return { kind: "variance-note-required" as const };
+      if (!exactDecimalsEqual(actualReceivedBaseUnitQuantity, calculatedBaseUnitQuantity) && !line.varianceNote) return { kind: "variance-note-required" as const };
       postedLines.push({ id: crypto.randomUUID(), itemId: item.id, selectedUnitId: conversion?.alternateUnit.id ?? item.baseUnitId, baseUnitId: item.baseUnitId, itemName: item.name, selectedUnitName: conversion?.alternateUnit.name ?? item.baseUnit.name, baseUnitName: item.baseUnit.name, enteredQuantity: line.quantity, conversionFactor, calculatedBaseUnitQuantity, actualReceivedBaseUnitQuantity, varianceNote: line.varianceNote, inventoryLedgerMovements: { create: { id: crypto.randomUUID(), itemId: item.id, baseUnitId: item.baseUnitId, quantity: actualReceivedBaseUnitQuantity, movementType: "stock-in", occurredAt: new Date(`${input.receiptDate}T00:00:00.000Z`) } } });
     }
 
