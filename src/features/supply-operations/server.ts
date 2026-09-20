@@ -10,9 +10,11 @@ import { updateItemCommand } from "./server/commands/update-item";
 import { createItemUnitConversionCommand } from "./server/commands/create-item-unit-conversion";
 import { listItems as listItemsQuery } from "./server/queries/list-items";
 import { listPurchaseOrders as listPurchaseOrdersQuery } from "./server/queries/list-purchase-orders";
+import { getPurchaseOrder as getPurchaseOrderQuery } from "./server/queries/get-purchase-order";
 import { createPurchaseOrderCommand } from "./server/commands/create-purchase-order";
 import { deletePurchaseOrderCommand } from "./server/commands/delete-purchase-order";
 import { updatePurchaseOrderCommand } from "./server/commands/update-purchase-order";
+import { postDeliveryReceiptCommand } from "./server/commands/post-delivery-receipt";
 import type {
   ItemCreateResult,
   ItemDeleteResult,
@@ -22,6 +24,7 @@ import type {
   PurchaseOrderCreateResult,
   PurchaseOrderDeleteResult,
   PurchaseOrderUpdateResult,
+  DeliveryReceiptPostResult,
 } from "./types";
 
 export type {
@@ -40,6 +43,15 @@ export async function listItems() {
 
 export async function listPurchaseOrders() {
   return listPurchaseOrdersQuery();
+}
+
+export async function getPurchaseOrder(id: string) {
+  return getPurchaseOrderQuery(id);
+}
+
+export async function postDeliveryReceipt(actor: CurrentActor, input: unknown): Promise<DeliveryReceiptPostResult> {
+  if (!actor) return { ok: false, kind: "forbidden", error: "Authentication required", fields: {} };
+  return postDeliveryReceiptCommand(input);
 }
 
 export async function canManagePurchaseOrders(actor: CurrentActor) {

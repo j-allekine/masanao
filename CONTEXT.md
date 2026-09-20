@@ -32,7 +32,8 @@ Optional free-form information recorded with an Item.
 The default and authoritative unit in which an Item's inventory balance and ledger movements are recorded. It cannot change after stock activity begins.
 
 **Inactive Item**:
-An Item unavailable for future selection that remains identifiable in historical records.
+An Item unavailable for future selection that remains identifiable in historical
+records. An Item with posted delivery history cannot become inactive.
 
 **Unit**:
 A reusable quantity label such as kg, piece, sack, or tray. A Unit label does not define how much of a particular Item it represents.
@@ -78,7 +79,14 @@ Receipts are recorded. A Purchase Order does not carry expected Item quantities
 in the current workflow.
 
 **Delivery Receipt**:
-A record of items delivered under a Purchase Order.
+A record, identified by its delivery receipt number and actual receipt date, of
+items delivered under a Purchase Order. It contains one or more Delivery
+Receipt Lines and is posted as stock-in when recorded.
+
+**Delivery Receipt Line**:
+The actual delivered quantity of one Item on a Delivery Receipt, recorded in
+the selected Item Unit, calculated Base Unit quantity, and final actual
+received Base Unit quantity.
 
 **Partial Delivery**:
 A Delivery Receipt representing only part of the supplies delivered under a

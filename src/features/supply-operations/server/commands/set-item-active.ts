@@ -8,9 +8,18 @@ export async function setItemActiveCommand(
   isActive: boolean,
 ): Promise<ItemLifecycleResult> {
   try {
+    const result = await setItemActiveRecord(id, isActive);
+    if (result.kind === "referenced") {
+      return {
+        ok: false,
+        kind: "referenced",
+        error: "This Item cannot be deactivated because posted Delivery Receipts reference it.",
+      };
+    }
+
     return {
       ok: true,
-      item: await setItemActiveRecord(id, isActive),
+      item: result.item,
     };
   } catch (error) {
     if (isRecordNotFound(error)) {

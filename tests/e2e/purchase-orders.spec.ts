@@ -87,6 +87,40 @@ test.describe("Purchase Orders read journey", () => {
       await expect(
         populatedRow.getByText("ORS-E2E-001", { exact: true }),
       ).toBeVisible();
+      const purchaseOrderLink = populatedRow.getByRole("link", {
+        name: "PO-E2E-001",
+        exact: true,
+      });
+      await expect(purchaseOrderLink).toBeVisible();
+      await expect(purchaseOrderLink).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}`,
+      );
+      await purchaseOrderLink.focus();
+      await expect(purchaseOrderLink).toBeFocused();
+      await page.goto(`/purchase-orders/${purchaseOrderIds[0]}`);
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderIds[0]}$`));
+      await expect(
+        page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
+      await expect(page.getByText("Kitchen delivery", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("No Delivery Receipts yet.", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator('[data-delivery-receipt-history="empty"]'),
+      ).toBeVisible();
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(
+        await page.evaluate(
+          () => document.body.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await expect(page).toHaveURL(/\/purchase-orders$/);
+      await page.setViewportSize({ width: 1280, height: 720 });
       await expect(
         page.locator('[data-can-manage-purchase-orders="false"]'),
       ).toBeVisible();
@@ -166,6 +200,82 @@ test.describe("Purchase Orders read journey", () => {
 });
 
 test.describe("Purchase Orders administration journey", () => {
+  test("locks the Vendor and delete workflow after a Delivery Receipt is posted", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const purchaseOrderId = randomUUID();
+    const receiptId = randomUUID();
+
+    try {
+      withE2eDatabase((database) => {
+        database.prepare(
+          `INSERT INTO "purchase_order"
+           ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "referenceNumber", "note", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        ).run(
+          purchaseOrderId,
+          "PO-E2E-LOCKED-ORIGINAL",
+          "po-e2e-locked-original",
+          "e2e-vendor-acme",
+          "ORS-E2E-LOCKED-ORIGINAL",
+          "Original note",
+        );
+        database.prepare(
+          `INSERT INTO "delivery_receipt"
+           ("id", "purchaseOrderId", "vendorId", "vendorName", "purchaseOrderNo", "receiptNo", "normalizedReceiptNo", "receiptDate", "postedAt")
+           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        ).run(
+          receiptId,
+          purchaseOrderId,
+          "e2e-vendor-acme",
+          "Acme Foods",
+          "PO-E2E-LOCKED-ORIGINAL",
+          "DR-E2E-LOCKED-1",
+          "dr-e2e-locked-1",
+        );
+      });
+
+      await signIn(page, "municipal.admin", adminPassword);
+      await page.goto("/purchase-orders");
+      const row = page.locator(
+        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+      ).filter({ hasText: "PO-E2E-LOCKED-ORIGINAL" });
+      await expect(row).toBeVisible();
+      await row.getByRole("button", {
+        name: "Actions for PO-E2E-LOCKED-ORIGINAL",
+        exact: true,
+      }).click();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toHaveCount(0);
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByRole("combobox", { name: "Vendor", exact: true })).toBeDisabled();
+      await expect(dialog.getByText("Vendor is locked after a Delivery Receipt is posted.", { exact: true })).toBeVisible();
+      await dialog.getByRole("textbox", { name: "Purchase Order No.", exact: true }).fill("PO-E2E-LOCKED-CORRECTED");
+      await dialog.getByLabel("Reference number (optional)", { exact: true }).fill("ORS-E2E-LOCKED-CORRECTED");
+      await dialog.getByLabel("Note (optional)", { exact: true }).fill("Corrected note");
+      await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator(
+        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+      ).filter({ hasText: "PO-E2E-LOCKED-CORRECTED" })).toBeVisible();
+
+      expect(withE2eDatabase((database) => database.prepare(
+        'SELECT "purchaseOrderNo", "vendorId", "vendorName" FROM "delivery_receipt" WHERE "id" = ?',
+      ).get(receiptId))).toEqual({
+        purchaseOrderNo: "PO-E2E-LOCKED-ORIGINAL",
+        vendorId: "e2e-vendor-acme",
+        vendorName: "Acme Foods",
+      });
+    } finally {
+      withE2eDatabase((database) => {
+        database.prepare('DELETE FROM "delivery_receipt" WHERE "id" = ?').run(receiptId);
+        database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
+      });
+    }
+  });
+
   test("lets administrators create, edit, and delete a Purchase Order", async ({
     page,
   }) => {
@@ -357,6 +467,91 @@ test.describe("Purchase Orders administration journey", () => {
             'DELETE FROM "purchase_order" WHERE "purchaseOrderNo" = ?',
           )
           .run("PO-E2E-CRUD-001");
+      });
+    }
+  });
+});
+
+test.describe("Delivery Receipt alternate Unit journey", () => {
+  test("lets authenticated staff post configured alternate and Base Unit quantities", async ({ page }) => {
+    test.setTimeout(120_000);
+    const purchaseOrderId = randomUUID();
+    const itemId = randomUUID();
+    const categoryId = randomUUID();
+    const baseUnitId = randomUUID();
+    const alternateUnitId = randomUUID();
+    const conversionId = randomUUID();
+
+    try {
+      withE2eDatabase((database) => {
+        database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(baseUnitId, "Kilogram", "kg", `kg-${baseUnitId}`, `kg-${baseUnitId}`);
+        database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(alternateUnitId, "Sack", "sack", `sack-${alternateUnitId}`, `sack-${alternateUnitId}`);
+        database.prepare('INSERT INTO "category" ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(categoryId, "Rice", `rice-${categoryId}`);
+        database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(itemId, "E2E Rice", `e2e-rice-${itemId}`, categoryId, baseUnitId);
+        database.prepare('INSERT INTO "item_unit_conversion" ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(conversionId, itemId, alternateUnitId, "25");
+        database.prepare('INSERT INTO "purchase_order" ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(purchaseOrderId, "PO-E2E-RECEIPT-ALT", "po-e2e-receipt-alt", "e2e-vendor-acme");
+      });
+
+      await signIn(page);
+      await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
+      await expect(page.getByRole("heading", { name: "Record delivery", exact: true })).toBeVisible();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await page.getByLabel("Quantity", { exact: true }).fill("2.5");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5");
+      await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
+      await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+      await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await page.getByLabel("Quantity", { exact: true }).fill("2.5");
+      await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
+      await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+
+      await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await page.getByLabel("Quantity", { exact: true }).fill("3");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page.locator('[data-slot="alert"]')).toContainText("A Delivery Receipt with that number already exists for this Vendor.");
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+
+      withE2eDatabase((database) => {
+        const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity", "varianceNote" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
+        expect(lines).toEqual([
+          { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5", actualReceivedBaseUnitQuantity: "60", varianceNote: "2.5 kg rejected at inspection" },
+          { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3", actualReceivedBaseUnitQuantity: "3", varianceNote: null },
+        ]);
+      });
+    } finally {
+      withE2eDatabase((database) => {
+        database.prepare('DELETE FROM "inventory_ledger_movement" WHERE "itemId" = ?').run(itemId);
+        database.prepare('DELETE FROM "delivery_receipt_line" WHERE "itemId" = ?').run(itemId);
+        database.prepare('DELETE FROM "delivery_receipt" WHERE "purchaseOrderId" = ?').run(purchaseOrderId);
+        database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
+        database.prepare('DELETE FROM "item_unit_conversion" WHERE "id" = ?').run(conversionId);
+        database.prepare('DELETE FROM "item" WHERE "id" = ?').run(itemId);
+        database.prepare('DELETE FROM "category" WHERE "id" = ?').run(categoryId);
+        database.prepare('DELETE FROM "unit" WHERE "id" IN (?, ?)').run(baseUnitId, alternateUnitId);
       });
     }
   });

@@ -10,6 +10,7 @@ export default function PurchaseOrderActionsMenu({
   actionButtonId,
   onEdit,
   onDelete,
+  canDelete = true,
   disabled = false,
 }: {
   purchaseOrderId: string;
@@ -17,6 +18,7 @@ export default function PurchaseOrderActionsMenu({
   actionButtonId: string;
   onEdit: () => void;
   onDelete: () => void;
+  canDelete?: boolean;
   disabled?: boolean;
 }) {
   return (
@@ -35,16 +37,18 @@ export default function PurchaseOrderActionsMenu({
             },
           ],
         },
-        {
-          actions: [
-            {
-              label: "Delete",
-              icon: <Trash2 data-icon="inline-start" />,
-              onSelect: onDelete,
-              variant: "destructive",
-            },
-          ],
-        },
+        ...(canDelete
+          ? [{
+              actions: [
+                {
+                  label: "Delete",
+                  icon: <Trash2 data-icon="inline-start" />,
+                  onSelect: onDelete,
+                  variant: "destructive" as const,
+                },
+              ],
+            }]
+          : []),
       ]}
     />
   );
