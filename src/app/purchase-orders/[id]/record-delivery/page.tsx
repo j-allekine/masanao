@@ -1,10 +1,14 @@
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPurchaseOrder, listItems } from "@/features/supply-operations/server";
 import { DeliveryReceiptForm } from "@/features/supply-operations/ui";
+import { auth } from "@/server/auth";
 
 export default async function RecordDeliveryRoute({ params }: { params: Promise<{ id: string }> }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/");
   const { id } = await params;
   const [purchaseOrder, items] = await Promise.all([getPurchaseOrder(id), listItems()]);
   if (!purchaseOrder) notFound();
