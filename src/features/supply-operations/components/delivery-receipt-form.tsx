@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import LocalDatePicker, { formatLocalDate } from "@/components/workspace/local-date-picker";
 
 import { postDeliveryReceiptAction } from "../actions";
 import { exactDecimalsEqual, multiplyExactPositiveDecimals } from "../domain/delivery-receipt";
@@ -40,8 +41,7 @@ function createLine(): Line {
 }
 
 function localDate() {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return formatLocalDate(new Date());
 }
 
 export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purchaseOrderId: string; items: ItemListItem[] }) {
@@ -125,11 +125,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
         <Input id="receiptNo" name="receiptNo" aria-label="Receipt number" aria-invalid={Boolean(errors.receiptNo?.length)} aria-describedby={errors.receiptNo?.length ? "delivery-receipt-receiptNo-error" : undefined} maxLength={100} onChange={() => clearError("receiptNo")} required />
         {fieldError("receiptNo")}
       </Field>
-      <Field data-invalid={Boolean(errors.receiptDate?.length)}>
-        <FieldLabel htmlFor="receiptDate">Receipt date</FieldLabel>
-        <Input id="receiptDate" name="receiptDate" aria-label="Receipt date" aria-invalid={Boolean(errors.receiptDate?.length)} aria-describedby={errors.receiptDate?.length ? "delivery-receipt-receiptDate-error" : undefined} type="date" value={date} onChange={(event) => { setDateOverride(event.target.value); clearError("receiptDate"); }} required />
-        {fieldError("receiptDate")}
-      </Field>
+      <LocalDatePicker id="receiptDate" name="receiptDate" label="Receipt date" emptyLabel="Select receipt date" value={date} error={errors.receiptDate} required onChange={(value) => { setDateOverride(value); clearError("receiptDate"); }} />
       <Field data-invalid={Boolean(errors.note?.length)}>
         <FieldLabel htmlFor="note">Receipt note</FieldLabel>
         <Textarea id="note" name="note" aria-invalid={Boolean(errors.note?.length)} aria-describedby={errors.note?.length ? "delivery-receipt-note-error" : undefined} maxLength={500} onChange={() => clearError("note")} />

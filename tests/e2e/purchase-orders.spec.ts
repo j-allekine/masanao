@@ -539,6 +539,11 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         "Remove",
       ]);
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      const today = await page.evaluate(() => new Intl.DateTimeFormat("en-PH", { dateStyle: "long" }).format(new Date()));
+      await expect(page.locator("#receiptDate")).toContainText(today);
+      await page.locator("#receiptDate").click();
+      await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
+      await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
@@ -566,6 +571,12 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
       await expect(page.getByRole("cell", { name: "2", exact: true })).toBeVisible();
+      await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
+      expect(withE2eDatabase((database) => database.prepare(
+        'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
+      ).get(purchaseOrderId, "DR-E2E-ALT"))).toEqual({
+        receiptDate: "2026-09-03T00:00:00.000Z",
+      });
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
