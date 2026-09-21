@@ -576,7 +576,9 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
       await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveCount(0);
       await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await itemPicker.click();
       await itemPicker.fill("E2E Rice");
+      await expect(page.getByRole("option", { name: "E2E Rice", exact: true })).toBeVisible();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
@@ -611,14 +613,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
       ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });
-      const receiptDateParts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Manila",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).formatToParts(new Date(storedReceipt.receiptDate));
-      const receiptDateByCalendarDay = Object.fromEntries(receiptDateParts.map(({ type, value }) => [type, value]));
-      expect(`${receiptDateByCalendarDay.year}-${receiptDateByCalendarDay.month}-${receiptDateByCalendarDay.day}`).toBe("2026-09-03");
+      expect(new Date(storedReceipt.receiptDate).toISOString()).toBe("2026-09-03T00:00:00.000Z");
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();

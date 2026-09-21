@@ -6,14 +6,15 @@ import { prisma } from "@/prisma/client";
 import type { DeliveryReceiptInput } from "../../schemas/delivery-receipt";
 import { exactDecimalsEqual, isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
 
-function dateOnlyToLocalDate(value: string) {
+// Date-only receipt values use UTC midnight so every server and browser renders the same calendar day.
+function dateOnlyToUtcDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceiptInput) {
   return prisma.$transaction(async (database) => {
-    const receiptDate = dateOnlyToLocalDate(input.receiptDate);
+    const receiptDate = dateOnlyToUtcDate(input.receiptDate);
     const purchaseOrder = await database.purchaseOrder.findUnique({
       where: { id: input.purchaseOrderId },
       select: { id: true, purchaseOrderNo: true, vendorId: true, vendor: { select: { name: true } } },

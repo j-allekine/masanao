@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { deliveryReceiptFieldErrors, deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
-import { multiplyExactPositiveDecimals } from "@/features/supply-operations/domain/delivery-receipt";
+import { multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "@/features/supply-operations/domain/delivery-receipt";
 import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { prisma } from "@/prisma/client";
@@ -34,6 +34,18 @@ async function receiptContext(vendorId = "receipt-vendor") {
 beforeEach(clearRecords);
 
 describe("Delivery Receipt direct Base Unit posting", () => {
+  it("reindexes remaining line errors after removing a line", () => {
+    const firstError = { quantity: ["Enter a positive quantity"] };
+    const secondError = { itemId: ["Select an Item"] };
+    const thirdError = { varianceNote: ["Enter a variance note"] };
+
+    expect(reindexLineErrorsAfterRemoval({ 0: firstError, 1: secondError, 2: thirdError }, 0)).toEqual({
+      0: secondError,
+      1: thirdError,
+    });
+    expect(reindexLineErrorsAfterRemoval({ 0: firstError, 1: secondError }, 1)).toEqual({ 0: firstError });
+  });
+
   it("keeps line validation errors keyed by their line index and field", () => {
     const parsed = deliveryReceiptSchema.safeParse({
       purchaseOrderId: "po",
@@ -66,6 +78,9 @@ describe("Delivery Receipt direct Base Unit posting", () => {
     const { purchaseOrderId, itemId } = await receiptContext();
     await expect(postDeliveryReceipt(staff, { purchaseOrderId, itemId, receiptNo: " DR-10 ", receiptDate: "2026-09-19", quantity: "12.5", note: " Kitchen dock " })).resolves.toMatchObject({ ok: true, receipt: { receiptNo: "DR-10" } });
     await expect(prisma.deliveryReceipt.findMany({ include: { lines: { include: { inventoryLedgerMovements: true } } } })).resolves.toMatchObject([{ vendorName: "receipt-vendor", purchaseOrderNo: "receipt-vendor-po", normalizedReceiptNo: "dr-10", note: "Kitchen dock", lines: [{ itemName: "Rice", selectedUnitName: "Kilogram", conversionFactor: "1", enteredQuantity: "12.5", calculatedBaseUnitQuantity: "12.5", actualReceivedBaseUnitQuantity: "12.5", inventoryLedgerMovements: [{ movementType: "stock-in", quantity: "12.5" }] }] }]);
+    const persisted = await prisma.deliveryReceipt.findFirstOrThrow({ where: { receiptNo: "DR-10" }, include: { lines: { include: { inventoryLedgerMovements: true } } } });
+    expect(persisted.receiptDate.toISOString()).toBe("2026-09-19T00:00:00.000Z");
+    expect(persisted.lines[0].inventoryLedgerMovements[0].occurredAt.toISOString()).toBe("2026-09-19T00:00:00.000Z");
   });
 
   it("rejects a duplicate only for the same Vendor without partial writes", async () => {

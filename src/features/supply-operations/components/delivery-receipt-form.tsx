@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import LocalDatePicker, { formatLocalDate } from "@/components/workspace/local-date-picker";
 
 import { postDeliveryReceiptAction } from "../actions";
-import { exactDecimalsEqual, multiplyExactPositiveDecimals } from "../domain/delivery-receipt";
+import { exactDecimalsEqual, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
 import type { DeliveryReceiptField, DeliveryReceiptFieldErrors, DeliveryReceiptLineFieldErrors, ItemListItem } from "../types";
 
 type DeliveryReceiptLineField = keyof DeliveryReceiptLineFieldErrors;
@@ -184,15 +184,20 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
   }
 
   function removeLine(id: string) {
-    setLines((current) => {
-      const removedIndex = current.findIndex((line) => line.id === id);
-      const next = current.filter((line) => line.id !== id);
-      requestAnimationFrame(() => {
-        const focusTarget = next[removedIndex] ?? next[removedIndex - 1];
-        if (focusTarget) document.getElementById(`item-${focusTarget.id}`)?.focus();
-        else document.getElementById("add-delivery-line")?.focus();
-      });
-      return next;
+    const removedIndex = lines.findIndex((line) => line.id === id);
+    if (removedIndex < 0) return;
+    const next = lines.filter((line) => line.id !== id);
+    setLines((current) => current.filter((line) => line.id !== id));
+    setErrors((currentErrors) => {
+      const nextLines = reindexLineErrorsAfterRemoval(currentErrors.lines, removedIndex);
+      if (nextLines === currentErrors.lines) return currentErrors;
+      return { ...currentErrors, lines: nextLines };
+    });
+    setFormError(null);
+    requestAnimationFrame(() => {
+      const focusTarget = next[removedIndex] ?? next[removedIndex - 1];
+      if (focusTarget) document.getElementById(`item-${focusTarget.id}`)?.focus();
+      else document.getElementById("add-delivery-line")?.focus();
     });
   }
 
