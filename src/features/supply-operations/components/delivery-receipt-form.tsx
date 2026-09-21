@@ -150,14 +150,21 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
 
   function clearLineError(index: number, field: DeliveryReceiptLineField) {
     setErrors((current) => {
+      const hasTopLevelError = Boolean(current[field]?.length);
       const line = current.lines?.[index];
-      if (!line?.[field]) return current;
-      const nextLine = { ...line };
-      delete nextLine[field];
-      const nextLines = { ...current.lines };
-      if (Object.keys(nextLine).length) nextLines[index] = nextLine;
-      else delete nextLines[index];
-      return { ...current, lines: Object.keys(nextLines).length ? nextLines : undefined };
+      if (!hasTopLevelError && !line?.[field]) return current;
+
+      const next = { ...current };
+      if (hasTopLevelError) delete next[field];
+      if (line?.[field]) {
+        const nextLine = { ...line };
+        delete nextLine[field];
+        const nextLines = { ...current.lines };
+        if (Object.keys(nextLine).length) nextLines[index] = nextLine;
+        else delete nextLines[index];
+        next.lines = Object.keys(nextLines).length ? nextLines : undefined;
+      }
+      return next;
     });
     setFormError(null);
   }
@@ -290,7 +297,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
               <Select items={item ? [{ value: `${item.baseUnit.id}:`, label: `${item.baseUnit.name} (${item.baseUnit.abbreviation})` }, ...(item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => ({ value: `${candidate.alternateUnit.id}:${candidate.id}`, label: candidate.label })) ?? [])] : []} value={value.unit || null} disabled={!item} onValueChange={(unit) => {
                 if (unit === null) return;
                 updateLine(value.id, { unit: unit ?? "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false });
-                clearError("selectedUnitId"); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote");
+                clearLineError(index, "selectedUnitId"); clearLineError(index, "quantity"); clearLineError(index, "actualReceivedBaseUnitQuantity"); clearLineError(index, "varianceNote");
               }}>
                 <SelectTrigger aria-label="Unit" aria-invalid={lineHasError(index, "selectedUnitId")} aria-describedby={lineHasError(index, "selectedUnitId") ? errorId("selectedUnitId") : undefined} className="w-full"><SelectValue placeholder="Select an Item first" /></SelectTrigger>
                 <SelectContent><SelectGroup>{item ? <><SelectItem value={`${item.baseUnit.id}:`}>{item.baseUnit.name} ({item.baseUnit.abbreviation})</SelectItem>{item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => <SelectItem key={candidate.id} value={`${candidate.alternateUnit.id}:${candidate.id}`}>{candidate.label}</SelectItem>)}</> : null}</SelectGroup></SelectContent>
@@ -308,7 +315,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <TableCell className="align-top whitespace-normal">
             <Field>
               <FieldLabel className="sr-only" htmlFor={`calculated-${value.id}`}>Calculated Base Unit quantity</FieldLabel>
-              <Input id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" value={calculated || "Enter a positive quantity"} readOnly />
+              <Input id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" value={calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : "Enter a positive quantity"} readOnly />
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
