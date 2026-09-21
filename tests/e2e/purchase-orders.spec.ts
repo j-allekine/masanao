@@ -112,6 +112,37 @@ test.describe("Purchase Orders read journey", () => {
       await expect(
         page.locator('[data-delivery-receipt-history="empty"]'),
       ).toBeVisible();
+      const recordDeliveryLink = page.getByRole("link", {
+        name: "Record delivery",
+        exact: true,
+      });
+      await expect(recordDeliveryLink).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}/record-delivery`,
+      );
+      await recordDeliveryLink.click();
+      await expect(
+        page.getByRole("heading", { name: "Record delivery", exact: true }),
+      ).toBeVisible();
+      const backToPurchaseOrder = page.getByRole("link", {
+        name: "Back to Purchase Order",
+        exact: true,
+      });
+      await expect(backToPurchaseOrder).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}`,
+      );
+      await backToPurchaseOrder.focus();
+      await expect(backToPurchaseOrder).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(
+        new RegExp(`/purchase-orders/${purchaseOrderIds[0]}$`),
+      );
+      await expect(
+        page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
       await page.setViewportSize({ width: 390, height: 844 });
       expect(
         await page.evaluate(
