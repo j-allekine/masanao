@@ -3,10 +3,10 @@
 import { Fragment, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import LocalDatePicker, { formatLocalDate } from "@/components/workspace/local-date-picker";
 
 import { postDeliveryReceiptAction } from "../actions";
@@ -83,30 +84,25 @@ function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: I
 
   const selectedOption = options.find((option) => option.value === value) ?? null;
 
-  return <ComboboxPrimitive.Root items={options} value={selectedOption} onValueChange={(item) => { if (item !== null) selectItem(item); }}>
-    <ComboboxPrimitive.Input
-      render={<Input />}
+  return <Combobox items={options} value={selectedOption} onValueChange={(item) => { if (item !== null) selectItem(item); }}>
+    <ComboboxInput
       id={id}
       aria-label="Item"
       aria-describedby={describedBy}
       aria-invalid={invalid}
       placeholder="Search active Items"
     />
-    <ComboboxPrimitive.Portal>
-      <ComboboxPrimitive.Positioner side="bottom" sideOffset={4} align="start" className="isolate z-50">
-        <ComboboxPrimitive.Popup className="w-(--anchor-width) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10">
-          <ComboboxPrimitive.List className="max-h-72 overflow-y-auto p-1">
-            {(item: { value: string; label: string; item: ItemListItem }) => <ComboboxPrimitive.Item key={item.value} value={item} className="flex cursor-default items-center rounded-md px-2 py-1.5 text-body-sm outline-hidden data-highlighted:bg-accent data-highlighted:text-accent-foreground">
+    <ComboboxContent>
+      <ComboboxList className="max-h-72">
+            {(item: { value: string; label: string; item: ItemListItem }) => <ComboboxItem key={item.value} value={item}>
               {item.label}
-            </ComboboxPrimitive.Item>}
-          </ComboboxPrimitive.List>
-          <ComboboxPrimitive.Empty className="px-2 py-3 text-center text-body-sm text-muted-foreground">
+            </ComboboxItem>}
+      </ComboboxList>
+      <ComboboxEmpty>
             No active Items match your search.
-          </ComboboxPrimitive.Empty>
-        </ComboboxPrimitive.Popup>
-      </ComboboxPrimitive.Positioner>
-    </ComboboxPrimitive.Portal>
-  </ComboboxPrimitive.Root>;
+      </ComboboxEmpty>
+    </ComboboxContent>
+  </Combobox>;
 }
 
 export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purchaseOrderId: string; items: ItemListItem[] }) {
@@ -326,7 +322,10 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             </div>}
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
-              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove delivery line ${index + 1}`} onClick={() => removeLine(value.id)}><Trash2 /></Button>
+              <Tooltip>
+                <TooltipTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove delivery line ${index + 1}`} onClick={() => removeLine(value.id)}><Trash2 /></Button>} />
+                <TooltipContent>Remove delivery line {index + 1}</TooltipContent>
+              </Tooltip>
             </TableCell>
         </TableRow>{actualDiffers ? <TableRow>
           <TableCell colSpan={6} className="bg-muted/40 whitespace-normal">

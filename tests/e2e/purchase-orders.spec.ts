@@ -589,9 +589,19 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await adjustActualQuantity.click();
       await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
       await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
-      await page.getByRole("button", { name: "Add line", exact: true }).click();
+      await page.locator("#add-delivery-line").click();
       await expect(page.getByText("2 lines", { exact: true })).toBeVisible();
-      await page.getByRole("button", { name: "Remove delivery line 2", exact: true }).click();
+      const repeatedLine = linesTable.locator('tr[aria-label="Delivery line 2"]');
+      await repeatedLine.getByRole("combobox", { name: "Item", exact: true }).fill("E2E Rice");
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await repeatedLine.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await repeatedLine.getByLabel("Quantity", { exact: true }).fill("1");
+      await expect(repeatedLine.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("25");
+      const removeRepeatedLine = page.getByRole("button", { name: "Remove delivery line 2", exact: true });
+      await removeRepeatedLine.hover();
+      await expect(page.getByRole("tooltip")).toHaveText("Remove delivery line 2");
+      await removeRepeatedLine.press("Enter");
       await expect(page.getByText("1 line", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
@@ -601,18 +611,36 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
       ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });
-      expect(new Date(storedReceipt.receiptDate).toISOString()).toBe("2026-09-03T00:00:00.000Z");
+      const receiptDateParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date(storedReceipt.receiptDate));
+      const receiptDateByCalendarDay = Object.fromEntries(receiptDateParts.map(({ type, value }) => [type, value]));
+      expect(`${receiptDateByCalendarDay.year}-${receiptDateByCalendarDay.month}-${receiptDateByCalendarDay.day}`).toBe("2026-09-03");
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page.setViewportSize({ width: 390, height: 844 });
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await page.getByRole("button", { name: "Remove delivery line 1", exact: true }).press("Enter");
+      await expect(page.getByText("No Delivery Receipt lines", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
+      await page.locator("#add-delivery-line").click();
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
       await page.getByLabel("Quantity", { exact: true }).fill("3");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3");
+      await page.getByRole("button", { name: "Add line", exact: true }).click();
+      const repeatedBaseLine = page.locator('tr[aria-label="Delivery line 2"]');
+      await repeatedBaseLine.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await expect(repeatedBaseLine.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await repeatedBaseLine.getByLabel("Quantity", { exact: true }).fill("4");
+      await expect(repeatedBaseLine.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("4");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page.locator('[data-slot="alert"]')).toContainText("A Delivery Receipt with that number already exists for this Vendor.");
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
@@ -625,6 +653,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         expect(lines).toEqual([
           { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5", actualReceivedBaseUnitQuantity: "60", varianceNote: "2.5 kg rejected at inspection" },
           { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3", actualReceivedBaseUnitQuantity: "3", varianceNote: null },
+          { selectedUnitId: baseUnitId, enteredQuantity: "4", conversionFactor: "1", calculatedBaseUnitQuantity: "4", actualReceivedBaseUnitQuantity: "4", varianceNote: null },
         ]);
       });
     } finally {
