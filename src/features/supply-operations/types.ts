@@ -182,7 +182,10 @@ export type PurchaseOrderDeleteActionState =
     };
 
 export type DeliveryReceiptField = "receiptNo" | "receiptDate" | "note" | "itemId" | "selectedUnitId" | "quantity" | "actualReceivedBaseUnitQuantity" | "varianceNote";
-export type DeliveryReceiptFieldErrors = Partial<Record<DeliveryReceiptField | "form", string[]>>;
+export type DeliveryReceiptLineFieldErrors = Partial<Record<Exclude<DeliveryReceiptField, "receiptNo" | "receiptDate" | "note">, string[]>>;
+export type DeliveryReceiptFieldErrors = Partial<Record<DeliveryReceiptField | "form", string[]>> & {
+  lines?: Record<number, DeliveryReceiptLineFieldErrors>;
+};
 export type DeliveryReceiptPostResult =
   | { ok: true; receipt: { id: string; receiptNo: string } }
   | { ok: false; kind: "validation" | "duplicate" | "inactive" | "not-found" | "forbidden"; error: string; fields: DeliveryReceiptFieldErrors };
