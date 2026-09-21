@@ -3,6 +3,7 @@
 import { useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
+import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,46 @@ function createLine(): Line {
 
 function localDate() {
   return formatLocalDate(new Date());
+}
+
+type ItemPickerProps = {
+  items: ItemListItem[];
+  value: string;
+  invalid: boolean;
+  describedBy?: string;
+  onValueChange: (itemId: string) => void;
+};
+
+function ItemPicker({ items, value, invalid, describedBy, onValueChange }: ItemPickerProps) {
+  const options = items.map((item) => ({ value: item.id, label: item.name }));
+
+  if (!options.length) {
+    return <Input aria-label="Item" aria-describedby={describedBy} aria-invalid={invalid} disabled value="No active Items available" readOnly />;
+  }
+
+  return <ComboboxPrimitive.Root items={options} value={value || null} onValueChange={(item) => onValueChange(item ?? "")}>
+    <ComboboxPrimitive.Input
+      render={<Input />}
+      aria-label="Item"
+      aria-describedby={describedBy}
+      aria-invalid={invalid}
+      placeholder="Search active Items"
+    />
+    <ComboboxPrimitive.Portal>
+      <ComboboxPrimitive.Positioner side="bottom" sideOffset={4} align="start" className="isolate z-50">
+        <ComboboxPrimitive.Popup className="w-(--anchor-width) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10">
+          <ComboboxPrimitive.List className="max-h-72 overflow-y-auto p-1">
+            {(item: { value: string; label: string }) => <ComboboxPrimitive.Item value={item.value} className="flex cursor-default items-center rounded-md px-2 py-1.5 text-body-sm outline-hidden data-highlighted:bg-accent data-highlighted:text-accent-foreground">
+              {item.label}
+            </ComboboxPrimitive.Item>}
+          </ComboboxPrimitive.List>
+          <ComboboxPrimitive.Empty className="px-2 py-3 text-center text-body-sm text-muted-foreground">
+            No active Items match your search.
+          </ComboboxPrimitive.Empty>
+        </ComboboxPrimitive.Popup>
+      </ComboboxPrimitive.Positioner>
+    </ComboboxPrimitive.Portal>
+  </ComboboxPrimitive.Root>;
 }
 
 export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purchaseOrderId: string; items: ItemListItem[] }) {
@@ -166,14 +207,11 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={Boolean(errors.itemId?.length)}>
               <FieldLabel className="sr-only">Item</FieldLabel>
-              <Select items={items.map((candidate) => ({ value: candidate.id, label: candidate.name }))} value={value.itemId || null} onValueChange={(id) => {
-                const selected = items.find((candidate) => candidate.id === id);
-                updateLine(value.id, { itemId: id ?? "", unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "" });
+              <ItemPicker items={items} value={value.itemId} invalid={Boolean(errors.itemId?.length)} describedBy={errors.itemId?.length ? errorId("itemId") : undefined} onValueChange={(itemId) => {
+                const selected = items.find((candidate) => candidate.id === itemId);
+                updateLine(value.id, { itemId, unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "" });
                 clearError("itemId"); clearError("selectedUnitId"); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote");
-              }}>
-                <SelectTrigger aria-label="Item" aria-invalid={Boolean(errors.itemId?.length)} aria-describedby={errors.itemId?.length ? errorId("itemId") : undefined} className="w-full"><SelectValue placeholder="Select an active Item" /></SelectTrigger>
-                <SelectContent><SelectGroup>{items.map((candidate) => <SelectItem key={candidate.id} value={candidate.id}>{candidate.name}</SelectItem>)}</SelectGroup></SelectContent>
-              </Select>
+              }} />
               {fieldError("itemId", errorId("itemId"))}
             </Field>
             </TableCell>
