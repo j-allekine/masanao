@@ -8,7 +8,7 @@ import {
   normalizeDeliveryReceiptOptionalValue,
   isPositiveExactDecimal,
 } from "../domain/delivery-receipt";
-import type { DeliveryReceiptFieldErrors } from "../types";
+import type { DeliveryReceiptFieldErrors, DeliveryReceiptLineFieldErrors } from "../types";
 
 const receiptNoSchema = z.string({ error: "Receipt number is required" })
   .transform(normalizeDeliveryReceiptNo)
@@ -47,6 +47,15 @@ export type DeliveryReceiptInput = z.infer<typeof deliveryReceiptSchema>;
 export function deliveryReceiptFieldErrors(error: z.ZodError): DeliveryReceiptFieldErrors {
   const fields: DeliveryReceiptFieldErrors = {};
   for (const issue of error.issues) {
+    if (issue.path[0] === "lines" && typeof issue.path[1] === "number" && typeof issue.path[2] === "string") {
+      const index = issue.path[1];
+      const field = issue.path[2] as keyof DeliveryReceiptLineFieldErrors;
+      fields.lines ??= {};
+      fields.lines[index] ??= {};
+      fields.lines[index][field] ??= [];
+      fields.lines[index][field]?.push(issue.message);
+      continue;
+    }
     const field = issue.path[0];
     const key = field === "receiptNo" || field === "receiptDate" || field === "note" || field === "itemId" || field === "selectedUnitId" || field === "quantity" || field === "actualReceivedBaseUnitQuantity" || field === "varianceNote" ? field : "form";
     fields[key] ??= [];

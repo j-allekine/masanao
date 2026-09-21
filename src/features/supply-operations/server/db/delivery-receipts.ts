@@ -15,17 +15,17 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
     if (!purchaseOrder) return { kind: "not-found" as const };
 
     const postedLines = [];
-    for (const line of input.lines) {
+    for (const [lineIndex, line] of input.lines.entries()) {
       const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, select: { id: true, name: true, baseUnitId: true, baseUnit: { select: { name: true, active: true } } } });
-      if (!item) return { kind: "inactive-item" as const };
+      if (!item) return { kind: "inactive-item" as const, lineIndex };
       const selectedUnitId = line.selectedUnitId ?? item.baseUnitId;
       const isBaseUnit = selectedUnitId === item.baseUnitId;
       const conversion = isBaseUnit || !line.conversionId ? null : await database.itemUnitConversion.findFirst({ where: { id: line.conversionId, itemId: item.id, alternateUnitId: selectedUnitId, alternateUnit: { active: true } }, select: { baseUnitQuantity: true, alternateUnit: { select: { id: true, name: true } } } });
-      if ((isBaseUnit && (!item.baseUnit.active || line.conversionId)) || (!isBaseUnit && (!conversion || !isPositiveExactDecimal(conversion.baseUnitQuantity)))) return { kind: "invalid-unit" as const };
+      if ((isBaseUnit && (!item.baseUnit.active || line.conversionId)) || (!isBaseUnit && (!conversion || !isPositiveExactDecimal(conversion.baseUnitQuantity)))) return { kind: "invalid-unit" as const, lineIndex };
       const conversionFactor = conversion?.baseUnitQuantity ?? "1";
       const calculatedBaseUnitQuantity = multiplyExactPositiveDecimals(line.quantity, conversionFactor);
       const actualReceivedBaseUnitQuantity = line.actualReceivedBaseUnitQuantity ?? calculatedBaseUnitQuantity;
-      if (!exactDecimalsEqual(actualReceivedBaseUnitQuantity, calculatedBaseUnitQuantity) && !line.varianceNote) return { kind: "variance-note-required" as const };
+      if (!exactDecimalsEqual(actualReceivedBaseUnitQuantity, calculatedBaseUnitQuantity) && !line.varianceNote) return { kind: "variance-note-required" as const, lineIndex };
       postedLines.push({ id: crypto.randomUUID(), itemId: item.id, selectedUnitId: conversion?.alternateUnit.id ?? item.baseUnitId, baseUnitId: item.baseUnitId, itemName: item.name, selectedUnitName: conversion?.alternateUnit.name ?? item.baseUnit.name, baseUnitName: item.baseUnit.name, enteredQuantity: line.quantity, conversionFactor, calculatedBaseUnitQuantity, actualReceivedBaseUnitQuantity, varianceNote: line.varianceNote, inventoryLedgerMovements: { create: { id: crypto.randomUUID(), itemId: item.id, baseUnitId: item.baseUnitId, quantity: actualReceivedBaseUnitQuantity, movementType: "stock-in", occurredAt: new Date(`${input.receiptDate}T00:00:00.000Z`) } } });
     }
 

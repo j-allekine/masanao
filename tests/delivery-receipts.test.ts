@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
+import { deliveryReceiptFieldErrors, deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
 import { multiplyExactPositiveDecimals } from "@/features/supply-operations/domain/delivery-receipt";
 import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
@@ -34,6 +34,29 @@ async function receiptContext(vendorId = "receipt-vendor") {
 beforeEach(clearRecords);
 
 describe("Delivery Receipt direct Base Unit posting", () => {
+  it("keeps line validation errors keyed by their line index and field", () => {
+    const parsed = deliveryReceiptSchema.safeParse({
+      purchaseOrderId: "po",
+      receiptNo: "DR-LINE-ERROR",
+      receiptDate: "2026-09-19",
+      lines: [
+        { itemId: "item", quantity: "1" },
+        { itemId: "", quantity: "" },
+      ],
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(deliveryReceiptFieldErrors(parsed.error)).toMatchObject({
+      lines: {
+        1: {
+          itemId: ["Select an Item"],
+          quantity: ["Enter a positive quantity"],
+        },
+      },
+    });
+  });
+
   it("normalizes the Vendor-scoped receipt key and validates the direct quantity", () => {
     expect(deliveryReceiptSchema.parse({ purchaseOrderId: "po", receiptNo: " DR-1 ", receiptDate: "2026-09-19", itemId: "item", quantity: "2.50" })).toMatchObject({ receiptNo: "DR-1", normalizedReceiptNo: "dr-1", quantity: "2.50" });
     expect(deliveryReceiptSchema.safeParse({ purchaseOrderId: "po", receiptNo: "DR-1", receiptDate: "2026-09-19", itemId: "item", quantity: "0" }).success).toBe(false);
