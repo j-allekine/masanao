@@ -56,17 +56,34 @@ type ItemPickerProps = {
   invalid: boolean;
   describedBy?: string;
   id: string;
-  onValueChange: (itemId: string) => void;
+  onValueChange: (itemId: string, item?: ItemListItem) => void;
 };
 
 function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: ItemPickerProps) {
-  const options = items.map((item) => ({ value: item.id, label: item.name }));
+  const options = items.map((item) => ({ value: item.id, label: item.name, item }));
 
   if (!options.length) {
     return <Input id={id} aria-label="Item" aria-describedby={describedBy} aria-invalid={invalid} disabled value="No active Items available" readOnly />;
   }
 
-  return <ComboboxPrimitive.Root items={options} value={value || null} onValueChange={(item) => onValueChange(item ?? "")}>
+  function selectItem(item: unknown) {
+    if (typeof item === "string" && item) {
+      onValueChange(item, items.find((candidate) => candidate.id === item));
+      return;
+    }
+    if (item && typeof item === "object" && "value" in item && typeof item.value === "string" && item.value) {
+      if ("item" in item && item.item && typeof item.item === "object") {
+        onValueChange(item.value, item.item as ItemListItem);
+        return;
+      }
+      const label = "label" in item && typeof item.label === "string" ? item.label : undefined;
+      onValueChange(item.value, items.find((candidate) => candidate.id === item.value) ?? (label ? items.find((candidate) => candidate.name === label) : undefined));
+    }
+  }
+
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+
+  return <ComboboxPrimitive.Root items={options} value={selectedOption} onValueChange={(item) => { if (item !== null) selectItem(item); }}>
     <ComboboxPrimitive.Input
       render={<Input />}
       id={id}
@@ -79,7 +96,7 @@ function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: I
       <ComboboxPrimitive.Positioner side="bottom" sideOffset={4} align="start" className="isolate z-50">
         <ComboboxPrimitive.Popup className="w-(--anchor-width) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10">
           <ComboboxPrimitive.List className="max-h-72 overflow-y-auto p-1">
-            {(item: { value: string; label: string }) => <ComboboxPrimitive.Item value={item.value} className="flex cursor-default items-center rounded-md px-2 py-1.5 text-body-sm outline-hidden data-highlighted:bg-accent data-highlighted:text-accent-foreground">
+            {(item: { value: string; label: string; item: ItemListItem }) => <ComboboxPrimitive.Item key={item.value} value={item} className="flex cursor-default items-center rounded-md px-2 py-1.5 text-body-sm outline-hidden data-highlighted:bg-accent data-highlighted:text-accent-foreground">
               {item.label}
             </ComboboxPrimitive.Item>}
           </ComboboxPrimitive.List>
@@ -263,8 +280,8 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "itemId")}>
               <FieldLabel className="sr-only">Item</FieldLabel>
-              <ItemPicker id={`item-${value.id}`} items={items} value={value.itemId} invalid={lineHasError(index, "itemId")} describedBy={lineHasError(index, "itemId") ? errorId("itemId") : undefined} onValueChange={(itemId) => {
-                const selected = items.find((candidate) => candidate.id === itemId);
+              <ItemPicker id={`item-${value.id}`} items={items} value={value.itemId} invalid={lineHasError(index, "itemId")} describedBy={lineHasError(index, "itemId") ? errorId("itemId") : undefined} onValueChange={(itemId, selectedItem) => {
+                const selected = selectedItem ?? items.find((candidate) => candidate.id === itemId);
                 updateLine(value.id, { itemId, unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false });
                 clearLineError(index, "itemId"); clearLineError(index, "selectedUnitId"); clearLineError(index, "quantity"); clearLineError(index, "actualReceivedBaseUnitQuantity"); clearLineError(index, "varianceNote");
               }} />
@@ -275,6 +292,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <Field data-invalid={lineHasError(index, "selectedUnitId")}>
               <FieldLabel className="sr-only">Unit</FieldLabel>
               <Select items={item ? [{ value: `${item.baseUnit.id}:`, label: `${item.baseUnit.name} (${item.baseUnit.abbreviation})` }, ...(item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => ({ value: `${candidate.alternateUnit.id}:${candidate.id}`, label: candidate.label })) ?? [])] : []} value={value.unit || null} disabled={!item} onValueChange={(unit) => {
+                if (unit === null) return;
                 updateLine(value.id, { unit: unit ?? "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false });
                 clearError("selectedUnitId"); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote");
               }}>

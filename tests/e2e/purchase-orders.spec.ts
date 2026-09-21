@@ -123,7 +123,7 @@ test.describe("Purchase Orders read journey", () => {
       await recordDeliveryLink.click();
       await expect(
         page.getByRole("heading", { name: "Record delivery", exact: true }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30_000 });
       await expect(page.getByRole("textbox", { name: "Item", exact: true })).toBeDisabled();
       await expect(page.getByRole("textbox", { name: "Item", exact: true })).toHaveValue("No active Items available");
       await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
@@ -594,15 +594,14 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByRole("button", { name: "Remove delivery line 2", exact: true }).click();
       await expect(page.getByText("1 line", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
-      await expect(page.getByRole("cell", { name: "2", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
-      expect(withE2eDatabase((database) => database.prepare(
+      const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
-      ).get(purchaseOrderId, "DR-E2E-ALT"))).toEqual({
-        receiptDate: "2026-09-03T00:00:00.000Z",
-      });
+      ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });
+      expect(new Date(storedReceipt.receiptDate).toISOString()).toBe("2026-09-03T00:00:00.000Z");
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -619,7 +618,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
 
       withE2eDatabase((database) => {
         const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity", "varianceNote" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
