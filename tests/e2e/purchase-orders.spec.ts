@@ -124,6 +124,9 @@ test.describe("Purchase Orders read journey", () => {
       await expect(
         page.getByRole("heading", { name: "Record delivery", exact: true }),
       ).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toBeDisabled();
+      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toHaveValue("No active Items available");
+      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
       const backToPurchaseOrder = page.getByRole("link", {
         name: "Back to Purchase Order",
         exact: true,
@@ -508,6 +511,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
     test.setTimeout(120_000);
     const purchaseOrderId = randomUUID();
     const itemId = randomUUID();
+    const secondItemId = randomUUID();
     const categoryId = randomUUID();
     const baseUnitId = randomUUID();
     const alternateUnitId = randomUUID();
@@ -519,6 +523,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(alternateUnitId, "Sack", "sack", `sack-${alternateUnitId}`, `sack-${alternateUnitId}`);
         database.prepare('INSERT INTO "category" ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(categoryId, "Rice", `rice-${categoryId}`);
         database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(itemId, "E2E Rice", `e2e-rice-${itemId}`, categoryId, baseUnitId);
+        database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(secondItemId, "E2E Beans", `e2e-beans-${secondItemId}`, categoryId, baseUnitId);
         database.prepare('INSERT INTO "item_unit_conversion" ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(conversionId, itemId, alternateUnitId, "25");
         database.prepare('INSERT INTO "purchase_order" ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(purchaseOrderId, "PO-E2E-RECEIPT-ALT", "po-e2e-receipt-alt", "e2e-vendor-acme");
       });
@@ -545,14 +550,26 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
       await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
-      await page.getByRole("combobox", { name: "Item", exact: true }).click();
-      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      const itemPicker = page.getByRole("combobox", { name: "Item", exact: true });
+      await itemPicker.fill("not-an-active-item");
+      await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
+      await itemPicker.fill("E2E Rice");
+      await itemPicker.press("ArrowDown");
+      await itemPicker.press("Enter");
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5");
       await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
       await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await itemPicker.fill("E2E Beans");
+      await page.getByRole("option", { name: "E2E Beans", exact: true }).click();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await itemPicker.fill("E2E Rice");
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
       await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
@@ -610,6 +627,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
         database.prepare('DELETE FROM "item_unit_conversion" WHERE "id" = ?').run(conversionId);
         database.prepare('DELETE FROM "item" WHERE "id" = ?').run(itemId);
+        database.prepare('DELETE FROM "item" WHERE "id" = ?').run(secondItemId);
         database.prepare('DELETE FROM "category" WHERE "id" = ?').run(categoryId);
         database.prepare('DELETE FROM "unit" WHERE "id" IN (?, ?)').run(baseUnitId, alternateUnitId);
       });
