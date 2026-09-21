@@ -112,6 +112,40 @@ test.describe("Purchase Orders read journey", () => {
       await expect(
         page.locator('[data-delivery-receipt-history="empty"]'),
       ).toBeVisible();
+      const recordDeliveryLink = page.getByRole("link", {
+        name: "Record delivery",
+        exact: true,
+      });
+      await expect(recordDeliveryLink).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}/record-delivery`,
+      );
+      await recordDeliveryLink.click();
+      await expect(
+        page.getByRole("heading", { name: "Record delivery", exact: true }),
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toBeDisabled();
+      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toHaveValue("No active Items available");
+      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
+      const backToPurchaseOrder = page.getByRole("link", {
+        name: "Back to Purchase Order",
+        exact: true,
+      });
+      await expect(backToPurchaseOrder).toHaveAttribute(
+        "href",
+        `/purchase-orders/${purchaseOrderIds[0]}`,
+      );
+      await backToPurchaseOrder.focus();
+      await expect(backToPurchaseOrder).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(
+        new RegExp(`/purchase-orders/${purchaseOrderIds[0]}$`),
+      );
+      await expect(
+        page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
       await page.setViewportSize({ width: 390, height: 844 });
       expect(
         await page.evaluate(
@@ -477,6 +511,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
     test.setTimeout(120_000);
     const purchaseOrderId = randomUUID();
     const itemId = randomUUID();
+    const secondItemId = randomUUID();
     const categoryId = randomUUID();
     const baseUnitId = randomUUID();
     const alternateUnitId = randomUUID();
@@ -488,58 +523,149 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         database.prepare('INSERT INTO "unit" ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(alternateUnitId, "Sack", "sack", `sack-${alternateUnitId}`, `sack-${alternateUnitId}`);
         database.prepare('INSERT INTO "category" ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(categoryId, "Rice", `rice-${categoryId}`);
         database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(itemId, "E2E Rice", `e2e-rice-${itemId}`, categoryId, baseUnitId);
+        database.prepare('INSERT INTO "item" ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(secondItemId, "E2E Beans", `e2e-beans-${secondItemId}`, categoryId, baseUnitId);
         database.prepare('INSERT INTO "item_unit_conversion" ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(conversionId, itemId, alternateUnitId, "25");
         database.prepare('INSERT INTO "purchase_order" ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)').run(purchaseOrderId, "PO-E2E-RECEIPT-ALT", "po-e2e-receipt-alt", "e2e-vendor-acme");
       });
 
       await signIn(page);
+      await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.getByRole("heading", { name: "Record delivery", exact: true })).toBeVisible();
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const linesTable = page.getByRole("table", { name: "Delivery Receipt lines", exact: true });
+      await expect(linesTable).toBeVisible();
+      await expect(linesTable.getByRole("columnheader")).toHaveText([
+        "Item",
+        "Unit",
+        "Delivered quantity",
+        "Calculated Base Unit quantity",
+        "Actual received quantity",
+        "Remove",
+      ]);
+      expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      const today = await page.evaluate(() => new Intl.DateTimeFormat("en-PH", { dateStyle: "long" }).format(new Date()));
+      await expect(page.locator("#receiptDate")).toContainText(today);
+      await page.locator("#receiptDate").click();
+      await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
+      await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
-      await page.getByRole("combobox", { name: "Item", exact: true }).click();
-      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      const itemPicker = page.getByRole("combobox", { name: "Item", exact: true });
+      await itemPicker.fill("not-an-active-item");
+      await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
+      await itemPicker.fill("E2E Rice");
+      await itemPicker.press("ArrowDown");
+      await itemPicker.press("Enter");
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
-      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5 kg");
+      const adjustActualQuantity = page.getByRole("button", { name: "Adjust actual quantity", exact: true });
+      await expect(page.getByText("Same as calculated (62.5)", { exact: true })).toBeVisible();
+      await adjustActualQuantity.click();
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toBeFocused();
+      await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("62.50");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveCount(0);
+      await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await adjustActualQuantity.click();
       await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
       await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await itemPicker.fill("E2E Beans");
+      await page.getByRole("option", { name: "E2E Beans", exact: true }).click();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveCount(0);
+      await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
+      await itemPicker.click();
+      await itemPicker.fill("E2E Rice");
+      await expect(page.getByRole("option", { name: "E2E Rice", exact: true })).toBeVisible();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
       await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("");
-      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveValue("");
+      await expect(page.getByLabel("Actual received Base Unit quantity", { exact: true })).toHaveCount(0);
       await expect(page.getByLabel("Variance note", { exact: true })).toHaveCount(0);
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
+      await adjustActualQuantity.click();
       await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
       await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await page.locator("#add-delivery-line").click();
+      await expect(page.getByText("2 lines", { exact: true })).toBeVisible();
+      const repeatedLine = linesTable.locator('tr[aria-label="Delivery line 2"]');
+      await repeatedLine.getByRole("combobox", { name: "Item", exact: true }).fill("E2E Rice");
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await repeatedLine.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await repeatedLine.getByLabel("Quantity", { exact: true }).fill("1");
+      await expect(repeatedLine.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("25 kg");
+      const removeRepeatedLine = page.getByRole("button", { name: "Remove delivery line 2", exact: true });
+      await removeRepeatedLine.hover();
+      await expect(page.getByRole("tooltip")).toHaveText("Remove delivery line 2");
+      await removeRepeatedLine.press("Enter");
+      await expect(page.getByText("1 line", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
+      await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
+      await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
+      const storedReceipt = withE2eDatabase((database) => database.prepare(
+        'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
+      ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });
+      expect(new Date(storedReceipt.receiptDate).toISOString()).toBe("2026-09-03T00:00:00.000Z");
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page.setViewportSize({ width: 390, height: 844 });
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      await page.getByRole("button", { name: "Remove delivery line 1", exact: true }).press("Enter");
+      await expect(page.getByText("No Delivery Receipt lines", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
+      await page.locator("#add-delivery-line").click();
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
       await page.getByLabel("Quantity", { exact: true }).fill("3");
-      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3 kg");
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Sack (25 kg)", exact: true }).click();
+      await page.getByLabel("Quantity", { exact: true }).fill("1");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("25 kg");
+      withE2eDatabase((database) => database.prepare('UPDATE "unit" SET "active" = 0 WHERE "id" = ?').run(alternateUnitId));
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-INVALID");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      const correctedLine = page.locator('tr[aria-label="Delivery line 1"]');
+      await expect(correctedLine.getByText("Select an available Unit for this Item.", { exact: true })).toBeVisible();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toHaveAttribute("aria-invalid", "true");
+      await page.getByRole("combobox", { name: "Unit", exact: true }).click();
+      await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+      await expect(correctedLine.getByText("Select an available Unit for this Item.", { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).not.toHaveAttribute("aria-invalid", "true");
+      await page.getByLabel("Quantity", { exact: true }).fill("3");
+      await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("3 kg");
+      await page.getByRole("button", { name: "Add line", exact: true }).click();
+      const repeatedBaseLine = page.locator('tr[aria-label="Delivery line 2"]');
+      await repeatedBaseLine.getByRole("combobox", { name: "Item", exact: true }).click();
+      await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
+      await expect(repeatedBaseLine.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
+      await repeatedBaseLine.getByLabel("Quantity", { exact: true }).fill("4");
+      await expect(repeatedBaseLine.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("4 kg");
+      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page.locator('[data-slot="alert"]')).toContainText("A Delivery Receipt with that number already exists for this Vendor.");
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
 
       withE2eDatabase((database) => {
         const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity", "varianceNote" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);
         expect(lines).toEqual([
           { selectedUnitId: alternateUnitId, enteredQuantity: "2.5", conversionFactor: "25", calculatedBaseUnitQuantity: "62.5", actualReceivedBaseUnitQuantity: "60", varianceNote: "2.5 kg rejected at inspection" },
           { selectedUnitId: baseUnitId, enteredQuantity: "3", conversionFactor: "1", calculatedBaseUnitQuantity: "3", actualReceivedBaseUnitQuantity: "3", varianceNote: null },
+          { selectedUnitId: baseUnitId, enteredQuantity: "4", conversionFactor: "1", calculatedBaseUnitQuantity: "4", actualReceivedBaseUnitQuantity: "4", varianceNote: null },
         ]);
       });
     } finally {
@@ -550,6 +676,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         database.prepare('DELETE FROM "purchase_order" WHERE "id" = ?').run(purchaseOrderId);
         database.prepare('DELETE FROM "item_unit_conversion" WHERE "id" = ?').run(conversionId);
         database.prepare('DELETE FROM "item" WHERE "id" = ?').run(itemId);
+        database.prepare('DELETE FROM "item" WHERE "id" = ?').run(secondItemId);
         database.prepare('DELETE FROM "category" WHERE "id" = ?').run(categoryId);
         database.prepare('DELETE FROM "unit" WHERE "id" IN (?, ?)').run(baseUnitId, alternateUnitId);
       });

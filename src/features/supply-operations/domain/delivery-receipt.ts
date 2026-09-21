@@ -38,3 +38,19 @@ export function multiplyExactPositiveDecimals(left: string, right: string) {
   const fraction = digits.slice(-scale).replace(/0+$/, "");
   return fraction ? `${whole}.${fraction}` : whole;
 }
+
+export function reindexLineErrorsAfterRemoval<T>(
+  errors: Record<number, T> | undefined,
+  removedIndex: number,
+) {
+  if (!errors) return undefined;
+
+  const next = Object.entries(errors).reduce<Record<number, T>>((result, [index, error]) => {
+    const currentIndex = Number(index);
+    if (currentIndex === removedIndex) return result;
+    result[currentIndex > removedIndex ? currentIndex - 1 : currentIndex] = error;
+    return result;
+  }, {});
+
+  return Object.keys(next).length ? next : undefined;
+}
