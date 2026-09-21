@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
+import { Fragment, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
 
@@ -25,6 +25,7 @@ type Line = {
   quantity: string;
   actualReceivedBaseUnitQuantity: string;
   varianceNote: string;
+  actualQuantityAdjusted: boolean;
 };
 
 const initialLine: Line = {
@@ -34,6 +35,7 @@ const initialLine: Line = {
   quantity: "",
   actualReceivedBaseUnitQuantity: "",
   varianceNote: "",
+  actualQuantityAdjusted: false,
 };
 
 function createLine(): Line {
@@ -57,6 +59,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
   const [errors, setErrors] = useState<DeliveryReceiptFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [posting, startTransition] = useTransition();
+  const actualQuantityInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   function clearError(field: DeliveryReceiptField) {
     setErrors((current) => {
@@ -162,13 +165,13 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
         const actualDiffers = Boolean(value.actualReceivedBaseUnitQuantity && calculated && !exactDecimalsEqual(value.actualReceivedBaseUnitQuantity, calculated));
         const errorId = (field: DeliveryReceiptField) => `delivery-receipt-${value.id}-${field}-error`;
 
-        return <TableRow key={value.id} aria-label={`Delivery line ${index + 1}`}>
+        return <Fragment key={value.id}><TableRow aria-label={`Delivery line ${index + 1}`}>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={Boolean(errors.itemId?.length)}>
               <FieldLabel className="sr-only">Item</FieldLabel>
               <Select items={items.map((candidate) => ({ value: candidate.id, label: candidate.name }))} value={value.itemId || null} onValueChange={(id) => {
                 const selected = items.find((candidate) => candidate.id === id);
-                updateLine(value.id, { itemId: id ?? "", unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "" });
+                updateLine(value.id, { itemId: id ?? "", unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false });
                 clearError("itemId"); clearError("selectedUnitId"); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote");
               }}>
                 <SelectTrigger aria-label="Item" aria-invalid={Boolean(errors.itemId?.length)} aria-describedby={errors.itemId?.length ? errorId("itemId") : undefined} className="w-full"><SelectValue placeholder="Select an active Item" /></SelectTrigger>
@@ -181,7 +184,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <Field data-invalid={Boolean(errors.selectedUnitId?.length)}>
               <FieldLabel className="sr-only">Unit</FieldLabel>
               <Select items={item ? [{ value: `${item.baseUnit.id}:`, label: `${item.baseUnit.name} (${item.baseUnit.abbreviation})` }, ...(item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => ({ value: `${candidate.alternateUnit.id}:${candidate.id}`, label: candidate.label })) ?? [])] : []} value={value.unit || null} disabled={!item} onValueChange={(unit) => {
-                updateLine(value.id, { unit: unit ?? "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "" });
+                updateLine(value.id, { unit: unit ?? "", quantity: "", actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false });
                 clearError("selectedUnitId"); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote");
               }}>
                 <SelectTrigger aria-label="Unit" aria-invalid={Boolean(errors.selectedUnitId?.length)} aria-describedby={errors.selectedUnitId?.length ? errorId("selectedUnitId") : undefined} className="w-full"><SelectValue placeholder="Select an Item first" /></SelectTrigger>
@@ -193,7 +196,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={Boolean(errors.quantity?.length)}>
               <FieldLabel className="sr-only" htmlFor={`quantity-${value.id}`}>Quantity</FieldLabel>
-              <Input id={`quantity-${value.id}`} aria-label="Quantity" aria-invalid={Boolean(errors.quantity?.length)} aria-describedby={errors.quantity?.length ? errorId("quantity") : undefined} inputMode="decimal" value={value.quantity} onChange={(event) => { updateLine(value.id, { quantity: event.target.value, actualReceivedBaseUnitQuantity: "", varianceNote: "" }); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote"); }} required />
+              <Input id={`quantity-${value.id}`} aria-label="Quantity" aria-invalid={Boolean(errors.quantity?.length)} aria-describedby={errors.quantity?.length ? errorId("quantity") : undefined} inputMode="decimal" value={value.quantity} onChange={(event) => { updateLine(value.id, { quantity: event.target.value, actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false }); clearError("quantity"); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote"); }} required />
               {fieldError("quantity", errorId("quantity"))}
             </Field>
             </TableCell>
@@ -204,21 +207,27 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items }: { purcha
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
-            <Field data-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)}>
+            {value.actualQuantityAdjusted ? <Field data-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)}>
               <FieldLabel className="sr-only" htmlFor={`actual-${value.id}`}>Actual received Base Unit quantity</FieldLabel>
-              <Input id={`actual-${value.id}`} aria-label="Actual received Base Unit quantity" aria-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)} aria-describedby={errors.actualReceivedBaseUnitQuantity?.length ? errorId("actualReceivedBaseUnitQuantity") : undefined} inputMode="decimal" value={value.actualReceivedBaseUnitQuantity} placeholder={calculated || "Enter a positive quantity first"} onChange={(event) => { const actual = event.target.value; updateLine(value.id, { actualReceivedBaseUnitQuantity: actual, varianceNote: actual && calculated && !exactDecimalsEqual(actual, calculated) ? value.varianceNote : "" }); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote"); }} />
+              <Input ref={(node) => { actualQuantityInputs.current[value.id] = node; }} id={`actual-${value.id}`} aria-label="Actual received Base Unit quantity" aria-invalid={Boolean(errors.actualReceivedBaseUnitQuantity?.length)} aria-describedby={errors.actualReceivedBaseUnitQuantity?.length ? errorId("actualReceivedBaseUnitQuantity") : undefined} inputMode="decimal" value={value.actualReceivedBaseUnitQuantity} placeholder={calculated} onChange={(event) => { const actual = event.target.value; const matchesCalculated = Boolean(actual && calculated && exactDecimalsEqual(actual, calculated)); updateLine(value.id, matchesCalculated ? { actualReceivedBaseUnitQuantity: "", varianceNote: "", actualQuantityAdjusted: false } : { actualReceivedBaseUnitQuantity: actual, varianceNote: actual && calculated ? value.varianceNote : "" }); clearError("actualReceivedBaseUnitQuantity"); clearError("varianceNote"); }} />
               {fieldError("actualReceivedBaseUnitQuantity", errorId("actualReceivedBaseUnitQuantity"))}
-            </Field>
-            {actualDiffers ? <Field data-invalid={Boolean(errors.varianceNote?.length)}>
-              <FieldLabel htmlFor={`variance-${value.id}`}>Variance note</FieldLabel>
-              <Textarea id={`variance-${value.id}`} aria-label="Variance note" aria-invalid={Boolean(errors.varianceNote?.length)} aria-describedby={errors.varianceNote?.length ? errorId("varianceNote") : undefined} value={value.varianceNote} maxLength={500} onChange={(event) => { updateLine(value.id, { varianceNote: event.target.value }); clearError("varianceNote"); }} required />
-              {fieldError("varianceNote", errorId("varianceNote"))}
-            </Field> : null}
+            </Field> : <div className="flex flex-col items-start gap-2">
+              <p className="text-body-sm text-muted-foreground">{calculated ? `Same as calculated (${calculated})` : "Enter a positive quantity first"}</p>
+              <Button type="button" variant="outline" size="sm" disabled={!calculated} onClick={() => { updateLine(value.id, { actualQuantityAdjusted: true }); requestAnimationFrame(() => actualQuantityInputs.current[value.id]?.focus()); }}>Adjust actual quantity</Button>
+            </div>}
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
               <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove delivery line ${index + 1}`} disabled={lines.length === 1} onClick={() => setLines((current) => current.filter((candidate) => candidate.id !== value.id))}><Trash2 /></Button>
             </TableCell>
-        </TableRow>;
+        </TableRow>{actualDiffers ? <TableRow>
+          <TableCell colSpan={6} className="bg-muted/40 whitespace-normal">
+            <Field data-invalid={Boolean(errors.varianceNote?.length)}>
+              <FieldLabel htmlFor={`variance-${value.id}`}>Variance note</FieldLabel>
+              <Textarea id={`variance-${value.id}`} aria-label="Variance note" aria-invalid={Boolean(errors.varianceNote?.length)} aria-describedby={errors.varianceNote?.length ? errorId("varianceNote") : undefined} value={value.varianceNote} maxLength={500} onChange={(event) => { updateLine(value.id, { varianceNote: event.target.value }); clearError("varianceNote"); }} required />
+              {fieldError("varianceNote", errorId("varianceNote"))}
+            </Field>
+          </TableCell>
+        </TableRow> : null}</Fragment>;
       })}
         </TableBody>
       </Table>
