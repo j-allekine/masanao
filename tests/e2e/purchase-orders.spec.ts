@@ -524,9 +524,21 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       });
 
       await signIn(page);
+      await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.getByRole("heading", { name: "Record delivery", exact: true })).toBeVisible();
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const linesTable = page.getByRole("table", { name: "Delivery Receipt lines", exact: true });
+      await expect(linesTable).toBeVisible();
+      await expect(linesTable.getByRole("columnheader")).toHaveText([
+        "Item",
+        "Unit",
+        "Delivered quantity",
+        "Calculated Base Unit quantity",
+        "Actual received quantity",
+        "Remove",
+      ]);
+      expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
@@ -546,8 +558,14 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
       await page.getByLabel("Actual received Base Unit quantity", { exact: true }).fill("60");
       await page.getByLabel("Variance note", { exact: true }).fill("2.5 kg rejected at inspection");
+      await page.getByRole("button", { name: "Add line", exact: true }).click();
+      await expect(page.getByText("2 lines", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Remove delivery line 2", exact: true }).click();
+      await expect(page.getByText("1 line", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`));
+      await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
+      await expect(page.getByRole("cell", { name: "2", exact: true })).toBeVisible();
 
       await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();

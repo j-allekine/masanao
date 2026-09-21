@@ -17,7 +17,7 @@ export default async function RecordDeliveryRoute({ params }: { params: Promise<
   const [purchaseOrder, items] = await Promise.all([getPurchaseOrder(id), listItems()]);
   if (!purchaseOrder) notFound();
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 bg-card px-4 py-6 sm:px-6">
+    <main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-6 bg-card px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-3">
         <Link
           href={`/purchase-orders/${purchaseOrder.id}`}
