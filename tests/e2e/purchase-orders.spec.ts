@@ -559,7 +559,9 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5 kg");
       await page.getByLabel("Unit price", { exact: true }).fill("800");
-      await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("2000");
+      await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("2,000.00");
+      await expect(linesTable.getByText("Total", { exact: true })).toBeVisible();
+      await expect(linesTable.getByText("₱ 2,000.00", { exact: true })).toBeVisible();
       await itemPicker.fill("E2E Beans");
       await page.getByRole("option", { name: "E2E Beans", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");

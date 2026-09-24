@@ -46,6 +46,15 @@ export function addExactPositiveDecimals(left: string, right: string) {
   return fraction ? `${whole}.${fraction}` : whole;
 }
 
+export function formatDeliveryReceiptAmount(value: string) {
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return "";
+
+  const [whole, fraction = ""] = value.split(".");
+  const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  return `${groupedWhole}.${fraction.padEnd(2, "0")}`;
+}
+
 export function reindexLineErrorsAfterRemoval<T>(
   errors: Record<number, T> | undefined,
   removedIndex: number,

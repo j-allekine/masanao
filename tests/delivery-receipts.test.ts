@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { deliveryReceiptFieldErrors, deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
-import { addExactPositiveDecimals, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "@/features/supply-operations/domain/delivery-receipt";
+import { addExactPositiveDecimals, formatDeliveryReceiptAmount, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "@/features/supply-operations/domain/delivery-receipt";
 import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { prisma } from "@/prisma/client";
@@ -162,6 +162,9 @@ describe("Delivery Receipt alternate Unit posting", () => {
     expect(multiplyExactPositiveDecimals("0.1", "0.2")).toBe("0.02");
     expect(multiplyExactPositiveDecimals("12345678901234567890.1", "2")).toBe("24691357802469135780.2");
     expect(addExactPositiveDecimals("200.625", "1.375")).toBe("202");
+    expect(formatDeliveryReceiptAmount("4000")).toBe("4,000.00");
+    expect(formatDeliveryReceiptAmount("200.625")).toBe("200.625");
+    expect(formatDeliveryReceiptAmount("")).toBe("");
   });
 
   it("posts an active configured alternate Unit using immutable calculation snapshots", async () => {

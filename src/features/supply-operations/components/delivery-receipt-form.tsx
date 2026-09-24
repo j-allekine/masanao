@@ -14,13 +14,13 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import LocalDatePicker, { formatLocalDate } from "@/components/workspace/local-date-picker";
 
 import { postDeliveryReceiptAction } from "../actions";
-import { addExactPositiveDecimals, isPositiveExactDecimal, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
+import { addExactPositiveDecimals, formatDeliveryReceiptAmount, isPositiveExactDecimal, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
 import type { DeliveryReceiptField, DeliveryReceiptFieldErrors, DeliveryReceiptLineFieldErrors, ItemListItem } from "../types";
 
 type DeliveryReceiptLineField = keyof DeliveryReceiptLineFieldErrors;
@@ -260,7 +260,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <TableHead className="w-[20%]">Item</TableHead>
             <TableHead className="w-[14%]">Unit</TableHead>
             <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty</TableHead>
-            <TableHead className="w-[15%] whitespace-nowrap" aria-label="Calculated Base Unit quantity">Base Unit Qty</TableHead>
+            <TableHead className="w-[15%] whitespace-nowrap" aria-label="Base Unit quantity">Base Unit Qty</TableHead>
             <TableHead className="w-[14%] whitespace-nowrap">Unit price</TableHead>
             <TableHead className="w-[17%]">Amount</TableHead>
             <TableHead className="w-[8%] text-right">Remove</TableHead>
@@ -332,7 +332,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
                 <FieldLabel className="sr-only" htmlFor={`amount-${value.id}`}>Amount</FieldLabel>
                 <InputGroup>
                   <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
-                  <InputGroupInput id={`amount-${value.id}`} aria-label="Amount" className="text-right" value={lineAmount} readOnly />
+                  <InputGroupInput id={`amount-${value.id}`} aria-label="Amount" className="text-right" value={formatDeliveryReceiptAmount(lineAmount)} readOnly />
                 </InputGroup>
               </Field>
             </TableCell>
@@ -345,11 +345,22 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
         </TableRow></Fragment>;
       })}
         </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={5} />
+            <TableCell className="text-right">
+              <div className="flex items-baseline justify-end gap-2">
+                <span>Total</span>
+                <span>₱ {formatDeliveryReceiptAmount(receiptTotal)}</span>
+              </div>
+            </TableCell>
+            <TableCell />
+          </TableRow>
+        </TableFooter>
       </Table> : <Empty>
         <EmptyHeader><EmptyTitle>No Delivery Receipt lines</EmptyTitle><EmptyDescription>Add a line before posting this delivery.</EmptyDescription></EmptyHeader>
         <EmptyContent><Button type="button" variant="outline" onClick={addLine}><Plus data-icon="inline-start" />Add line</Button></EmptyContent>
       </Empty>}
-      {lines.length ? <p className="flex justify-between text-body-sm font-medium"><span>Total</span><span>₱ {receiptTotal}</span></p> : null}
     </section>
 
     <Field data-invalid={Boolean(errors.note?.length)}>
