@@ -48,7 +48,7 @@ describe("Delivery Receipt direct Base Unit posting", () => {
   it("reindexes remaining line errors after removing a line", () => {
     const firstError = { quantity: ["Enter a positive quantity"] };
     const secondError = { itemId: ["Select an Item"] };
-    const thirdError = { unitPrice: ["Enter a positive quantity"] };
+    const thirdError = { unitPrice: ["Enter a positive Unit Price"] };
 
     expect(reindexLineErrorsAfterRemoval({ 0: firstError, 1: secondError, 2: thirdError }, 0)).toEqual({
       0: secondError,
@@ -75,7 +75,7 @@ describe("Delivery Receipt direct Base Unit posting", () => {
         1: {
           itemId: ["Select an Item"],
           quantity: ["Enter a positive quantity"],
-          unitPrice: ["Enter a positive quantity"],
+          unitPrice: ["Enter a positive Unit Price"],
         },
       },
     });
@@ -84,6 +84,16 @@ describe("Delivery Receipt direct Base Unit posting", () => {
   it("normalizes the Vendor-scoped receipt key and validates the direct quantity", () => {
     expect(deliveryReceiptSchema.parse({ purchaseOrderId: "po", receiptNo: " DR-1 ", receiptDate: "2026-09-19", itemId: "item", quantity: "2.50", unitPrice: "45.20" })).toMatchObject({ receiptNo: "DR-1", normalizedReceiptNo: "dr-1", quantity: "2.50", unitPrice: "45.20" });
     expect(deliveryReceiptSchema.safeParse({ purchaseOrderId: "po", receiptNo: "DR-1", receiptDate: "2026-09-19", itemId: "item", quantity: "1", unitPrice: "0" }).success).toBe(false);
+  });
+
+  it("reports Unit Price errors with the field-specific label", () => {
+    const parsed = deliveryReceiptSchema.safeParse({ purchaseOrderId: "po", receiptNo: "DR-1", receiptDate: "2026-09-19", itemId: "item", quantity: "1", unitPrice: "" });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(deliveryReceiptFieldErrors(parsed.error)).toMatchObject({
+      unitPrice: ["Enter a positive Unit Price"],
+    });
   });
 
   it("posts a receipt, immutable direct line, and matching stock-in together", async () => {

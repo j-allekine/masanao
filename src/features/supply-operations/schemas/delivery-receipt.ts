@@ -17,12 +17,15 @@ const receiptNoSchema = z.string({ error: "Receipt number is required" })
 const positiveQuantitySchema = z.string({ error: "Quantity is required" }).trim()
   .refine(isPositiveExactDecimal, "Enter a positive quantity");
 
+const positiveUnitPriceSchema = z.string({ error: "Unit Price is required" }).trim()
+  .refine(isPositiveExactDecimal, "Enter a positive Unit Price");
+
 const deliveryReceiptLineSchema = z.object({
   itemId: z.string().trim().min(1, "Select an Item"),
   selectedUnitId: z.string().trim().min(1, "Select a Unit").optional(),
   conversionId: z.string().trim().min(1).optional(),
   quantity: positiveQuantitySchema,
-  unitPrice: positiveQuantitySchema,
+  unitPrice: positiveUnitPriceSchema,
 });
 
 export const deliveryReceiptSchema = z.object({
@@ -34,7 +37,7 @@ export const deliveryReceiptSchema = z.object({
   selectedUnitId: z.string().trim().min(1, "Select a Unit").optional(),
   conversionId: z.string().trim().min(1).optional(),
   quantity: positiveQuantitySchema.optional(),
-  unitPrice: positiveQuantitySchema.optional(),
+  unitPrice: positiveUnitPriceSchema.optional(),
   lines: z.array(deliveryReceiptLineSchema).min(1, "Add at least one Delivery Receipt line").optional(),
 }).superRefine((value, context) => {
   if (!value.lines && (!value.itemId || !value.quantity || !value.unitPrice)) context.addIssue({ code: "custom", message: "Add at least one Delivery Receipt line", path: ["itemId"] });

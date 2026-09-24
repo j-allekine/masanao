@@ -1,3 +1,4 @@
+PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
 
 -- Product decision: permanently remove superseded actual-received and variance
@@ -40,3 +41,5 @@ CREATE INDEX "delivery_receipt_line_deliveryReceiptId_idx" ON "delivery_receipt_
 CREATE INDEX "delivery_receipt_line_itemId_idx" ON "delivery_receipt_line"("itemId");
 
 PRAGMA foreign_keys=ON;
+PRAGMA foreign_key_check;
+PRAGMA defer_foreign_keys=OFF;

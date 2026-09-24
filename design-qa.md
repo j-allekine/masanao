@@ -7,16 +7,16 @@
 
 **Full-view comparison evidence**
 
-The canonical route keeps the Variant A modal frame, Purchase Order context, header hierarchy, wide receipt table, calculated base-unit column, receipt total, note placement, and persistent action footer. It substitutes the prototype's example row with the real empty state and live controls.
+The canonical route keeps the Variant A modal frame, Purchase Order context, header hierarchy, wide receipt table, calculated Base Unit column, Total row, note placement, and persistent action footer. It substitutes the prototype's example row with the real empty state and live controls.
 
 **Focused region comparison evidence**
 
-The receipt table was compared closely because it is the dense interaction region. The first canonical capture had overlapping long column labels. The production labels were shortened to `Delivered Qty` and `CBU Qty`, with the CBU meaning explained directly above the table and retained as an accessible column label.
+The receipt table was compared closely because it is the dense interaction region. The first canonical capture had overlapping long column labels. The production labels are now `Delivered Qty` and `Base Unit Qty`; the empty calculated field is intentionally blank. Unit Price and Amount use the shared currency-input treatment with a left-aligned peso sign and right-aligned figure.
 
 **Findings**
 
 - No actionable P0, P1, or P2 differences remain.
-- [P3] Empty-state price and amount fields use their functional placeholders rather than the prototype's sample monetary values. This is expected: no receipt line has been entered yet.
+- No follow-up visual differences identified in the current desktop empty state.
 
 **Required fidelity surfaces**
 
@@ -24,16 +24,12 @@ The receipt table was compared closely because it is the dense interaction regio
 - Spacing and layout rhythm: the modal header, body sections, table, total, note, and footer retain the Variant A vertical order and are visually separated with the same border-based rhythm.
 - Colors and visual tokens: canonical rendering uses the existing semantic popover, muted, foreground, and primary tokens; it preserves the dimmed Purchase Order background.
 - Image quality and asset fidelity: the selected design has no non-standard image assets. The production view retains the application iconography supplied by the shared UI system.
-- Copy and content: the prototype labels are retained where they express the record-delivery model. The new CBU helper clarifies the abbreviation; Unit price and Amount remain explicit.
+- Copy and content: the prototype labels are retained where they express the record-delivery model. `Base Unit Qty` replaces the unexplained CBU abbreviation; Unit price, Amount, and Total remain explicit.
 
 **Implementation Checklist**
 
 1. Keep the canonical route on the live `DeliveryReceiptDialog`, not the development-only prototype.
 2. Keep Unit price and computed Amount as receipt-line fields.
-3. Preserve the wide table's short visible headers and accessible full labels.
-
-**Follow-up Polish**
-
-- Consider localized currency formatting once the product establishes its monetary display convention.
+3. Preserve the wide table's short visible headers, blank empty calculated field, and accessible full labels.
 
 final result: passed

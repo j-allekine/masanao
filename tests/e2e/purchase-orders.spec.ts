@@ -536,7 +536,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         "Item",
         "Unit",
         "Delivered Qty",
-        "CBU Qty",
+        "Base Unit Qty",
         "Unit price",
         "Amount",
         "Remove",
@@ -559,7 +559,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByLabel("Quantity", { exact: true }).fill("2.5");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveValue("62.5 kg");
       await page.getByLabel("Unit price", { exact: true }).fill("800");
-      await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("PHP 2000");
+      await expect(page.getByLabel("Amount", { exact: true })).toHaveValue("2000");
       await itemPicker.fill("E2E Beans");
       await page.getByRole("option", { name: "E2E Beans", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");

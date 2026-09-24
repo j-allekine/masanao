@@ -11,6 +11,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "
 import { DialogFooter } from "@/components/ui/dialog";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -234,7 +235,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
 
   return <form aria-label="Record delivery" aria-busy={posting} className={presentation === "dialog" ? "flex flex-col gap-6 px-6 py-5" : "flex flex-col gap-6"} data-client-ready={isHydrated ? "true" : undefined} noValidate onSubmit={submit}>
     {formError ? <Alert variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
-    <FieldGroup>
+    <FieldGroup className="grid gap-4 sm:grid-cols-2">
       <Field data-invalid={Boolean(errors.receiptNo?.length)}>
         <FieldLabel htmlFor="receiptNo">Receipt number</FieldLabel>
         <Input id="receiptNo" name="receiptNo" aria-label="Receipt number" aria-invalid={Boolean(errors.receiptNo?.length)} aria-describedby={errors.receiptNo?.length ? "delivery-receipt-receiptNo-error" : undefined} maxLength={100} onChange={() => clearError("receiptNo")} required />
@@ -250,7 +251,6 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <h2 id="delivery-lines-heading" className="text-heading-3 font-semibold">Delivery Receipt lines</h2>
             <p aria-live="polite" className="text-body-sm text-muted-foreground">{lines.length} {lines.length === 1 ? "line" : "lines"}</p>
           </div>
-          <p className="text-body-sm text-muted-foreground">CBU is the calculated quantity in the Item’s Base Unit.</p>
         </div>
         <Button id="add-delivery-line" type="button" variant="outline" onClick={addLine}><Plus data-icon="inline-start" />Add line</Button>
       </div>
@@ -260,7 +260,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <TableHead className="w-[20%]">Item</TableHead>
             <TableHead className="w-[14%]">Unit</TableHead>
             <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty</TableHead>
-            <TableHead className="w-[15%] whitespace-nowrap" aria-label="Calculated Base Unit quantity">CBU Qty</TableHead>
+            <TableHead className="w-[15%] whitespace-nowrap" aria-label="Calculated Base Unit quantity">Base Unit Qty</TableHead>
             <TableHead className="w-[14%] whitespace-nowrap">Unit price</TableHead>
             <TableHead className="w-[17%]">Amount</TableHead>
             <TableHead className="w-[8%] text-right">Remove</TableHead>
@@ -314,20 +314,26 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <TableCell className="align-top whitespace-normal">
             <Field>
               <FieldLabel className="sr-only" htmlFor={`calculated-${value.id}`}>Calculated Base Unit quantity</FieldLabel>
-              <Input id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" value={calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : "Enter a positive quantity"} readOnly />
+              <Input id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" value={calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : ""} readOnly />
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "unitPrice")}>
               <FieldLabel className="sr-only" htmlFor={`unit-price-${value.id}`}>Unit price</FieldLabel>
-              <Input id={`unit-price-${value.id}`} aria-label="Unit price" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={value.unitPrice} onChange={(event) => { updateLine(value.id, { unitPrice: event.target.value }); clearLineError(index, "unitPrice"); }} required />
+              <InputGroup>
+                <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
+                <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={value.unitPrice} onChange={(event) => { updateLine(value.id, { unitPrice: event.target.value }); clearLineError(index, "unitPrice"); }} required />
+              </InputGroup>
               {lineFieldError(index, "unitPrice", errorId("unitPrice"))}
             </Field>
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
               <Field>
                 <FieldLabel className="sr-only" htmlFor={`amount-${value.id}`}>Amount</FieldLabel>
-                <Input id={`amount-${value.id}`} aria-label="Amount" value={lineAmount ? `PHP ${lineAmount}` : "Enter quantity and price"} readOnly />
+                <InputGroup>
+                  <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
+                  <InputGroupInput id={`amount-${value.id}`} aria-label="Amount" className="text-right" value={lineAmount} readOnly />
+                </InputGroup>
               </Field>
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
@@ -343,7 +349,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
         <EmptyHeader><EmptyTitle>No Delivery Receipt lines</EmptyTitle><EmptyDescription>Add a line before posting this delivery.</EmptyDescription></EmptyHeader>
         <EmptyContent><Button type="button" variant="outline" onClick={addLine}><Plus data-icon="inline-start" />Add line</Button></EmptyContent>
       </Empty>}
-      {lines.length ? <p className="text-right text-body-sm font-medium">Receipt total: PHP {receiptTotal}</p> : null}
+      {lines.length ? <p className="flex justify-between text-body-sm font-medium"><span>Total</span><span>₱ {receiptTotal}</span></p> : null}
     </section>
 
     <Field data-invalid={Boolean(errors.note?.length)}>
