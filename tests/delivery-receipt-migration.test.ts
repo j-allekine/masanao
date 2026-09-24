@@ -55,10 +55,13 @@ describe("Delivery Receipt amounts migration", () => {
 
       database.exec(`BEGIN;${readFileSync(migrationPath, "utf8")}COMMIT;`);
 
+      const columns = database.prepare('PRAGMA table_info("delivery_receipt_line")').all() as Array<{ name: string }>;
+      const columnNames = columns.map((column) => column.name);
+
       expect(database.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
       expect(database.prepare('SELECT "deliveryReceiptLineId" FROM "inventory_ledger_movement"').get()).toEqual({ deliveryReceiptLineId: "line" });
-      expect(database.prepare('PRAGMA table_info("delivery_receipt_line")').all().map((column: { name: string }) => column.name)).toEqual(expect.arrayContaining(["unitPrice", "lineAmount"]));
-      expect(database.prepare('PRAGMA table_info("delivery_receipt_line")').all().map((column: { name: string }) => column.name)).not.toEqual(expect.arrayContaining(["actualReceivedBaseUnitQuantity", "varianceNote"]));
+      expect(columnNames).toEqual(expect.arrayContaining(["unitPrice", "lineAmount"]));
+      expect(columnNames).not.toEqual(expect.arrayContaining(["actualReceivedBaseUnitQuantity", "varianceNote"]));
     } finally {
       database.close();
     }
