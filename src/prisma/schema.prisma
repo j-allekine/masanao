@@ -236,8 +236,8 @@ model DeliveryReceiptLine {
   enteredQuantity                 String
   conversionFactor                String
   calculatedBaseUnitQuantity      String
-  actualReceivedBaseUnitQuantity  String
-  varianceNote                    String?
+  unitPrice                       String?
+  lineAmount                      String?
   deliveryReceipt                 DeliveryReceipt @relation(fields: [deliveryReceiptId], references: [id], onDelete: Restrict)
   item                            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
   selectedUnit                    Unit            @relation("DeliveryReceiptLineSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)

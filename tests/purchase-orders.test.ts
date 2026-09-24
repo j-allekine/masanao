@@ -468,6 +468,7 @@ describe("Purchase Order mutation gateway", () => {
       receiptDate: "2026-09-19",
       itemId: "po-receipt-item",
       quantity: "1",
+      unitPrice: "50",
     })).resolves.toMatchObject({ ok: true });
 
     await expect(updatePurchaseOrder(adminActor, purchaseOrder.id, {

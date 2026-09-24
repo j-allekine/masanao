@@ -85,8 +85,16 @@ Receipt Lines and is posted as stock-in when recorded.
 
 **Delivery Receipt Line**:
 The actual delivered quantity of one Item on a Delivery Receipt, recorded in
-the selected Item Unit, calculated Base Unit quantity, and final actual
-received Base Unit quantity.
+the selected Item Unit, calculated Base Unit quantity, Unit Price, and Line
+Amount. Its calculated Base Unit quantity is posted as stock-in.
+
+**Unit Price**:
+The monetary amount charged for one selected Item Unit on a Delivery Receipt
+Line. It is recorded on the receipt, not on the Purchase Order.
+
+**Line Amount**:
+The monetary result of a Delivery Receipt Line's delivered quantity multiplied
+by its Unit Price. It is calculated and stored with the posted receipt line.
 
 **Partial Delivery**:
 A Delivery Receipt representing only part of the supplies delivered under a
