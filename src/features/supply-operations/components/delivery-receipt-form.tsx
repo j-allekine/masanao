@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import LocalDatePicker, { formatLocalDate } from "@/components/workspace/local-date-picker";
 
 import { postDeliveryReceiptAction } from "../actions";
-import { addExactPositiveDecimals, formatDeliveryReceiptAmount, isPositiveExactDecimal, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
+import { addExactPositiveDecimals, formatDeliveryReceiptAmount, formatDeliveryReceiptUnitPrice, isPositiveExactDecimal, multiplyExactPositiveDecimals, normalizeDeliveryReceiptUnitPriceInput, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
 import type { DeliveryReceiptField, DeliveryReceiptFieldErrors, DeliveryReceiptLineFieldErrors, ItemListItem } from "../types";
 
 type DeliveryReceiptLineField = keyof DeliveryReceiptLineFieldErrors;
@@ -325,7 +325,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
               <FieldLabel className="sr-only" htmlFor={`unit-price-${value.id}`}>Unit price</FieldLabel>
               <InputGroup>
                 <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
-                <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={editingUnitPriceLineId === value.id ? value.unitPrice : formatDeliveryReceiptAmount(value.unitPrice)} onFocus={() => setEditingUnitPriceLineId(value.id)} onBlur={() => setEditingUnitPriceLineId((current) => current === value.id ? null : current)} onChange={(event) => { updateLine(value.id, { unitPrice: event.target.value.replaceAll(",", "") }); clearLineError(index, "unitPrice"); }} required />
+                <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={editingUnitPriceLineId === value.id ? value.unitPrice : formatDeliveryReceiptUnitPrice(value.unitPrice)} onFocus={() => setEditingUnitPriceLineId(value.id)} onBlur={() => setEditingUnitPriceLineId((current) => current === value.id ? null : current)} onChange={(event) => { updateLine(value.id, { unitPrice: normalizeDeliveryReceiptUnitPriceInput(event.target.value) }); clearLineError(index, "unitPrice"); }} required />
               </InputGroup>
               {lineFieldError(index, "unitPrice", errorId("unitPrice"))}
             </Field>

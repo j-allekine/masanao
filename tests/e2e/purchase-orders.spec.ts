@@ -577,6 +577,17 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await unitPrice.fill("800");
       await unitPrice.blur();
       await expect(unitPrice).toHaveValue("800.00");
+      await unitPrice.focus();
+      await unitPrice.fill("1,2");
+      await unitPrice.blur();
+      await expect(unitPrice).toHaveValue("1,2");
+      await unitPrice.focus();
+      await unitPrice.fill("12.");
+      await unitPrice.blur();
+      await expect(unitPrice).toHaveValue("12.");
+      await unitPrice.focus();
+      await unitPrice.fill("800");
+      await unitPrice.blur();
       await expect(page.getByLabel("Amount", { exact: true })).toHaveText("₱ 2,000.00");
       await page.getByLabel("Calculated Base Unit quantity", { exact: true }).click();
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).not.toBeFocused();

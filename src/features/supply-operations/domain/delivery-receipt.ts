@@ -55,6 +55,18 @@ export function formatDeliveryReceiptAmount(value: string) {
   return `${groupedWhole}.${fraction.padEnd(2, "0")}`;
 }
 
+export function normalizeDeliveryReceiptUnitPriceInput(value: string) {
+  if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(value)) {
+    return value.replaceAll(",", "");
+  }
+
+  return value;
+}
+
+export function formatDeliveryReceiptUnitPrice(value: string) {
+  return formatDeliveryReceiptAmount(value) || value;
+}
+
 export function reindexLineErrorsAfterRemoval<T>(
   errors: Record<number, T> | undefined,
   removedIndex: number,
