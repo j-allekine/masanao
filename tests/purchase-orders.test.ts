@@ -506,7 +506,24 @@ describe("Purchase Order mutation gateway", () => {
       vendorId: originalVendor.id,
       vendorName: "Original Foods",
     });
-    await expect(getPurchaseOrder(purchaseOrder.id)).resolves.toMatchObject({ hasPostedReceipts: true });
+    await expect(getPurchaseOrder(purchaseOrder.id)).resolves.toMatchObject({
+      hasPostedReceipts: true,
+      deliveryReceipts: [{
+        receiptNo: "DR-LOCKED-1",
+        vendorName: "Original Foods",
+        purchaseOrderNo: "PO-RECEIPT-ORIGINAL",
+        note: null,
+        lines: [{
+          itemName: "Rice",
+          selectedUnitName: "Kilogram",
+          baseUnitName: "Kilogram",
+          enteredQuantity: "1",
+          calculatedBaseUnitQuantity: "1",
+          unitPrice: "50",
+          lineAmount: "50",
+        }],
+      }],
+    });
     await expect(deletePurchaseOrder(adminActor, purchaseOrder.id)).resolves.toEqual({
       ok: false,
       kind: "referenced",

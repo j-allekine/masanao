@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { deliveryReceiptFieldErrors, deliveryReceiptSchema } from "@/features/supply-operations/schemas/delivery-receipt";
-import { addExactPositiveDecimals, formatDeliveryReceiptAmount, multiplyExactPositiveDecimals, reindexLineErrorsAfterRemoval } from "@/features/supply-operations/domain/delivery-receipt";
+import { addExactPositiveDecimals, formatDeliveryReceiptAmount, formatDeliveryReceiptUnitPrice, multiplyExactPositiveDecimals, normalizeDeliveryReceiptUnitPriceInput, reindexLineErrorsAfterRemoval } from "@/features/supply-operations/domain/delivery-receipt";
 import { postDeliveryReceipt, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { normalizeVendorKey } from "@/features/master-data/domain/vendor";
 import { prisma } from "@/prisma/client";
@@ -165,6 +165,15 @@ describe("Delivery Receipt alternate Unit posting", () => {
     expect(formatDeliveryReceiptAmount("4000")).toBe("4,000.00");
     expect(formatDeliveryReceiptAmount("200.625")).toBe("200.625");
     expect(formatDeliveryReceiptAmount("")).toBe("");
+  });
+
+  it("normalizes only complete, correctly grouped Unit Prices", () => {
+    expect(normalizeDeliveryReceiptUnitPriceInput("11,220.00")).toBe("11220.00");
+    expect(normalizeDeliveryReceiptUnitPriceInput("1,2")).toBe("1,2");
+    expect(normalizeDeliveryReceiptUnitPriceInput("12.")).toBe("12.");
+    expect(formatDeliveryReceiptUnitPrice("11220")).toBe("11,220.00");
+    expect(formatDeliveryReceiptUnitPrice("1,2")).toBe("1,2");
+    expect(formatDeliveryReceiptUnitPrice("12.")).toBe("12.");
   });
 
   it("posts an active configured alternate Unit using immutable calculation snapshots", async () => {
