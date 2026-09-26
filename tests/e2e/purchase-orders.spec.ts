@@ -632,6 +632,16 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
       await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "DR-E2E-ALT", exact: true }).click();
+      const receiptDialog = page.getByRole("dialog");
+      await expect(receiptDialog.getByRole("heading", { name: "Delivery receipt DR-E2E-ALT", exact: true })).toBeVisible();
+      await expect(receiptDialog.getByText("E2E Rice", { exact: true })).toBeVisible();
+      await expect(receiptDialog.getByText("62.5 Kilogram", { exact: true })).toBeVisible();
+      await expect(receiptDialog.getByText("₱ 800.00", { exact: true })).toBeVisible();
+      await expect(receiptDialog.locator("tfoot").getByText("₱ 2,000.00", { exact: true })).toBeVisible();
+      await expect(receiptDialog.getByText("Not recorded", { exact: true })).toBeVisible();
+      await receiptDialog.locator('[data-slot="dialog-footer"]').getByRole("button", { name: "Close", exact: true }).click();
+      await expect(receiptDialog).toBeHidden();
       const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
       ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });

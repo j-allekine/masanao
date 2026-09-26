@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 import type { PurchaseOrderDetailItem } from "../types";
+import DeliveryReceiptHistory from "./delivery-receipt-history";
 
 function displayValue(value: string | null) {
   return value ?? "Not recorded";
@@ -120,7 +120,7 @@ export default function PurchaseOrderDetailContent({
                 Record a Delivery Receipt when supplies arrive for this Purchase Order.
               </EmptyDescription>
             </EmptyHeader>
-          </Empty> : <div className="overflow-x-auto rounded-lg border"><Table><TableHeader><TableRow><TableHead>Receipt number</TableHead><TableHead>Receipt date</TableHead><TableHead>Lines</TableHead><TableHead>Posted</TableHead></TableRow></TableHeader><TableBody>{purchaseOrder.deliveryReceipts.map((receipt) => <TableRow key={receipt.id} id={`delivery-receipt-${receipt.id}`}><TableCell className="font-medium">{receipt.receiptNo}</TableCell><TableCell>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(receipt.receiptDate))}</TableCell><TableCell>{receipt.lineCount}</TableCell><TableCell>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(receipt.postedAt))}</TableCell></TableRow>)}</TableBody></Table></div>}
+          </Empty> : <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />}
         </section>
       </main>
     </div>
