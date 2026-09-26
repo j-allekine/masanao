@@ -315,8 +315,8 @@ function createStockLockedItemFixtures() {
        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     ).run(receiptId, purchaseOrderId, vendorId, `Receipt vendor ${vendorId.slice(0, 8)}`, `PO-${purchaseOrderId.slice(0, 8)}`, `DR-${receiptId.slice(0, 8)}`, `dr-${receiptId}`);
     database.prepare(
-      `INSERT INTO "delivery_receipt_line" ("id", "deliveryReceiptId", "itemId", "selectedUnitId", "baseUnitId", "itemName", "selectedUnitName", "baseUnitName", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "actualReceivedBaseUnitQuantity")
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1', '1', '1', '1')`,
+      `INSERT INTO "delivery_receipt_line" ("id", "deliveryReceiptId", "itemId", "selectedUnitId", "baseUnitId", "itemName", "selectedUnitName", "baseUnitName", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "unitPrice", "lineAmount")
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '1', '1', '1', '1', '1')`,
     ).run(receiptLineId, receiptId, itemFixtures.activeItemId, itemFixtures.baseUnitId, itemFixtures.baseUnitId, "Alpha Beans", "Kilogram", "Kilogram");
     database.prepare(
       `INSERT INTO "inventory_ledger_movement" ("id", "deliveryReceiptLineId", "itemId", "baseUnitId", "quantity", "movementType", "occurredAt")

@@ -17,13 +17,15 @@ const receiptNoSchema = z.string({ error: "Receipt number is required" })
 const positiveQuantitySchema = z.string({ error: "Quantity is required" }).trim()
   .refine(isPositiveExactDecimal, "Enter a positive quantity");
 
+const positiveUnitPriceSchema = z.string({ error: "Unit Price is required" }).trim()
+  .refine(isPositiveExactDecimal, "Enter a positive Unit Price");
+
 const deliveryReceiptLineSchema = z.object({
   itemId: z.string().trim().min(1, "Select an Item"),
   selectedUnitId: z.string().trim().min(1, "Select a Unit").optional(),
   conversionId: z.string().trim().min(1).optional(),
   quantity: positiveQuantitySchema,
-  actualReceivedBaseUnitQuantity: positiveQuantitySchema.optional(),
-  varianceNote: z.string().optional().transform((value) => normalizeDeliveryReceiptOptionalValue(value ?? "")).pipe(z.string().max(500, "Variance note must be 500 characters or fewer")).transform((value) => value || null),
+  unitPrice: positiveUnitPriceSchema,
 });
 
 export const deliveryReceiptSchema = z.object({
@@ -35,12 +37,11 @@ export const deliveryReceiptSchema = z.object({
   selectedUnitId: z.string().trim().min(1, "Select a Unit").optional(),
   conversionId: z.string().trim().min(1).optional(),
   quantity: positiveQuantitySchema.optional(),
-  actualReceivedBaseUnitQuantity: positiveQuantitySchema.optional(),
-  varianceNote: z.string().optional().transform((value) => normalizeDeliveryReceiptOptionalValue(value ?? "")).pipe(z.string().max(500, "Variance note must be 500 characters or fewer")).transform((value) => value || null),
+  unitPrice: positiveUnitPriceSchema.optional(),
   lines: z.array(deliveryReceiptLineSchema).min(1, "Add at least one Delivery Receipt line").optional(),
 }).superRefine((value, context) => {
-  if (!value.lines && (!value.itemId || !value.quantity)) context.addIssue({ code: "custom", message: "Add at least one Delivery Receipt line", path: ["itemId"] });
-}).transform((value) => ({ ...value, normalizedReceiptNo: normalizeDeliveryReceiptNoKey(value.receiptNo), lines: value.lines ?? [{ itemId: value.itemId!, selectedUnitId: value.selectedUnitId, conversionId: value.conversionId, quantity: value.quantity!, actualReceivedBaseUnitQuantity: value.actualReceivedBaseUnitQuantity, varianceNote: value.varianceNote }] }));
+  if (!value.lines && (!value.itemId || !value.quantity || !value.unitPrice)) context.addIssue({ code: "custom", message: "Add at least one Delivery Receipt line", path: ["itemId"] });
+}).transform((value) => ({ ...value, normalizedReceiptNo: normalizeDeliveryReceiptNoKey(value.receiptNo), lines: value.lines ?? [{ itemId: value.itemId!, selectedUnitId: value.selectedUnitId, conversionId: value.conversionId, quantity: value.quantity!, unitPrice: value.unitPrice! }] }));
 
 export type DeliveryReceiptInput = z.infer<typeof deliveryReceiptSchema>;
 
@@ -57,7 +58,7 @@ export function deliveryReceiptFieldErrors(error: z.ZodError): DeliveryReceiptFi
       continue;
     }
     const field = issue.path[0];
-    const key = field === "receiptNo" || field === "receiptDate" || field === "note" || field === "itemId" || field === "selectedUnitId" || field === "quantity" || field === "actualReceivedBaseUnitQuantity" || field === "varianceNote" ? field : "form";
+    const key = field === "receiptNo" || field === "receiptDate" || field === "note" || field === "itemId" || field === "selectedUnitId" || field === "quantity" || field === "unitPrice" ? field : "form";
     fields[key] ??= [];
     fields[key]?.push(issue.message);
   }

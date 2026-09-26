@@ -4,7 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { DeliveryReceiptInput } from "../../schemas/delivery-receipt";
-import { exactDecimalsEqual, isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
+import { isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
 
 // Date-only receipt values use UTC midnight so every server and browser renders the same calendar day.
 function dateOnlyToUtcDate(value: string) {
@@ -31,9 +31,8 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
       if ((isBaseUnit && (!item.baseUnit.active || line.conversionId)) || (!isBaseUnit && (!conversion || !isPositiveExactDecimal(conversion.baseUnitQuantity)))) return { kind: "invalid-unit" as const, lineIndex };
       const conversionFactor = conversion?.baseUnitQuantity ?? "1";
       const calculatedBaseUnitQuantity = multiplyExactPositiveDecimals(line.quantity, conversionFactor);
-      const actualReceivedBaseUnitQuantity = line.actualReceivedBaseUnitQuantity ?? calculatedBaseUnitQuantity;
-      if (!exactDecimalsEqual(actualReceivedBaseUnitQuantity, calculatedBaseUnitQuantity) && !line.varianceNote) return { kind: "variance-note-required" as const, lineIndex };
-      postedLines.push({ id: crypto.randomUUID(), itemId: item.id, selectedUnitId: conversion?.alternateUnit.id ?? item.baseUnitId, baseUnitId: item.baseUnitId, itemName: item.name, selectedUnitName: conversion?.alternateUnit.name ?? item.baseUnit.name, baseUnitName: item.baseUnit.name, enteredQuantity: line.quantity, conversionFactor, calculatedBaseUnitQuantity, actualReceivedBaseUnitQuantity, varianceNote: line.varianceNote, inventoryLedgerMovements: { create: { id: crypto.randomUUID(), itemId: item.id, baseUnitId: item.baseUnitId, quantity: actualReceivedBaseUnitQuantity, movementType: "stock-in", occurredAt: receiptDate } } });
+      const lineAmount = multiplyExactPositiveDecimals(line.quantity, line.unitPrice);
+      postedLines.push({ id: crypto.randomUUID(), itemId: item.id, selectedUnitId: conversion?.alternateUnit.id ?? item.baseUnitId, baseUnitId: item.baseUnitId, itemName: item.name, selectedUnitName: conversion?.alternateUnit.name ?? item.baseUnit.name, baseUnitName: item.baseUnit.name, enteredQuantity: line.quantity, conversionFactor, calculatedBaseUnitQuantity, unitPrice: line.unitPrice, lineAmount, inventoryLedgerMovements: { create: { id: crypto.randomUUID(), itemId: item.id, baseUnitId: item.baseUnitId, quantity: calculatedBaseUnitQuantity, movementType: "stock-in", occurredAt: receiptDate } } });
     }
 
     try {

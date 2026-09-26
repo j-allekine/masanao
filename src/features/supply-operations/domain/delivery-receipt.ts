@@ -17,14 +17,6 @@ export function isPositiveExactDecimal(value: string) {
   return /^\d+(?:\.\d+)?$/.test(value) && /[1-9]/.test(value);
 }
 
-export function exactDecimalsEqual(left: string, right: string) {
-  const normalize = (value: string) => {
-    const [whole, fractional = ""] = value.split(".");
-    return `${whole.replace(/^0+(?=\d)/, "") || "0"}.${fractional.replace(/0+$/, "")}`;
-  };
-  return normalize(left) === normalize(right);
-}
-
 export function multiplyExactPositiveDecimals(left: string, right: string) {
   const [leftWhole, leftFraction = ""] = left.split(".");
   const [rightWhole, rightFraction = ""] = right.split(".");
@@ -37,6 +29,30 @@ export function multiplyExactPositiveDecimals(left: string, right: string) {
   const whole = digits.slice(0, -scale).replace(/^0+(?=\d)/, "") || "0";
   const fraction = digits.slice(-scale).replace(/0+$/, "");
   return fraction ? `${whole}.${fraction}` : whole;
+}
+
+export function addExactPositiveDecimals(left: string, right: string) {
+  const [leftWhole, leftFraction = ""] = left.split(".");
+  const [rightWhole, rightFraction = ""] = right.split(".");
+  const scale = Math.max(leftFraction.length, rightFraction.length);
+  const leftScaled = BigInt(`${leftWhole}${leftFraction.padEnd(scale, "0")}`);
+  const rightScaled = BigInt(`${rightWhole}${rightFraction.padEnd(scale, "0")}`);
+  const digits = (leftScaled + rightScaled).toString().padStart(scale + 1, "0");
+
+  if (scale === 0) return digits;
+
+  const whole = digits.slice(0, -scale).replace(/^0+(?=\d)/, "") || "0";
+  const fraction = digits.slice(-scale).replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole;
+}
+
+export function formatDeliveryReceiptAmount(value: string) {
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return "";
+
+  const [whole, fraction = ""] = value.split(".");
+  const groupedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  return `${groupedWhole}.${fraction.padEnd(2, "0")}`;
 }
 
 export function reindexLineErrorsAfterRemoval<T>(
