@@ -635,6 +635,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByRole("button", { name: "DR-E2E-ALT", exact: true }).click();
       const receiptDialog = page.getByRole("dialog");
       await expect(receiptDialog.getByRole("heading", { name: "Delivery receipt DR-E2E-ALT", exact: true })).toBeVisible();
+      expect(await receiptDialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(receiptDialog.getByText("E2E Rice", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("62.5 Kilogram", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("₱ 800.00", { exact: true })).toBeVisible();

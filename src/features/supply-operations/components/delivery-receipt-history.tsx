@@ -93,7 +93,7 @@ export default function DeliveryReceiptHistory({
           </div>
           <div className="flex flex-col gap-1"><p className="text-label font-medium text-muted-foreground">Receipt note</p><p className="whitespace-pre-wrap">{selectedReceipt.note ?? "Not recorded"}</p></div>
         </div>
-        <DialogFooter showCloseButton />
+        <DialogFooter className="mx-0 mb-0" showCloseButton />
       </DialogContent> : null}
     </Dialog>
   </>;
