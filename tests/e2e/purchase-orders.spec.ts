@@ -541,6 +541,14 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         "Amount",
         "Remove",
       ]);
+      await page.setViewportSize({ width: 1024, height: 800 });
+      for (const header of [
+        linesTable.getByRole("columnheader", { name: "Delivered quantity", exact: true }),
+        linesTable.getByRole("columnheader", { name: "Base Unit quantity", exact: true }),
+        linesTable.getByRole("columnheader", { name: "Unit price", exact: true }),
+      ]) {
+        expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      }
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const today = await page.evaluate(() => new Intl.DateTimeFormat("en-PH", { dateStyle: "long" }).format(new Date()));
       await expect(page.locator("#receiptDate")).toContainText(today);
