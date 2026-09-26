@@ -115,6 +115,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
   const date = dateOverride ?? (isHydrated ? localDate() : "");
   const [errors, setErrors] = useState<DeliveryReceiptFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingUnitPriceLineId, setEditingUnitPriceLineId] = useState<string | null>(null);
   const [posting, startTransition] = useTransition();
 
   function clearError(field: DeliveryReceiptField) {
@@ -314,7 +315,9 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <TableCell className="align-top whitespace-normal">
             <Field>
               <FieldLabel className="sr-only" htmlFor={`calculated-${value.id}`}>Calculated Base Unit quantity</FieldLabel>
-              <Input id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" value={calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : ""} readOnly />
+              <output id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" className="flex min-h-9 w-full items-center rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
+                {calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : ""}
+              </output>
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
@@ -322,7 +325,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
               <FieldLabel className="sr-only" htmlFor={`unit-price-${value.id}`}>Unit price</FieldLabel>
               <InputGroup>
                 <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
-                <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={value.unitPrice} onChange={(event) => { updateLine(value.id, { unitPrice: event.target.value }); clearLineError(index, "unitPrice"); }} required />
+                <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={editingUnitPriceLineId === value.id ? value.unitPrice : formatDeliveryReceiptAmount(value.unitPrice)} onFocus={() => setEditingUnitPriceLineId(value.id)} onBlur={() => setEditingUnitPriceLineId((current) => current === value.id ? null : current)} onChange={(event) => { updateLine(value.id, { unitPrice: event.target.value.replaceAll(",", "") }); clearLineError(index, "unitPrice"); }} required />
               </InputGroup>
               {lineFieldError(index, "unitPrice", errorId("unitPrice"))}
             </Field>
@@ -330,10 +333,9 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             <TableCell className="align-top text-right whitespace-normal">
               <Field>
                 <FieldLabel className="sr-only" htmlFor={`amount-${value.id}`}>Amount</FieldLabel>
-                <InputGroup>
-                  <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
-                  <InputGroupInput id={`amount-${value.id}`} aria-label="Amount" className="text-right" value={formatDeliveryReceiptAmount(lineAmount)} readOnly />
-                </InputGroup>
+                <output id={`amount-${value.id}`} aria-label="Amount" className="flex min-h-9 w-full items-center justify-end rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
+                  {lineAmount ? `₱ ${formatDeliveryReceiptAmount(lineAmount)}` : ""}
+                </output>
               </Field>
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
