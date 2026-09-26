@@ -257,13 +257,13 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
       {lines.length ? <Table aria-label="Delivery Receipt lines" className="min-w-[60rem] table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[20%]">Item</TableHead>
-            <TableHead className="w-[14%]">Unit</TableHead>
+            <TableHead className="w-[26%]">Item</TableHead>
+            <TableHead className="w-[15%]">Unit</TableHead>
             <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty</TableHead>
-            <TableHead className="w-[15%] whitespace-nowrap" aria-label="Base Unit quantity">Base Unit Qty</TableHead>
-            <TableHead className="w-[14%] whitespace-nowrap">Unit price</TableHead>
-            <TableHead className="w-[17%]">Amount</TableHead>
-            <TableHead className="w-[8%] text-right">Remove</TableHead>
+            <TableHead className="w-[14%] whitespace-nowrap" aria-label="Base Unit quantity">Base Unit Qty</TableHead>
+            <TableHead className="w-[12%] whitespace-nowrap">Unit price</TableHead>
+            <TableHead className="w-[14%]">Amount</TableHead>
+            <TableHead className="w-[7%] text-right">Remove</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

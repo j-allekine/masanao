@@ -30,7 +30,7 @@ export default function DeliveryReceiptDialog({
     router.push(`/purchase-orders/${purchaseOrderId}`);
   }
 
-  return <Dialog open={open} onOpenChange={(nextOpen) => {
+  return <Dialog disablePointerDismissal open={open} onOpenChange={(nextOpen) => {
     setOpen(nextOpen);
     if (!nextOpen) returnToOrder();
   }}>

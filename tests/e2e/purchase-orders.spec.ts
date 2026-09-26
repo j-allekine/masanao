@@ -541,6 +541,14 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         "Amount",
         "Remove",
       ]);
+      await page.setViewportSize({ width: 1024, height: 800 });
+      for (const header of [
+        linesTable.getByRole("columnheader", { name: "Delivered quantity", exact: true }),
+        linesTable.getByRole("columnheader", { name: "Base Unit quantity", exact: true }),
+        linesTable.getByRole("columnheader", { name: "Unit price", exact: true }),
+      ]) {
+        expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      }
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const today = await page.evaluate(() => new Intl.DateTimeFormat("en-PH", { dateStyle: "long" }).format(new Date()));
       await expect(page.locator("#receiptDate")).toContainText(today);
@@ -548,6 +556,9 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
       await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.mouse.click(8, 8);
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
+      await expect(page.getByLabel("Receipt number", { exact: true })).toHaveValue("DR-E2E-ALT");
       const itemPicker = page.getByRole("combobox", { name: "Item", exact: true });
       await itemPicker.fill("not-an-active-item");
       await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
