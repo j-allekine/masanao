@@ -548,6 +548,9 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
       await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.mouse.click(8, 8);
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
+      await expect(page.getByLabel("Receipt number", { exact: true })).toHaveValue("DR-E2E-ALT");
       const itemPicker = page.getByRole("combobox", { name: "Item", exact: true });
       await itemPicker.fill("not-an-active-item");
       await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
