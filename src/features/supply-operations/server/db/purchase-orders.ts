@@ -29,7 +29,30 @@ export const purchaseOrderListSelect = {
 
 const purchaseOrderDetailSelect = {
   ...purchaseOrderListSelect,
-  deliveryReceipts: { select: { id: true, receiptNo: true, receiptDate: true, postedAt: true, _count: { select: { lines: true } } }, orderBy: { postedAt: "desc" as const } },
+  deliveryReceipts: {
+    select: {
+      id: true,
+      receiptNo: true,
+      receiptDate: true,
+      postedAt: true,
+      vendorName: true,
+      purchaseOrderNo: true,
+      note: true,
+      lines: {
+        select: {
+          id: true,
+          itemName: true,
+          selectedUnitName: true,
+          baseUnitName: true,
+          enteredQuantity: true,
+          calculatedBaseUnitQuantity: true,
+          unitPrice: true,
+          lineAmount: true,
+        },
+      },
+    },
+    orderBy: { postedAt: "desc" as const },
+  },
 } as const;
 
 type PurchaseOrderListRecord = Prisma.PurchaseOrderGetPayload<{
@@ -96,7 +119,16 @@ export async function getPurchaseOrderRecord(
 
   return purchaseOrder ? {
     ...toPurchaseOrderListItem(purchaseOrder),
-    deliveryReceipts: purchaseOrder.deliveryReceipts.map((receipt) => ({ id: receipt.id, receiptNo: receipt.receiptNo, receiptDate: receipt.receiptDate.toISOString(), postedAt: receipt.postedAt.toISOString(), lineCount: receipt._count.lines })),
+    deliveryReceipts: purchaseOrder.deliveryReceipts.map((receipt) => ({
+      id: receipt.id,
+      receiptNo: receipt.receiptNo,
+      receiptDate: receipt.receiptDate.toISOString(),
+      postedAt: receipt.postedAt.toISOString(),
+      vendorName: receipt.vendorName,
+      purchaseOrderNo: receipt.purchaseOrderNo,
+      note: receipt.note,
+      lines: receipt.lines,
+    })),
   } : null;
 }
 

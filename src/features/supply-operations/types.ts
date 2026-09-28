@@ -192,5 +192,24 @@ export type DeliveryReceiptPostResult =
 export type DeliveryReceiptPostActionState =
   | { status: "success"; receipt: { id: string; receiptNo: string } }
   | { status: "error"; kind: "authentication" | "validation" | "duplicate" | "inactive" | "not-found" | "forbidden" | "server"; error: string; fields: DeliveryReceiptFieldErrors };
-export type DeliveryReceiptHistoryItem = { id: string; receiptNo: string; receiptDate: string; lineCount: number; postedAt: string };
+export type DeliveryReceiptLineDetail = {
+  id: string;
+  itemName: string;
+  selectedUnitName: string;
+  baseUnitName: string;
+  enteredQuantity: string;
+  calculatedBaseUnitQuantity: string;
+  unitPrice: string | null;
+  lineAmount: string | null;
+};
+export type DeliveryReceiptHistoryItem = {
+  id: string;
+  receiptNo: string;
+  receiptDate: string;
+  postedAt: string;
+  vendorName: string;
+  purchaseOrderNo: string;
+  note: string | null;
+  lines: DeliveryReceiptLineDetail[];
+};
 export type PurchaseOrderDetailItem = PurchaseOrderListItem & { deliveryReceipts: DeliveryReceiptHistoryItem[] };
