@@ -5,6 +5,30 @@ export type RecipeCatalogItem = {
   isActive: boolean;
 };
 
+export type RecipeDetailItem = {
+  id: string;
+  name: string;
+  preparationNote: string | null;
+  isActive: boolean;
+  ingredients: Array<{
+    id: string;
+    enteredQuantity: string;
+    item: {
+      name: string;
+      baseUnit: {
+        name: string;
+        abbreviation: string;
+      };
+    };
+    itemUnitConversion: {
+      alternateUnit: {
+        name: string;
+        abbreviation: string;
+      };
+    } | null;
+  }>;
+};
+
 export type RecipeIngredientOption = {
   id: string;
   name: string;

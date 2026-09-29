@@ -142,6 +142,18 @@ export default async function globalSetup() {
       "default-unit-kilogram",
       1,
     );
+  database
+    .prepare(
+      `INSERT INTO "recipe_ingredient"
+       ("id", "recipeId", "itemId", "enteredQuantity", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-active-rice",
+      "e2e-recipe-active",
+      "e2e-recipe-item-rice",
+      "1.5",
+    );
 
   const vendors = [
     [
