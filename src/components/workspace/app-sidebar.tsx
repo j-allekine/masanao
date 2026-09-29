@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Package,
   ClipboardList,
+  CookingPot,
 } from "lucide-react"
 
 import {
@@ -53,6 +54,7 @@ const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   "activity-designs": CalendarDays,
   "master-data": Database,
   items: Package,
+  recipes: CookingPot,
   "purchase-orders": ClipboardList,
 }
 
