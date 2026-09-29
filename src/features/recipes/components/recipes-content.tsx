@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BookOpen } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   TableBody,
@@ -9,17 +13,120 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { RecipeCatalogItem } from "../types";
+import { filterRecipes, hasRecipeListFilters } from "./recipe-filters";
+import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
+
+const PAGE_SIZE = 10;
+const SEARCH_NAVIGATION_DELAY_MS = 250;
 
 export default function RecipesContent({
   recipes,
 }: {
   recipes: RecipeCatalogItem[];
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const currentQuery = useSearchParams().toString();
+  const [searchInput, setSearchInput] = useState(
+    () => getRecipeListState(new URLSearchParams(currentQuery)).search,
+  );
+  const latestQueryRef = useRef(currentQuery);
+  const searchNavigationTimeoutRef = useRef<number | null>(null);
+  const listState = useMemo(
+    () => getRecipeListState(new URLSearchParams(currentQuery)),
+    [currentQuery],
+  );
+  const filters = useMemo(
+    () => ({ search: searchInput }),
+    [searchInput],
+  );
+  const filteredRecipes = useMemo(
+    () => filterRecipes(recipes, filters),
+    [filters, recipes],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredRecipes.length / PAGE_SIZE));
+  const currentPage = Math.min(listState.page, pageCount);
+  const firstRecipeIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedRecipes = useMemo(
+    () => filteredRecipes.slice(firstRecipeIndex, firstRecipeIndex + PAGE_SIZE),
+    [filteredRecipes, firstRecipeIndex],
+  );
+  const resultStart = paginatedRecipes.length === 0 ? 0 : firstRecipeIndex + 1;
+  const resultEnd = firstRecipeIndex + paginatedRecipes.length;
+  const filtersAreActive = hasRecipeListFilters(filters);
+
+  useEffect(() => {
+    const syncSearchInputTimeout = window.setTimeout(() => {
+      setSearchInput(getRecipeListState(new URLSearchParams(currentQuery)).search);
+      latestQueryRef.current = currentQuery;
+    }, 0);
+
+    return () => window.clearTimeout(syncSearchInputTimeout);
+  }, [currentQuery]);
+
+  useEffect(() => () => {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (listState.page <= pageCount) return;
+
+    const clampedUrl = getRecipeListUrl(pathname, currentQuery, {
+      page: pageCount,
+    });
+    latestQueryRef.current = clampedUrl.split("?", 2)[1] ?? "";
+    router.replace(clampedUrl, { scroll: false });
+  }, [currentQuery, listState.page, pageCount, pathname, router]);
+
+  function navigateList(
+    updates: { search?: string; page?: number },
+    navigation: "push" | "replace" = "push",
+  ) {
+    const nextUrl = getRecipeListUrl(pathname, latestQueryRef.current, updates);
+    latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
+    router[navigation](nextUrl, { scroll: false });
+  }
+
+  function updateSearch(search: string) {
+    setSearchInput(search);
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+    }
+    searchNavigationTimeoutRef.current = window.setTimeout(() => {
+      navigateList({ search, page: 1 }, "replace");
+      searchNavigationTimeoutRef.current = null;
+    }, SEARCH_NAVIGATION_DELAY_MS);
+  }
+
+  function clearSearch() {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    setSearchInput("");
+    navigateList({ search: "", page: 1 });
+  }
+
+  function changePage(nextPage: number) {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+    navigateList({
+      search: searchInput,
+      page: Math.min(Math.max(nextPage, 1), pageCount),
+    });
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-card">
       <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
@@ -54,32 +161,69 @@ export default function RecipesContent({
                 "Recipes will appear here once the kitchen recipe library is configured.",
             }}
           />
-        ) : (
-          <WorkspaceTableFrame caption="Active Recipes" className="min-w-[32rem]">
-            <TableHeader className="bg-muted/60">
-              <TableRow>
-                <TableHead scope="col">Recipe</TableHead>
-                <TableHead scope="col" className="text-right">Ingredients</TableHead>
-                <TableHead scope="col" className="text-center">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recipes.map((recipe) => (
-                <TableRow key={recipe.id} data-recipe-id={recipe.id}>
-                  <TableCell className="max-w-[40rem] whitespace-normal">
-                    <span className="block break-words">{recipe.name}</span>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {recipe.ingredientCount}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <WorkspaceLifecycleBadge isActive={recipe.isActive} />
-                  </TableCell>
+        ) : <>
+          <WorkspaceCatalogToolbar
+            ariaLabel="Recipe catalog search"
+            searchId="recipe-search"
+            searchLabel="Search Recipes"
+            searchPlaceholder="Search recipes by name..."
+            search={searchInput}
+            onSearchChange={updateSearch}
+          />
+          {paginatedRecipes.length === 0 ? (
+            <ListEmptyState
+              icon={<BookOpen aria-hidden="true" />}
+              hasFilters={filtersAreActive}
+              filteredState={{
+                title: "No Recipes match your search.",
+                description: "Clear the search to see the complete active Recipe catalog.",
+                action: {
+                  label: "Clear search",
+                  variant: "outline",
+                  onClick: clearSearch,
+                },
+              }}
+              emptyState={{
+                title: "No Recipes yet.",
+                description:
+                  "Recipes will appear here once the kitchen recipe library is configured.",
+              }}
+            />
+          ) : (
+            <WorkspaceTableFrame caption="Active Recipes" className="min-w-[32rem]">
+              <TableHeader className="bg-muted/60">
+                <TableRow>
+                  <TableHead scope="col">Recipe</TableHead>
+                  <TableHead scope="col" className="text-right">Ingredients</TableHead>
+                  <TableHead scope="col" className="text-center">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </WorkspaceTableFrame>
-        )}
+              </TableHeader>
+              <TableBody>
+                {paginatedRecipes.map((recipe) => (
+                  <TableRow key={recipe.id} data-recipe-id={recipe.id}>
+                    <TableCell className="max-w-[40rem] whitespace-normal">
+                      <span className="block break-words">{recipe.name}</span>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {recipe.ingredientCount}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <WorkspaceLifecycleBadge isActive={recipe.isActive} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </WorkspaceTableFrame>
+          )}
+          <CatalogPagination
+            page={currentPage}
+            pageCount={pageCount}
+            start={resultStart}
+            end={resultEnd}
+            total={filteredRecipes.length}
+            onPageChange={changePage}
+          />
+        </>}
       </main>
     </div>
   );

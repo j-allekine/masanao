@@ -110,6 +110,23 @@ export default async function globalSetup() {
        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     )
     .run("e2e-recipe-inactive", "Retired Soup", "retired soup", 0);
+  const activeRecipes = Array.from({ length: 10 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+
+    return [
+      `e2e-recipe-zesty-${number}`,
+      `Zesty Recipe ${number}`,
+      `zesty recipe ${number}`,
+    ];
+  });
+  const insertRecipe = database.prepare(
+    `INSERT INTO "recipe"
+     ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+     VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+  );
+  for (const [id, name, normalizedName] of activeRecipes) {
+    insertRecipe.run(id, name, normalizedName);
+  }
 
   const vendors = [
     [
