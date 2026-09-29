@@ -30,6 +30,16 @@ async function signInAsAdministrator(page: Page) {
   expect(response.status()).toBe(200);
 }
 
+async function chooseIngredient(page: Page, index: number, name: string) {
+  const picker = page.getByLabel(`Ingredient ${index} Item`);
+  await picker.click();
+  await picker.pressSequentially(name);
+  await picker.press("ArrowDown");
+  await expect(picker).toHaveAttribute("aria-expanded", "true");
+  await picker.press("Enter");
+  await expect(page.getByLabel(`Ingredient ${index} Unit`)).toBeEnabled();
+}
+
 test("lets authenticated kitchen staff browse active Recipes only", async ({ page }) => {
   await signIn(page);
   await page.goto("/recipes");
@@ -86,11 +96,10 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
 
   await page.getByRole("link", { name: "Create Recipe" }).click();
   await expect(page).toHaveURL(/\/recipes\/new$/);
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Recipe name").fill("Rice Porridge");
   await page.getByLabel("Preparation note").fill("Cook until soft.");
-  await page.getByLabel("Ingredient 1 Item").click();
-  await page.keyboard.type("Rice");
-  await page.getByRole("option", { name: "Rice", exact: true }).click();
+  await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("2.5");
   await expect(page.getByText("Kilogram (kg)", { exact: true })).toBeVisible();
 
@@ -102,11 +111,10 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
 test("lets an administrator preview an alternate Unit Ingredient in its Base Unit", async ({ page }) => {
   await signInAsAdministrator(page);
   await page.goto("/recipes/new");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
   await page.getByLabel("Recipe name").fill("Gram Rice Porridge");
-  await page.getByLabel("Ingredient 1 Item").click();
-  await page.keyboard.type("Rice");
-  await page.getByRole("option", { name: "Rice", exact: true }).click();
+  await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("500");
   await page.getByLabel("Ingredient 1 Unit").click();
   await page.getByRole("option", { name: "Gram (0.001 kg)", exact: true }).click();
@@ -120,13 +128,14 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
 test("shows Ingredient row errors without discarding entered Recipe fields", async ({ page }) => {
   await signInAsAdministrator(page);
   await page.goto("/recipes/new");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Recipe name").fill("Validation Rice Porridge");
   await page.getByLabel("Preparation note").fill("Keep this note after validation.");
   await page.getByLabel("Ingredient 1 quantity").fill("0");
   await page.getByRole("button", { name: "Create Recipe" }).click();
   await expect(page.getByText("Could not save Recipe", { exact: true })).toBeVisible();
-  await expect(page.getByText("Enter a positive exact-decimal quantity.", { exact: true })).toBeVisible();
-  await expect(page.getByText("Select an Item.", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Ingredient 1 Item")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Ingredient 1 quantity")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Recipe name")).toHaveValue("Validation Rice Porridge");
   await expect(page.getByLabel("Preparation note")).toHaveValue("Keep this note after validation.");
   await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("0");

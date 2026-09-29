@@ -350,7 +350,7 @@ describe("Recipes catalog and persistence foundation", () => {
       createRecipe(adminActor, {
         name: "  Chicken arroz caldo  ",
         preparationNote: " Simmer until tender. ",
-        ingredients: [{ itemId: item.id, quantity: "2.5" }],
+        ingredients: [{ itemId: item.id, itemUnitConversionId: null, quantity: "2.5" }],
       }),
     ).resolves.toMatchObject({
       ok: true,

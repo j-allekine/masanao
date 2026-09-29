@@ -30,6 +30,7 @@ const ingredientSchema = z.object({
     .string()
     .trim()
     .optional()
+    .nullable()
     .transform((value) => value || null),
   quantity: z
     .string()

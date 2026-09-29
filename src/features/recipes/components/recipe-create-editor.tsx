@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type FormEvent } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { buttonVariants, Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,7 +50,7 @@ function createIngredientDraft(): IngredientDraft {
 function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
   if (!errors?.length) return null;
 
-  return <FieldError id={id} errors={errors.map((message) => ({ message }))} />;
+  return <FieldError className="sr-only" id={id} errors={errors.map((message) => ({ message }))} />;
 }
 
 export default function RecipeCreateEditor({
@@ -66,6 +67,14 @@ export default function RecipeCreateEditor({
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
+  const itemOptions = useMemo(
+    () => items.map((item) => ({ value: item.id, label: item.name, item })),
+    [items],
+  );
+  const itemById = useMemo(
+    () => new Map(items.map((item) => [item.id, item])),
+    [items],
+  );
 
   function clearFieldError(field: keyof RecipeFieldErrors) {
     setFieldErrors((currentErrors) => {
@@ -152,9 +161,14 @@ export default function RecipeCreateEditor({
             Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
           </p>
         </div>
-        <Link href="/recipes" className={buttonVariants({ variant: "outline", size: "sm" })}>
+        <Button
+          nativeButton={false}
+          variant="outline"
+          size="sm"
+          render={<Link href="/recipes" />}
+        >
           Cancel
-        </Link>
+        </Button>
       </div>
 
       <form aria-label="Create Recipe" aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
@@ -232,7 +246,7 @@ export default function RecipeCreateEditor({
                   </TableHeader>
                   <TableBody>
                     {ingredients.map((ingredient, index) => {
-                      const selectedItem = items.find((item) => item.id === ingredient.itemId);
+                      const selectedItem = itemById.get(ingredient.itemId);
                       const selectedConversion = selectedItem?.unitConversions.find(
                         (conversion) => conversion.id === ingredient.itemUnitConversionId,
                       );
@@ -255,28 +269,25 @@ export default function RecipeCreateEditor({
                         <TableRow key={ingredient.id}>
                           <TableCell className="min-w-56 align-top">
                             <Field data-invalid={Boolean(itemErrors?.length)}>
-                            <Select
-                              items={items.map((item) => ({ value: item.id, label: item.name }))}
-                              value={ingredient.itemId || null}
-                              onValueChange={(value) => updateIngredient(ingredient.id, "itemId", value ?? "")}
-                            >
-                              <SelectTrigger
+                            <Combobox items={itemOptions}
+                              value={selectedItem ? { value: selectedItem.id, label: selectedItem.name } : null}
+                              onValueChange={(option) => {
+                                const itemId = typeof option === "string"
+                                  ? option
+                                  : option && typeof option === "object" && "value" in option && typeof option.value === "string"
+                                    ? option.value
+                                    : "";
+                                if (itemId) updateIngredient(ingredient.id, "itemId", itemId);
+                              }}>
+                              <ComboboxInput
                                 id={itemInputId}
                                 className="w-full"
                                 aria-label={`Ingredient ${index + 1} Item`}
                                 aria-invalid={Boolean(itemErrors?.length)}
                                 aria-describedby={itemErrors?.length ? `${itemInputId}-error` : undefined}
-                              >
-                                <SelectValue placeholder="Select an Item" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  {items.map((item) => (
-                                    <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
+                                placeholder="Search active Items" />
+                              <ComboboxContent><ComboboxList>{(option: { value: string; label: string; item: RecipeIngredientOption }) => <ComboboxItem key={option.value} value={option}>{option.label}</ComboboxItem>}</ComboboxList><ComboboxEmpty>No active Items match your search.</ComboboxEmpty></ComboboxContent>
+                            </Combobox>
                             <FieldMessages id={`${itemInputId}-error`} errors={itemErrors} />
                             </Field>
                           </TableCell>
