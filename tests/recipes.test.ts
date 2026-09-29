@@ -168,7 +168,9 @@ describe("Recipes catalog and persistence foundation", () => {
       ingredients: [
         {
           id: "recipes-staff-visible-ingredient",
+          itemId: "recipes-item-rice",
           enteredQuantity: "500",
+          itemUnitConversionId: "recipes-conversion-gram",
           item: {
             name: "Rice",
             baseUnit: { name: "Kilogram", abbreviation: "kg" },
