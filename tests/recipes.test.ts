@@ -341,7 +341,7 @@ describe("Recipes catalog and persistence foundation", () => {
     ).resolves.toMatchObject({
       ok: false,
       kind: "validation",
-      fields: { ingredients: [expect.any(String)] },
+      fields: { "ingredients.0.itemUnitConversionId": [expect.any(String)] },
     });
     await expect(
       createRecipe(adminActor, {
@@ -357,7 +357,7 @@ describe("Recipes catalog and persistence foundation", () => {
     ).resolves.toMatchObject({
       ok: false,
       kind: "validation",
-      fields: { ingredients: [expect.any(String)] },
+      fields: { "ingredients.0.itemUnitConversionId": [expect.any(String)] },
     });
   });
 
