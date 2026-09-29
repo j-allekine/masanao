@@ -200,6 +200,51 @@ export async function createRecipeWithActiveItems(
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
+export async function updateRecipeWithActiveItems(id: string, input: RecipeInput): Promise<RecipeCreateWriteResult> {
+  return prisma.$transaction(async (transaction) => {
+    const existing = await transaction.recipe.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) return { kind: "invalid-ingredients" as const, fields: { form: ["Recipe not found."] } };
+    const activeItems = await transaction.item.findMany({
+      where: { id: { in: input.ingredients.map((ingredient) => ingredient.itemId) }, isActive: true },
+      select: { id: true, baseUnitId: true },
+    });
+    const itemById = new Map(activeItems.map((item) => [item.id, item]));
+    const fields: RecipeFieldErrors = {};
+    input.ingredients.forEach((ingredient, index) => {
+      if (!itemById.has(ingredient.itemId)) fields[`ingredients.${index}.itemId`] = ["Select an active Item."];
+    });
+    const conversionIds = input.ingredients.flatMap((ingredient) => ingredient.itemUnitConversionId ? [ingredient.itemUnitConversionId] : []);
+    const conversions = conversionIds.length ? await transaction.itemUnitConversion.findMany({
+      where: { id: { in: conversionIds }, alternateUnit: { active: true } },
+      select: { id: true, itemId: true, alternateUnitId: true },
+    }) : [];
+    const conversionById = new Map(conversions.map((conversion) => [conversion.id, conversion]));
+    input.ingredients.forEach((ingredient, index) => {
+      if (!ingredient.itemUnitConversionId) return;
+      const item = itemById.get(ingredient.itemId);
+      const conversion = conversionById.get(ingredient.itemUnitConversionId);
+      if (!item || !conversion || conversion.itemId !== item.id || conversion.alternateUnitId === item.baseUnitId) {
+        fields[`ingredients.${index}.itemUnitConversionId`] = ["Select an available Unit conversion for this Item."];
+      }
+    });
+    if (Object.keys(fields).length) return { kind: "invalid-ingredients" as const, fields };
+    try {
+      const recipe = await transaction.recipe.update({
+        where: { id },
+        data: {
+          name: input.name, normalizedName: input.normalizedName, preparationNote: input.preparationNote,
+          ingredients: { deleteMany: {}, create: input.ingredients.map((ingredient) => ({ id: crypto.randomUUID(), itemId: ingredient.itemId, enteredQuantity: ingredient.enteredQuantity, itemUnitConversionId: ingredient.itemUnitConversionId })) },
+        },
+        select: recipeCatalogSelect,
+      });
+      return { kind: "created" as const, recipe: toRecipeCatalogItem(recipe) };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { kind: "duplicate" as const };
+      throw error;
+    }
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
 export async function setRecipeActiveRecord(id: string, isActive: boolean) {
   try {
     await prisma.recipe.update({ where: { id }, data: { isActive } });

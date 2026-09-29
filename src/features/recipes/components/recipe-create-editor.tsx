@@ -27,8 +27,8 @@ import {
   multiplyExactPositiveDecimals,
 } from "@/features/supply-operations/domain/delivery-receipt";
 
-import { createRecipeAction } from "../actions";
-import type { RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
+import { createRecipeAction, updateRecipeAction } from "../actions";
+import type { RecipeDetailItem, RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
 
 type IngredientDraft = {
   id: string;
@@ -54,15 +54,15 @@ function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
 
 export default function RecipeCreateEditor({
   items,
+  recipe,
 }: {
   items: RecipeIngredientOption[];
+  recipe?: RecipeDetailItem;
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [preparationNote, setPreparationNote] = useState("");
-  const [ingredients, setIngredients] = useState<IngredientDraft[]>([
-    createIngredientDraft(),
-  ]);
+  const [name, setName] = useState(recipe?.name ?? "");
+  const [preparationNote, setPreparationNote] = useState(recipe?.preparationNote ?? "");
+  const [ingredients, setIngredients] = useState<IngredientDraft[]>(() => recipe?.ingredients.map((ingredient) => ({ id: ingredient.id, itemId: ingredient.itemId, itemUnitConversionId: ingredient.itemUnitConversionId, quantity: ingredient.enteredQuantity })) ?? [createIngredientDraft()]);
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
@@ -128,15 +128,15 @@ export default function RecipeCreateEditor({
 
     startTransition(async () => {
       try {
-        const result = await createRecipeAction(formData);
+        const result = recipe ? await updateRecipeAction(recipe.id, formData) : await createRecipeAction(formData);
         if (result.status === "error") {
           setFormError(result.error);
           setFieldErrors(result.fields);
           return;
         }
 
-        toast.success(`Recipe “${result.recipe.name}” created`);
-        router.push("/recipes");
+        toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
+        router.push(recipe ? `/recipes/${recipe.id}` : "/recipes");
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
       }
@@ -147,7 +147,7 @@ export default function RecipeCreateEditor({
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">New Recipe</h1>
+          <h1 className="text-heading-1 font-semibold">{recipe ? "Edit Recipe" : "New Recipe"}</h1>
           <p className="text-body text-muted-foreground">
             Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
           </p>
@@ -382,7 +382,7 @@ export default function RecipeCreateEditor({
                 </Button>
                 <Button type="submit" disabled={isSubmitting || items.length === 0}>
                   {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-                  {isSubmitting ? "Saving..." : "Create Recipe"}
+                  {isSubmitting ? "Saving..." : recipe ? "Save Recipe" : "Create Recipe"}
                 </Button>
               </div>
             </CardContent>

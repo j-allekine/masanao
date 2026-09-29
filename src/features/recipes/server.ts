@@ -4,6 +4,7 @@ import type { CurrentActor } from "@/server/auth";
 import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 
 import { createRecipeCommand } from "./server/commands/create-recipe";
+import { updateRecipeCommand } from "./server/commands/update-recipe";
 import { getActiveRecipe as getActiveRecipeQuery } from "./server/queries/get-active-recipe";
 import { listActiveRecipes as listActiveRecipesQuery } from "./server/queries/list-active-recipes";
 import { deleteRecipeRecord, listActiveRecipeIngredientOptions, setRecipeActiveRecord } from "./server/db/recipes";
@@ -50,6 +51,12 @@ export async function createRecipe(
   if (authorizationFailure) return authorizationFailure;
 
   return createRecipeCommand(input);
+}
+
+export async function updateRecipe(actor: CurrentActor, id: string, input: unknown) {
+  const authorizationFailure = await authorizeRecipeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+  return updateRecipeCommand(id, input);
 }
 
 export async function setRecipeActive(actor: CurrentActor, id: string, isActive: boolean) {
