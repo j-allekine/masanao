@@ -7,7 +7,7 @@ import {
   RECIPE_NAME_MAX_LENGTH,
   RECIPE_PREPARATION_NOTE_MAX_LENGTH,
 } from "../domain/recipe";
-import type { RecipeFieldErrors } from "../types";
+import type { RecipeFieldErrors, RecipeIngredientField } from "../types";
 
 const positiveDecimal = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
 
@@ -88,11 +88,11 @@ export function recipeFieldErrors(error: z.ZodError): RecipeFieldErrors {
 
   for (const issue of error.issues) {
     const [field, index, ingredientField] = issue.path;
-    const key =
+    const key: keyof RecipeFieldErrors =
       field === "ingredients" &&
       typeof index === "number" &&
       (ingredientField === "itemId" || ingredientField === "quantity" || ingredientField === "itemUnitConversionId")
-        ? `ingredients.${index}.${ingredientField}`
+        ? (`ingredients.${index}.${ingredientField}` as RecipeIngredientField)
         : field === "name" || field === "preparationNote" || field === "ingredients"
         ? field
         : "form";
