@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { listActiveRecipes } from "@/features/recipes/server";
+import { createRecipe, listActiveRecipes } from "@/features/recipes/server";
 import { deleteItem, updateItem } from "@/features/supply-operations/server";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
@@ -240,6 +240,64 @@ describe("Recipes catalog and persistence foundation", () => {
           "Base Unit cannot change while a Recipe Ingredient references this Item.",
         ],
       },
+    });
+  });
+
+  it("creates a Base Unit Recipe with active Items and no Inventory Ledger movement", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "  Chicken arroz caldo  ",
+        preparationNote: " Simmer until tender. ",
+        ingredients: [{ itemId: item.id, quantity: "2.5" }],
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      recipe: { name: "Chicken arroz caldo", ingredientCount: 1, isActive: true },
+    });
+
+    await expect(prisma.recipe.findFirstOrThrow({
+      where: { normalizedName: "chicken arroz caldo" },
+      include: { ingredients: true },
+    })).resolves.toMatchObject({
+      preparationNote: "Simmer until tender.",
+      ingredients: [{ itemId: item.id, enteredQuantity: "2.5", itemUnitConversionId: null }],
+    });
+    await expect(prisma.inventoryLedgerMovement.count()).resolves.toBe(0);
+  });
+
+  it("rejects a Recipe Ingredient that no longer references an active Item", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+    await prisma.item.update({ where: { id: item.id }, data: { isActive: false } });
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Inactive Item Soup",
+        ingredients: [{ itemId: item.id, quantity: "1" }],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "inactive",
+      fields: { ingredients: ["Select active Items for every Ingredient."] },
     });
   });
 });
