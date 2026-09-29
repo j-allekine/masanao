@@ -22,6 +22,10 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  isPositiveExactDecimal,
+  multiplyExactPositiveDecimals,
+} from "@/features/supply-operations/domain/delivery-receipt";
 
 import { createRecipeAction } from "../actions";
 import type { RecipeFieldErrors, RecipeIngredientOption } from "../types";
@@ -29,11 +33,17 @@ import type { RecipeFieldErrors, RecipeIngredientOption } from "../types";
 type IngredientDraft = {
   id: string;
   itemId: string;
+  itemUnitConversionId: string | null;
   quantity: string;
 };
 
 function createIngredientDraft(): IngredientDraft {
-  return { id: crypto.randomUUID(), itemId: "", quantity: "" };
+  return {
+    id: crypto.randomUUID(),
+    itemId: "",
+    itemUnitConversionId: null,
+    quantity: "",
+  };
 }
 
 function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
@@ -69,12 +79,18 @@ export default function RecipeCreateEditor({
 
   function updateIngredient(
     id: string,
-    field: "itemId" | "quantity",
-    value: string,
+    field: "itemId" | "itemUnitConversionId" | "quantity",
+    value: string | null,
   ) {
     setIngredients((currentIngredients) =>
       currentIngredients.map((ingredient) =>
-        ingredient.id === id ? { ...ingredient, [field]: value } : ingredient,
+        ingredient.id === id
+          ? {
+              ...ingredient,
+              [field]: value,
+              ...(field === "itemId" ? { itemUnitConversionId: null } : {}),
+            }
+          : ingredient,
       ),
     );
     clearFieldError("ingredients");
@@ -100,7 +116,11 @@ export default function RecipeCreateEditor({
     formData.set(
       "ingredients",
       JSON.stringify(
-        ingredients.map(({ itemId, quantity }) => ({ itemId, quantity })),
+        ingredients.map(({ itemId, itemUnitConversionId, quantity }) => ({
+          itemId,
+          itemUnitConversionId,
+          quantity,
+        })),
       ),
     );
 
@@ -127,7 +147,7 @@ export default function RecipeCreateEditor({
         <div className="min-w-0">
           <h1 className="text-heading-1 font-semibold">New Recipe</h1>
           <p className="text-body text-muted-foreground">
-            Add a reusable food template using each Item&apos;s Base Unit.
+            Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
           </p>
         </div>
         <Link href="/recipes" className={buttonVariants({ variant: "outline", size: "sm" })}>
@@ -193,7 +213,7 @@ export default function RecipeCreateEditor({
             <CardHeader>
               <CardTitle>Ingredients</CardTitle>
               <CardDescription>
-                Select active Items and enter their usual quantity in the displayed Base Unit.
+                Select active Items and enter each usual quantity in its Base Unit or a configured alternate Unit.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -203,15 +223,29 @@ export default function RecipeCreateEditor({
                     <TableRow>
                       <TableHead scope="col">Item</TableHead>
                       <TableHead scope="col" className="w-36">Quantity</TableHead>
-                      <TableHead scope="col" className="w-32">Base Unit</TableHead>
+                      <TableHead scope="col" className="w-52">Unit</TableHead>
+                      <TableHead scope="col" className="w-44">Base Unit reference</TableHead>
                       <TableHead scope="col"><span className="sr-only">Remove</span></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {ingredients.map((ingredient, index) => {
                       const selectedItem = items.find((item) => item.id === ingredient.itemId);
+                      const selectedConversion = selectedItem?.unitConversions.find(
+                        (conversion) => conversion.id === ingredient.itemUnitConversionId,
+                      );
+                      const calculatedBaseUnitQuantity =
+                        selectedItem &&
+                        selectedConversion &&
+                        isPositiveExactDecimal(ingredient.quantity)
+                          ? multiplyExactPositiveDecimals(
+                              ingredient.quantity,
+                              selectedConversion.baseUnitQuantity,
+                            )
+                          : null;
                       const itemInputId = `recipe-ingredient-${index}-item`;
                       const quantityInputId = `recipe-ingredient-${index}-quantity`;
+                      const unitInputId = `recipe-ingredient-${index}-unit`;
                       return (
                         <TableRow key={ingredient.id}>
                           <TableCell className="min-w-56 align-top">
@@ -251,7 +285,60 @@ export default function RecipeCreateEditor({
                             />
                           </TableCell>
                           <TableCell className="align-top text-muted-foreground">
-                            {selectedItem ? `${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})` : "—"}
+                            <Select
+                              items={selectedItem ? [
+                                {
+                                  value: "base-unit",
+                                  label: `Base Unit — ${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})`,
+                                },
+                                ...selectedItem.unitConversions.map((conversion) => ({
+                                  value: conversion.id,
+                                  label: conversion.label,
+                                })),
+                              ] : []}
+                              value={ingredient.itemUnitConversionId ?? "base-unit"}
+                              disabled={!selectedItem}
+                              onValueChange={(value) =>
+                                updateIngredient(
+                                  ingredient.id,
+                                  "itemUnitConversionId",
+                                  value === "base-unit" || !value ? null : value,
+                                )
+                              }
+                            >
+                              <SelectTrigger
+                                id={unitInputId}
+                                className="w-full"
+                                aria-label={`Ingredient ${index + 1} Unit`}
+                                aria-invalid={Boolean(fieldErrors.ingredients?.length)}
+                                aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
+                              >
+                                <SelectValue placeholder="Select an Item first" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {selectedItem ? (
+                                    <>
+                                      <SelectItem value="base-unit">
+                                        Base Unit — {selectedItem.baseUnit.name} ({selectedItem.baseUnit.abbreviation})
+                                      </SelectItem>
+                                      {selectedItem.unitConversions.map((conversion) => (
+                                        <SelectItem key={conversion.id} value={conversion.id}>
+                                          {conversion.label}
+                                        </SelectItem>
+                                      ))}
+                                    </>
+                                  ) : null}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="align-top text-muted-foreground">
+                            {selectedItem
+                              ? calculatedBaseUnitQuantity
+                                ? `${calculatedBaseUnitQuantity} ${selectedItem.baseUnit.abbreviation}`
+                                : `${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})`
+                              : "—"}
                           </TableCell>
                           <TableCell className="align-top text-right">
                             <Button

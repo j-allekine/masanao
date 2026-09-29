@@ -276,6 +276,91 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(prisma.inventoryLedgerMovement.count()).resolves.toBe(0);
   });
 
+  it("stores an Item's exact active Unit Conversion and rejects unrelated or Base Unit conversions", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { category, kilogram, item, conversion } = await createRecipeReferences();
+    const onion = await prisma.item.create({
+      data: {
+        id: "recipes-conversion-onion-item",
+        name: "Onion",
+        normalizedName: "onion",
+        categoryId: category.id,
+        baseUnitId: kilogram.id,
+      },
+    });
+    const invalidBaseUnitConversion = await prisma.itemUnitConversion.create({
+      data: {
+        id: "recipes-invalid-base-unit-conversion",
+        itemId: item.id,
+        alternateUnitId: kilogram.id,
+        baseUnitQuantity: "1",
+      },
+    });
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Converted Rice Porridge",
+        ingredients: [
+          {
+            itemId: item.id,
+            itemUnitConversionId: conversion.id,
+            quantity: "500",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(
+      prisma.recipeIngredient.findFirstOrThrow({
+        where: { recipe: { normalizedName: "converted rice porridge" } },
+      }),
+    ).resolves.toMatchObject({
+      itemId: item.id,
+      itemUnitConversionId: conversion.id,
+      enteredQuantity: "500",
+    });
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Invalid Onion Soup",
+        ingredients: [
+          {
+            itemId: onion.id,
+            itemUnitConversionId: conversion.id,
+            quantity: "1",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: { ingredients: [expect.any(String)] },
+    });
+    await expect(
+      createRecipe(adminActor, {
+        name: "Invalid Base Unit Soup",
+        ingredients: [
+          {
+            itemId: item.id,
+            itemUnitConversionId: invalidBaseUnitConversion.id,
+            quantity: "1",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: { ingredients: [expect.any(String)] },
+    });
+  });
+
   it("rejects a Recipe Ingredient that no longer references an active Item", async () => {
     await prisma.user.create({
       data: {

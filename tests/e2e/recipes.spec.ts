@@ -92,6 +92,24 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
   await expect(page.getByText("Rice Porridge", { exact: true })).toBeVisible();
 });
 
+test("lets an administrator preview an alternate Unit Ingredient in its Base Unit", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes/new");
+
+  await page.getByLabel("Recipe name").fill("Gram Rice Porridge");
+  await page.getByLabel("Ingredient 1 Item").click();
+  await page.keyboard.type("Rice");
+  await page.getByRole("option", { name: "Rice", exact: true }).click();
+  await page.getByLabel("Ingredient 1 quantity").fill("500");
+  await page.getByLabel("Ingredient 1 Unit").click();
+  await page.getByRole("option", { name: "Gram (0.001 kg)", exact: true }).click();
+  await expect(page.getByText("0.5 kg", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Create Recipe" }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(page.getByText("Gram Rice Porridge", { exact: true })).toBeVisible();
+});
+
 test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await signIn(page);

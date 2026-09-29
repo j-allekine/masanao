@@ -5,6 +5,7 @@ import { prisma } from "@/prisma/client";
 
 import type { RecipeInput } from "../../schemas/recipe";
 import type { RecipeCatalogItem, RecipeIngredientOption } from "../../types";
+import { sortItemUnitConversions } from "@/features/supply-operations/domain/item-unit-conversion";
 
 const recipeCatalogSelect = {
   id: true,
@@ -46,17 +47,35 @@ export async function listActiveRecipeIngredientOptions(): Promise<
       id: true,
       name: true,
       baseUnit: { select: { id: true, name: true, abbreviation: true } },
+      unitConversions: {
+        where: { alternateUnit: { active: true } },
+        select: {
+          id: true,
+          baseUnitQuantity: true,
+          alternateUnit: { select: { id: true, name: true, abbreviation: true, active: true } },
+        },
+        orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { id: "asc" }],
+      },
     },
     orderBy: [{ normalizedName: "asc" }, { id: "asc" }],
   });
 
-  return items;
+  return items.map((item) => ({
+    ...item,
+    unitConversions: sortItemUnitConversions(
+      item.unitConversions.map((conversion) => ({
+        ...conversion,
+        label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
+      })),
+    ),
+  }));
 }
 
 export type RecipeCreateWriteResult =
   | { kind: "created"; recipe: RecipeCatalogItem }
   | { kind: "duplicate" }
-  | { kind: "inactive-item" };
+  | { kind: "inactive-item" }
+  | { kind: "invalid-conversion" };
 
 export async function createRecipeWithActiveItems(
   input: RecipeInput,
@@ -67,11 +86,41 @@ export async function createRecipeWithActiveItems(
         id: { in: input.ingredients.map((ingredient) => ingredient.itemId) },
         isActive: true,
       },
-      select: { id: true },
+      select: { id: true, baseUnitId: true },
     });
 
     if (activeItems.length !== input.ingredients.length) {
       return { kind: "inactive-item" as const };
+    }
+
+    const itemById = new Map(activeItems.map((item) => [item.id, item]));
+    const conversionIds = input.ingredients.flatMap((ingredient) =>
+      ingredient.itemUnitConversionId ? [ingredient.itemUnitConversionId] : [],
+    );
+    const conversions = conversionIds.length
+      ? await transaction.itemUnitConversion.findMany({
+          where: {
+            id: { in: conversionIds },
+            alternateUnit: { active: true },
+          },
+          select: { id: true, itemId: true, alternateUnitId: true, baseUnitQuantity: true },
+        })
+      : [];
+    const conversionById = new Map(conversions.map((conversion) => [conversion.id, conversion]));
+
+    for (const ingredient of input.ingredients) {
+      if (!ingredient.itemUnitConversionId) continue;
+
+      const item = itemById.get(ingredient.itemId);
+      const conversion = conversionById.get(ingredient.itemUnitConversionId);
+      if (
+        !item ||
+        !conversion ||
+        conversion.itemId !== item.id ||
+        conversion.alternateUnitId === item.baseUnitId
+      ) {
+        return { kind: "invalid-conversion" as const };
+      }
     }
 
     try {
@@ -86,6 +135,7 @@ export async function createRecipeWithActiveItems(
               id: crypto.randomUUID(),
               itemId: ingredient.itemId,
               enteredQuantity: ingredient.enteredQuantity,
+              itemUnitConversionId: ingredient.itemUnitConversionId,
             })),
           },
         },
