@@ -26,6 +26,11 @@ const nameSchema = z
 
 const ingredientSchema = z.object({
   itemId: z.string().trim().min(1, "Select an Item."),
+  itemUnitConversionId: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || null),
   quantity: z
     .string()
     .trim()
@@ -51,12 +56,36 @@ export const recipeSchema = z
       .transform((value) => (value === "" ? null : value)),
     ingredients: z.array(ingredientSchema).min(1, "Add at least one Ingredient."),
   })
+  .superRefine((value, context) => {
+    const firstIngredientByItemId = new Map<string, number>();
+
+    value.ingredients.forEach((ingredient, index) => {
+      const firstIndex = firstIngredientByItemId.get(ingredient.itemId);
+      if (firstIndex === undefined) {
+        firstIngredientByItemId.set(ingredient.itemId, index);
+        return;
+      }
+
+      const message = "An Item can appear only once in a Recipe.";
+      context.addIssue({
+        code: "custom",
+        path: ["ingredients", firstIndex, "itemId"],
+        message,
+      });
+      context.addIssue({
+        code: "custom",
+        path: ["ingredients", index, "itemId"],
+        message,
+      });
+    });
+  })
   .transform((value) => ({
     ...value,
     normalizedName: normalizeRecipeKey(value.name),
     ingredients: value.ingredients.map((ingredient) => ({
       itemId: ingredient.itemId,
       enteredQuantity: ingredient.quantity,
+      itemUnitConversionId: ingredient.itemUnitConversionId,
     })),
   }));
 
@@ -66,11 +95,17 @@ export function recipeFieldErrors(error: z.ZodError): RecipeFieldErrors {
   const fields: RecipeFieldErrors = {};
 
   for (const issue of error.issues) {
-    const field = issue.path[0];
+    const [field, index, ingredientField] = issue.path;
     const key =
-      field === "name" || field === "preparationNote" || field === "ingredients"
-        ? field
-        : "form";
+      field === "ingredients" &&
+      typeof index === "number" &&
+      (ingredientField === "itemId" ||
+        ingredientField === "quantity" ||
+        ingredientField === "itemUnitConversionId")
+        ? `ingredients.${index}.${ingredientField}`
+        : field === "name" || field === "preparationNote" || field === "ingredients"
+          ? field
+          : "form";
     fields[key] ??= [];
     fields[key]?.push(issue.message);
   }

@@ -4,7 +4,11 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { RecipeInput } from "../../schemas/recipe";
-import type { RecipeCatalogItem, RecipeIngredientOption } from "../../types";
+import type {
+  RecipeCatalogItem,
+  RecipeFieldErrors,
+  RecipeIngredientOption,
+} from "../../types";
 
 const recipeCatalogSelect = {
   id: true,
@@ -56,7 +60,7 @@ export async function listActiveRecipeIngredientOptions(): Promise<
 export type RecipeCreateWriteResult =
   | { kind: "created"; recipe: RecipeCatalogItem }
   | { kind: "duplicate" }
-  | { kind: "inactive-item" };
+  | { kind: "invalid-ingredients"; fields: RecipeFieldErrors };
 
 export async function createRecipeWithActiveItems(
   input: RecipeInput,
@@ -70,8 +74,41 @@ export async function createRecipeWithActiveItems(
       select: { id: true },
     });
 
-    if (activeItems.length !== input.ingredients.length) {
-      return { kind: "inactive-item" as const };
+    const activeItemIds = new Set(activeItems.map((item) => item.id));
+    const fields: RecipeFieldErrors = {};
+
+    input.ingredients.forEach((ingredient, index) => {
+      if (!activeItemIds.has(ingredient.itemId)) {
+        fields[`ingredients.${index}.itemId`] = ["Select an active Item."];
+      }
+    });
+
+    const conversionIds = input.ingredients.flatMap((ingredient) =>
+      ingredient.itemUnitConversionId ? [ingredient.itemUnitConversionId] : [],
+    );
+    if (conversionIds.length) {
+      const conversions = await transaction.itemUnitConversion.findMany({
+        where: { id: { in: conversionIds } },
+        select: { id: true, itemId: true },
+      });
+      const conversionItemIds = new Map(
+        conversions.map((conversion) => [conversion.id, conversion.itemId]),
+      );
+
+      input.ingredients.forEach((ingredient, index) => {
+        if (
+          ingredient.itemUnitConversionId &&
+          conversionItemIds.get(ingredient.itemUnitConversionId) !== ingredient.itemId
+        ) {
+          fields[`ingredients.${index}.itemUnitConversionId`] = [
+            "Select an available Unit conversion for this Item.",
+          ];
+        }
+      });
+    }
+
+    if (Object.keys(fields).length) {
+      return { kind: "invalid-ingredients" as const, fields };
     }
 
     try {
@@ -86,6 +123,7 @@ export async function createRecipeWithActiveItems(
               id: crypto.randomUUID(),
               itemId: ingredient.itemId,
               enteredQuantity: ingredient.enteredQuantity,
+              itemUnitConversionId: ingredient.itemUnitConversionId,
             })),
           },
         },

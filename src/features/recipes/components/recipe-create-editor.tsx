@@ -24,7 +24,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 import { createRecipeAction } from "../actions";
-import type { RecipeFieldErrors, RecipeIngredientOption } from "../types";
+import type {
+  RecipeFieldErrors,
+  RecipeIngredientField,
+  RecipeIngredientOption,
+} from "../types";
 
 type IngredientDraft = {
   id: string;
@@ -67,6 +71,13 @@ export default function RecipeCreateEditor({
     setFormError(null);
   }
 
+  function ingredientFieldErrors(
+    index: number,
+    field: "itemId" | "quantity",
+  ) {
+    return fieldErrors[`ingredients.${index}.${field}` as RecipeIngredientField];
+  }
+
   function updateIngredient(
     id: string,
     field: "itemId" | "quantity",
@@ -77,6 +88,7 @@ export default function RecipeCreateEditor({
         ingredient.id === id ? { ...ingredient, [field]: value } : ingredient,
       ),
     );
+    clearFieldError(`ingredients.${ingredients.findIndex((ingredient) => ingredient.id === id)}.${field}` as RecipeIngredientField);
     clearFieldError("ingredients");
   }
 
@@ -212,43 +224,51 @@ export default function RecipeCreateEditor({
                       const selectedItem = items.find((item) => item.id === ingredient.itemId);
                       const itemInputId = `recipe-ingredient-${index}-item`;
                       const quantityInputId = `recipe-ingredient-${index}-quantity`;
+                      const itemErrors = ingredientFieldErrors(index, "itemId");
+                      const quantityErrors = ingredientFieldErrors(index, "quantity");
                       return (
                         <TableRow key={ingredient.id}>
                           <TableCell className="min-w-56 align-top">
-                            <Select
-                              items={items.map((item) => ({ value: item.id, label: item.name }))}
-                              value={ingredient.itemId || null}
-                              onValueChange={(value) => updateIngredient(ingredient.id, "itemId", value ?? "")}
-                            >
-                              <SelectTrigger
-                                id={itemInputId}
-                                className="w-full"
-                                aria-label={`Ingredient ${index + 1} Item`}
-                                aria-invalid={Boolean(fieldErrors.ingredients?.length)}
-                                aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
+                            <Field data-invalid={Boolean(itemErrors?.length)}>
+                              <Select
+                                items={items.map((item) => ({ value: item.id, label: item.name }))}
+                                value={ingredient.itemId || null}
+                                onValueChange={(value) => updateIngredient(ingredient.id, "itemId", value ?? "")}
                               >
-                                <SelectValue placeholder="Select an Item" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  {items.map((item) => (
-                                    <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
+                                <SelectTrigger
+                                  id={itemInputId}
+                                  className="w-full"
+                                  aria-label={`Ingredient ${index + 1} Item`}
+                                  aria-invalid={Boolean(itemErrors?.length)}
+                                  aria-describedby={itemErrors?.length ? `${itemInputId}-error` : undefined}
+                                >
+                                  <SelectValue placeholder="Select an Item" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {items.map((item) => (
+                                      <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                              <FieldMessages id={`${itemInputId}-error`} errors={itemErrors} />
+                            </Field>
                           </TableCell>
                           <TableCell className="align-top">
-                            <Input
-                              id={quantityInputId}
-                              className="min-w-28"
-                              inputMode="decimal"
-                              aria-label={`Ingredient ${index + 1} quantity`}
-                              aria-invalid={Boolean(fieldErrors.ingredients?.length)}
-                              aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
-                              value={ingredient.quantity}
-                              onChange={(event) => updateIngredient(ingredient.id, "quantity", event.target.value)}
-                            />
+                            <Field data-invalid={Boolean(quantityErrors?.length)}>
+                              <Input
+                                id={quantityInputId}
+                                className="min-w-28"
+                                inputMode="decimal"
+                                aria-label={`Ingredient ${index + 1} quantity`}
+                                aria-invalid={Boolean(quantityErrors?.length)}
+                                aria-describedby={quantityErrors?.length ? `${quantityInputId}-error` : undefined}
+                                value={ingredient.quantity}
+                                onChange={(event) => updateIngredient(ingredient.id, "quantity", event.target.value)}
+                              />
+                              <FieldMessages id={`${quantityInputId}-error`} errors={quantityErrors} />
+                            </Field>
                           </TableCell>
                           <TableCell className="align-top text-muted-foreground">
                             {selectedItem ? `${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})` : "—"}
