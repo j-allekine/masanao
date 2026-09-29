@@ -1,7 +1,7 @@
 import "server-only";
 
-import { listActiveRecipeRecords } from "../db/recipes";
+import { listRecipeRecords } from "../db/recipes";
 
-export async function listActiveRecipes() {
-  return listActiveRecipeRecords();
+export async function listActiveRecipes(includeInactive = false) {
+  return listRecipeRecords(includeInactive);
 }

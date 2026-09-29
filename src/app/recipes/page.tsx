@@ -24,14 +24,13 @@ export default async function RecipesRoute() {
     redirect("/");
   }
 
-  const [recipes, canManageRecipes] = await Promise.all([
-    listActiveRecipes(),
-    canManageRecipeTemplates({
+  const actor = {
       id: session.user.id,
       name: session.user.name,
       username: session.user.username ?? null,
-    }),
-  ]);
+    };
+  const canManageRecipes = await canManageRecipeTemplates(actor);
+  const recipes = await listActiveRecipes(canManageRecipes);
 
   return (
     <WorkspaceShell

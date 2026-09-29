@@ -123,12 +123,14 @@ describe("Recipes catalog and persistence foundation", () => {
         name: "Alpha Soup",
         ingredientCount: 0,
         isActive: true,
+        needsAttention: false,
       },
       {
         id: "recipes-zulu",
         name: "Zulu Soup",
         ingredientCount: 1,
         isActive: true,
+        needsAttention: false,
       },
     ]);
   });

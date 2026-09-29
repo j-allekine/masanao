@@ -3,6 +3,7 @@ export type RecipeCatalogItem = {
   name: string;
   ingredientCount: number;
   isActive: boolean;
+  needsAttention?: boolean;
 };
 
 export type RecipeDetailItem = {

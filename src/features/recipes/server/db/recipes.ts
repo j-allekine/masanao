@@ -19,10 +19,10 @@ const recipeCatalogSelect = {
   _count: { select: { ingredients: true } },
 } as const;
 
-export async function listActiveRecipeRecords(): Promise<RecipeCatalogItem[]> {
+export async function listRecipeRecords(includeInactive = false): Promise<RecipeCatalogItem[]> {
   const recipes = await prisma.recipe.findMany({
-    where: { isActive: true },
-    select: recipeCatalogSelect,
+    where: includeInactive ? {} : { isActive: true },
+    select: { ...recipeCatalogSelect, ingredients: { select: { item: { select: { isActive: true } }, itemUnitConversion: { select: { alternateUnit: { select: { active: true } } } } } } },
     orderBy: [{ normalizedName: "asc" }, { id: "asc" }],
   });
 
@@ -68,12 +68,14 @@ function toRecipeCatalogItem(recipe: {
   name: string;
   isActive: boolean;
   _count: { ingredients: number };
+  ingredients?: Array<{ item: { isActive: boolean }; itemUnitConversion: { alternateUnit: { active: boolean } } | null }>;
 }): RecipeCatalogItem {
   return {
     id: recipe.id,
     name: recipe.name,
     ingredientCount: recipe._count.ingredients,
     isActive: recipe.isActive,
+    needsAttention: recipe.ingredients?.some((ingredient) => !ingredient.item.isActive || Boolean(ingredient.itemUnitConversion && !ingredient.itemUnitConversion.alternateUnit.active)) ?? false,
   };
 }
 

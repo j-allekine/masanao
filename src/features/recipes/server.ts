@@ -16,8 +16,8 @@ export type {
   RecipeIngredientOption,
 } from "./types";
 
-export async function listActiveRecipes() {
-  return listActiveRecipesQuery();
+export async function listActiveRecipes(includeInactive = false) {
+  return listActiveRecipesQuery(includeInactive);
 }
 
 export async function getActiveRecipe(id: string) {

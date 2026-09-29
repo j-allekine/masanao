@@ -19,6 +19,7 @@ import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import { Badge } from "@/components/ui/badge";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { RecipeCatalogItem } from "../types";
@@ -224,7 +225,7 @@ export default function RecipesContent({
                       {recipe.ingredientCount}
                     </TableCell>
                     <TableCell className="text-center">
-                      <WorkspaceLifecycleBadge isActive={recipe.isActive} />
+                      <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>
                     </TableCell>
                   </TableRow>
                 ))}
