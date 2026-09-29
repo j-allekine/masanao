@@ -142,6 +142,18 @@ export default async function globalSetup() {
       "default-unit-kilogram",
       1,
     );
+  database
+    .prepare(
+      `INSERT INTO "item_unit_conversion"
+       ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-conversion-rice-gram",
+      "e2e-recipe-item-rice",
+      "default-unit-gram",
+      "0.001",
+    );
 
   const vendors = [
     [

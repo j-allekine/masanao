@@ -26,6 +26,13 @@ const nameSchema = z
 
 const ingredientSchema = z.object({
   itemId: z.string().trim().min(1, "Select an Item."),
+  itemUnitConversionId: z
+    .string()
+    .trim()
+    .min(1)
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   quantity: z
     .string()
     .trim()
@@ -56,6 +63,7 @@ export const recipeSchema = z
     normalizedName: normalizeRecipeKey(value.name),
     ingredients: value.ingredients.map((ingredient) => ({
       itemId: ingredient.itemId,
+      itemUnitConversionId: ingredient.itemUnitConversionId,
       enteredQuantity: ingredient.quantity,
     })),
   }));

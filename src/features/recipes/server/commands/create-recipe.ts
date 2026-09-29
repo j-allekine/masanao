@@ -28,6 +28,16 @@ export async function createRecipeCommand(
       fields: { ingredients: ["Select active Items for every Ingredient."] },
     };
   }
+  if (result.kind === "invalid-conversion") {
+    return {
+      ok: false,
+      kind: "validation",
+      error: "Please choose an active Unit configured for each Ingredient Item.",
+      fields: {
+        ingredients: ["Choose the Base Unit or an active configured alternate Unit for this Item."],
+      },
+    };
+  }
   if (result.kind === "duplicate") {
     const message = "A Recipe with that name already exists.";
     return { ok: false, kind: "duplicate", error: message, fields: { name: [message] } };

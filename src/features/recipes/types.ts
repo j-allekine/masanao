@@ -13,6 +13,18 @@ export type RecipeIngredientOption = {
     name: string;
     abbreviation: string;
   };
+  unitConversions: RecipeIngredientUnitConversionOption[];
+};
+
+export type RecipeIngredientUnitConversionOption = {
+  id: string;
+  alternateUnit: {
+    id: string;
+    name: string;
+    abbreviation: string;
+  };
+  baseUnitQuantity: string;
+  label: string;
 };
 
 export type RecipeField = "name" | "preparationNote" | "ingredients";
