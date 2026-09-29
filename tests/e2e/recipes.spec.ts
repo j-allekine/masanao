@@ -46,6 +46,13 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
     page.locator('[data-recipe-id="e2e-recipe-active"]'),
   ).toContainText("Active");
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ingredients", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
 });
 
 test("searches, paginates, and clamps the active Recipes catalog", async ({ page }) => {

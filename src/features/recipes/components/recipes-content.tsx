@@ -213,7 +213,12 @@ export default function RecipesContent({
                 {paginatedRecipes.map((recipe) => (
                   <TableRow key={recipe.id} data-recipe-id={recipe.id}>
                     <TableCell className="max-w-[40rem] whitespace-normal">
-                      <span className="block break-words">{recipe.name}</span>
+                      <Link
+                        href={`/recipes/${recipe.id}`}
+                        className="block break-words font-medium underline-offset-4 hover:underline focus-visible:underline"
+                      >
+                        {recipe.name}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {recipe.ingredientCount}

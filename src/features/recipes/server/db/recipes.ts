@@ -4,7 +4,12 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { RecipeInput } from "../../schemas/recipe";
-import type { RecipeCatalogItem, RecipeFieldErrors, RecipeIngredientOption } from "../../types";
+import type {
+  RecipeCatalogItem,
+  RecipeDetailItem,
+  RecipeFieldErrors,
+  RecipeIngredientOption,
+} from "../../types";
 import { sortItemUnitConversions } from "@/features/supply-operations/domain/item-unit-conversion";
 
 const recipeCatalogSelect = {
@@ -22,6 +27,38 @@ export async function listActiveRecipeRecords(): Promise<RecipeCatalogItem[]> {
   });
 
   return recipes.map(toRecipeCatalogItem);
+}
+
+export async function getActiveRecipeRecord(
+  id: string,
+): Promise<RecipeDetailItem | null> {
+  return prisma.recipe.findFirst({
+    where: { id, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      preparationNote: true,
+      isActive: true,
+      ingredients: {
+        select: {
+          id: true,
+          enteredQuantity: true,
+          item: {
+            select: {
+              name: true,
+              baseUnit: { select: { name: true, abbreviation: true } },
+            },
+          },
+          itemUnitConversion: {
+            select: {
+              alternateUnit: { select: { name: true, abbreviation: true } },
+            },
+          },
+        },
+        orderBy: [{ item: { normalizedName: "asc" } }, { id: "asc" }],
+      },
+    },
+  });
 }
 
 function toRecipeCatalogItem(recipe: {

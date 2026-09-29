@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { createRecipe, listActiveRecipes } from "@/features/recipes/server";
+import {
+  canManageRecipes,
+  createRecipe,
+  getActiveRecipe,
+  listActiveRecipes,
+} from "@/features/recipes/server";
 import { deleteItem, updateItem } from "@/features/supply-operations/server";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
@@ -9,6 +14,12 @@ const adminActor: CurrentActor = {
   id: "recipes-admin",
   name: "Municipal administrator",
   username: "recipes.admin",
+};
+
+const staffActor: CurrentActor = {
+  id: "recipes-staff",
+  name: "Kitchen staff",
+  username: "recipes.staff",
 };
 
 async function createRecipeReferences() {
@@ -120,6 +131,82 @@ describe("Recipes catalog and persistence foundation", () => {
         isActive: true,
       },
     ]);
+  });
+
+  it("lets staff read an active Recipe and its Ingredient details, but not inactive Recipes", async () => {
+    const { item, conversion } = await createRecipeReferences();
+    await prisma.recipe.create({
+      data: {
+        id: "recipes-staff-visible",
+        name: "Staff Visible Soup",
+        normalizedName: "staff visible soup",
+        preparationNote: "Use the usual kitchen pot.",
+        ingredients: {
+          create: {
+            id: "recipes-staff-visible-ingredient",
+            itemId: item.id,
+            enteredQuantity: "500",
+            itemUnitConversionId: conversion.id,
+          },
+        },
+      },
+    });
+    await prisma.recipe.create({
+      data: {
+        id: "recipes-staff-hidden",
+        name: "Staff Hidden Soup",
+        normalizedName: "staff hidden soup",
+        isActive: false,
+      },
+    });
+
+    await expect(getActiveRecipe("recipes-staff-visible")).resolves.toEqual({
+      id: "recipes-staff-visible",
+      name: "Staff Visible Soup",
+      preparationNote: "Use the usual kitchen pot.",
+      isActive: true,
+      ingredients: [
+        {
+          id: "recipes-staff-visible-ingredient",
+          enteredQuantity: "500",
+          item: {
+            name: "Rice",
+            baseUnit: { name: "Kilogram", abbreviation: "kg" },
+          },
+          itemUnitConversion: {
+            alternateUnit: { name: "Gram", abbreviation: "g" },
+          },
+        },
+      ],
+    });
+    await expect(getActiveRecipe("recipes-staff-hidden")).resolves.toBeNull();
+  });
+
+  it("rejects a staff member's direct Recipe create request without changing persistence", async () => {
+    await prisma.user.create({
+      data: {
+        id: staffActor.id,
+        name: staffActor.name,
+        email: "recipes.staff@internal.masanao",
+        username: staffActor.username,
+        role: "staff",
+      },
+    });
+    const { item } = await createRecipeReferences();
+
+    await expect(canManageRecipes(staffActor)).resolves.toBe(false);
+    await expect(
+      createRecipe(staffActor, {
+        name: "Unauthorized Soup",
+        ingredients: [{ itemId: item.id, quantity: "1" }],
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "forbidden",
+      error: "Administrator access required",
+      fields: {},
+    });
+    await expect(prisma.recipe.count()).resolves.toBe(0);
   });
 
   it("stores either an Item Base Unit selection or its exact Item Unit Conversion", async () => {
