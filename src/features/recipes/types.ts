@@ -28,7 +28,13 @@ export type RecipeIngredientUnitConversionOption = {
 };
 
 export type RecipeField = "name" | "preparationNote" | "ingredients";
-export type RecipeFieldErrors = Partial<Record<RecipeField | "form", string[]>>;
+export type RecipeIngredientField =
+  | `ingredients.${number}.itemId`
+  | `ingredients.${number}.quantity`
+  | `ingredients.${number}.itemUnitConversionId`;
+export type RecipeFieldErrors = Partial<
+  Record<RecipeField | RecipeIngredientField | "form", string[]>
+>;
 
 export type RecipeCreateResult =
   | { ok: true; recipe: RecipeCatalogItem }

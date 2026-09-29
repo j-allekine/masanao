@@ -381,8 +381,108 @@ describe("Recipes catalog and persistence foundation", () => {
       }),
     ).resolves.toMatchObject({
       ok: false,
-      kind: "inactive",
-      fields: { ingredients: ["Select active Items for every Ingredient."] },
+      kind: "validation",
+      fields: { "ingredients.0.itemId": ["Select an active Item."] },
     });
+  });
+
+  it("returns row-level validation without creating a partial Recipe", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Complete Template Check",
+        ingredients: [
+          { itemId: item.id, quantity: "0" },
+          { itemId: item.id, quantity: "2" },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: {
+        "ingredients.0.quantity": ["Enter a positive exact-decimal quantity."],
+        "ingredients.0.itemId": ["An Item can appear only once in a Recipe."],
+        "ingredients.1.itemId": ["An Item can appear only once in a Recipe."],
+      },
+    });
+    await expect(prisma.recipe.count()).resolves.toBe(0);
+  });
+
+  it("rejects unavailable Item Unit Conversions without creating a partial Recipe", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Unavailable Unit Soup",
+        ingredients: [
+          {
+            itemId: item.id,
+            quantity: "1",
+            itemUnitConversionId: "missing-conversion",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: {
+        "ingredients.0.itemUnitConversionId": [
+          "Select an available Unit conversion for this Item.",
+        ],
+      },
+    });
+    await expect(prisma.recipe.count()).resolves.toBe(0);
+  });
+
+  it("rejects duplicate normalized names across inactive Recipes", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+    await prisma.recipe.create({
+      data: {
+        id: "inactive-name-target",
+        name: "Rice Soup",
+        normalizedName: "rice soup",
+        isActive: false,
+      },
+    });
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "  RICE SOUP  ",
+        ingredients: [{ itemId: item.id, quantity: "1" }],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "duplicate",
+      fields: { name: ["A Recipe with that name already exists."] },
+    });
+    await expect(prisma.recipe.count()).resolves.toBe(1);
   });
 });

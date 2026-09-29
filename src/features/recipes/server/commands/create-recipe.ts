@@ -20,12 +20,12 @@ export async function createRecipeCommand(
   }
 
   const result = await createRecipeWithActiveItems(parsedInput.data);
-  if (result.kind === "inactive-item") {
+  if (result.kind === "invalid-ingredients") {
     return {
       ok: false,
-      kind: "inactive",
-      error: "Please choose active Items for every Ingredient.",
-      fields: { ingredients: ["Select active Items for every Ingredient."] },
+      kind: "validation",
+      error: "Please correct the highlighted Ingredient rows.",
+      fields: result.fields,
     };
   }
   if (result.kind === "invalid-conversion") {

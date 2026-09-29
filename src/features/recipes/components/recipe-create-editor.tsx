@@ -28,7 +28,7 @@ import {
 } from "@/features/supply-operations/domain/delivery-receipt";
 
 import { createRecipeAction } from "../actions";
-import type { RecipeFieldErrors, RecipeIngredientOption } from "../types";
+import type { RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
 
 type IngredientDraft = {
   id: string;
@@ -93,6 +93,8 @@ export default function RecipeCreateEditor({
           : ingredient,
       ),
     );
+    const index = ingredients.findIndex((ingredient) => ingredient.id === id);
+    clearFieldError(`ingredients.${index}.${field}` as RecipeIngredientField);
     clearFieldError("ingredients");
   }
 
@@ -246,9 +248,13 @@ export default function RecipeCreateEditor({
                       const itemInputId = `recipe-ingredient-${index}-item`;
                       const quantityInputId = `recipe-ingredient-${index}-quantity`;
                       const unitInputId = `recipe-ingredient-${index}-unit`;
+                      const itemErrors = fieldErrors[`ingredients.${index}.itemId` as RecipeIngredientField];
+                      const quantityErrors = fieldErrors[`ingredients.${index}.quantity` as RecipeIngredientField];
+                      const unitErrors = fieldErrors[`ingredients.${index}.itemUnitConversionId` as RecipeIngredientField];
                       return (
                         <TableRow key={ingredient.id}>
                           <TableCell className="min-w-56 align-top">
+                            <Field data-invalid={Boolean(itemErrors?.length)}>
                             <Select
                               items={items.map((item) => ({ value: item.id, label: item.name }))}
                               value={ingredient.itemId || null}
@@ -258,8 +264,8 @@ export default function RecipeCreateEditor({
                                 id={itemInputId}
                                 className="w-full"
                                 aria-label={`Ingredient ${index + 1} Item`}
-                                aria-invalid={Boolean(fieldErrors.ingredients?.length)}
-                                aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
+                                aria-invalid={Boolean(itemErrors?.length)}
+                                aria-describedby={itemErrors?.length ? `${itemInputId}-error` : undefined}
                               >
                                 <SelectValue placeholder="Select an Item" />
                               </SelectTrigger>
@@ -271,20 +277,26 @@ export default function RecipeCreateEditor({
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
+                            <FieldMessages id={`${itemInputId}-error`} errors={itemErrors} />
+                            </Field>
                           </TableCell>
                           <TableCell className="align-top">
+                            <Field data-invalid={Boolean(quantityErrors?.length)}>
                             <Input
                               id={quantityInputId}
                               className="min-w-28"
                               inputMode="decimal"
                               aria-label={`Ingredient ${index + 1} quantity`}
-                              aria-invalid={Boolean(fieldErrors.ingredients?.length)}
-                              aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
+                              aria-invalid={Boolean(quantityErrors?.length)}
+                              aria-describedby={quantityErrors?.length ? `${quantityInputId}-error` : undefined}
                               value={ingredient.quantity}
                               onChange={(event) => updateIngredient(ingredient.id, "quantity", event.target.value)}
                             />
+                            <FieldMessages id={`${quantityInputId}-error`} errors={quantityErrors} />
+                            </Field>
                           </TableCell>
                           <TableCell className="align-top text-muted-foreground">
+                            <Field data-invalid={Boolean(unitErrors?.length)}>
                             <Select
                               items={selectedItem ? [
                                 {
@@ -310,8 +322,8 @@ export default function RecipeCreateEditor({
                                 id={unitInputId}
                                 className="w-full"
                                 aria-label={`Ingredient ${index + 1} Unit`}
-                                aria-invalid={Boolean(fieldErrors.ingredients?.length)}
-                                aria-describedby={fieldErrors.ingredients?.length ? "recipe-ingredients-error" : undefined}
+                                aria-invalid={Boolean(unitErrors?.length)}
+                                aria-describedby={unitErrors?.length ? `${unitInputId}-error` : undefined}
                               >
                                 <SelectValue placeholder="Select an Item first" />
                               </SelectTrigger>
@@ -332,6 +344,8 @@ export default function RecipeCreateEditor({
                                 </SelectGroup>
                               </SelectContent>
                             </Select>
+                            <FieldMessages id={`${unitInputId}-error`} errors={unitErrors} />
+                            </Field>
                           </TableCell>
                           <TableCell className="align-top text-muted-foreground">
                             {selectedItem

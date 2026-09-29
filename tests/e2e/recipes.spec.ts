@@ -110,6 +110,21 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
   await expect(page.getByText("Gram Rice Porridge", { exact: true })).toBeVisible();
 });
 
+test("shows Ingredient row errors without discarding entered Recipe fields", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes/new");
+  await page.getByLabel("Recipe name").fill("Validation Rice Porridge");
+  await page.getByLabel("Preparation note").fill("Keep this note after validation.");
+  await page.getByLabel("Ingredient 1 quantity").fill("0");
+  await page.getByRole("button", { name: "Create Recipe" }).click();
+  await expect(page.getByText("Could not save Recipe", { exact: true })).toBeVisible();
+  await expect(page.getByText("Enter a positive exact-decimal quantity.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Select an Item.", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Recipe name")).toHaveValue("Validation Rice Porridge");
+  await expect(page.getByLabel("Preparation note")).toHaveValue("Keep this note after validation.");
+  await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("0");
+});
+
 test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await signIn(page);

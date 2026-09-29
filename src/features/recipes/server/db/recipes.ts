@@ -4,7 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { RecipeInput } from "../../schemas/recipe";
-import type { RecipeCatalogItem, RecipeIngredientOption } from "../../types";
+import type { RecipeCatalogItem, RecipeFieldErrors, RecipeIngredientOption } from "../../types";
 import { sortItemUnitConversions } from "@/features/supply-operations/domain/item-unit-conversion";
 
 const recipeCatalogSelect = {
@@ -74,8 +74,7 @@ export async function listActiveRecipeIngredientOptions(): Promise<
 export type RecipeCreateWriteResult =
   | { kind: "created"; recipe: RecipeCatalogItem }
   | { kind: "duplicate" }
-  | { kind: "inactive-item" }
-  | { kind: "invalid-conversion" };
+  | { kind: "invalid-ingredients"; fields: RecipeFieldErrors };
 
 export async function createRecipeWithActiveItems(
   input: RecipeInput,
@@ -89,11 +88,13 @@ export async function createRecipeWithActiveItems(
       select: { id: true, baseUnitId: true },
     });
 
-    if (activeItems.length !== input.ingredients.length) {
-      return { kind: "inactive-item" as const };
-    }
-
     const itemById = new Map(activeItems.map((item) => [item.id, item]));
+    const fields: RecipeFieldErrors = {};
+    input.ingredients.forEach((ingredient, index) => {
+      if (!itemById.has(ingredient.itemId)) {
+        fields[`ingredients.${index}.itemId`] = ["Select an active Item."];
+      }
+    });
     const conversionIds = input.ingredients.flatMap((ingredient) =>
       ingredient.itemUnitConversionId ? [ingredient.itemUnitConversionId] : [],
     );
@@ -119,9 +120,13 @@ export async function createRecipeWithActiveItems(
         conversion.itemId !== item.id ||
         conversion.alternateUnitId === item.baseUnitId
       ) {
-        return { kind: "invalid-conversion" as const };
+        fields[`ingredients.${input.ingredients.indexOf(ingredient)}.itemUnitConversionId`] = [
+          "Select an available Unit conversion for this Item.",
+        ];
       }
     }
+
+    if (Object.keys(fields).length) return { kind: "invalid-ingredients" as const, fields };
 
     try {
       const recipe = await transaction.recipe.create({
