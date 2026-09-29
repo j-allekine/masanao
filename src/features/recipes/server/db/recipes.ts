@@ -32,8 +32,15 @@ export async function listRecipeRecords(includeInactive = false): Promise<Recipe
 export async function getActiveRecipeRecord(
   id: string,
 ): Promise<RecipeDetailItem | null> {
+  return getRecipeRecord(id);
+}
+
+export async function getRecipeRecord(
+  id: string,
+  includeInactive = false,
+): Promise<RecipeDetailItem | null> {
   return prisma.recipe.findFirst({
-    where: { id, isActive: true },
+    where: includeInactive ? { id } : { id, isActive: true },
     select: {
       id: true,
       name: true,

@@ -56,6 +56,17 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
     page.locator('[data-recipe-id="e2e-recipe-active"]'),
   ).toContainText("Active");
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
+  await page.getByLabel("Actions for Chicken Tinola").click();
+  await expect(page.getByRole("menuitem", { name: "View", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "View", exact: true }).click();
+  const preview = page.locator('[data-slot="dialog-content"]');
+  await expect(preview).toBeVisible();
+  await expect(preview.getByText("Chicken Tinola", { exact: true })).toBeVisible();
+  await expect(preview.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
+  await expect(preview.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(preview).toHaveCount(0);
   await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
   await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
@@ -63,6 +74,18 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(page.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
+});
+
+test("lets an administrator open the Recipe editor from the catalog action menu", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+  await page.getByLabel("Actions for Chicken Tinola").click();
+  await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active\/edit$/);
+  await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
 });
 
 test("searches, paginates, and clamps the active Recipes catalog", async ({ page }) => {

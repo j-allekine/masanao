@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Eye, FilePenLine } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -20,11 +20,14 @@ import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import { Badge } from "@/components/ui/badge";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
+import { getRecipePreviewAction } from "../actions";
 import type { RecipeCatalogItem } from "../types";
 import { filterRecipes, hasRecipeListFilters } from "./recipe-filters";
 import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
+import RecipePreviewDialog, { type RecipePreviewState } from "./recipe-preview-dialog";
 
 const PAGE_SIZE = 10;
 const SEARCH_NAVIGATION_DELAY_MS = 250;
@@ -44,6 +47,10 @@ export default function RecipesContent({
   );
   const latestQueryRef = useRef(currentQuery);
   const searchNavigationTimeoutRef = useRef<number | null>(null);
+  const previewRequestRef = useRef(0);
+  const [recipePreview, setRecipePreview] = useState<RecipePreviewState>({
+    status: "closed",
+  });
   const listState = useMemo(
     () => getRecipeListState(new URLSearchParams(currentQuery)),
     [currentQuery],
@@ -132,6 +139,34 @@ export default function RecipesContent({
     });
   }
 
+  function closeRecipePreview() {
+    previewRequestRef.current += 1;
+    setRecipePreview({ status: "closed" });
+  }
+
+  async function openRecipePreview(recipeId: string) {
+    const requestId = previewRequestRef.current + 1;
+    previewRequestRef.current = requestId;
+    setRecipePreview({ status: "loading" });
+
+    try {
+      const result = await getRecipePreviewAction(recipeId);
+      if (previewRequestRef.current !== requestId) return;
+      setRecipePreview(
+        result.status === "success"
+          ? { status: "ready", recipe: result.recipe }
+          : { status: "error", error: result.error },
+      );
+    } catch {
+      if (previewRequestRef.current === requestId) {
+        setRecipePreview({
+          status: "error",
+          error: "Could not load this Recipe. Please try again.",
+        });
+      }
+    }
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-card">
       <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
@@ -208,6 +243,7 @@ export default function RecipesContent({
                   <TableHead scope="col">Recipe</TableHead>
                   <TableHead scope="col" className="text-right">Ingredients</TableHead>
                   <TableHead scope="col" className="text-center">Status</TableHead>
+                  <TableHead scope="col" className="w-16 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -227,6 +263,32 @@ export default function RecipesContent({
                     <TableCell className="text-center">
                       <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <WorkspaceRowActionMenu
+                        actionButtonId={`recipe-actions-${recipe.id}`}
+                        ariaLabel={`Actions for ${recipe.name}`}
+                        groups={[
+                          {
+                            actions: [
+                              {
+                                label: "View",
+                                icon: <Eye />,
+                                onSelect: () => void openRecipePreview(recipe.id),
+                              },
+                              ...(canManageRecipes
+                                ? [
+                                    {
+                                      label: "Edit",
+                                      icon: <FilePenLine />,
+                                      onSelect: () => router.push(`/recipes/${recipe.id}/edit`),
+                                    },
+                                  ]
+                                : []),
+                            ],
+                          },
+                        ]}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -241,6 +303,7 @@ export default function RecipesContent({
             onPageChange={changePage}
           />
         </>}
+        <RecipePreviewDialog preview={recipePreview} onClose={closeRecipePreview} />
       </main>
     </div>
   );

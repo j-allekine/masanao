@@ -7,7 +7,7 @@ import { createRecipeCommand } from "./server/commands/create-recipe";
 import { updateRecipeCommand } from "./server/commands/update-recipe";
 import { getActiveRecipe as getActiveRecipeQuery } from "./server/queries/get-active-recipe";
 import { listActiveRecipes as listActiveRecipesQuery } from "./server/queries/list-active-recipes";
-import { deleteRecipeRecord, listActiveRecipeIngredientOptions, setRecipeActiveRecord } from "./server/db/recipes";
+import { deleteRecipeRecord, getRecipeRecord, listActiveRecipeIngredientOptions, setRecipeActiveRecord } from "./server/db/recipes";
 
 export type {
   RecipeCatalogItem,
@@ -22,6 +22,10 @@ export async function listActiveRecipes(includeInactive = false) {
 
 export async function getActiveRecipe(id: string) {
   return getActiveRecipeQuery(id);
+}
+
+export async function getRecipePreview(actor: CurrentActor, id: string) {
+  return getRecipeRecord(id, await canManageRecipes(actor));
 }
 
 export async function listActiveRecipeItems() {

@@ -1,9 +1,10 @@
 "use server";
 
-import type { RecipeFormActionState, RecipeLifecycleActionState } from "./types";
+import type { RecipeFormActionState, RecipeLifecycleActionState, RecipePreviewActionState } from "./types";
 import { executeCreateRecipe } from "./server/actions/create-recipe";
 import { executeUpdateRecipe } from "./server/actions/update-recipe";
 import { executeDeleteRecipe, executeSetRecipeActive } from "./server/actions/manage-recipe";
+import { executeGetRecipePreview } from "./server/actions/get-recipe-preview";
 
 export async function createRecipeAction(
   formData: FormData,
@@ -18,4 +19,8 @@ export async function setRecipeActiveAction(id: string, isActive: boolean): Prom
 
 export async function deleteRecipeAction(id: string): Promise<RecipeLifecycleActionState> {
   return executeDeleteRecipe(id);
+}
+
+export async function getRecipePreviewAction(id: string): Promise<RecipePreviewActionState> {
+  return executeGetRecipePreview(id);
 }
