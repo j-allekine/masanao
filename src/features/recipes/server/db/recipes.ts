@@ -42,7 +42,9 @@ export async function getActiveRecipeRecord(
       ingredients: {
         select: {
           id: true,
+          itemId: true,
           enteredQuantity: true,
+          itemUnitConversionId: true,
           item: {
             select: {
               name: true,
@@ -196,4 +198,28 @@ export async function createRecipeWithActiveItems(
       throw error;
     }
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function setRecipeActiveRecord(id: string, isActive: boolean) {
+  try {
+    await prisma.recipe.update({ where: { id }, data: { isActive } });
+    return { kind: "updated" as const };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return { kind: "not-found" as const };
+    }
+    throw error;
+  }
+}
+
+export async function deleteRecipeRecord(id: string) {
+  try {
+    await prisma.recipe.delete({ where: { id } });
+    return { kind: "deleted" as const };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return { kind: "not-found" as const };
+    }
+    throw error;
+  }
 }

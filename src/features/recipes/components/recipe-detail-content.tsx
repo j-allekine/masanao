@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import type { RecipeDetailItem } from "../types";
+import RecipeLifecycleActions from "./recipe-lifecycle-actions";
 
 function displayUnit(ingredient: RecipeDetailItem["ingredients"][number]) {
   const unit = ingredient.itemUnitConversion?.alternateUnit ?? ingredient.item.baseUnit;
@@ -30,8 +31,10 @@ function displayUnit(ingredient: RecipeDetailItem["ingredients"][number]) {
 
 export default function RecipeDetailContent({
   recipe,
+  canManageRecipes,
 }: {
   recipe: RecipeDetailItem;
+  canManageRecipes: boolean;
 }) {
   return (
     <div className="flex min-h-svh flex-col bg-card">
@@ -64,6 +67,7 @@ export default function RecipeDetailContent({
             <ClipboardList data-icon="inline-start" aria-hidden="true" />
             Back to Recipes
           </Link>
+          {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} /> : null}
         </div>
 
         <Card>

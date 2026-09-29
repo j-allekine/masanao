@@ -12,7 +12,9 @@ export type RecipeDetailItem = {
   isActive: boolean;
   ingredients: Array<{
     id: string;
+    itemId: string;
     enteredQuantity: string;
+    itemUnitConversionId: string | null;
     item: {
       name: string;
       baseUnit: {
@@ -76,4 +78,8 @@ export type RecipeFormActionState =
       kind: "authentication" | "forbidden" | "validation" | "duplicate" | "inactive" | "server";
       error: string;
       fields: RecipeFieldErrors;
-    };
+  };
+
+export type RecipeLifecycleActionState =
+  | { status: "success"; message: string }
+  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "server"; error: string };

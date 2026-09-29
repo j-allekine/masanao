@@ -6,7 +6,7 @@ import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 import { createRecipeCommand } from "./server/commands/create-recipe";
 import { getActiveRecipe as getActiveRecipeQuery } from "./server/queries/get-active-recipe";
 import { listActiveRecipes as listActiveRecipesQuery } from "./server/queries/list-active-recipes";
-import { listActiveRecipeIngredientOptions } from "./server/db/recipes";
+import { deleteRecipeRecord, listActiveRecipeIngredientOptions, setRecipeActiveRecord } from "./server/db/recipes";
 
 export type {
   RecipeCatalogItem,
@@ -50,4 +50,20 @@ export async function createRecipe(
   if (authorizationFailure) return authorizationFailure;
 
   return createRecipeCommand(input);
+}
+
+export async function setRecipeActive(actor: CurrentActor, id: string, isActive: boolean) {
+  const authorizationFailure = await authorizeRecipeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+  const result = await setRecipeActiveRecord(id, isActive);
+  if (result.kind === "not-found") return { ok: false as const, kind: "not-found" as const, error: "Recipe not found" };
+  return { ok: true as const };
+}
+
+export async function deleteRecipe(actor: CurrentActor, id: string) {
+  const authorizationFailure = await authorizeRecipeAdministrator(actor);
+  if (authorizationFailure) return authorizationFailure;
+  const result = await deleteRecipeRecord(id);
+  if (result.kind === "not-found") return { ok: false as const, kind: "not-found" as const, error: "Recipe not found" };
+  return { ok: true as const };
 }
