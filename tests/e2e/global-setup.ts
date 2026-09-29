@@ -128,6 +128,21 @@ export default async function globalSetup() {
     insertRecipe.run(id, name, normalizedName);
   }
 
+  database
+    .prepare(
+      `INSERT INTO "item"
+       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-item-rice",
+      "Rice",
+      "rice",
+      "default-category-staples-dry-goods",
+      "default-unit-kilogram",
+      1,
+    );
+
   const vendors = [
     [
       "e2e-vendor-acme",

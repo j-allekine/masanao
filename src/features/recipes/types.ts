@@ -4,3 +4,34 @@ export type RecipeCatalogItem = {
   ingredientCount: number;
   isActive: boolean;
 };
+
+export type RecipeIngredientOption = {
+  id: string;
+  name: string;
+  baseUnit: {
+    id: string;
+    name: string;
+    abbreviation: string;
+  };
+};
+
+export type RecipeField = "name" | "preparationNote" | "ingredients";
+export type RecipeFieldErrors = Partial<Record<RecipeField | "form", string[]>>;
+
+export type RecipeCreateResult =
+  | { ok: true; recipe: RecipeCatalogItem }
+  | {
+      ok: false;
+      kind: "forbidden" | "validation" | "duplicate" | "inactive";
+      error: string;
+      fields: RecipeFieldErrors;
+    };
+
+export type RecipeFormActionState =
+  | { status: "success"; recipe: RecipeCatalogItem }
+  | {
+      status: "error";
+      kind: "authentication" | "forbidden" | "validation" | "duplicate" | "inactive" | "server";
+      error: string;
+      fields: RecipeFieldErrors;
+    };
