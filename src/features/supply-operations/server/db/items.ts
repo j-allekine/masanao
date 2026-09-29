@@ -60,7 +60,10 @@ export type ItemUpdateWriteResult =
   | { kind: "updated"; item: ItemListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
-  | { kind: "base-unit-locked"; reason: "alternate-units" | "stock-activity" }
+  | {
+      kind: "base-unit-locked";
+      reason: "alternate-units" | "stock-activity" | "recipe-ingredients";
+    }
   | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
 
 function toItemListItem(item: ItemListRecord): ItemListItem {
@@ -160,7 +163,13 @@ async function findItemRecord(database: ItemDatabase, id: string) {
       id: true,
       categoryId: true,
       baseUnitId: true,
-      _count: { select: { unitConversions: true, deliveryReceiptLines: true } },
+      _count: {
+        select: {
+          unitConversions: true,
+          deliveryReceiptLines: true,
+          recipeIngredients: true,
+        },
+      },
     },
   });
 }
@@ -294,6 +303,9 @@ export async function updateItemWithActiveLookups(
         }
         if (existing._count.deliveryReceiptLines > 0) {
           return { kind: "base-unit-locked" as const, reason: "stock-activity" as const };
+        }
+        if (existing._count.recipeIngredients > 0) {
+          return { kind: "base-unit-locked" as const, reason: "recipe-ingredients" as const };
         }
       }
 

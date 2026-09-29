@@ -96,6 +96,21 @@ export default async function globalSetup() {
       adminPassword,
     );
 
+  database
+    .prepare(
+      `INSERT INTO "recipe"
+       ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run("e2e-recipe-active", "Chicken Tinola", "chicken tinola", 1);
+  database
+    .prepare(
+      `INSERT INTO "recipe"
+       ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run("e2e-recipe-inactive", "Retired Soup", "retired soup", 0);
+
   const vendors = [
     [
       "e2e-vendor-acme",
