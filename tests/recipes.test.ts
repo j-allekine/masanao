@@ -478,6 +478,31 @@ describe("Recipes catalog and persistence foundation", () => {
     });
   });
 
+  it("rejects a Recipe with no Ingredients", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+
+    await expect(
+      createRecipe(adminActor, {
+        name: "Ingredient-free Recipe",
+        ingredients: [],
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "validation",
+      error: "Please correct the highlighted Recipe fields.",
+      fields: { ingredients: ["Add at least one Ingredient."] },
+    });
+    await expect(prisma.recipe.count()).resolves.toBe(0);
+  });
+
   it("returns row-level validation without creating a partial Recipe", async () => {
     await prisma.user.create({
       data: {
