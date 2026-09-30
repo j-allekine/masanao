@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Eye, FilePenLine } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -20,7 +20,6 @@ import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import { Badge } from "@/components/ui/badge";
-import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import { getRecipePreviewAction } from "../actions";
@@ -28,6 +27,7 @@ import type { RecipeCatalogItem } from "../types";
 import { filterRecipes, hasRecipeListFilters } from "./recipe-filters";
 import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
 import RecipePreviewDialog, { type RecipePreviewState } from "./recipe-preview-dialog";
+import RecipeCatalogActions from "./recipe-catalog-actions";
 
 const PAGE_SIZE = 10;
 const SEARCH_NAVIGATION_DELAY_MS = 250;
@@ -265,30 +265,12 @@ export default function RecipesContent({
                       <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <WorkspaceRowActionMenu
-                        actionButtonId={`recipe-actions-${recipe.id}`}
-                        ariaLabel={`Actions for ${recipe.name}`}
-                        groups={[
-                          {
-                            actions: [
-                              {
-                                label: "View",
-                                icon: <Eye />,
-                                onSelect: () => void openRecipePreview(recipe.id),
-                              },
-                              ...(canManageRecipes
-                                ? [
-                                    {
-                                      label: "Edit",
-                                      icon: <FilePenLine />,
-                                      onSelect: () => router.push(`/recipes/${recipe.id}/edit`),
-                                    },
-                                  ]
-                                : []),
-                            ],
-                          },
-                        ]}
-                      />
+                      {canManageRecipes ? (
+                        <RecipeCatalogActions
+                          recipe={recipe}
+                          onView={() => void openRecipePreview(recipe.id)}
+                        />
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}

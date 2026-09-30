@@ -83,11 +83,27 @@ test("lets an administrator open the Recipe editor from the catalog action menu"
 
   await page.getByLabel("Actions for Chicken Tinola").click();
   await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Deactivate", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Delete Recipe", exact: true })).toBeVisible();
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active\/edit$/);
   await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes$/);
+});
+
+test("gives administrators lifecycle actions for inactive Recipes in the catalog", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+  await page.getByLabel("Actions for Retired Soup").click();
+  await expect(page.getByRole("menuitem", { name: "Reactivate", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Delete Recipe", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Delete Recipe", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Delete Retired Soup?", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
 test("lets an administrator manage an inactive Recipe from its detail page", async ({ page }) => {
