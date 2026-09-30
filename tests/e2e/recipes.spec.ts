@@ -86,6 +86,8 @@ test("lets an administrator open the Recipe editor from the catalog action menu"
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active\/edit$/);
   await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Cancel", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
 });
 
 test("searches, paginates, and clamps the active Recipes catalog", async ({ page }) => {

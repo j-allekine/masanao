@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -27,6 +27,7 @@ import {
   isPositiveExactDecimal,
   multiplyExactPositiveDecimals,
 } from "@/features/supply-operations/domain/delivery-receipt";
+import { cn } from "@/lib/utils";
 
 import { createRecipeAction, updateRecipeAction } from "../actions";
 import type { RecipeDetailItem, RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
@@ -161,14 +162,6 @@ export default function RecipeCreateEditor({
             Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
           </p>
         </div>
-        <Button
-          nativeButton={false}
-          variant="outline"
-          size="sm"
-          render={<Link href="/recipes" />}
-        >
-          Cancel
-        </Button>
       </div>
 
       <form aria-label="Create Recipe" aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
@@ -391,10 +384,18 @@ export default function RecipeCreateEditor({
                   <Plus data-icon="inline-start" />
                   Add Ingredient
                 </Button>
-                <Button type="submit" disabled={isSubmitting || items.length === 0}>
-                  {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-                  {isSubmitting ? "Saving..." : recipe ? "Save Recipe" : "Create Recipe"}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href="/recipes"
+                    className={cn(buttonVariants({ variant: "outline" }), "shrink-0")}
+                  >
+                    Cancel
+                  </Link>
+                  <Button type="submit" disabled={isSubmitting || items.length === 0}>
+                    {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+                    {isSubmitting ? "Saving..." : recipe ? "Save Recipe" : "Create Recipe"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
