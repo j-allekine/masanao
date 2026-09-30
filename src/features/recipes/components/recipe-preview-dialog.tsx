@@ -100,10 +100,10 @@ export default function RecipePreviewDialog({
 
             {recipe.preparationNote ? (
               <section aria-labelledby="recipe-preview-note" className="mt-5 flex flex-col gap-1">
-                <h2 id="recipe-preview-note" className="text-heading-3 font-semibold">
+                <h2 id="recipe-preview-note" className="text-body font-semibold">
                   Preparation note
                 </h2>
-                <p className="whitespace-pre-wrap break-words text-body">
+                <p className="whitespace-pre-wrap break-words text-body-sm">
                   {recipe.preparationNote}
                 </p>
               </section>
