@@ -211,8 +211,17 @@ export async function createRecipeWithActiveItems(
 
 export async function updateRecipeWithActiveItems(id: string, input: RecipeInput): Promise<RecipeCreateWriteResult> {
   return prisma.$transaction(async (transaction) => {
-    const existing = await transaction.recipe.findUnique({ where: { id }, select: { id: true } });
+    const existing = await transaction.recipe.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
     if (!existing) return { kind: "invalid-ingredients" as const, fields: { form: ["Recipe not found."] } };
+    if (!existing.isActive) {
+      return {
+        kind: "invalid-ingredients" as const,
+        fields: { form: ["Inactive Recipes cannot be edited. Reactivate this Recipe first."] },
+      };
+    }
     const activeItems = await transaction.item.findMany({
       where: { id: { in: input.ingredients.map((ingredient) => ingredient.itemId) }, isActive: true },
       select: { id: true, baseUnitId: true },

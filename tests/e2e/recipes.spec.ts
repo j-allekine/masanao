@@ -90,6 +90,16 @@ test("lets an administrator open the Recipe editor from the catalog action menu"
   await expect(page).toHaveURL(/\/recipes$/);
 });
 
+test("lets an administrator manage an inactive Recipe from its detail page", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes/e2e-recipe-inactive");
+
+  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-inactive$/);
+  await expect(page.getByRole("heading", { name: "Retired Soup", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reactivate", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete Recipe", exact: true })).toBeVisible();
+});
+
 test("searches, paginates, and clamps the active Recipes catalog", async ({ page }) => {
   await signIn(page);
   await page.goto("/recipes?recipesPage=99");
@@ -113,6 +123,19 @@ test("searches, paginates, and clamps the active Recipes catalog", async ({ page
   await page.getByRole("button", { name: "Next page" }).click();
   await expect(page).toHaveURL(/\/recipes\?recipesPage=2$/);
   await expect(page.getByText("Zesty Recipe 10", { exact: true })).toBeVisible();
+});
+
+test("preserves a new Recipe search while clamping an out-of-range page", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/recipes?recipesPage=2");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  const search = page.getByLabel("Search Recipes");
+  await expect(search).toBeVisible();
+
+  await search.fill("chicken");
+  await expect(search).toHaveValue("chicken");
+  await expect(page).toHaveURL(/recipesSearch=chicken$/);
+  await expect(search).toHaveValue("chicken");
 });
 
 test("lets an administrator create a Base Unit Recipe", async ({ page }) => {

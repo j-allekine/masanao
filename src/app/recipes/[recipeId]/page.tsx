@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
-import { canManageRecipes, getActiveRecipe } from "@/features/recipes/server";
+import { getRecipeForActor } from "@/features/recipes/server";
 import { RecipeDetailContent } from "@/features/recipes/ui";
 import { auth } from "@/server/auth";
 
@@ -22,10 +22,10 @@ export default async function RecipeDetailRoute(
 
   if (!session) redirect("/");
 
-  const [recipe, canManageRecipeTemplates] = await Promise.all([
-    getActiveRecipe(recipeId),
-    canManageRecipes({ id: session.user.id, name: session.user.name, username: session.user.username ?? null }),
-  ]);
+  const { recipe, canManageRecipes: canManageRecipeTemplates } = await getRecipeForActor(
+    { id: session.user.id, name: session.user.name, username: session.user.username ?? null },
+    recipeId,
+  );
   if (!recipe) notFound();
 
   return (

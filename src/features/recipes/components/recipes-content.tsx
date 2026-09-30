@@ -90,6 +90,7 @@ export default function RecipesContent({
   }, []);
 
   useEffect(() => {
+    if (searchNavigationTimeoutRef.current !== null) return;
     if (listState.page <= pageCount) return;
 
     const clampedUrl = getRecipeListUrl(pathname, currentQuery, {

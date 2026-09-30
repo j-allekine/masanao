@@ -24,8 +24,16 @@ export async function getActiveRecipe(id: string) {
   return getActiveRecipeQuery(id);
 }
 
+export async function getRecipeForActor(actor: CurrentActor, id: string) {
+  const canManage = await canManageRecipes(actor);
+  return {
+    canManageRecipes: canManage,
+    recipe: await getRecipeRecord(id, canManage),
+  };
+}
+
 export async function getRecipePreview(actor: CurrentActor, id: string) {
-  return getRecipeRecord(id, await canManageRecipes(actor));
+  return (await getRecipeForActor(actor, id)).recipe;
 }
 
 export async function listActiveRecipeItems() {

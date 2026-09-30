@@ -5,6 +5,7 @@ import {
   createRecipe,
   getActiveRecipe,
   listActiveRecipes,
+  updateRecipe,
 } from "@/features/recipes/server";
 import { deleteItem, updateItem } from "@/features/supply-operations/server";
 import { prisma } from "@/prisma/client";
@@ -575,5 +576,44 @@ describe("Recipes catalog and persistence foundation", () => {
       fields: { name: ["A Recipe with that name already exists."] },
     });
     await expect(prisma.recipe.count()).resolves.toBe(1);
+  });
+
+  it("rejects an update submitted after the Recipe was deactivated", async () => {
+    await prisma.user.create({
+      data: {
+        id: adminActor.id,
+        name: adminActor.name,
+        email: "recipes.admin@internal.masanao",
+        username: adminActor.username,
+        role: "admin",
+      },
+    });
+    const { item } = await createRecipeReferences();
+    const created = await createRecipe(adminActor, {
+      name: "Deactivation Guard Soup",
+      ingredients: [{ itemId: item.id, quantity: "1" }],
+    });
+    if (!created.ok) throw new Error("Recipe fixture did not create.");
+
+    await prisma.recipe.update({
+      where: { id: created.recipe.id },
+      data: { isActive: false },
+    });
+
+    await expect(
+      updateRecipe(adminActor, created.recipe.id, {
+        name: "Changed after deactivation",
+        ingredients: [{ itemId: item.id, quantity: "2" }],
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      kind: "validation",
+      error: "Please correct the highlighted Ingredient rows.",
+      fields: { form: ["Inactive Recipes cannot be edited. Reactivate this Recipe first."] },
+    });
+    await expect(prisma.recipe.findUniqueOrThrow({ where: { id: created.recipe.id } })).resolves.toMatchObject({
+      name: "Deactivation Guard Soup",
+      isActive: false,
+    });
   });
 });
