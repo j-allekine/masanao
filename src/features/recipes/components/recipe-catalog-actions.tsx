@@ -14,9 +14,11 @@ import type { RecipeCatalogItem } from "../types";
 export default function RecipeCatalogActions({
   recipe,
   onView,
+  canManageRecipes,
 }: {
   recipe: RecipeCatalogItem;
   onView: () => void;
+  canManageRecipes: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -61,7 +63,7 @@ export default function RecipeCatalogActions({
           {
             actions: [
               { label: "View", icon: <Eye />, onSelect: onView },
-              ...(recipe.isActive
+              ...(canManageRecipes && recipe.isActive
                 ? [
                     {
                       label: "Edit",
@@ -72,31 +74,35 @@ export default function RecipeCatalogActions({
                 : []),
             ],
           },
-          {
-            actions: [
-              recipe.isActive
-                ? {
-                    label: "Deactivate",
-                    icon: <RotateCcw className="rotate-180" />,
-                    onSelect: () => setActive(false),
-                  }
-                : {
-                    label: "Reactivate",
-                    icon: <RotateCcw />,
-                    onSelect: () => setActive(true),
-                  },
-            ],
-          },
-          {
-            actions: [
-              {
-                label: "Delete Recipe",
-                icon: <Trash2 />,
-                onSelect: () => setIsDeleteDialogOpen(true),
-                variant: "destructive",
-              },
-            ],
-          },
+          ...(canManageRecipes
+            ? [
+                {
+                  actions: [
+                    recipe.isActive
+                      ? {
+                          label: "Deactivate",
+                          icon: <RotateCcw className="rotate-180" />,
+                          onSelect: () => setActive(false),
+                        }
+                      : {
+                          label: "Reactivate",
+                          icon: <RotateCcw />,
+                          onSelect: () => setActive(true),
+                        },
+                  ],
+                },
+                {
+                  actions: [
+                    {
+                      label: "Delete Recipe",
+                      icon: <Trash2 />,
+                      onSelect: () => setIsDeleteDialogOpen(true),
+                      variant: "destructive" as const,
+                    },
+                  ],
+                },
+              ]
+            : []),
         ]}
       />
       <DestructiveDialog

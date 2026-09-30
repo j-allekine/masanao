@@ -88,7 +88,7 @@ test("lets an administrator open the Recipe editor from the catalog action menu"
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active\/edit$/);
   await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes$/);
 });
 
@@ -114,6 +114,7 @@ test("lets an administrator manage an inactive Recipe from its detail page", asy
   await expect(page.getByRole("heading", { name: "Retired Soup", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reactivate", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete Recipe", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit Recipe", exact: true })).toHaveCount(0);
 });
 
 test("searches, paginates, and clamps the active Recipes catalog", async ({ page }) => {
@@ -172,6 +173,21 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
   await expect(page.getByText("Rice Porridge", { exact: true })).toBeVisible();
 });
 
+test("asks before discarding unsaved Recipe changes", async ({ page }) => {
+  await signInAsAdministrator(page);
+  await page.goto("/recipes/new");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+  await page.getByLabel("Recipe name").fill("Unsaved Recipe");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Discard unsaved changes?", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes\/new$/);
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
+});
+
 test("lets an administrator preview an alternate Unit Ingredient in its Base Unit", async ({ page }) => {
   await signInAsAdministrator(page);
   await page.goto("/recipes/new");
@@ -200,6 +216,8 @@ test("shows Ingredient row errors without discarding entered Recipe fields", asy
   await expect(page.getByText("Could not save Recipe", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Ingredient 1 Item")).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByLabel("Ingredient 1 quantity")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("Select an Item.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Enter a positive exact-decimal quantity.", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Recipe name")).toHaveValue("Validation Rice Porridge");
   await expect(page.getByLabel("Preparation note")).toHaveValue("Keep this note after validation.");
   await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("0");

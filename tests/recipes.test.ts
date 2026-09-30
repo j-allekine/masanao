@@ -478,6 +478,33 @@ describe("Recipes catalog and persistence foundation", () => {
     });
   });
 
+  it("flags a Recipe when its Base Unit becomes inactive", async () => {
+    const { item, kilogram } = await createRecipeReferences();
+    await prisma.recipe.create({
+      data: {
+        id: "base-unit-needs-attention",
+        name: "Base Unit Recipe",
+        normalizedName: "base unit recipe",
+        ingredients: {
+          create: {
+            id: "base-unit-needs-attention-ingredient",
+            itemId: item.id,
+            enteredQuantity: "1",
+          },
+        },
+      },
+    });
+    await prisma.unit.update({ where: { id: kilogram.id }, data: { active: false } });
+
+    await expect(listActiveRecipes()).resolves.toContainEqual({
+      id: "base-unit-needs-attention",
+      name: "Base Unit Recipe",
+      ingredientCount: 1,
+      isActive: true,
+      needsAttention: true,
+    });
+  });
+
   it("rejects a Recipe with no Ingredients", async () => {
     await prisma.user.create({
       data: {

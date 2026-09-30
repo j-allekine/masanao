@@ -224,7 +224,7 @@ export default function RecipesContent({
               hasFilters={filtersAreActive}
               filteredState={{
                 title: "No Recipes match your search.",
-                description: "Clear the search to see the complete active Recipe catalog.",
+                description: `Clear the search to see the complete ${canManageRecipes ? "Recipe" : "active Recipe"} catalog.`,
                 action: {
                   label: "Clear search",
                   variant: "outline",
@@ -238,7 +238,7 @@ export default function RecipesContent({
               }}
             />
           ) : (
-            <WorkspaceTableFrame caption="Active Recipes" className="min-w-[32rem]">
+            <WorkspaceTableFrame caption={canManageRecipes ? "Recipes" : "Active Recipes"} className="min-w-[32rem]">
               <TableHeader className="bg-muted/60">
                 <TableRow>
                   <TableHead scope="col">Recipe</TableHead>
@@ -265,12 +265,11 @@ export default function RecipesContent({
                       <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {canManageRecipes ? (
-                        <RecipeCatalogActions
-                          recipe={recipe}
-                          onView={() => void openRecipePreview(recipe.id)}
-                        />
-                      ) : null}
+                      <RecipeCatalogActions
+                        recipe={recipe}
+                        canManageRecipes={canManageRecipes}
+                        onView={() => void openRecipePreview(recipe.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

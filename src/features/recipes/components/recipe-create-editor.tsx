@@ -1,13 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -27,7 +36,6 @@ import {
   isPositiveExactDecimal,
   multiplyExactPositiveDecimals,
 } from "@/features/supply-operations/domain/delivery-receipt";
-import { cn } from "@/lib/utils";
 
 import { createRecipeAction, updateRecipeAction } from "../actions";
 import type { RecipeDetailItem, RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
@@ -51,7 +59,19 @@ function createIngredientDraft(): IngredientDraft {
 function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
   if (!errors?.length) return null;
 
-  return <FieldError className="sr-only" id={id} errors={errors.map((message) => ({ message }))} />;
+  return <FieldError id={id} errors={errors.map((message) => ({ message }))} />;
+}
+
+function getDraftSignature(name: string, preparationNote: string, ingredients: IngredientDraft[]) {
+  return JSON.stringify({
+    name,
+    preparationNote,
+    ingredients: ingredients.map(({ itemId, itemUnitConversionId, quantity }) => ({
+      itemId,
+      itemUnitConversionId,
+      quantity,
+    })),
+  });
 }
 
 export default function RecipeCreateEditor({
@@ -68,6 +88,19 @@ export default function RecipeCreateEditor({
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
+  const [initialDraftSignature] = useState(() =>
+    getDraftSignature(
+      recipe?.name ?? "",
+      recipe?.preparationNote ?? "",
+      recipe?.ingredients.map((ingredient) => ({
+        id: ingredient.id,
+        itemId: ingredient.itemId,
+        itemUnitConversionId: ingredient.itemUnitConversionId,
+        quantity: ingredient.enteredQuantity,
+      })) ?? [createIngredientDraft()],
+    ),
+  );
   const itemOptions = useMemo(
     () => items.map((item) => ({ value: item.id, label: item.name, item })),
     [items],
@@ -76,6 +109,22 @@ export default function RecipeCreateEditor({
     () => new Map(items.map((item) => [item.id, item])),
     [items],
   );
+  const isDirty = useMemo(
+    () => getDraftSignature(name, preparationNote, ingredients) !== initialDraftSignature,
+    [ingredients, initialDraftSignature, name, preparationNote],
+  );
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    function warnBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isDirty]);
 
   function clearFieldError(field: keyof RecipeFieldErrors) {
     setFieldErrors((currentErrors) => {
@@ -153,6 +202,15 @@ export default function RecipeCreateEditor({
     });
   }
 
+  function cancelEditor() {
+    if (isDirty) {
+      setIsDiscardDialogOpen(true);
+      return;
+    }
+
+    router.push("/recipes");
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -164,7 +222,7 @@ export default function RecipeCreateEditor({
         </div>
       </div>
 
-      <form aria-label="Create Recipe" aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
+      <form aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
         <div className="flex flex-col gap-6">
           {formError ? (
             <Alert variant="destructive">
@@ -385,12 +443,9 @@ export default function RecipeCreateEditor({
                   Add Ingredient
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href="/recipes"
-                    className={cn(buttonVariants({ variant: "outline" }), "shrink-0")}
-                  >
+                  <Button type="button" variant="outline" disabled={isSubmitting} onClick={cancelEditor}>
                     Cancel
-                  </Link>
+                  </Button>
                   <Button type="submit" disabled={isSubmitting || items.length === 0}>
                     {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
                     {isSubmitting ? "Saving..." : recipe ? "Save Recipe" : "Create Recipe"}
@@ -401,6 +456,22 @@ export default function RecipeCreateEditor({
           </Card>
         </div>
       </form>
+      <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your Recipe changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => router.push("/recipes")}>
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

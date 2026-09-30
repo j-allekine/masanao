@@ -68,7 +68,7 @@ export default function RecipeDetailContent({
             Back to Recipes
           </Link>
           {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} /> : null}
-          {canManageRecipes ? <Link href={`/recipes/${recipe.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}>Edit Recipe</Link> : null}
+          {canManageRecipes && recipe.isActive ? <Link href={`/recipes/${recipe.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}>Edit Recipe</Link> : null}
         </div>
 
         <Card>
