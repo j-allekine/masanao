@@ -159,7 +159,6 @@ export default function ItemsTable({
   items,
   hasFilters,
   onClearFilters,
-  onCreate,
   canManage,
   onEdit,
   onSetActive,
@@ -170,7 +169,6 @@ export default function ItemsTable({
   items: ItemListItem[];
   hasFilters: boolean;
   onClearFilters: () => void;
-  onCreate: () => void;
   canManage: boolean;
   onEdit: (item: ItemListItem) => void;
   onSetActive: (item: ItemListItem, isActive: boolean) => void;
@@ -195,10 +193,7 @@ export default function ItemsTable({
         emptyState={{
           title: "No Items yet.",
           description:
-            "Items will appear here once the supply catalog is configured.",
-          action: canManage
-            ? { label: "Add Item", onClick: onCreate }
-            : undefined,
+            "Use Create Item to begin the supply catalog.",
         }}
       />
     );

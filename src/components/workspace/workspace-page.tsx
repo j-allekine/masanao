@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ClipboardList } from "lucide-react";
 
 import {
@@ -9,9 +8,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { AppSidebarUser } from "@/components/workspace/app-sidebar";
+import { WorkspacePrimaryLink } from "@/components/workspace/catalog-controls";
 import {
   getWorkspaceSectionDetails,
   type WorkspaceSectionId,
@@ -51,21 +50,20 @@ export default function WorkspacePage({ user, activeSection }: WorkspacePageProp
           </p>
         </section>
 
-        <Empty className="min-h-64 rounded-lg border bg-card">
+        <Empty className="items-start rounded-lg border bg-card p-6 text-left sm:p-8">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <ClipboardList aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>Activity planning is ready.</EmptyTitle>
+            <EmptyTitle>Continue activity planning</EmptyTitle>
             <EmptyDescription>
-              Activity Designs is the current operational workspace. More overview
-              information will appear when supported data is available.
+              Create an Activity Design, then add the Activities it will guide.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button nativeButton={false} render={<Link href="/activity-designs" />}>
-              Open Activity Designs
-            </Button>
+            <WorkspacePrimaryLink href="/activity-designs">
+              Open Activity Planning
+            </WorkspacePrimaryLink>
           </EmptyContent>
         </Empty>
 

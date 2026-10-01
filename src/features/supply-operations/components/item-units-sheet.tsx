@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition, type FormEvent } from "react";
-import { Plus, Save, XIcon } from "lucide-react";
+import { Save, XIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,10 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Spinner } from "@/components/ui/spinner";
+import {
+  WorkspaceFormActionButtons,
+} from "@/components/workspace/form-actions";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import { createItemUnitConversionAction } from "../actions";
 import type { ItemListItem, ItemUnitConversionFieldErrors, ItemUnitConversionListItem, UnitListItem } from "../types";
 
@@ -101,16 +104,13 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
       </div>
       {canManage && selectedItem.isActive ? (
         <SheetFooter className="border-t bg-muted/30 px-6 py-4 sm:flex-row sm:justify-end">
-          <Button
+          <WorkspacePrimaryAction
             ref={addAlternateUnitButtonRef}
             type="button"
-            size="lg"
-            className="w-full sm:w-auto"
             onClick={() => setDialogOpen(true)}
           >
-            <Plus data-icon="inline-start" />
             Add alternate Unit
-          </Button>
+          </WorkspacePrimaryAction>
         </SheetFooter>
       ) : null}
     </SheetContent>
@@ -121,7 +121,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
         <Field data-invalid={Boolean(errors.alternateUnitId?.length)}><FieldLabel htmlFor="alternate-unit">Alternate Unit</FieldLabel><Select items={eligibleUnits.map((unit) => ({ value: unit.id, label: `${unit.name} (${unit.abbreviation})` }))} value={alternateUnitId || null} onValueChange={(value) => setAlternateUnitId(value ?? "")}><SelectTrigger id="alternate-unit" aria-invalid={Boolean(errors.alternateUnitId?.length)}><SelectValue placeholder="Select a Unit" /></SelectTrigger><SelectContent><SelectGroup>{eligibleUnits.map((unit) => <SelectItem key={unit.id} value={unit.id}>{unit.name} ({unit.abbreviation})</SelectItem>)}</SelectGroup></SelectContent></Select>{errors.alternateUnitId?.length ? <FieldError errors={errors.alternateUnitId.map((message) => ({ message }))} /> : null}</Field>
         <Field data-invalid={Boolean(errors.baseUnitQuantity?.length)}><FieldLabel htmlFor="base-unit-quantity">Base Unit quantity</FieldLabel><Input id="base-unit-quantity" inputMode="decimal" value={baseUnitQuantity} onChange={(event) => setBaseUnitQuantity(event.target.value)} aria-invalid={Boolean(errors.baseUnitQuantity?.length)} placeholder={`e.g. 25 ${item.baseUnit.abbreviation}`} />{errors.baseUnitQuantity?.length ? <FieldError errors={errors.baseUnitQuantity.map((message) => ({ message }))} /> : null}</Field>
         {preview ? <p className="text-body-sm text-muted-foreground">Label preview: <span className="font-medium text-foreground">{preview}</span></p> : null}
-      </FieldGroup><DialogFooter><Button type="button" variant="outline" disabled={isSaving} onClick={closeDialog}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}Save alternate Unit</Button></DialogFooter></form>
+      </FieldGroup><DialogFooter><WorkspaceFormActionButtons onCancel={closeDialog} isPending={isSaving} pendingLabel="Saving…" submitLabel="Save alternate Unit" submitIcon={<Save data-icon="inline-start" />} /></DialogFooter></form>
       </DialogContent>
     </Dialog>
   </Sheet>;

@@ -6,9 +6,6 @@ import CatalogPagination, {
   getCatalogResultsSummary,
   getMobileCatalogPageItems,
 } from "@/components/workspace/catalog-pagination";
-import ActivityDesignPagination, {
-  getActivityDesignResultsSummary,
-} from "@/features/activity-planning/components/activity-design-pagination";
 
 const defaultPaginationProps = {
   page: 6,
@@ -23,14 +20,15 @@ function renderActivityDesignPagination(
   props: Partial<typeof defaultPaginationProps> = {},
 ) {
   return renderToStaticMarkup(
-    ActivityDesignPagination({ ...defaultPaginationProps, ...props }),
+    CatalogPagination({ ...defaultPaginationProps, ...props }),
   );
 }
 
-describe("Activity Designs pagination adapter", () => {
-  it("reuses the canonical paginator and summary API", () => {
-    expect(ActivityDesignPagination).toBe(CatalogPagination);
-    expect(getActivityDesignResultsSummary).toBe(getCatalogResultsSummary);
+describe("Activity Designs pagination", () => {
+  it("uses the canonical paginator and summary API", () => {
+    expect(
+      getCatalogResultsSummary({ start: 51, end: 60, total: 120 }),
+    ).toBe("Showing 51 to 60 of 120 results");
   });
 
   it("keeps desktop page choices to the current three-page window", () => {
@@ -90,25 +88,25 @@ describe("Activity Designs pagination adapter", () => {
 describe("Activity Designs results summary", () => {
   it("uses zero-result copy without a stale range", () => {
     expect(
-      getActivityDesignResultsSummary({ start: 0, end: 0, total: 0 }),
+      getCatalogResultsSummary({ start: 0, end: 0, total: 0 }),
     ).toBe("No results");
   });
 
   it("uses singular copy for one filtered result", () => {
     expect(
-      getActivityDesignResultsSummary({ start: 1, end: 1, total: 1 }),
+      getCatalogResultsSummary({ start: 1, end: 1, total: 1 }),
     ).toBe("Showing 1 result");
   });
 
   it("keeps the filtered range for a multi-result final page", () => {
     expect(
-      getActivityDesignResultsSummary({ start: 11, end: 11, total: 11 }),
+      getCatalogResultsSummary({ start: 11, end: 11, total: 11 }),
     ).toBe("Showing 11 to 11 of 11 results");
   });
 
   it("formats operational counts with thousands separators", () => {
     expect(
-      getActivityDesignResultsSummary({
+      getCatalogResultsSummary({
         start: 1001,
         end: 1010,
         total: 1010,

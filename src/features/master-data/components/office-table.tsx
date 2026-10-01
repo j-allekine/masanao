@@ -16,7 +16,7 @@ import type { OfficeListItem } from "../types";
 import DeleteOfficeDialog from "./delete-office-dialog";
 import { hasOfficeFilters, type OfficeFilters } from "./office-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
-import MasterDataEmptyState from "./master-data-empty-state";
+import ListEmptyState from "@/components/workspace/list-empty-state";
 
 function OfficeHeadContext({ office }: { office: OfficeListItem }) {
   if (!office.headName && !office.headDesignation) {
@@ -123,7 +123,6 @@ export default function OfficeTable({
   filters,
   onClearFilters,
   canManage,
-  onNew,
   onEdit,
   onToggle,
   onDeleted,
@@ -133,7 +132,6 @@ export default function OfficeTable({
   filters: OfficeFilters;
   onClearFilters: () => void;
   canManage: boolean;
-  onNew: () => void;
   onEdit: (office: OfficeListItem) => void;
   onToggle: (office: OfficeListItem) => void;
   onDeleted: (office: OfficeListItem) => void;
@@ -143,22 +141,23 @@ export default function OfficeTable({
 
   if (offices.length === 0) {
     return (
-      <MasterDataEmptyState
+      <ListEmptyState
         icon={<span aria-hidden="true">O</span>}
         hasFilters={hasFilters}
         filteredState={{
           title: "No Offices match your search.",
           description: "Clear the search to see the complete Office catalog.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
         }}
         emptyState={{
           title: "No Offices yet.",
           description:
             "Offices will appear here once the municipal directory is configured.",
         }}
-        canCreate={canManage}
-        createLabel="Create Office"
-        onCreate={onNew}
-        onClearFilters={onClearFilters}
       />
     );
   }

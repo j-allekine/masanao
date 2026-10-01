@@ -13,7 +13,7 @@ import type {
 } from "../types";
 import ActivitiesTable from "./activities-table";
 import ActivitiesToolbar from "./activities-toolbar";
-import ActivityPagination from "./activity-pagination";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ActivityCreateDialog from "./activity-create-dialog";
 import {
   filterActivities,
@@ -240,7 +240,7 @@ export default function ActivitiesWorkspace({
         onEdit={setActivityForEdit}
         onDeleted={handleActivityDeleted}
       />
-      <ActivityPagination
+      <CatalogPagination
         page={currentPage}
         pageCount={pageCount}
         start={resultStart}

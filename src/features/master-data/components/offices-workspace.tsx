@@ -136,7 +136,6 @@ export default function OfficesWorkspace({
         filters={filters}
         onClearFilters={onClearFilters}
         canManage={canManage}
-        onNew={openCreateDialog}
         onEdit={openEditDialog}
         onToggle={handleToggle}
         onDeleted={handleDeleted}

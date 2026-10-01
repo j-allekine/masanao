@@ -12,14 +12,15 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
-import { getCatalogPageAfterDeletion } from "@/components/workspace/catalog-pagination";
+import CatalogPagination, {
+  getCatalogPageAfterDeletion,
+} from "@/components/workspace/catalog-pagination";
 
 import type {
   PurchaseOrderListItem,
   PurchaseOrderVendorOption,
 } from "../types";
 import PurchaseOrderDialog from "./purchase-order-dialog";
-import PurchaseOrderPagination from "./purchase-order-pagination";
 import PurchaseOrderToolbar from "./purchase-order-toolbar";
 import {
   filterPurchaseOrders,
@@ -228,7 +229,7 @@ export default function PurchaseOrdersWorkspace({
             className="sm:min-w-[11rem]"
             onClick={() => setPurchaseOrderDialogState({ mode: "create" })}
           >
-            Add Purchase Order
+            Create Purchase Order
           </WorkspacePrimaryAction>
         ) : null}
       </div>
@@ -246,7 +247,7 @@ export default function PurchaseOrdersWorkspace({
         }
         onDeleted={handleDeleted}
       />
-      <PurchaseOrderPagination
+      <CatalogPagination
         page={currentPage}
         pageCount={pageCount}
         start={resultStart}

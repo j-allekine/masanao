@@ -2,14 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import {
+import CatalogPagination, {
   getCatalogPageItems,
   getCatalogResultsSummary,
   getMobileCatalogPageItems,
 } from "@/components/workspace/catalog-pagination";
-import ActivityPagination, {
-  getActivityResultsSummary,
-} from "@/features/activity-planning/components/activity-pagination";
 
 function renderPagination({
   page,
@@ -25,7 +22,7 @@ function renderPagination({
   total: number;
 }) {
   return renderToStaticMarkup(
-    createElement(ActivityPagination, {
+    createElement(CatalogPagination, {
       page,
       pageCount,
       start,
@@ -43,10 +40,9 @@ function getButtons(markup: string, label: string) {
 }
 
 describe("Activities pagination", () => {
-  it("keeps the feature summary export compatible with the canonical summary", () => {
-    expect(getActivityResultsSummary).toBe(getCatalogResultsSummary);
+  it("uses the canonical results summary", () => {
     expect(
-      getActivityResultsSummary({ start: 11, end: 12, total: 12 }),
+      getCatalogResultsSummary({ start: 11, end: 12, total: 12 }),
     ).toBe("Showing 11 to 12 of 12 results");
   });
 

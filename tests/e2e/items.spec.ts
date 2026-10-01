@@ -60,7 +60,10 @@ async function expectMenuDoesNotCoverTrigger(
 
   expect(triggerBox).not.toBeNull();
   expect(menuBox).not.toBeNull();
-  expect(menuBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height);
+  expect(
+    menuBox!.y + menuBox!.height <= triggerBox!.y ||
+      menuBox!.y >= triggerBox!.y + triggerBox!.height,
+  ).toBe(true);
 }
 
 function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
@@ -75,6 +78,20 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
   } finally {
     database.close();
   }
+}
+
+function removeSeededRecipeItem() {
+  withE2eDatabase((database) => {
+    database
+      .prepare('DELETE FROM "recipe_ingredient" WHERE "itemId" = ?')
+      .run("e2e-recipe-item-rice");
+    database
+      .prepare('DELETE FROM "item_unit_conversion" WHERE "itemId" = ?')
+      .run("e2e-recipe-item-rice");
+    database
+      .prepare('DELETE FROM "item" WHERE "id" = ?')
+      .run("e2e-recipe-item-rice");
+  });
 }
 
 function createItemFixtures() {
@@ -93,10 +110,11 @@ function createItemFixtures() {
   const activeItemId = randomUUID();
   const inactiveItemId = randomUUID();
 
+  // This journey owns the named catalog fixtures below. Remove the seed that
+  // references the same default labels before recreating them.
+  removeSeededRecipeItem();
+
   withE2eDatabase((database) => {
-    // Default catalog migrations seed these labels. This isolated journey owns
-    // its fixtures, so remove only the colliding defaults before recreating
-    // the named records that its assertions exercise.
     database
       .prepare(
         'DELETE FROM "unit" WHERE "normalizedName" IN (?, ?, ?, ?) OR "normalizedAbbreviation" IN (?, ?, ?, ?)',
@@ -372,6 +390,10 @@ test.describe("Items catalog journey", () => {
   let fixturesToRemove: ReturnType<typeof createItemFixtures> | null = null;
   let stockLockedFixturesToRemove: ReturnType<typeof createStockLockedItemFixtures> | null = null;
 
+  test.beforeEach(() => {
+    removeSeededRecipeItem();
+  });
+
   test.afterEach(() => {
     if (stockLockedFixturesToRemove) {
       removeStockLockedItemFixtures(stockLockedFixturesToRemove);
@@ -522,22 +544,27 @@ test.describe("Items catalog journey", () => {
 
     await signIn(page, "municipal.admin", adminPassword);
     await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
     const emptyState = page.locator('[data-slot="empty"]');
     await expect(
       emptyState.getByText("No Items yet.", { exact: true }),
     ).toBeVisible();
-    const createFromEmpty = emptyState.getByRole("button", {
-      name: "Add Item",
+    const createFromHeader = page.getByRole("button", {
+      name: "Create Item",
       exact: true,
     });
-    await createFromEmpty.focus();
-    await expect(createFromEmpty).toBeFocused();
-    await createFromEmpty.press("Enter");
+    await expect(emptyState.getByRole("button", {
+      name: "Create Item",
+      exact: true,
+    })).toHaveCount(0);
+    await createFromHeader.focus();
+    await expect(createFromHeader).toBeFocused();
+    await createFromHeader.press("Enter");
 
     const createDialog = page.getByRole("dialog");
     await expect(
-      createDialog.getByRole("heading", { name: "Add Item", exact: true }),
+      createDialog.getByRole("heading", { name: "Create Item", exact: true }),
     ).toBeVisible();
     await createDialog
       .getByRole("button", { name: "Cancel", exact: true })
@@ -564,7 +591,7 @@ test.describe("Items catalog journey", () => {
       }),
     ).toBeVisible();
     await expect(
-      filteredEmptyState.getByRole("button", { name: "Add Item", exact: true }),
+      filteredEmptyState.getByRole("button", { name: "Create Item", exact: true }),
     ).toHaveCount(0);
 
     await filteredEmptyState
@@ -585,6 +612,7 @@ test.describe("Items catalog journey", () => {
 
     await signIn(page);
     await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
     await expect(page).toHaveURL(/\/items$/);
     await expect(
@@ -689,7 +717,7 @@ test.describe("Items catalog journey", () => {
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await expect(page.locator('[data-can-manage-items="true"]')).toBeVisible();
     const addItemButton = page.getByRole("button", {
-      name: "Add Item",
+      name: "Create Item",
       exact: true,
     });
     await expect(addItemButton).toBeVisible();
@@ -698,12 +726,12 @@ test.describe("Items catalog journey", () => {
     await addItemButton.click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: "Add Item" })).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Create Item" })).toBeVisible();
     await expect(
       dialog.getByRole("button", { name: "Cancel", exact: true }),
     ).toBeVisible();
     await expect(
-      dialog.getByRole("button", { name: "Add Item", exact: true }),
+      dialog.getByRole("button", { name: "Create Item", exact: true }),
     ).toBeVisible();
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(dialog).toBeHidden();
@@ -727,7 +755,7 @@ test.describe("Items catalog journey", () => {
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
 
-    await dialog.getByRole("button", { name: "Add Item", exact: true }).click();
+    await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(dialog.getByText("Item name is required", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Category is required", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Base Unit is required", { exact: true })).toBeVisible();
@@ -738,7 +766,7 @@ test.describe("Items catalog journey", () => {
     await dialog.getByRole("combobox", { name: "Base Unit" }).click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
     await dialog.getByLabel("Item Note (optional)").fill("Kitchen staple");
-    await dialog.getByRole("button", { name: "Add Item", exact: true }).click();
+    await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
 
     await expect(dialog).toBeHidden();
     await expect(
@@ -882,7 +910,7 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await duplicateDialog.getByRole("combobox", { name: "Base Unit" }).click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
-    await duplicateDialog.getByRole("button", { name: "Add Item", exact: true }).click();
+    await duplicateDialog.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(
       duplicateDialog.locator(
         '[data-slot="alert"] [data-slot="alert-description"]',
@@ -984,6 +1012,7 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`items\\?itemsCategory=${fixtures.categoryId}$`));
     await page.reload();
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await expect(
       page.getByRole("combobox", { name: "Category filter" }),
     ).toContainText("Dry Goods");

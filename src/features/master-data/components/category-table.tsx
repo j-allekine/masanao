@@ -17,7 +17,7 @@ import type { CategoryListItem } from "../types";
 import { hasCategoryFilters } from "./category-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteCategoryDialog from "./delete-category-dialog";
-import MasterDataEmptyState from "./master-data-empty-state";
+import ListEmptyState from "@/components/workspace/list-empty-state";
 
 function CategoryRow({
   category,
@@ -80,7 +80,6 @@ export default function CategoryTable({
   search,
   onClearFilters,
   canManage,
-  onNew,
   onEdit,
   onSetActive,
   onDeleted,
@@ -90,7 +89,6 @@ export default function CategoryTable({
   search: string;
   onClearFilters: () => void;
   canManage: boolean;
-  onNew: () => void;
   onEdit: (category: CategoryListItem) => void;
   onSetActive: (category: CategoryListItem, isActive: boolean) => void;
   onDeleted: (category: CategoryListItem) => void;
@@ -100,22 +98,23 @@ export default function CategoryTable({
 
   if (categories.length === 0) {
     return (
-      <MasterDataEmptyState
+      <ListEmptyState
         icon={<Tags aria-hidden="true" />}
         hasFilters={hasFilters}
         filteredState={{
           title: "No Categories match your search.",
           description: "Clear the search to see the complete Category catalog.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
         }}
         emptyState={{
           title: "No Categories yet.",
           description:
             "An administrator can add the first Category to begin the catalog.",
         }}
-        canCreate={canManage}
-        createLabel="Add Category"
-        onCreate={onNew}
-        onClearFilters={onClearFilters}
       />
     );
   }

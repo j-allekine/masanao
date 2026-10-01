@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 
 import { setItemActiveAction } from "../actions";
 import { sortItemUnitConversions } from "../domain/item-unit-conversion";
@@ -16,7 +17,6 @@ import type {
 } from "../types";
 import ItemCreateDialog from "./item-create-dialog";
 import ItemUnitsSheet from "./item-units-sheet";
-import ItemPagination from "./item-pagination";
 import ItemToolbar from "./item-toolbar";
 import ItemsTable from "./items-table";
 import {
@@ -279,7 +279,7 @@ function ItemsWorkspaceContent({
             className="sm:min-w-[8rem]"
             onClick={openCreateDialog}
           >
-            Add Item
+            Create Item
           </WorkspacePrimaryAction>
         ) : null}
       </div>
@@ -296,7 +296,6 @@ function ItemsWorkspaceContent({
         items={paginatedItems}
         hasFilters={filtersAreActive}
         onClearFilters={clearFilters}
-        onCreate={openCreateDialog}
         canManage={canManageItems}
         onEdit={openEditDialog}
         onSetActive={handleSetActive}
@@ -312,7 +311,7 @@ function ItemsWorkspaceContent({
         onOpenChange={(open) => { if (!open) setUnitsItem(null); }}
         onSaved={handleUnitConversionSaved}
       />
-      <ItemPagination
+      <CatalogPagination
         page={currentPage}
         pageCount={pageCount}
         start={resultStart}

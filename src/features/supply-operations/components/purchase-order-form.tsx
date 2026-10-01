@@ -10,7 +10,6 @@ import {
 import { Plus, Save } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
   Field,
@@ -28,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
@@ -396,28 +395,22 @@ export default function PurchaseOrderForm({
         </FieldGroup>
       </div>
       <DialogFooter className="shrink-0">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting || !hasEligibleVendor}>
-          {isSubmitting ? (
-            <Spinner data-icon="inline-start" />
-          ) : mode === "create" ? (
-            <Plus data-icon="inline-start" />
-          ) : (
-            <Save data-icon="inline-start" />
-          )}
-          {isSubmitting
-            ? "Saving..."
-            : mode === "create"
-              ? "Add Purchase Order"
-              : "Save changes"}
-        </Button>
+        <WorkspaceFormActionButtons
+          onCancel={onCancel}
+          isPending={isSubmitting}
+          submitDisabled={!hasEligibleVendor}
+          pendingLabel="Saving..."
+          submitLabel={
+            mode === "create" ? "Create Purchase Order" : "Save changes"
+          }
+          submitIcon={
+            mode === "create" ? (
+              <Plus data-icon="inline-start" />
+            ) : (
+              <Save data-icon="inline-start" />
+            )
+          }
+        />
       </DialogFooter>
     </form>
   );

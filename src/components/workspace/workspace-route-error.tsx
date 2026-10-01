@@ -12,8 +12,8 @@ import {
 } from "@/lib/workspace-navigation";
 
 const errorUser: WorkspaceUser = {
-  name: "Municipal staff",
-  username: "staff account",
+  name: "Workspace unavailable",
+  username: "Please try again",
 };
 
 export default function WorkspaceRouteError({

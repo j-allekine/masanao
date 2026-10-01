@@ -1,9 +1,10 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import { forwardRef, type ComponentProps, type ComponentRef, type ReactNode } from "react";
+import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -49,22 +50,52 @@ export function WorkspaceSearchField({
   );
 }
 
-export function WorkspacePrimaryAction({
-  className,
-  children,
-  type = "button",
-  ...props
-}: ComponentProps<typeof Button>) {
+export const WorkspacePrimaryAction = forwardRef<
+  ComponentRef<typeof Button>,
+  ComponentProps<typeof Button> & { icon?: ReactNode }
+>(function WorkspacePrimaryAction(
+  {
+    className,
+    children,
+    icon = <Plus data-icon="inline-start" />,
+    type = "button",
+    ...props
+  },
+  ref,
+) {
   return (
     <Button
+      ref={ref}
       type={type}
-      size="sm"
-      className={cn("h-9 w-full sm:w-auto", className)}
+      size="lg"
+      className={cn("w-full sm:w-auto", className)}
       {...props}
     >
-      <Plus data-icon="inline-start" />
+      {icon}
       {children}
     </Button>
+  );
+});
+
+export function WorkspacePrimaryLink({
+  className,
+  fullWidth = false,
+  icon,
+  children,
+  ...props
+}: ComponentProps<typeof Link> & { fullWidth?: boolean; icon?: ReactNode }) {
+  return (
+    <Link
+      className={cn(
+        buttonVariants({ size: "lg" }),
+        fullWidth && "w-full sm:w-auto",
+        className,
+      )}
+      {...props}
+    >
+      {icon}
+      {children}
+    </Link>
   );
 }
 
