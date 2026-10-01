@@ -131,6 +131,7 @@ model Item {
   unitConversions ItemUnitConversion[]
   deliveryReceiptLines DeliveryReceiptLine[]
   inventoryLedgerMovements InventoryLedgerMovement[] @relation("InventoryLedgerMovementItem")
+  recipeIngredients RecipeIngredient[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -146,6 +147,7 @@ model ItemUnitConversion {
   updatedAt        DateTime @updatedAt
   item             Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
   alternateUnit    Unit     @relation("ItemUnitConversionAlternateUnit", fields: [alternateUnitId], references: [id], onDelete: Restrict)
+  recipeIngredients RecipeIngredient[]
 
   @@unique([itemId, alternateUnitId, baseUnitQuantity])
   @@index([itemId])
@@ -309,4 +311,36 @@ model MealSchedule {
 
   @@index([activityId])
   @@map("meal_schedule")
+}
+
+model Recipe {
+  id              String             @id
+  name            String
+  normalizedName  String             @unique(map: "recipe_normalized_name_key")
+  preparationNote String?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  ingredients     RecipeIngredient[]
+
+  @@map("recipe")
+}
+
+model RecipeIngredient {
+  id                   String              @id
+  recipeId             String
+  itemId               String
+  enteredQuantity      String
+  itemUnitConversionId String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  recipe               Recipe              @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  item                 Item                @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  itemUnitConversion   ItemUnitConversion? @relation(fields: [itemUnitConversionId], references: [id], onDelete: Restrict)
+
+  @@unique([recipeId, itemId])
+  @@index([recipeId])
+  @@index([itemId])
+  @@index([itemUnitConversionId])
+  @@map("recipe_ingredient")
 }

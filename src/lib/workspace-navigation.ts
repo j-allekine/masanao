@@ -3,6 +3,7 @@ export type WorkspaceSectionId =
   | "activity-designs"
   | "master-data"
   | "items"
+  | "recipes"
   | "purchase-orders"
 
 export type WorkspaceSectionGroupId =
@@ -42,6 +43,7 @@ export const workspaceSectionGroups: WorkspaceSectionGroup[] = [
     label: "Supply Operations",
     sections: [
       { id: "items", label: "Items", href: "/items", groupId: "supply-operations" },
+      { id: "recipes", label: "Recipes", href: "/recipes", groupId: "supply-operations" },
       {
         id: "purchase-orders",
         label: "Purchase Orders",

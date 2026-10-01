@@ -96,6 +96,77 @@ export default async function globalSetup() {
       adminPassword,
     );
 
+  database
+    .prepare(
+      `INSERT INTO "recipe"
+       ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run("e2e-recipe-active", "Chicken Tinola", "chicken tinola", 1);
+  database
+    .prepare(
+      `INSERT INTO "recipe"
+       ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run("e2e-recipe-inactive", "Retired Soup", "retired soup", 0);
+  const activeRecipes = Array.from({ length: 10 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+
+    return [
+      `e2e-recipe-zesty-${number}`,
+      `Zesty Recipe ${number}`,
+      `zesty recipe ${number}`,
+    ];
+  });
+  const insertRecipe = database.prepare(
+    `INSERT INTO "recipe"
+     ("id", "name", "normalizedName", "isActive", "createdAt", "updatedAt")
+     VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+  );
+  for (const [id, name, normalizedName] of activeRecipes) {
+    insertRecipe.run(id, name, normalizedName);
+  }
+
+  database
+    .prepare(
+      `INSERT INTO "item"
+       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-item-rice",
+      "Rice",
+      "rice",
+      "default-category-staples-dry-goods",
+      "default-unit-kilogram",
+      1,
+    );
+  database
+    .prepare(
+      `INSERT INTO "item_unit_conversion"
+       ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-conversion-rice-gram",
+      "e2e-recipe-item-rice",
+      "default-unit-gram",
+      "0.001",
+    );
+  database
+    .prepare(
+      `INSERT INTO "recipe_ingredient"
+       ("id", "recipeId", "itemId", "enteredQuantity", "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+    )
+    .run(
+      "e2e-recipe-active-rice",
+      "e2e-recipe-active",
+      "e2e-recipe-item-rice",
+      "1.5",
+    );
+
   const vendors = [
     [
       "e2e-vendor-acme",
