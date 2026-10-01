@@ -192,8 +192,9 @@ export default function ItemsTable({
         }}
         emptyState={{
           title: "No Items yet.",
-          description:
-            "Use Create Item to begin the supply catalog.",
+          description: canManage
+            ? "Use Create Item to begin the supply catalog."
+            : "Items added to the supply catalog will appear here.",
         }}
       />
     );

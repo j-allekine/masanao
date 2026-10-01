@@ -94,6 +94,70 @@ function removeSeededRecipeItem() {
   });
 }
 
+function restoreSeededRecipeItem() {
+  withE2eDatabase((database) => {
+    database.transaction(() => {
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO "unit"
+           ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        )
+        .run(
+          "default-unit-kilogram",
+          "Kilogram",
+          "kg",
+          "kilogram",
+          "kg",
+        );
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO "unit"
+           ("id", "name", "abbreviation", "normalizedName", "normalizedAbbreviation", "active", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        )
+        .run("default-unit-piece", "Piece", "pc", "piece", "pc");
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO "item"
+           ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        )
+        .run(
+          "e2e-recipe-item-rice",
+          "Rice",
+          "rice",
+          "default-category-staples-dry-goods",
+          "default-unit-kilogram",
+        );
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO "item_unit_conversion"
+           ("id", "itemId", "alternateUnitId", "baseUnitQuantity", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        )
+        .run(
+          "e2e-recipe-conversion-rice-gram",
+          "e2e-recipe-item-rice",
+          "default-unit-gram",
+          "0.001",
+        );
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO "recipe_ingredient"
+           ("id", "recipeId", "itemId", "enteredQuantity", "createdAt", "updatedAt")
+           VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        )
+        .run(
+          "e2e-recipe-active-rice",
+          "e2e-recipe-active",
+          "e2e-recipe-item-rice",
+          "1.5",
+        );
+    })();
+  });
+}
+
 function createItemFixtures() {
   const categoryId = randomUUID();
   const inactiveCategoryId = randomUUID();
@@ -399,10 +463,11 @@ test.describe("Items catalog journey", () => {
       removeStockLockedItemFixtures(stockLockedFixturesToRemove);
       stockLockedFixturesToRemove = null;
     }
-    if (!fixturesToRemove) return;
-
-    removeItemFixtures(fixturesToRemove);
-    fixturesToRemove = null;
+    if (fixturesToRemove) {
+      removeItemFixtures(fixturesToRemove);
+      fixturesToRemove = null;
+    }
+    restoreSeededRecipeItem();
   });
 
   test("explains the posted-stock locks in the Item lifecycle UI", async ({ page }) => {
@@ -622,6 +687,11 @@ test.describe("Items catalog journey", () => {
       page.getByRole("heading", { name: "Items", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("No Items yet.", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Items added to the supply catalog will appear here.", {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(
       page.locator('[data-can-manage-items="false"]'),
     ).toBeVisible();
