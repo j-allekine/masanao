@@ -54,7 +54,7 @@ export default function VendorDialog({
     closeDialog();
   }
 
-  const title = dialogState?.mode === "edit" ? "Edit Vendor" : "Add Vendor";
+  const title = dialogState?.mode === "edit" ? "Edit Vendor" : "Create Vendor";
 
   return (
     <>

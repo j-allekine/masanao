@@ -7,8 +7,8 @@ import {
 } from "@/lib/workspace-navigation";
 
 const loadingUser: WorkspaceUser = {
-  name: "Municipal staff",
-  username: "staff account",
+  name: "Loading workspace",
+  username: "Please wait",
 };
 
 function DefaultLoadingLayout() {

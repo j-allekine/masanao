@@ -87,14 +87,12 @@ export default function ActivityDesignTable({
   activityDesigns,
   filters,
   onClearFilters,
-  onNew,
   onEdit,
   onAddActivity,
 }: {
   activityDesigns: ActivityDesignListItem[];
   filters: { search: string };
   onClearFilters: () => void;
-  onNew: () => void;
   onEdit: (activityDesign: ActivityDesignListItem) => void;
   onAddActivity: (activityDesign: ActivityDesignListItem) => void;
 }) {
@@ -135,11 +133,7 @@ export default function ActivityDesignTable({
         }}
         emptyState={{
           title: "No Activity Designs yet.",
-          description: "Create an Activity Design to begin planning.",
-          action: {
-            label: "New Activity Design",
-            onClick: onNew,
-          },
+          description: "Use Create Activity Design to begin planning.",
         }}
       />
     );

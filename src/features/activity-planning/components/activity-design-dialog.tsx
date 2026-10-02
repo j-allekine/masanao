@@ -57,7 +57,7 @@ export default function ActivityDesignDialog({
   const title =
     dialogState?.mode === "edit"
       ? "Edit Activity Design"
-      : "New Activity Design";
+      : "Create Activity Design";
 
   return (
     <>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { WorkspacePrimaryLink } from "@/components/workspace/catalog-controls";
 import { cn } from "@/lib/utils";
 
 import type { PurchaseOrderDetailItem } from "../types";
@@ -105,10 +106,12 @@ export default function PurchaseOrderDetailContent({
               Posted receipts will remain visible here as this order is received.
             </p>
             </div>
-            <Link href={`/purchase-orders/${purchaseOrder.id}/record-delivery`} className={buttonVariants({ variant: "default" })}>
-              <FilePlus2 data-icon="inline-start" aria-hidden="true" />
+            <WorkspacePrimaryLink
+              href={`/purchase-orders/${purchaseOrder.id}/record-delivery`}
+              icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}
+            >
               Record delivery
-            </Link>
+            </WorkspacePrimaryLink>
           </div>
           {purchaseOrder.deliveryReceipts.length === 0 ? <Empty className="min-h-60 rounded-lg border bg-background" data-delivery-receipt-history="empty">
             <EmptyHeader>

@@ -68,7 +68,7 @@ export default function ItemCreateDialog({
         {open ? (
           <DialogContent className="max-h-[calc(100svh-2rem)] max-w-lg grid-rows-[auto_minmax(0,1fr)]">
             <DialogHeader>
-              <DialogTitle>{mode === "edit" ? "Edit Item" : "Add Item"}</DialogTitle>
+              <DialogTitle>{mode === "edit" ? "Edit Item" : "Create Item"}</DialogTitle>
               <DialogDescription>
                 {mode === "edit"
                   ? "Correct the Item definition. Assigned inactive lookups remain available unless you choose an active replacement."

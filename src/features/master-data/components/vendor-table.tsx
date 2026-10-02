@@ -23,7 +23,7 @@ import type { VendorListItem } from "../types";
 import { hasVendorFilters, type VendorFilters } from "./vendor-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteVendorDialog from "./delete-vendor-dialog";
-import MasterDataEmptyState from "./master-data-empty-state";
+import ListEmptyState from "@/components/workspace/list-empty-state";
 
 function VendorContactContext({ vendor }: { vendor: VendorListItem }) {
   const context = [vendor.contactNumber, vendor.email, vendor.address].filter(
@@ -176,7 +176,6 @@ export default function VendorTable({
   filters,
   onClearFilters,
   canManage,
-  onNew,
   onEdit,
   onToggle,
   onDeleted,
@@ -186,7 +185,6 @@ export default function VendorTable({
   filters: VendorFilters;
   onClearFilters: () => void;
   canManage: boolean;
-  onNew: () => void;
   onEdit: (vendor: VendorListItem) => void;
   onToggle: (vendor: VendorListItem) => void;
   onDeleted: (vendor: VendorListItem) => void;
@@ -196,22 +194,23 @@ export default function VendorTable({
 
   if (vendors.length === 0) {
     return (
-      <MasterDataEmptyState
+      <ListEmptyState
         icon={<span aria-hidden="true">V</span>}
         hasFilters={hasFilters}
         filteredState={{
           title: "No Vendors match your search.",
           description: "Clear the search to see the complete Vendor catalog.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
         }}
         emptyState={{
           title: "No Vendors yet.",
           description:
             "An administrator can add the first Vendor to begin the catalog.",
         }}
-        canCreate={canManage}
-        createLabel="Add Vendor"
-        onCreate={onNew}
-        onClearFilters={onClearFilters}
       />
     );
   }

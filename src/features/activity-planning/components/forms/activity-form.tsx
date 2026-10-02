@@ -11,7 +11,6 @@ import { Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import {
   Field,
@@ -21,7 +20,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Spinner } from "@/components/ui/spinner";
+import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Textarea } from "@/components/ui/textarea";
 
 import { createActivityAction, updateActivityAction } from "../../actions";
@@ -479,25 +478,6 @@ export default function ActivityForm({
     </>
   );
 
-  const submitButton = (
-    <Button type="submit" disabled={isSubmitting}>
-      {isSubmitting ? (
-        <Spinner data-icon="inline-start" />
-      ) : mode === "edit" ? (
-        <Pencil data-icon="inline-start" />
-      ) : (
-        <Plus data-icon="inline-start" />
-      )}
-      {isSubmitting
-        ? mode === "edit"
-          ? "Saving…"
-          : "Creating…"
-        : mode === "edit"
-          ? "Save changes"
-          : "Create Activity"}
-    </Button>
-  );
-
   return (
     <form
       className={
@@ -557,20 +537,35 @@ export default function ActivityForm({
       )}
       {layout === "dialog" ? (
         <DialogFooter className="shrink-0">
-          {onCancel ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-          ) : null}
-          {submitButton}
+          <WorkspaceFormActionButtons
+            onCancel={onCancel}
+            isPending={isSubmitting}
+            pendingLabel={mode === "edit" ? "Saving…" : "Creating…"}
+            submitLabel={mode === "edit" ? "Save changes" : "Create Activity"}
+            submitIcon={
+              mode === "edit" ? (
+                <Pencil data-icon="inline-start" />
+              ) : (
+                <Plus data-icon="inline-start" />
+              )
+            }
+          />
         </DialogFooter>
       ) : (
-        <CardFooter className="justify-end gap-2">{submitButton}</CardFooter>
+        <CardFooter className="justify-end gap-2">
+          <WorkspaceFormActionButtons
+            isPending={isSubmitting}
+            pendingLabel={mode === "edit" ? "Saving…" : "Creating…"}
+            submitLabel={mode === "edit" ? "Save changes" : "Create Activity"}
+            submitIcon={
+              mode === "edit" ? (
+                <Pencil data-icon="inline-start" />
+              ) : (
+                <Plus data-icon="inline-start" />
+              )
+            }
+          />
+        </CardFooter>
       )}
     </form>
   );

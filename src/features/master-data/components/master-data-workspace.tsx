@@ -597,7 +597,6 @@ export default function MasterDataWorkspace({
               filters={filters}
               onClearFilters={clearFilters}
               canManage={canManageUnits}
-              onNew={openCreateDialog}
               onEdit={openEditDialog}
               onToggle={handleToggle}
               onDeleted={handleDeleted}

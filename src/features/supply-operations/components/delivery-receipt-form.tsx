@@ -13,7 +13,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -372,11 +372,23 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     </Field>
 
     {presentation === "dialog" ? <DialogFooter className="sticky bottom-0 z-10 mx-0 mb-0 rounded-none px-6 py-4">
-      <Button type="button" variant="outline" disabled={posting} onClick={() => router.push(`/purchase-orders/${purchaseOrderId}`)}>Cancel</Button>
-      <Button type="submit" disabled={posting || !items.length || !lines.length}>{posting ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}{posting ? "Posting..." : "Post delivery"}</Button>
+      <WorkspaceFormActionButtons
+        onCancel={() => router.push(`/purchase-orders/${purchaseOrderId}`)}
+        isPending={posting}
+        submitDisabled={!items.length || !lines.length}
+        pendingLabel="Posting..."
+        submitLabel="Post delivery"
+        submitIcon={<Save data-icon="inline-start" />}
+      />
     </DialogFooter> : <div className="flex flex-wrap justify-end gap-3">
-      <Button type="button" variant="outline" disabled={posting} onClick={() => router.push(`/purchase-orders/${purchaseOrderId}`)}>Cancel</Button>
-      <Button type="submit" disabled={posting || !items.length || !lines.length}>{posting ? <Spinner data-icon="inline-start" /> : <Save data-icon="inline-start" />}{posting ? "Posting..." : "Post delivery"}</Button>
+      <WorkspaceFormActionButtons
+        onCancel={() => router.push(`/purchase-orders/${purchaseOrderId}`)}
+        isPending={posting}
+        submitDisabled={!items.length || !lines.length}
+        pendingLabel="Posting..."
+        submitLabel="Post delivery"
+        submitIcon={<Save data-icon="inline-start" />}
+      />
     </div>}
   </form>;
 }

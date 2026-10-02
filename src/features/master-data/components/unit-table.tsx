@@ -16,7 +16,7 @@ import type { UnitListItem } from "../types";
 import { hasUnitFilters, type UnitFilters } from "./unit-filters";
 import MasterDataActionsMenu from "./master-data-actions-menu";
 import DeleteUnitDialog from "./delete-unit-dialog";
-import MasterDataEmptyState from "./master-data-empty-state";
+import ListEmptyState from "@/components/workspace/list-empty-state";
 
 function UnitRow({
   unit,
@@ -77,7 +77,6 @@ export default function UnitTable({
   filters,
   onClearFilters,
   canManage,
-  onNew,
   onEdit,
   onToggle,
   onDeleted,
@@ -87,7 +86,6 @@ export default function UnitTable({
   filters: UnitFilters;
   onClearFilters: () => void;
   canManage: boolean;
-  onNew: () => void;
   onEdit: (unit: UnitListItem) => void;
   onToggle: (unit: UnitListItem) => void;
   onDeleted: (unit: UnitListItem) => void;
@@ -97,22 +95,23 @@ export default function UnitTable({
 
   if (units.length === 0) {
     return (
-      <MasterDataEmptyState
+      <ListEmptyState
         icon={<span aria-hidden="true">U</span>}
         hasFilters={hasFilters}
         filteredState={{
           title: "No Units match your search.",
           description: "Clear the search to see the complete Unit catalog.",
+          action: {
+            label: "Clear search",
+            variant: "outline",
+            onClick: onClearFilters,
+          },
         }}
         emptyState={{
           title: "No Units yet.",
           description:
             "An administrator can add the first Unit to begin the catalog.",
         }}
-        canCreate={canManage}
-        createLabel="Create Unit"
-        onCreate={onNew}
-        onClearFilters={onClearFilters}
       />
     );
   }

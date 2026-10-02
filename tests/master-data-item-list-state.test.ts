@@ -4,7 +4,7 @@ import {
   filterItems,
   hasItemListFilters,
 } from "@/features/supply-operations/components/item-filters";
-import { getItemResultsSummary } from "@/features/supply-operations/components/item-pagination";
+import { getCatalogResultsSummary } from "@/components/workspace/catalog-pagination";
 import {
   getItemListQuery,
   getItemListState,
@@ -106,13 +106,13 @@ describe("Items list filtering", () => {
 
 describe("Items pagination summary", () => {
   it("formats empty, singular, and paged results accurately", () => {
-    expect(getItemResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
+    expect(getCatalogResultsSummary({ start: 0, end: 0, total: 0 })).toBe(
       "No results",
     );
-    expect(getItemResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
+    expect(getCatalogResultsSummary({ start: 1, end: 1, total: 1 })).toBe(
       "Showing 1 result",
     );
-    expect(getItemResultsSummary({ start: 11, end: 20, total: 25 })).toBe(
+    expect(getCatalogResultsSummary({ start: 11, end: 20, total: 25 })).toBe(
       "Showing 11 to 20 of 25 results",
     );
   });

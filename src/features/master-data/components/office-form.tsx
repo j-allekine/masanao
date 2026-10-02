@@ -10,7 +10,6 @@ import {
 import { Plus, Save } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
   Field,
@@ -19,7 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
+import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 
 import { createOfficeAction, updateOfficeAction } from "../actions";
 import type {
@@ -306,28 +305,19 @@ export default function OfficeForm({
         </FieldGroup>
       </div>
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={onCancel}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <Spinner data-icon="inline-start" />
-          ) : mode === "create" ? (
-            <Plus data-icon="inline-start" />
-          ) : (
-            <Save data-icon="inline-start" />
-          )}
-          {isSubmitting
-            ? "Saving…"
-            : mode === "create"
-              ? "Add Office"
-              : "Save changes"}
-        </Button>
+        <WorkspaceFormActionButtons
+          onCancel={onCancel}
+          isPending={isSubmitting}
+          pendingLabel="Saving…"
+          submitLabel={mode === "create" ? "Create Office" : "Save changes"}
+          submitIcon={
+            mode === "create" ? (
+              <Plus data-icon="inline-start" />
+            ) : (
+              <Save data-icon="inline-start" />
+            )
+          }
+        />
       </DialogFooter>
     </form>
   );

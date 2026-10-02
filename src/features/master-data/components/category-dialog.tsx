@@ -55,7 +55,7 @@ export default function CategoryDialog({
   }
 
   const title =
-    dialogState?.mode === "edit" ? "Edit Category" : "Add Category";
+    dialogState?.mode === "edit" ? "Edit Category" : "Create Category";
 
   return (
     <>
