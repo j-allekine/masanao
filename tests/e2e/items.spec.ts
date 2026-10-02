@@ -1015,6 +1015,7 @@ test.describe("Items catalog journey", () => {
     ).toBeVisible();
     await page.reload();
     await expect(page).toHaveURL(/items\?itemsPage=2$/);
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await expect(page.getByText("Showing 11 to 14 of 14 results", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("table").getByText("Retired Rice", { exact: true }),
