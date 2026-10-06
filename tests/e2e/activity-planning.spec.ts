@@ -234,9 +234,28 @@ test.describe("Activity planning journey", () => {
         .getByRole("textbox", { name: "Title", exact: true })
         .evaluate((element) => getComputedStyle(element).fontFamily);
 
-      await expect(
-        designDialog.getByRole("button", { name: "Fiscal Year", exact: true }),
-      ).toHaveCSS("font-family", designBodyFace);
+      const fiscalYearTrigger = designDialog.getByRole("button", {
+        name: "Fiscal Year",
+        exact: true,
+      });
+      await expect(fiscalYearTrigger).toHaveCSS("font-family", designBodyFace);
+      await fiscalYearTrigger.click();
+
+      const fiscalYearOptions = page.getByRole("group", {
+        name: "Fiscal years",
+      });
+      await expect(fiscalYearOptions).toBeVisible();
+      await expect(page.getByText("2020–2029", { exact: true })).toHaveCSS(
+        "font-family",
+        designBodyFace,
+      );
+      expect(
+        await fiscalYearOptions
+          .getByRole("button")
+          .evaluateAll((buttons) =>
+            buttons.map((button) => getComputedStyle(button).fontFamily),
+          ),
+      ).toEqual(Array.from({ length: 10 }, () => designBodyFace));
     } finally {
       deleteDesigns([activityDesign]);
     }
