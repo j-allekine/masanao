@@ -51,14 +51,12 @@ export default function VendorsWorkspace({
       onSearchChange={onSearchChange}
       canCreate={canManage}
       onCreate={onNew}
-      createLabel="Add Vendor"
     >
       <VendorTable
         vendors={vendors}
         filters={filters}
         onClearFilters={onClearFilters}
         canManage={canManage}
-        onNew={onNew}
         onEdit={onEdit}
         onToggle={onToggle}
         onDeleted={onDeleted}

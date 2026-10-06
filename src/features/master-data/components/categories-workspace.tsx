@@ -150,14 +150,12 @@ export default function CategoriesWorkspace({
       onSearchChange={onSearchChange}
       canCreate={canManage}
       onCreate={openCreateDialog}
-      createLabel="Add Category"
     >
       <CategoryTable
         categories={categories}
         search={search}
         onClearFilters={onClearFilters}
         canManage={canManage}
-        onNew={openCreateDialog}
         onEdit={openEditDialog}
         onSetActive={handleSetActive}
         onDeleted={handleDeleted}

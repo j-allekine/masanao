@@ -54,7 +54,7 @@ export default function OfficeDialog({
     closeDialog();
   }
 
-  const title = dialogState?.mode === "edit" ? "Edit Office" : "Add Office";
+  const title = dialogState?.mode === "edit" ? "Edit Office" : "Create Office";
 
   return (
     <>

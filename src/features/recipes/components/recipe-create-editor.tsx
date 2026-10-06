@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
+import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -443,13 +443,16 @@ export default function RecipeCreateEditor({
                   Add Ingredient
                 </Button>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button type="button" variant="outline" disabled={isSubmitting} onClick={cancelEditor}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || items.length === 0}>
-                    {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-                    {isSubmitting ? "Saving..." : recipe ? "Save Recipe" : "Create Recipe"}
-                  </Button>
+                  <WorkspaceFormActionButtons
+                    onCancel={cancelEditor}
+                    isPending={isSubmitting}
+                    submitDisabled={items.length === 0}
+                    pendingLabel="Saving..."
+                    submitLabel={recipe ? "Save Recipe" : "Create Recipe"}
+                    submitIcon={
+                      recipe ? undefined : <Plus data-icon="inline-start" />
+                    }
+                  />
                 </div>
               </div>
             </CardContent>

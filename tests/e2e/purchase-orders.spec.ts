@@ -156,7 +156,7 @@ test.describe("Purchase Orders read journey", () => {
         page.locator('[data-can-manage-purchase-orders="false"]'),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Add Purchase Order", exact: true }),
+        page.getByRole("button", { name: "Create Purchase Order", exact: true }),
       ).toHaveCount(0);
       await expect(
         desktopTable.getByRole("columnheader", {
@@ -320,7 +320,7 @@ test.describe("Purchase Orders administration journey", () => {
       ).toBeVisible();
 
       const addButton = page.getByRole("button", {
-        name: "Add Purchase Order",
+        name: "Create Purchase Order",
         exact: true,
       });
       await expect(addButton).toBeVisible();
@@ -329,7 +329,7 @@ test.describe("Purchase Orders administration journey", () => {
 
       const dialog = page.getByRole("dialog");
       await expect(
-        dialog.getByRole("heading", { name: "Add Purchase Order", exact: true }),
+        dialog.getByRole("heading", { name: "Create Purchase Order", exact: true }),
       ).toBeVisible();
       await expect(
         dialog.getByRole("textbox", {
@@ -357,7 +357,7 @@ test.describe("Purchase Orders administration journey", () => {
         .getByLabel("Note (optional)", { exact: true })
         .fill("  Kitchen delivery  ");
       await dialog
-        .getByRole("button", { name: "Add Purchase Order", exact: true })
+        .getByRole("button", { name: "Create Purchase Order", exact: true })
         .click();
       await expect(dialog).toBeHidden();
 
@@ -401,7 +401,7 @@ test.describe("Purchase Orders administration journey", () => {
         .getByRole("option", { name: "Acme Foods", exact: true })
         .click();
       await duplicateDialog
-        .getByRole("button", { name: "Add Purchase Order", exact: true })
+        .getByRole("button", { name: "Create Purchase Order", exact: true })
         .click();
       await expect(
         duplicateDialog.locator(

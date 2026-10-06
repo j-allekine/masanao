@@ -12,7 +12,7 @@ import ActivityCreateDialog from "./activity-create-dialog";
 import ActivityDesignDialog, {
   type ActivityDesignDialogState,
 } from "./activity-design-dialog";
-import ActivityDesignPagination from "./activity-design-pagination";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
 import {
   filterActivityDesigns,
   type ActivityDesignFilters,
@@ -158,13 +158,12 @@ export default function ActivityDesignsWorkspace({
         activityDesigns={paginatedActivityDesigns}
         filters={filters}
         onClearFilters={clearFilters}
-        onNew={openCreateDialog}
         onEdit={(activityDesign) =>
           setDialogState({ mode: "edit", activityDesign })
         }
         onAddActivity={setActivityDesignForCreate}
       />
-      <ActivityDesignPagination
+      <CatalogPagination
         page={currentPage}
         pageCount={pageCount}
         start={resultStart}

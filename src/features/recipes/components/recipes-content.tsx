@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { buttonVariants } from "@/components/ui/button";
-import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls";
+import {
+  WorkspaceCatalogToolbar,
+  WorkspacePrimaryLink,
+} from "@/components/workspace/catalog-controls";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
@@ -192,9 +194,14 @@ export default function RecipesContent({
             </p>
           </div>
           {canManageRecipes ? (
-            <Link id="new-recipe" href="/recipes/new" className={buttonVariants({ size: "sm" })}>
+            <WorkspacePrimaryLink
+              id="new-recipe"
+              href="/recipes/new"
+              fullWidth
+              icon={<Plus data-icon="inline-start" />}
+            >
               Create Recipe
-            </Link>
+            </WorkspacePrimaryLink>
           ) : null}
         </div>
 
