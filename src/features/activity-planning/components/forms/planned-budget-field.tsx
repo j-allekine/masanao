@@ -61,7 +61,7 @@ export default function PlannedBudgetField({
           ref={inputRef}
           id="plannedBudgetPesos"
           name="plannedBudgetPesos"
-          className="font-mono tabular-nums"
+          className="tabular-nums"
           type="text"
           inputMode="decimal"
           value={value}
