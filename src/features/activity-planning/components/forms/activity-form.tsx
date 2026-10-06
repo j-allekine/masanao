@@ -144,7 +144,7 @@ function ActivityTextField({
       <Input
         id={id}
         name={id}
-        className={type === "number" ? "font-mono tabular-nums" : undefined}
+        className={type === "number" ? "tabular-nums" : undefined}
         type={type}
         value={value}
         min={min}
@@ -196,7 +196,7 @@ function ActivityParticipantCountField({
         ref={inputRef}
         id="plannedParticipantCount"
         name="plannedParticipantCount"
-        className="font-mono tabular-nums"
+        className="tabular-nums"
         type="text"
         inputMode="numeric"
         value={value}
