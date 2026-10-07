@@ -201,6 +201,9 @@ test.describe("Activity planning journey", () => {
     test.setTimeout(90_000);
 
     await signIn(page);
+    await page.clock.install({
+      time: new Date("2026-09-01T09:00:00.000Z"),
+    });
     await page.goto("/activities");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 
@@ -392,23 +395,9 @@ test.describe("Activity planning journey", () => {
 
       await activitySearch.fill("Global Activity Updated");
       await expect(updatedRow).toBeVisible();
-      const planningMenu = page.getByRole("navigation", { name: "Planning sections" });
-      await planningMenu
-        .getByRole("link", { name: "Activity Designs", exact: true })
-        .click();
-      await expect(page).toHaveURL(/\/activity-designs/);
-      await planningMenu.getByRole("link", { name: "Activities", exact: true }).click();
-      await expect(page).toHaveURL(/\/activities/);
       await expect(
-        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
-      ).toHaveValue("Global Activity Updated");
-      await page.goBack();
-      await expect(page).toHaveURL(/\/activity-designs/);
-      await page.goForward();
-      await expect(page).toHaveURL(/\/activities/);
-      await expect(
-        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
-      ).toHaveValue("Global Activity Updated");
+        page.getByRole("navigation", { name: "Planning sections" }),
+      ).toHaveCount(0);
 
       const staleRow = page
         .getByRole("row")

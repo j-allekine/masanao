@@ -3,4 +3,3 @@ export { default as ActivityDesignDetailContent } from "./components/activity-de
 export { default as ActivityDetailContent } from "./components/activity-detail-content";
 export { default as MealScheduleDetailContent } from "./components/meal-schedule-detail-content";
 export { default as ActivitiesContent } from "./components/activities-content";
-export { default as PlanningSectionMenu } from "./components/planning-section-menu";

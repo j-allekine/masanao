@@ -19,7 +19,7 @@ import {
 } from "./activity-design-filters";
 import ActivityDesignTable from "./activity-design-table";
 import ActivityDesignToolbar from "./activity-design-toolbar";
-import PlanningSectionMenu from "./planning-section-menu";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
   getPlanningListState,
   getPlanningListQuery,
@@ -139,21 +139,29 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <div
-      className="flex flex-col gap-0"
+    <main
+      className="flex min-w-0 flex-col gap-6"
       data-client-ready={isHydrated ? "true" : undefined}
     >
+      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-heading-1 font-semibold">Activity Designs</h1>
+          <p className="text-body text-muted-foreground">
+            Plan the municipal kitchen activities that come next.
+          </p>
+        </div>
+        <WorkspacePrimaryAction
+          id="new-activity-design"
+          className="sm:min-w-[12rem]"
+          onClick={openCreateDialog}
+        >
+          Create Activity Design
+        </WorkspacePrimaryAction>
+      </div>
       <ActivityDesignToolbar
         search={filters.search}
         onSearchChange={updateSearch}
-        onCreate={openCreateDialog}
       />
-      <div className="mt-6">
-        <PlanningSectionMenu
-          activeSection="activity-designs"
-          query={currentQuery}
-        />
-      </div>
       <ActivityDesignTable
         activityDesigns={paginatedActivityDesigns}
         filters={filters}
@@ -192,6 +200,6 @@ export default function ActivityDesignsWorkspace({
           }
         }}
       />
-    </div>
+    </main>
   );
 }
