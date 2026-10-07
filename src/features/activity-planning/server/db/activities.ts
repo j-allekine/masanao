@@ -5,6 +5,7 @@ import { prisma } from "@/prisma/client";
 
 import type { ActivityInput } from "../../schemas/activity";
 import type {
+  ActivityDetailItem,
   ActivityListItem,
   ActivityWorkspaceListItem,
 } from "../../types";
@@ -50,6 +51,17 @@ const activityWorkspaceListSelect = {
     select: { mealSchedules: true },
   },
 } as const;
+
+const activityDetailSelect = {
+  ...activitySelect,
+  activityDesign: {
+    select: {
+      id: true,
+      activityDesignNo: true,
+      title: true,
+    },
+  },
+} satisfies Prisma.ActivitySelect;
 
 const activityWorkspaceListOrderBy = [
   { createdAt: "desc" },
@@ -149,6 +161,23 @@ export async function listActivityWorkspaceRecords(): Promise<
   });
 
   return activities.map(toActivityWorkspaceListItem);
+}
+
+export async function getActivityRecord(
+  activityDesignId: string,
+  activityId: string,
+): Promise<ActivityDetailItem | null> {
+  const activity = await prisma.activity.findFirst({
+    where: { id: activityId, activityDesignId },
+    select: activityDetailSelect,
+  });
+
+  if (!activity) return null;
+
+  return {
+    ...toActivityListItem(activity),
+    activityDesign: activity.activityDesign,
+  };
 }
 
 export async function createActivityRecord(

@@ -105,9 +105,15 @@ function createActivityFixture({
   officeName: string;
   scheduledDate: string;
 }) {
-  const activity = {
+  const activity: ActivityFixture = {
     id: randomUUID(),
     activityDesignId,
+    name,
+    officeName,
+    particulars: null,
+    venue: null,
+    plannedParticipantCount: null,
+    plannedBudgetCentavos: null,
   };
 
   withE2eDatabase((database) => {
@@ -638,6 +644,120 @@ test.describe("Activity planning journey", () => {
       deleteActivityFixture(plannedActivity.id);
       deleteActivityFixture(otherActivity.id);
       deleteDesigns([populatedDesign, emptyDesign, otherDesign]);
+    }
+  });
+
+  test("opens Activity records with their direct Meal Schedules and contextual creation", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    await signIn(page);
+    const design = createDesignFixture("E2E Activity Record Plan");
+    const populatedActivity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "E2E Populated Activity",
+      officeName: "E2E Activity Office",
+      scheduledDate: "2026-10-07T00:00:00.000Z",
+    });
+    const emptyActivity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "E2E Empty Activity",
+      officeName: "E2E Empty Office",
+      scheduledDate: "2026-10-08T00:00:00.000Z",
+    });
+    const otherDesign = createDesignFixture("E2E Other Activity Record Plan");
+    const otherActivity = createActivityFixture({
+      activityDesignId: otherDesign.id,
+      name: "E2E Unrelated Activity Record",
+      officeName: "E2E Other Office",
+      scheduledDate: "2026-10-09T00:00:00.000Z",
+    });
+    const mealScheduleId = createMealScheduleFixture(populatedActivity.id);
+
+    try {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 720 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto(`/activity-designs/${design.id}`);
+
+        const activityRow = page
+          .getByRole("row")
+          .filter({ hasText: populatedActivity.name });
+        await activityRow.getByRole("link", { name: "Open Activity", exact: true }).click();
+
+        await expect(page).toHaveURL(
+          new RegExp(
+            `/activity-designs/${design.id}/activities/${populatedActivity.id}$`,
+          ),
+        );
+        await expect(
+          page.getByRole("heading", { name: populatedActivity.name, exact: true }),
+        ).toBeVisible();
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: design.activityDesignNo, exact: true }),
+        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        await expect(
+          page.getByRole("link", { name: "Back to Activity Design", exact: true }),
+        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
+        await expect(page.getByText("12:00", { exact: true })).toBeVisible();
+        await expect(page.getByText("1,250", { exact: true })).toBeVisible();
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+
+        await page.goto(
+          `/activity-designs/${design.id}/activities/${emptyActivity.id}`,
+        );
+        await expect(
+          page.getByText("No Meal Schedules yet.", { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(4);
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+      }
+
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.goto(`/activity-designs/${design.id}/activities/${emptyActivity.id}`);
+      await page
+        .getByRole("button", { name: "Add Meal Schedule", exact: true })
+        .last()
+        .click();
+      const createDialog = page.getByRole("dialog");
+      await expect(createDialog).toContainText(
+        `Add a Meal Schedule under “${emptyActivity.name}”`,
+      );
+      await createDialog
+        .getByRole("textbox", { name: "Meal Schedule label", exact: true })
+        .fill("Afternoon Snack");
+      await createDialog.locator("#mealScheduleTime").fill("15:30");
+      await createDialog
+        .getByRole("spinbutton", { name: "Planned servings (optional)", exact: true })
+        .fill("80");
+      await createDialog
+        .getByRole("button", { name: "Add Meal Schedule", exact: true })
+        .click();
+      await expect(createDialog).toHaveCount(0);
+      await expect(page.getByText("Afternoon Snack", { exact: true })).toBeVisible();
+      await expect(page.getByText("15:30", { exact: true })).toBeVisible();
+      await expect(page.getByText("80", { exact: true })).toBeVisible();
+
+      await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(`/activity-designs/${design.id}/activities/${otherActivity.id}`);
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+    } finally {
+      deleteDesigns([design, otherDesign]);
     }
   });
 

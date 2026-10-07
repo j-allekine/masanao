@@ -70,6 +70,14 @@ export type ActivityDesignDetailItem = ActivityDesignListItem & {
   activities: ActivityDesignDetailActivity[];
 };
 
+export type ActivityDetailItem = ActivityListItem & {
+  activityDesign: {
+    id: string;
+    activityDesignNo: string;
+    title: string;
+  };
+};
+
 export type ActivityEditableListItem = Pick<
   ActivityListItem,
   | "id"
