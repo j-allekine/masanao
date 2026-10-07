@@ -16,6 +16,7 @@ async function signIn(page: Page) {
   });
 
   expect(response.status()).toBe(200);
+  await page.clock.install({ time: new Date("2026-09-01T12:00:00") });
   await page.goto("/activity-designs");
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
@@ -187,6 +188,71 @@ function deleteDesigns(designs: ActivityDesignFixture[]) {
 }
 
 test.describe("Activity planning journey", () => {
+  test("uses the body face for Planning numeric controls", async ({ page }) => {
+    await signIn(page);
+
+    const title = "E2E Typography Alignment";
+    const activityDesign = createDesignFixture(title);
+
+    try {
+      await page.goto("/activities");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByRole("button", { name: "Create Activity", exact: true }).click();
+
+      const dialog = page.getByRole("dialog");
+      const bodyFace = await dialog
+        .getByRole("textbox", { name: "Activity name", exact: true })
+        .evaluate((element) => getComputedStyle(element).fontFamily);
+
+      await expect(
+        dialog.getByRole("textbox", {
+          name: "Planned participant count (optional)",
+          exact: true,
+        }),
+      ).toHaveCSS("font-family", bodyFace);
+      await expect(
+        dialog.getByRole("textbox", {
+          name: "Planned budget (optional)",
+          exact: true,
+        }),
+      ).toHaveCSS("font-family", bodyFace);
+
+      await page.goto("/activity-designs");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByRole("button", { name: "Create Activity Design", exact: true }).click();
+
+      const designDialog = page.getByRole("dialog");
+      const designBodyFace = await designDialog
+        .getByRole("textbox", { name: "Title", exact: true })
+        .evaluate((element) => getComputedStyle(element).fontFamily);
+
+      const fiscalYearTrigger = designDialog.getByRole("button", {
+        name: "Fiscal Year",
+        exact: true,
+      });
+      await expect(fiscalYearTrigger).toHaveCSS("font-family", designBodyFace);
+      await fiscalYearTrigger.click();
+
+      const fiscalYearOptions = page.getByRole("group", {
+        name: "Fiscal years",
+      });
+      await expect(fiscalYearOptions).toBeVisible();
+      await expect(page.getByText("2020–2029", { exact: true })).toHaveCSS(
+        "font-family",
+        designBodyFace,
+      );
+      expect(
+        await fiscalYearOptions
+          .getByRole("button")
+          .evaluateAll((buttons) =>
+            buttons.map((button) => getComputedStyle(button).fontFamily),
+          ),
+      ).toEqual(Array.from({ length: 10 }, () => designBodyFace));
+    } finally {
+      deleteDesigns([activityDesign]);
+    }
+  });
+
   test("manages Activities globally with parent selection, editing, and protected deletion", async ({
     page,
   }) => {
