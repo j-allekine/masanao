@@ -78,6 +78,20 @@ export type ActivityDetailItem = ActivityListItem & {
   };
 };
 
+export type MealScheduleDetailItem = MealScheduleListItem & {
+  activity: {
+    id: string;
+    name: string;
+    officeName: string;
+    venue: string | null;
+    activityDesign: {
+      id: string;
+      activityDesignNo: string;
+      title: string;
+    };
+  };
+};
+
 export type ActivityEditableListItem = Pick<
   ActivityListItem,
   | "id"

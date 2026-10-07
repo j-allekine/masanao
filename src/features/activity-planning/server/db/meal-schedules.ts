@@ -4,7 +4,10 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
 import type { MealScheduleInput } from "../../schemas/meal-schedule";
-import type { MealScheduleListItem } from "../../types";
+import type {
+  MealScheduleDetailItem,
+  MealScheduleListItem,
+} from "../../types";
 
 export const mealScheduleSelect = {
   id: true,
@@ -32,6 +35,47 @@ export function toMealScheduleListItem(schedule: {
     label: schedule.label,
     mealTime: schedule.mealTime,
     plannedServings: schedule.plannedServings,
+  };
+}
+
+const mealScheduleDetailSelect = {
+  ...mealScheduleSelect,
+  activity: {
+    select: {
+      id: true,
+      name: true,
+      officeName: true,
+      venue: true,
+      activityDesign: {
+        select: {
+          id: true,
+          activityDesignNo: true,
+          title: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.MealScheduleSelect;
+
+export async function getMealScheduleRecord(
+  activityDesignId: string,
+  activityId: string,
+  mealScheduleId: string,
+): Promise<MealScheduleDetailItem | null> {
+  const mealSchedule = await prisma.mealSchedule.findFirst({
+    where: {
+      id: mealScheduleId,
+      activityId,
+      activity: { activityDesignId },
+    },
+    select: mealScheduleDetailSelect,
+  });
+
+  if (!mealSchedule) return null;
+
+  return {
+    ...toMealScheduleListItem(mealSchedule),
+    activity: mealSchedule.activity,
   };
 }
 

@@ -705,6 +705,70 @@ test.describe("Activity planning journey", () => {
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
         await expect(page.getByText("12:00", { exact: true })).toBeVisible();
         await expect(page.getByText("1,250", { exact: true })).toBeVisible();
+
+        const mealScheduleRow = page
+          .getByRole("row")
+          .filter({ hasText: "Lunch" });
+        const openMealSchedule = mealScheduleRow.getByRole("link", {
+          name: "Open Meal Schedule",
+          exact: true,
+        });
+        await expect(openMealSchedule).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
+        );
+        await openMealSchedule.focus();
+        await expect(openMealSchedule).toBeFocused();
+        await page.keyboard.press("Enter");
+
+        await expect(page).toHaveURL(
+          new RegExp(
+            `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}$`,
+          ),
+        );
+        await expect(
+          page.getByRole("heading", { name: "Lunch · 12:00", exact: true }),
+        ).toBeVisible();
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: populatedActivity.name, exact: true }),
+        ).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+        );
+        const backToActivity = page.getByRole("link", {
+          name: "Back to Activity",
+          exact: true,
+        });
+        await expect(backToActivity).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+        );
+        await expect(
+          page.getByText(
+            "Supply issuance will be prepared from this Meal Schedule in a later operational slice.",
+            { exact: true },
+          ),
+        ).toBeVisible();
+        await expect(page.getByText("Food Supplies", { exact: true })).toHaveCount(0);
+        await expect(
+          page.getByText("Direct-use Stock Items", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByText("Stock availability", { exact: true }),
+        ).toHaveCount(0);
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        await backToActivity.focus();
+        await expect(backToActivity).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(page).toHaveURL(
+          new RegExp(`/activity-designs/${design.id}/activities/${populatedActivity.id}$`),
+        );
         expect(
           await page.evaluate(() => ({
             scrollWidth: document.documentElement.scrollWidth,
@@ -729,6 +793,7 @@ test.describe("Activity planning journey", () => {
 
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(`/activity-designs/${design.id}/activities/${emptyActivity.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page
         .getByRole("button", { name: "Add Meal Schedule", exact: true })
         .last()
@@ -755,6 +820,18 @@ test.describe("Activity planning journey", () => {
       await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);
       await expect(page.getByText("404", { exact: true })).toBeVisible();
       await page.goto(`/activity-designs/${design.id}/activities/${otherActivity.id}`);
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/missing-meal-schedule`,
+      );
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
+      );
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${otherActivity.id}/meal-schedules/${mealScheduleId}`,
+      );
       await expect(page.getByText("404", { exact: true })).toBeVisible();
     } finally {
       deleteDesigns([design, otherDesign]);

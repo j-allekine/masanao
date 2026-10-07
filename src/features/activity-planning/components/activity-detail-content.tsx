@@ -104,11 +104,19 @@ function ActivityContext({ activity }: { activity: ActivityDetailItem }) {
   );
 }
 
-function MealScheduleRows({ schedules }: { schedules: MealScheduleListItem[] }) {
+function MealScheduleRows({
+  activityDesignId,
+  activityId,
+  schedules,
+}: {
+  activityDesignId: string;
+  activityId: string;
+  schedules: MealScheduleListItem[];
+}) {
   return (
     <WorkspaceTableFrame
       caption="Meal Schedules under this Activity"
-      className="min-w-[36rem]"
+      className="min-w-[46rem]"
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
@@ -116,6 +124,9 @@ function MealScheduleRows({ schedules }: { schedules: MealScheduleListItem[] }) 
           <TableHead scope="col">Time</TableHead>
           <TableHead scope="col" className="text-right">
             Planned servings
+          </TableHead>
+          <TableHead scope="col" className="text-right">
+            Actions
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -132,6 +143,14 @@ function MealScheduleRows({ schedules }: { schedules: MealScheduleListItem[] }) 
               {schedule.plannedServings === null
                 ? "Not recorded"
                 : integerFormatter.format(schedule.plannedServings)}
+            </TableCell>
+            <TableCell className="text-right">
+              <Link
+                href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Open Meal Schedule
+              </Link>
             </TableCell>
           </TableRow>
         ))}
@@ -271,7 +290,11 @@ export default function ActivityDetailContent({
           {activity.mealSchedules.length === 0 ? (
             <MealSchedulesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
           ) : (
-            <MealScheduleRows schedules={activity.mealSchedules} />
+            <MealScheduleRows
+              activityDesignId={activity.activityDesign.id}
+              activityId={activity.id}
+              schedules={activity.mealSchedules}
+            />
           )}
         </section>
       </main>
