@@ -57,6 +57,19 @@ export type ActivityListItem = {
   mealSchedules: MealScheduleListItem[];
 };
 
+export type ActivityDesignDetailActivity = {
+  id: string;
+  activityDesignId: string;
+  name: string;
+  officeName: string;
+  scheduledDate: string;
+  mealScheduleCount: number;
+};
+
+export type ActivityDesignDetailItem = ActivityDesignListItem & {
+  activities: ActivityDesignDetailActivity[];
+};
+
 export type ActivityEditableListItem = Pick<
   ActivityListItem,
   | "id"

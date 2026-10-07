@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -43,7 +44,12 @@ function ActivityDesignRow({
           {activityDesign.activityDesignNo}
         </TableCell>
         <TableCell className="max-w-[28rem]">
-          <span className="block truncate">{activityDesign.title}</span>
+          <Link
+            href={`/activity-designs/${activityDesign.id}`}
+            className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {activityDesign.title}
+          </Link>
         </TableCell>
         <TableCell className="text-center tabular-nums">
           {activityDesign.fiscalYear}
