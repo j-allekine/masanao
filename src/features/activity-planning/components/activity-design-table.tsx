@@ -65,9 +65,6 @@ function ActivityDesignRow({
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
           </span>
         </TableCell>
-        <TableCell className="text-center text-muted-foreground tabular-nums">
-          <span aria-label="Meal schedules coming later">—</span>
-        </TableCell>
         <TableCell className="text-center">
           <ActivityDesignActionsMenu
             activityDesignTitle={activityDesign.title}
@@ -163,9 +160,6 @@ export default function ActivityDesignTable({
           </TableHead>
           <TableHead scope="col" className="text-center">
             Activities
-          </TableHead>
-          <TableHead scope="col" className="text-center">
-            Meal Schedules
           </TableHead>
           <TableHead scope="col" className="text-center">
             Actions

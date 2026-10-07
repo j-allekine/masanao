@@ -47,7 +47,7 @@ export default function PlanningSectionMenu({
   return (
     <nav aria-label="Planning sections" className="overflow-x-auto border-b">
       <ul className="flex min-w-max items-end gap-1">
-        {localPlanningSections.map((section) => {
+        {localPlanningSections.filter((section) => !section.disabled).map((section) => {
           const Icon = section.icon as LucideIcon;
           const isActive = section.id === activeSection;
           const tabClassName =

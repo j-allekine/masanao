@@ -122,16 +122,19 @@ function ActivityRows({
           <TableHead scope="col" className="text-center">
             Meal Schedules
           </TableHead>
-          <TableHead scope="col" className="text-right">
-            Actions
-          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {activities.map((activity) => (
           <TableRow key={activity.id}>
             <TableCell className="max-w-[24rem] font-medium">
-              <span className="block truncate">{activity.name}</span>
+              <Link
+                href={`/activity-designs/${activityDesignId}/activities/${activity.id}`}
+                aria-label={`Open Activity: ${activity.name}`}
+                className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {activity.name}
+              </Link>
             </TableCell>
             <TableCell className="tabular-nums">
               {dateFormatter.format(new Date(activity.scheduledDate))}
@@ -141,14 +144,6 @@ function ActivityRows({
             </TableCell>
             <TableCell className="text-center tabular-nums">
               {activityCountFormatter.format(activity.mealScheduleCount)}
-            </TableCell>
-            <TableCell className="text-right">
-              <Link
-                href={`/activity-designs/${activityDesignId}/activities/${activity.id}`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Open Activity
-              </Link>
             </TableCell>
           </TableRow>
         ))}
@@ -219,37 +214,21 @@ export default function ActivityDesignDetailContent({
       </header>
 
       <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+        <Link href="/activity-designs" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "self-start")}>
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+          Back to Activity Designs
+        </Link>
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
               Activity Design
             </p>
             <h1 className="break-words text-heading-1 font-semibold">
-              {activityDesign.activityDesignNo} · {activityDesign.title}
+              {activityDesign.title}
             </h1>
             <p className="text-body text-muted-foreground">
-              Review its planning context and create Activities under this design.
+              {activityDesign.activityDesignNo}
             </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button
-              className="w-full sm:w-auto"
-              size="lg"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              Create Activity
-            </Button>
-            <Link
-              href="/activity-designs"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full sm:w-auto",
-              )}
-            >
-              <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-              Back to Activity Designs
-            </Link>
           </div>
         </div>
 
@@ -265,11 +244,10 @@ export default function ActivityDesignDetailContent({
                 Undertakings planned under this Activity Design.
               </p>
             </div>
-            {activityDesign.activities.length > 0 ? (
-              <p className="text-body-sm text-muted-foreground">
-                {formatActivityCount(activityDesign.activityCount)}
-              </p>
-            ) : null}
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              Create Activity
+            </Button>
           </div>
           {activityDesign.activities.length === 0 ? (
             <ActivitiesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />

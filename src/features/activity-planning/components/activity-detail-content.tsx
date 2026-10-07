@@ -125,16 +125,19 @@ function MealScheduleRows({
           <TableHead scope="col" className="text-right">
             Planned servings
           </TableHead>
-          <TableHead scope="col" className="text-right">
-            Actions
-          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {schedules.map((schedule) => (
           <TableRow key={schedule.id}>
             <TableCell className="max-w-[24rem] font-medium">
-              <span className="block truncate">{schedule.label}</span>
+              <Link
+                href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
+                aria-label={`Open Meal Schedule: ${schedule.label}`}
+                className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {schedule.label}
+              </Link>
             </TableCell>
             <TableCell className="font-mono tabular-nums">
               {schedule.mealTime}
@@ -143,14 +146,6 @@ function MealScheduleRows({
               {schedule.plannedServings === null
                 ? "Not recorded"
                 : integerFormatter.format(schedule.plannedServings)}
-            </TableCell>
-            <TableCell className="text-right">
-              <Link
-                href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Open Meal Schedule
-              </Link>
             </TableCell>
           </TableRow>
         ))}
@@ -233,6 +228,10 @@ export default function ActivityDetailContent({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
+        <Link href={parentUrl} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "self-start")}>
+          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+          Back to Activity Design
+        </Link>
 
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -243,26 +242,6 @@ export default function ActivityDetailContent({
             <p className="text-body text-muted-foreground">
               {dateFormatter.format(new Date(activity.scheduledDate))} · {activity.officeName}
             </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button
-              className="w-full sm:w-auto"
-              size="lg"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              Add Meal Schedule
-            </Button>
-            <Link
-              href={parentUrl}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full sm:w-auto",
-              )}
-            >
-              <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-              Back to Activity Design
-            </Link>
           </div>
         </div>
 
@@ -278,14 +257,10 @@ export default function ActivityDetailContent({
                 Meals planned directly under this Activity.
               </p>
             </div>
-            {activity.mealSchedules.length > 0 ? (
-              <p className="text-body-sm text-muted-foreground">
-                {integerFormatter.format(activity.mealSchedules.length)}
-                {activity.mealSchedules.length === 1
-                  ? " Meal Schedule"
-                  : " Meal Schedules"}
-              </p>
-            ) : null}
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              Add Meal Schedule
+            </Button>
           </div>
           {activity.mealSchedules.length === 0 ? (
             <MealSchedulesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />

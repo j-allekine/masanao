@@ -578,7 +578,7 @@ test.describe("Activity planning journey", () => {
         );
         await expect(
           page.getByRole("heading", {
-            name: `${populatedDesign.activityDesignNo} · ${populatedDesign.title}`,
+            name: populatedDesign.title,
           }),
         ).toBeVisible();
         await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -685,7 +685,7 @@ test.describe("Activity planning journey", () => {
         const activityRow = page
           .getByRole("row")
           .filter({ hasText: populatedActivity.name });
-        await activityRow.getByRole("link", { name: "Open Activity", exact: true }).click();
+        await activityRow.getByRole("link", { name: /^Open Activity:/ }).click();
 
         await expect(page).toHaveURL(
           new RegExp(
@@ -710,7 +710,7 @@ test.describe("Activity planning journey", () => {
           .getByRole("row")
           .filter({ hasText: "Lunch" });
         const openMealSchedule = mealScheduleRow.getByRole("link", {
-          name: "Open Meal Schedule",
+          name: /^Open Meal Schedule:/,
           exact: true,
         });
         await expect(openMealSchedule).toHaveAttribute(
