@@ -298,11 +298,6 @@ export default function ActivityDetailContent({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <Link href={parentUrl} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "self-start")}>
-          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-          Back to Activity Design
-        </Link>
-
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
@@ -313,6 +308,16 @@ export default function ActivityDetailContent({
               {dateFormatter.format(new Date(activity.scheduledDate))} · {activity.officeName}
             </p>
           </div>
+          <Link
+            href={parentUrl}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "self-start sm:self-auto",
+            )}
+          >
+            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+            Back to Activity Design
+          </Link>
         </div>
 
         <ActivityContext activity={activity} />

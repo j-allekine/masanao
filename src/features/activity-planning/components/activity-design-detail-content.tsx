@@ -81,7 +81,7 @@ function ActivityDesignContext({
           <p className="text-label font-medium text-muted-foreground">
             Fiscal Year
           </p>
-          <p className="mt-1 font-mono text-mono font-medium tabular-nums">
+          <p className="mt-1 text-body font-medium tabular-nums">
             FY {activityDesign.fiscalYear}
           </p>
         </div>
@@ -279,10 +279,6 @@ export default function ActivityDesignDetailContent({
       </header>
 
       <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <Link href="/activity-designs" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "self-start")}>
-          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-          Back to Activity Designs
-        </Link>
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
@@ -295,6 +291,16 @@ export default function ActivityDesignDetailContent({
               {activityDesign.activityDesignNo}
             </p>
           </div>
+          <Link
+            href="/activity-designs"
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "self-start sm:self-auto",
+            )}
+          >
+            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+            Back to Activity Designs
+          </Link>
         </div>
 
         <ActivityDesignContext activityDesign={activityDesign} />

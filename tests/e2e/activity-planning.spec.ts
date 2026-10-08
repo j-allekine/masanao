@@ -256,6 +256,16 @@ test.describe("Activity planning journey", () => {
             buttons.map((button) => getComputedStyle(button).fontFamily),
           ),
       ).toEqual(Array.from({ length: 10 }, () => designBodyFace));
+
+      await page.goto(`/activity-designs/${activityDesign.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const detailBodyFace = await page
+        .getByText(activityDesign.activityDesignNo, { exact: true })
+        .evaluate((element) => getComputedStyle(element).fontFamily);
+      await expect(page.getByText("FY 2026", { exact: true })).toHaveCSS(
+        "font-family",
+        detailBodyFace,
+      );
     } finally {
       deleteDesigns([activityDesign]);
     }

@@ -137,11 +137,6 @@ export default function MealScheduleDetailContent({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <Link href={activityUrl} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "self-start")}>
-          <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-          Back to Activity
-        </Link>
-
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
@@ -154,6 +149,16 @@ export default function MealScheduleDetailContent({
               Planned under {mealSchedule.activity.name}.
             </p>
           </div>
+          <Link
+            href={activityUrl}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "self-start sm:self-auto",
+            )}
+          >
+            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
+            Back to Activity
+          </Link>
         </div>
 
         <ScheduleContext mealSchedule={mealSchedule} />
