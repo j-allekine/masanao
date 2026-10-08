@@ -719,6 +719,12 @@ test.describe("Activity planning journey", () => {
       await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
       const mealScheduleEditDialog = page.getByRole("dialog");
       await expect(
+        mealScheduleEditDialog.getByRole("form", {
+          name: "Edit Meal Schedule",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
         mealScheduleEditDialog.getByRole("textbox", {
           name: "Meal Schedule label",
           exact: true,

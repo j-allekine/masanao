@@ -138,7 +138,7 @@ export default function MealScheduleCreateDialog({
           </DialogDescription>
         </DialogHeader>
         <form
-          aria-label="Add Meal Schedule"
+          aria-label={mode === "edit" ? "Edit Meal Schedule" : "Add Meal Schedule"}
           aria-busy={isSubmitting}
           noValidate
           onSubmit={handleSubmit}
