@@ -57,12 +57,20 @@ export type ActivityListItem = {
   mealSchedules: MealScheduleListItem[];
 };
 
-export type ActivityDesignDetailActivity = {
-  id: string;
-  activityDesignId: string;
-  name: string;
-  officeName: string;
-  scheduledDate: string;
+export type ActivityEditableListItem = Pick<
+  ActivityListItem,
+  | "id"
+  | "activityDesignId"
+  | "name"
+  | "officeName"
+  | "particulars"
+  | "scheduledDate"
+  | "venue"
+  | "plannedParticipantCount"
+  | "plannedBudgetCentavos"
+>;
+
+export type ActivityDesignDetailActivity = ActivityEditableListItem & {
   mealScheduleCount: number;
 };
 
@@ -91,19 +99,6 @@ export type MealScheduleDetailItem = MealScheduleListItem & {
     };
   };
 };
-
-export type ActivityEditableListItem = Pick<
-  ActivityListItem,
-  | "id"
-  | "activityDesignId"
-  | "name"
-  | "officeName"
-  | "particulars"
-  | "scheduledDate"
-  | "venue"
-  | "plannedParticipantCount"
-  | "plannedBudgetCentavos"
->;
 
 export type ActivityWorkspaceListItem = ActivityEditableListItem & {
   activityDesignTitle: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -16,8 +16,12 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 
-import { createMealScheduleAction } from "../actions";
-import type { ActivityDetailItem, MealScheduleFieldErrors } from "../types";
+import { createMealScheduleAction, updateMealScheduleAction } from "../actions";
+import type {
+  ActivityDetailItem,
+  MealScheduleFieldErrors,
+  MealScheduleListItem,
+} from "../types";
 
 type MealScheduleFormValues = {
   label: string;
@@ -31,24 +35,42 @@ const emptyFormValues: MealScheduleFormValues = {
   plannedServings: "",
 };
 
+function getInitialFormValues(
+  mealSchedule: MealScheduleListItem | undefined,
+): MealScheduleFormValues {
+  if (!mealSchedule) return emptyFormValues;
+
+  return {
+    label: mealSchedule.label,
+    mealTime: mealSchedule.mealTime,
+    plannedServings: mealSchedule.plannedServings?.toString() ?? "",
+  };
+}
+
 export default function MealScheduleCreateDialog({
   activity,
+  mealSchedule,
+  mode = "create",
   open,
   onClose,
   onSuccess,
 }: {
   activity: ActivityDetailItem;
+  mealSchedule?: MealScheduleListItem;
+  mode?: "create" | "edit";
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (mealSchedule: MealScheduleListItem) => void;
 }) {
-  const [formValues, setFormValues] = useState(emptyFormValues);
+  const [formValues, setFormValues] = useState(() =>
+    getInitialFormValues(mealSchedule),
+  );
   const [fieldErrors, setFieldErrors] = useState<MealScheduleFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
 
   function closeDialog() {
-    setFormValues(emptyFormValues);
+    setFormValues(getInitialFormValues(mealSchedule));
     setFieldErrors({});
     setFormError(null);
     onClose();
@@ -74,10 +96,16 @@ export default function MealScheduleCreateDialog({
     const formData = new FormData(event.currentTarget);
     formData.set("activityDesignId", activity.activityDesign.id);
     formData.set("activityId", activity.id);
+    if (mode === "edit" && mealSchedule) {
+      formData.set("mealScheduleId", mealSchedule.id);
+    }
 
     startTransition(async () => {
       try {
-        const result = await createMealScheduleAction(formData);
+        const result =
+          mode === "edit"
+            ? await updateMealScheduleAction(formData)
+            : await createMealScheduleAction(formData);
 
         if (result.status === "error") {
           setFormError(result.error);
@@ -85,7 +113,7 @@ export default function MealScheduleCreateDialog({
           return;
         }
 
-        onSuccess();
+        onSuccess(result.mealSchedule);
       } catch {
         setFormError(
           "The Meal Schedule could not be saved. Check your connection and try again.",
@@ -98,10 +126,15 @@ export default function MealScheduleCreateDialog({
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeDialog()}>
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Meal Schedule</DialogTitle>
+          <DialogTitle>
+            {mode === "edit"
+              ? `Edit Meal Schedule “${mealSchedule?.label ?? ""}”`
+              : "Add Meal Schedule"}
+          </DialogTitle>
           <DialogDescription>
-            Add a Meal Schedule under “{activity.name}”. The Activity Design and
-            Activity context are fixed for this workflow.
+            {mode === "edit"
+              ? "Update the saved Meal Schedule details. Its Activity context cannot be changed here."
+              : `Add a Meal Schedule under “${activity.name}”. The Activity Design and Activity context are fixed for this workflow.`}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -199,9 +232,15 @@ export default function MealScheduleCreateDialog({
             <WorkspaceFormActionButtons
               onCancel={closeDialog}
               isPending={isSubmitting}
-              pendingLabel="Adding…"
-              submitLabel="Add Meal Schedule"
-              submitIcon={<Plus data-icon="inline-start" />}
+              pendingLabel={mode === "edit" ? "Saving…" : "Adding…"}
+              submitLabel={mode === "edit" ? "Save changes" : "Add Meal Schedule"}
+              submitIcon={
+                mode === "edit" ? (
+                  <Pencil data-icon="inline-start" />
+                ) : (
+                  <Plus data-icon="inline-start" />
+                )
+              }
             />
           </DialogFooter>
         </form>

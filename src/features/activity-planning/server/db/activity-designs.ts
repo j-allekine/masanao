@@ -45,7 +45,11 @@ const activityDesignDetailSelect = {
       activityDesignId: true,
       name: true,
       officeName: true,
+      particulars: true,
       scheduledDate: true,
+      venue: true,
+      plannedParticipantCount: true,
+      plannedBudgetCentavos: true,
       _count: {
         select: { mealSchedules: true },
       },
@@ -111,7 +115,11 @@ function toActivityDesignDetailActivity(activity: {
   activityDesignId: string;
   name: string;
   officeName: string;
+  particulars: string | null;
   scheduledDate: Date;
+  venue: string | null;
+  plannedParticipantCount: number | null;
+  plannedBudgetCentavos: bigint | null;
   _count: { mealSchedules: number };
 }): ActivityDesignDetailActivity {
   return {
@@ -119,7 +127,11 @@ function toActivityDesignDetailActivity(activity: {
     activityDesignId: activity.activityDesignId,
     name: activity.name,
     officeName: activity.officeName,
+    particulars: activity.particulars,
     scheduledDate: activity.scheduledDate.toISOString(),
+    venue: activity.venue,
+    plannedParticipantCount: activity.plannedParticipantCount,
+    plannedBudgetCentavos: activity.plannedBudgetCentavos?.toString() ?? null,
     mealScheduleCount: activity._count.mealSchedules,
   };
 }

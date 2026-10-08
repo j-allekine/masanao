@@ -37,13 +37,16 @@ import {
 } from "@/components/ui/table";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import type {
   ActivityDesignDetailActivity,
   ActivityDesignDetailItem,
   ActivityDesignListItem,
 } from "../types";
+import ActivityActionsMenu from "./activity-actions-menu";
 import ActivityCreateDialog from "./activity-create-dialog";
+import DeleteActivityDialog from "./delete-activity-dialog";
 
 const activityCountFormatter = new Intl.NumberFormat("en-US");
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -106,11 +109,15 @@ function ActivityDesignContext({
 }
 
 function ActivityRows({
-  activityDesignId,
+  activityDesign,
   activities,
+  onEdit,
+  onDeleted,
 }: {
-  activityDesignId: string;
+  activityDesign: ActivityDesignListItem;
   activities: ActivityDesignDetailActivity[];
+  onEdit: (activity: ActivityDesignDetailActivity) => void;
+  onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   return (
     <WorkspaceTableFrame caption="Activities under this Activity Design" className="min-w-[46rem]">
@@ -122,33 +129,76 @@ function ActivityRows({
           <TableHead scope="col" className="text-center">
             Meal Schedules
           </TableHead>
+          <TableHead scope="col" className="text-center">
+            Actions
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {activities.map((activity) => (
-          <TableRow key={activity.id}>
-            <TableCell className="max-w-[24rem] font-medium">
-              <Link
-                href={`/activity-designs/${activityDesignId}/activities/${activity.id}`}
-                aria-label={`Open Activity: ${activity.name}`}
-                className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {activity.name}
-              </Link>
-            </TableCell>
-            <TableCell className="tabular-nums">
-              {dateFormatter.format(new Date(activity.scheduledDate))}
-            </TableCell>
-            <TableCell className="max-w-[20rem]">
-              <span className="block truncate">{activity.officeName}</span>
-            </TableCell>
-            <TableCell className="text-center tabular-nums">
-              {activityCountFormatter.format(activity.mealScheduleCount)}
-            </TableCell>
-          </TableRow>
+          <ActivityRow
+            key={activity.id}
+            activityDesign={activityDesign}
+            activity={activity}
+            onEdit={onEdit}
+            onDeleted={onDeleted}
+          />
         ))}
       </TableBody>
     </WorkspaceTableFrame>
+  );
+}
+
+function ActivityRow({
+  activityDesign,
+  activity,
+  onEdit,
+  onDeleted,
+}: {
+  activityDesign: ActivityDesignListItem;
+  activity: ActivityDesignDetailActivity;
+  onEdit: (activity: ActivityDesignDetailActivity) => void;
+  onDeleted: (activity: ActivityDesignDetailActivity) => void;
+}) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <TableRow className="hover:bg-muted/35">
+        <TableCell className="max-w-[24rem] font-medium">
+          <Link
+            href={`/activity-designs/${activityDesign.id}/activities/${activity.id}`}
+            aria-label={`Open Activity: ${activity.name}`}
+            className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {activity.name}
+          </Link>
+        </TableCell>
+        <TableCell className="tabular-nums">
+          {dateFormatter.format(new Date(activity.scheduledDate))}
+        </TableCell>
+        <TableCell className="max-w-[20rem]">
+          <span className="block truncate">{activity.officeName}</span>
+        </TableCell>
+        <TableCell className="text-center tabular-nums">
+          {activityCountFormatter.format(activity.mealScheduleCount)}
+        </TableCell>
+        <TableCell className="text-center">
+          <ActivityActionsMenu
+            activityName={activity.name}
+            actionButtonId={`activity-actions-${activity.id}`}
+            onEdit={() => onEdit(activity)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+          />
+        </TableCell>
+      </TableRow>
+      <DeleteActivityDialog
+        activity={activity}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={() => onDeleted(activity)}
+      />
+    </>
   );
 }
 
@@ -186,6 +236,8 @@ export default function ActivityDesignDetailContent({
     () => false,
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [activityForEdit, setActivityForEdit] =
+    useState<ActivityDesignDetailActivity | null>(null);
   const createParent: ActivityDesignListItem = {
     id: activityDesign.id,
     activityDesignNo: activityDesign.activityDesignNo,
@@ -194,6 +246,19 @@ export default function ActivityDesignDetailContent({
     aipReferenceCode: activityDesign.aipReferenceCode,
     activityCount: activityDesign.activityCount,
   };
+
+  function closeEditDialog() {
+    const closedActivity = activityForEdit;
+    setActivityForEdit(null);
+
+    window.setTimeout(() => {
+      if (closedActivity) {
+        document
+          .getElementById(`activity-actions-${closedActivity.id}`)
+          ?.focus();
+      }
+    }, 0);
+  }
 
   return (
     <div
@@ -244,7 +309,11 @@ export default function ActivityDesignDetailContent({
                 Undertakings planned under this Activity Design.
               </p>
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
+            <Button
+              id="new-activity"
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Create Activity
             </Button>
@@ -253,8 +322,16 @@ export default function ActivityDesignDetailContent({
             <ActivitiesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
           ) : (
             <ActivityRows
-              activityDesignId={activityDesign.id}
+              activityDesign={createParent}
               activities={activityDesign.activities}
+              onEdit={setActivityForEdit}
+              onDeleted={() => {
+                router.refresh();
+                toast.success("Activity deleted");
+                window.setTimeout(() => {
+                  document.getElementById("new-activity")?.focus();
+                }, 0);
+              }}
             />
           )}
         </section>
@@ -267,6 +344,19 @@ export default function ActivityDesignDetailContent({
         onSuccess={() => {
           setIsCreateDialogOpen(false);
           router.refresh();
+          toast.success("Activity added");
+        }}
+      />
+      <ActivityCreateDialog
+        activityDesign={createParent}
+        activity={activityForEdit ?? undefined}
+        mode="edit"
+        open={activityForEdit !== null}
+        onClose={closeEditDialog}
+        onSuccess={() => {
+          closeEditDialog();
+          router.refresh();
+          toast.success("Activity updated");
         }}
       />
     </div>

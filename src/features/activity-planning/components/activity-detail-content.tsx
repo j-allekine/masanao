@@ -41,8 +41,11 @@ import {
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { formatCentavosAsPesos } from "@/features/activity-planning/domain/planned-budget";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 import type { ActivityDetailItem, MealScheduleListItem } from "../types";
+import ActivityActionsMenu from "./activity-actions-menu";
+import DeleteMealScheduleDialog from "./delete-meal-schedule-dialog";
 import MealScheduleCreateDialog from "./meal-schedule-create-dialog";
 
 const integerFormatter = new Intl.NumberFormat("en-US");
@@ -108,10 +111,14 @@ function MealScheduleRows({
   activityDesignId,
   activityId,
   schedules,
+  onEdit,
+  onDeleted,
 }: {
   activityDesignId: string;
   activityId: string;
   schedules: MealScheduleListItem[];
+  onEdit: (schedule: MealScheduleListItem) => void;
+  onDeleted: (schedule: MealScheduleListItem) => void;
 }) {
   return (
     <WorkspaceTableFrame
@@ -125,32 +132,80 @@ function MealScheduleRows({
           <TableHead scope="col" className="text-right">
             Planned servings
           </TableHead>
+          <TableHead scope="col" className="text-center">
+            Actions
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {schedules.map((schedule) => (
-          <TableRow key={schedule.id}>
-            <TableCell className="max-w-[24rem] font-medium">
-              <Link
-                href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
-                aria-label={`Open Meal Schedule: ${schedule.label}`}
-                className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {schedule.label}
-              </Link>
-            </TableCell>
-            <TableCell className="font-mono tabular-nums">
-              {schedule.mealTime}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {schedule.plannedServings === null
-                ? "Not recorded"
-                : integerFormatter.format(schedule.plannedServings)}
-            </TableCell>
-          </TableRow>
+          <MealScheduleRow
+            key={schedule.id}
+            activityDesignId={activityDesignId}
+            activityId={activityId}
+            schedule={schedule}
+            onEdit={onEdit}
+            onDeleted={onDeleted}
+          />
         ))}
       </TableBody>
     </WorkspaceTableFrame>
+  );
+}
+
+function MealScheduleRow({
+  activityDesignId,
+  activityId,
+  schedule,
+  onEdit,
+  onDeleted,
+}: {
+  activityDesignId: string;
+  activityId: string;
+  schedule: MealScheduleListItem;
+  onEdit: (schedule: MealScheduleListItem) => void;
+  onDeleted: (schedule: MealScheduleListItem) => void;
+}) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <TableRow className="hover:bg-muted/35">
+        <TableCell className="max-w-[24rem] font-medium">
+          <Link
+            href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
+            aria-label={`Open Meal Schedule: ${schedule.label}`}
+            className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {schedule.label}
+          </Link>
+        </TableCell>
+        <TableCell className="font-mono tabular-nums">
+          {schedule.mealTime}
+        </TableCell>
+        <TableCell className="text-right tabular-nums">
+          {schedule.plannedServings === null
+            ? "Not recorded"
+            : integerFormatter.format(schedule.plannedServings)}
+        </TableCell>
+        <TableCell className="text-center">
+          <ActivityActionsMenu
+            activityName={schedule.label}
+            actionButtonId={`meal-schedule-actions-${schedule.id}`}
+            onEdit={() => onEdit(schedule)}
+            onDelete={() => setIsDeleteDialogOpen(true)}
+          />
+        </TableCell>
+      </TableRow>
+      <DeleteMealScheduleDialog
+        activityDesignId={activityDesignId}
+        activityId={activityId}
+        mealSchedule={schedule}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onDeleted={() => onDeleted(schedule)}
+      />
+    </>
   );
 }
 
@@ -188,7 +243,22 @@ export default function ActivityDetailContent({
     () => false,
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [mealScheduleForEdit, setMealScheduleForEdit] =
+    useState<MealScheduleListItem | null>(null);
   const parentUrl = `/activity-designs/${activity.activityDesign.id}`;
+
+  function closeEditDialog() {
+    const closedMealSchedule = mealScheduleForEdit;
+    setMealScheduleForEdit(null);
+
+    window.setTimeout(() => {
+      if (closedMealSchedule) {
+        document
+          .getElementById(`meal-schedule-actions-${closedMealSchedule.id}`)
+          ?.focus();
+      }
+    }, 0);
+  }
 
   return (
     <div
@@ -257,7 +327,11 @@ export default function ActivityDetailContent({
                 Meals planned directly under this Activity.
               </p>
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="w-full sm:w-auto">
+            <Button
+              id="new-meal-schedule"
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Add Meal Schedule
             </Button>
@@ -269,6 +343,16 @@ export default function ActivityDetailContent({
               activityDesignId={activity.activityDesign.id}
               activityId={activity.id}
               schedules={activity.mealSchedules}
+              onEdit={setMealScheduleForEdit}
+              onDeleted={() => {
+                router.refresh();
+                toast.success("Meal Schedule deleted");
+                window.setTimeout(() => {
+                  document
+                    .getElementById("new-meal-schedule")
+                    ?.focus();
+                }, 0);
+              }}
             />
           )}
         </section>
@@ -281,6 +365,20 @@ export default function ActivityDetailContent({
         onSuccess={() => {
           setIsCreateDialogOpen(false);
           router.refresh();
+          toast.success("Meal Schedule added");
+        }}
+      />
+      <MealScheduleCreateDialog
+        key={mealScheduleForEdit?.id ?? "edit-meal-schedule"}
+        activity={activity}
+        mealSchedule={mealScheduleForEdit ?? undefined}
+        mode="edit"
+        open={mealScheduleForEdit !== null}
+        onClose={closeEditDialog}
+        onSuccess={() => {
+          closeEditDialog();
+          router.refresh();
+          toast.success("Meal Schedule updated");
         }}
       />
     </div>

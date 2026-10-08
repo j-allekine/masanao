@@ -664,6 +664,80 @@ test.describe("Activity planning journey", () => {
     const mealScheduleId = createMealScheduleFixture(populatedActivity.id);
 
     try {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.goto(`/activity-designs/${design.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const activityRowWithActions = page
+        .getByRole("row")
+        .filter({ hasText: populatedActivity.name });
+      await activityRowWithActions
+        .getByRole("button", {
+          name: `Actions for ${populatedActivity.name}`,
+          exact: true,
+        })
+        .click();
+      await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toBeVisible();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const activityEditDialog = page.getByRole("dialog");
+      await expect(
+        activityEditDialog.getByRole("textbox", {
+          name: "Activity name",
+          exact: true,
+        }),
+      ).toHaveValue(populatedActivity.name);
+      await page.keyboard.press("Escape");
+      await expect(activityEditDialog).toHaveCount(0);
+
+      await activityRowWithActions
+        .getByRole("button", {
+          name: `Actions for ${populatedActivity.name}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const blockedActivityDeleteDialog = page.getByRole("alertdialog");
+      await expect(blockedActivityDeleteDialog).toContainText(
+        "This Activity cannot be deleted while it has 1 Meal Schedule.",
+      );
+      await blockedActivityDeleteDialog
+        .getByRole("button", { name: "Close", exact: true })
+        .click();
+
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+      );
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const mealScheduleRowWithActions = page
+        .getByRole("row")
+        .filter({ hasText: "Lunch" });
+      await mealScheduleRowWithActions
+        .getByRole("button", { name: "Actions for Lunch", exact: true })
+        .click();
+      await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toBeVisible();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const mealScheduleEditDialog = page.getByRole("dialog");
+      await expect(
+        mealScheduleEditDialog.getByRole("textbox", {
+          name: "Meal Schedule label",
+          exact: true,
+        }),
+      ).toHaveValue("Lunch");
+      await expect(mealScheduleEditDialog.locator("#mealScheduleTime")).toHaveValue("12:00");
+      await page.keyboard.press("Escape");
+      await expect(mealScheduleEditDialog).toHaveCount(0);
+
+      await mealScheduleRowWithActions
+        .getByRole("button", { name: "Actions for Lunch", exact: true })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const mealScheduleDeleteDialog = page.getByRole("alertdialog");
+      await expect(mealScheduleDeleteDialog).toContainText("Delete “Lunch”?");
+      await mealScheduleDeleteDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+
       for (const viewport of [
         { width: 1280, height: 800 },
         { width: 320, height: 720 },
