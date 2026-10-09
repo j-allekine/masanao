@@ -7,7 +7,11 @@ import type {
   ActivityDesignInput,
   ActivityDesignUpdateInput,
 } from "../../schemas/activity-design";
-import type { ActivityDesignListItem } from "../../types";
+import type {
+  ActivityDesignDetailActivity,
+  ActivityDesignDetailItem,
+  ActivityDesignListItem,
+} from "../../types";
 
 const activityDesignListSelect = {
   id: true,
@@ -27,6 +31,32 @@ const activityDesignResponseSelect = {
   title: true,
   aipReferenceCode: true,
 } as const;
+
+const activityDesignDetailActivityOrderBy = [
+  { createdAt: "desc" },
+  { id: "desc" },
+] satisfies Prisma.ActivityOrderByWithRelationInput[];
+
+const activityDesignDetailSelect = {
+  ...activityDesignListSelect,
+  activities: {
+    select: {
+      id: true,
+      activityDesignId: true,
+      name: true,
+      officeName: true,
+      particulars: true,
+      scheduledDate: true,
+      venue: true,
+      plannedParticipantCount: true,
+      plannedBudgetCentavos: true,
+      _count: {
+        select: { mealSchedules: true },
+      },
+    },
+    orderBy: activityDesignDetailActivityOrderBy,
+  },
+} satisfies Prisma.ActivityDesignSelect;
 
 export function isUniqueConstraintViolation(error: unknown) {
   return (
@@ -78,6 +108,48 @@ export async function listActivityDesignRecords(): Promise<
   });
 
   return activityDesigns.map(toActivityDesignListItem);
+}
+
+function toActivityDesignDetailActivity(activity: {
+  id: string;
+  activityDesignId: string;
+  name: string;
+  officeName: string;
+  particulars: string | null;
+  scheduledDate: Date;
+  venue: string | null;
+  plannedParticipantCount: number | null;
+  plannedBudgetCentavos: bigint | null;
+  _count: { mealSchedules: number };
+}): ActivityDesignDetailActivity {
+  return {
+    id: activity.id,
+    activityDesignId: activity.activityDesignId,
+    name: activity.name,
+    officeName: activity.officeName,
+    particulars: activity.particulars,
+    scheduledDate: activity.scheduledDate.toISOString(),
+    venue: activity.venue,
+    plannedParticipantCount: activity.plannedParticipantCount,
+    plannedBudgetCentavos: activity.plannedBudgetCentavos?.toString() ?? null,
+    mealScheduleCount: activity._count.mealSchedules,
+  };
+}
+
+export async function getActivityDesignRecord(
+  id: string,
+): Promise<ActivityDesignDetailItem | null> {
+  const activityDesign = await prisma.activityDesign.findUnique({
+    where: { id },
+    select: activityDesignDetailSelect,
+  });
+
+  if (!activityDesign) return null;
+
+  return {
+    ...toActivityDesignListItem(activityDesign),
+    activities: activityDesign.activities.map(toActivityDesignDetailActivity),
+  };
 }
 
 export async function createActivityDesignRecord(

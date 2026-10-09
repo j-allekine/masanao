@@ -1,6 +1,5 @@
 "use client";
 
-import { PlanningSectionMenu } from "@/features/activity-planning/ui";
 import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 
 export default function ActivitiesError({
@@ -10,13 +9,5 @@ export default function ActivitiesError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return (
-    <WorkspaceRouteError
-      activeSection="activity-designs"
-      error={error}
-      reset={reset}
-    >
-      <PlanningSectionMenu activeSection="activities" />
-    </WorkspaceRouteError>
-  );
+  return <WorkspaceRouteError activeSection="activity-designs" error={error} reset={reset} />;
 }

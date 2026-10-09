@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -43,7 +44,12 @@ function ActivityDesignRow({
           {activityDesign.activityDesignNo}
         </TableCell>
         <TableCell className="max-w-[28rem]">
-          <span className="block truncate">{activityDesign.title}</span>
+          <Link
+            href={`/activity-designs/${activityDesign.id}`}
+            className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {activityDesign.title}
+          </Link>
         </TableCell>
         <TableCell className="text-center tabular-nums">
           {activityDesign.fiscalYear}
@@ -58,9 +64,6 @@ function ActivityDesignRow({
           <span className="sr-only">
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
           </span>
-        </TableCell>
-        <TableCell className="text-center text-muted-foreground tabular-nums">
-          <span aria-label="Meal schedules coming later">—</span>
         </TableCell>
         <TableCell className="text-center">
           <ActivityDesignActionsMenu
@@ -157,9 +160,6 @@ export default function ActivityDesignTable({
           </TableHead>
           <TableHead scope="col" className="text-center">
             Activities
-          </TableHead>
-          <TableHead scope="col" className="text-center">
-            Meal Schedules
           </TableHead>
           <TableHead scope="col" className="text-center">
             Actions

@@ -3,19 +3,19 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
-import { getActivityDesign } from "@/features/activity-planning/server";
-import { ActivityDesignDetailContent } from "@/features/activity-planning/ui";
+import { getActivity } from "@/features/activity-planning/server";
+import { ActivityDetailContent } from "@/features/activity-planning/ui";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {
-  title: "Activity Design | Masanao",
-  description: "Review a municipal kitchen Activity Design and its Activities.",
+  title: "Activity | Masanao",
+  description: "Review a municipal kitchen Activity and its Meal Schedules.",
 };
 
-export default async function ActivityDesignDetailRoute(
-  props: PageProps<"/activity-designs/[id]">,
+export default async function ActivityDetailRoute(
+  props: PageProps<"/activity-designs/[id]/activities/[activityId]">,
 ) {
-  const [{ id }, session] = await Promise.all([
+  const [{ id, activityId }, session] = await Promise.all([
     props.params,
     auth.api.getSession({ headers: await headers() }),
   ]);
@@ -24,8 +24,8 @@ export default async function ActivityDesignDetailRoute(
     redirect("/");
   }
 
-  const activityDesign = await getActivityDesign(id);
-  if (!activityDesign) notFound();
+  const activity = await getActivity(id, activityId);
+  if (!activity) notFound();
 
   return (
     <WorkspaceShell
@@ -35,7 +35,7 @@ export default async function ActivityDesignDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      <ActivityDesignDetailContent activityDesign={activityDesign} />
+      <ActivityDetailContent activity={activity} />
     </WorkspaceShell>
   );
 }

@@ -9,7 +9,11 @@ import {
   getActivityDeletionBlockMessage,
   isActivityDeletionBlocked,
 } from "../domain/activity-deletion";
-import type { ActivityWorkspaceListItem } from "../types";
+import type { ActivityEditableListItem } from "../types";
+
+type DeletableActivity = ActivityEditableListItem & {
+  mealScheduleCount: number;
+};
 
 export default function DeleteActivityDialog({
   activity,
@@ -17,7 +21,7 @@ export default function DeleteActivityDialog({
   onOpenChange,
   onDeleted,
 }: {
-  activity: ActivityWorkspaceListItem;
+  activity: DeletableActivity;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => void;

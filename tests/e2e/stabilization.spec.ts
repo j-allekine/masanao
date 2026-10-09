@@ -106,7 +106,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(page.getByText("Workspace placeholder", { exact: true })).toHaveCount(0);
       await expect(page.getByText("Summary value", { exact: true })).toHaveCount(0);
       await expect(
-        page.getByRole("button", { name: "Open Activity Designs", exact: true }),
+        page.getByRole("link", { name: "Open Activity Planning", exact: true }),
       ).toBeVisible();
 
       design = createDesign(
@@ -195,7 +195,12 @@ test.describe("frontend stabilization regression seam", () => {
             exact: true,
           }),
         ).toBeVisible();
-        await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
+        await expect(
+          page.getByRole("heading", { name: "Activity Designs", exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("navigation", { name: "Planning sections" }),
+        ).toHaveCount(0);
         await expect(page.getByRole("checkbox")).toHaveCount(0);
 
         await search.fill(title);
@@ -230,10 +235,6 @@ test.describe("frontend stabilization regression seam", () => {
             tableScrollWidth: table?.scrollWidth ?? 0,
             tableClientWidth: table?.clientWidth ?? 0,
             tableParentOverflowX: tableParentStyles?.overflowX ?? "missing",
-            planningScrollWidth:
-              document.querySelector('nav[aria-label="Planning sections"]')?.scrollWidth ?? 0,
-            planningClientWidth:
-              document.querySelector('nav[aria-label="Planning sections"]')?.clientWidth ?? 0,
           };
         });
 
@@ -242,7 +243,6 @@ test.describe("frontend stabilization regression seam", () => {
         expect(metrics.tableParentOverflowX).toBe("visible");
         if (viewport.name === "mobile") {
           expect(metrics.tableScrollWidth).toBeGreaterThan(metrics.tableClientWidth);
-          expect(metrics.planningScrollWidth).toBeGreaterThan(metrics.planningClientWidth);
         }
 
         await page.addStyleTag({
@@ -301,7 +301,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(
         page.getByRole("menuitem", { name: "Archive", exact: true }),
       ).toHaveCount(0);
-      await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
+      await expect(page.getByText("Coming later", { exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: "More Activity Design actions", exact: true }),

@@ -14,12 +14,12 @@ import type {
 import ActivitiesTable from "./activities-table";
 import ActivitiesToolbar from "./activities-toolbar";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import ActivityCreateDialog from "./activity-create-dialog";
 import {
   filterActivities,
   type ActivityFilters,
 } from "./activity-filters";
-import PlanningSectionMenu from "./planning-section-menu";
 import { toast } from "sonner";
 import {
   getPlanningListState,
@@ -218,21 +218,29 @@ export default function ActivitiesWorkspace({
   }
 
   return (
-    <div
-      className="flex flex-col gap-0"
+    <main
+      className="flex min-w-0 flex-col gap-6"
       data-client-ready={isHydrated ? "true" : undefined}
     >
+      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-heading-1 font-semibold">Activities</h1>
+          <p className="text-body text-muted-foreground">
+            Browse municipal kitchen activities across planning contexts.
+          </p>
+        </div>
+        <WorkspacePrimaryAction
+          id="new-activity"
+          className="sm:min-w-[12rem]"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
+          Create Activity
+        </WorkspacePrimaryAction>
+      </div>
       <ActivitiesToolbar
         search={search}
         onSearchChange={updateSearch}
-        onCreate={() => setIsCreateDialogOpen(true)}
       />
-      <div className="mt-6">
-        <PlanningSectionMenu
-          activeSection="activities"
-          query={currentQuery}
-        />
-      </div>
       <ActivitiesTable
         activities={paginatedActivities}
         filters={filters}
@@ -269,6 +277,6 @@ export default function ActivitiesWorkspace({
         onClose={closeEditDialog}
         onSuccess={handleEditSuccess}
       />
-    </div>
+    </main>
   );
 }

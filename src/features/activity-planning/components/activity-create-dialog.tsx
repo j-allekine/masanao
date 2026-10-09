@@ -103,7 +103,7 @@ export default function ActivityCreateDialog({
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Fiscal Year</dt>
-                    <dd className="mt-1 font-mono text-mono font-medium tabular-nums">
+                    <dd className="mt-1 text-body-sm font-medium tabular-nums">
                       FY {activityDesign.fiscalYear}
                     </dd>
                   </div>

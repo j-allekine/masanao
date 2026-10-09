@@ -70,6 +70,36 @@ export type ActivityEditableListItem = Pick<
   | "plannedBudgetCentavos"
 >;
 
+export type ActivityDesignDetailActivity = ActivityEditableListItem & {
+  mealScheduleCount: number;
+};
+
+export type ActivityDesignDetailItem = ActivityDesignListItem & {
+  activities: ActivityDesignDetailActivity[];
+};
+
+export type ActivityDetailItem = ActivityListItem & {
+  activityDesign: {
+    id: string;
+    activityDesignNo: string;
+    title: string;
+  };
+};
+
+export type MealScheduleDetailItem = MealScheduleListItem & {
+  activity: {
+    id: string;
+    name: string;
+    officeName: string;
+    venue: string | null;
+    activityDesign: {
+      id: string;
+      activityDesignNo: string;
+      title: string;
+    };
+  };
+};
+
 export type ActivityWorkspaceListItem = ActivityEditableListItem & {
   activityDesignTitle: string;
   mealScheduleCount: number;

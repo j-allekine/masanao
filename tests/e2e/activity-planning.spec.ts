@@ -68,6 +68,7 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
 function createDesignFixture(
   title: string,
   fiscalYear = 2026,
+  aipReferenceCode: string | null = null,
 ): ActivityDesignFixture {
   const activityDesign = {
     id: randomUUID(),
@@ -80,13 +81,14 @@ function createDesignFixture(
       .prepare(
         `INSERT INTO "activity_design"
          ("id", "activityDesignNo", "fiscalYear", "title", "aipReferenceCode", "createdAt", "updatedAt")
-         VALUES (?, ?, ?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(
         activityDesign.id,
         activityDesign.activityDesignNo,
         fiscalYear,
         activityDesign.title,
+        aipReferenceCode,
       );
   });
 
@@ -104,9 +106,15 @@ function createActivityFixture({
   officeName: string;
   scheduledDate: string;
 }) {
-  const activity = {
+  const activity: ActivityFixture = {
     id: randomUUID(),
     activityDesignId,
+    name,
+    officeName,
+    particulars: null,
+    venue: null,
+    plannedParticipantCount: null,
+    plannedBudgetCentavos: null,
   };
 
   withE2eDatabase((database) => {
@@ -248,6 +256,15 @@ test.describe("Activity planning journey", () => {
             buttons.map((button) => getComputedStyle(button).fontFamily),
           ),
       ).toEqual(Array.from({ length: 10 }, () => designBodyFace));
+      await page.goto(`/activity-designs/${activityDesign.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const detailBodyFace = await page
+        .getByText(activityDesign.activityDesignNo, { exact: true })
+        .evaluate((element) => getComputedStyle(element).fontFamily);
+      await expect(page.getByText("FY 2026", { exact: true })).toHaveCSS(
+        "font-family",
+        detailBodyFace,
+      );
     } finally {
       deleteDesigns([activityDesign]);
     }
@@ -259,6 +276,9 @@ test.describe("Activity planning journey", () => {
     test.setTimeout(90_000);
 
     await signIn(page);
+    await page.clock.install({
+      time: new Date("2026-09-01T09:00:00.000Z"),
+    });
     await page.goto("/activities");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 
@@ -450,23 +470,9 @@ test.describe("Activity planning journey", () => {
 
       await activitySearch.fill("Global Activity Updated");
       await expect(updatedRow).toBeVisible();
-      const planningMenu = page.getByRole("navigation", { name: "Planning sections" });
-      await planningMenu
-        .getByRole("link", { name: "Activity Designs", exact: true })
-        .click();
-      await expect(page).toHaveURL(/\/activity-designs/);
-      await planningMenu.getByRole("link", { name: "Activities", exact: true }).click();
-      await expect(page).toHaveURL(/\/activities/);
       await expect(
-        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
-      ).toHaveValue("Global Activity Updated");
-      await page.goBack();
-      await expect(page).toHaveURL(/\/activity-designs/);
-      await page.goForward();
-      await expect(page).toHaveURL(/\/activities/);
-      await expect(
-        page.getByRole("searchbox", { name: "Search Activities", exact: true }),
-      ).toHaveValue("Global Activity Updated");
+        page.getByRole("navigation", { name: "Planning sections" }),
+      ).toHaveCount(0);
 
       const staleRow = page
         .getByRole("row")
@@ -523,7 +529,7 @@ test.describe("Activity planning journey", () => {
     }
   });
 
-  test("creates an Activity, reloads it, and redirects retired detail routes", async ({
+  test("creates an Activity, reloads it, and opens its Activity Design record", async ({
     page,
   }) => {
     test.setTimeout(60_000);
@@ -565,7 +571,7 @@ test.describe("Activity planning journey", () => {
       .getByRole("button", { name: "Scheduled date", exact: true })
       .click();
     const calendar = page.locator('[data-slot="calendar"]');
-    await calendar.locator('button[data-day="9/3/2026"]').click();
+    await calendar.locator("button[data-day]").first().click();
     await sheet
       .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
       .fill("12345.67");
@@ -586,7 +592,394 @@ test.describe("Activity planning journey", () => {
     });
 
     await page.goto(`/activity-designs/${designId}`);
-    await expect(page).toHaveURL(/\/activity-designs$/);
+    await expect(page).toHaveURL(new RegExp(`/activity-designs/${designId}$`));
+    await expect(
+      page.getByRole("heading", { name: new RegExp(title) }),
+    ).toBeVisible();
+  });
+
+  test("opens populated and empty Activity Design records without page overflow", async ({
+    page,
+  }) => {
+    await signIn(page);
+    const populatedDesign = createDesignFixture(
+      "E2E Record Page Plan",
+      2026,
+      "AIP-E2E-215",
+    );
+    const emptyDesign = createDesignFixture("E2E Empty Record Page Plan");
+    const otherDesign = createDesignFixture("E2E Other Record Page Plan");
+    const plannedActivity = createActivityFixture({
+      activityDesignId: populatedDesign.id,
+      name: "E2E Record Page Activity",
+      officeName: "E2E Record Office",
+      scheduledDate: "2026-09-15T00:00:00.000Z",
+    });
+    const otherActivity = createActivityFixture({
+      activityDesignId: otherDesign.id,
+      name: "E2E Unrelated Activity",
+      officeName: "E2E Other Office",
+      scheduledDate: "2026-09-16T00:00:00.000Z",
+    });
+    const mealScheduleId = createMealScheduleFixture(plannedActivity.id);
+
+    try {
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 720 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto("/activity-designs");
+        const listRow = page
+          .getByRole("row")
+          .filter({ hasText: populatedDesign.title });
+        await listRow
+          .getByRole("link", { name: populatedDesign.title, exact: true })
+          .click();
+
+        await expect(page).toHaveURL(
+          new RegExp(`/activity-designs/${populatedDesign.id}$`),
+        );
+        await expect(
+          page.getByRole("heading", {
+            name: populatedDesign.title,
+          }),
+        ).toBeVisible();
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(page.getByText("AIP-E2E-215", { exact: true })).toBeVisible();
+        await expect(
+          page.getByText("1 Activity", { exact: true }).first(),
+        ).toBeVisible();
+
+        const activityRow = page
+          .getByRole("row")
+          .filter({ hasText: "E2E Record Page Activity" });
+        await expect(activityRow).toContainText("E2E Record Office");
+        await expect(activityRow).toContainText("1");
+        await expect(activityRow.getByRole("link", { name: "Open Activity" })).toHaveAttribute(
+          "href",
+          `/activity-designs/${populatedDesign.id}/activities/${plannedActivity.id}`,
+        );
+        await expect(
+          page.getByText("E2E Unrelated Activity", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByRole("link", { name: "Back to Activity Designs", exact: true }),
+        ).toBeVisible();
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+
+        await page.getByRole("button", { name: "Create Activity", exact: true }).click();
+        const createDialog = page.getByRole("dialog");
+        await expect(createDialog).toContainText(
+          `Add Activity to “${populatedDesign.title}”`,
+        );
+        await expect(createDialog.getByRole("combobox")).toHaveCount(0);
+        await page.keyboard.press("Escape");
+        await expect(createDialog).toHaveCount(0);
+
+        await page.goto(`/activity-designs/${emptyDesign.id}`);
+        await expect(page.getByText("No Activities yet.", { exact: true })).toBeVisible();
+        await expect(
+          page.getByText(
+            "Activities created here stay under this Activity Design.",
+            { exact: true },
+          ),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Create Activity", exact: true }),
+        ).toHaveCount(2);
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+      }
+
+      await page.goto("/activity-designs/missing-record");
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+    } finally {
+      deleteMealScheduleFixture(mealScheduleId);
+      deleteActivityFixture(plannedActivity.id);
+      deleteActivityFixture(otherActivity.id);
+      deleteDesigns([populatedDesign, emptyDesign, otherDesign]);
+    }
+  });
+
+  test("opens Activity records with their direct Meal Schedules and contextual creation", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    await signIn(page);
+    const design = createDesignFixture("E2E Activity Record Plan");
+    const populatedActivity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "E2E Populated Activity",
+      officeName: "E2E Activity Office",
+      scheduledDate: "2026-10-07T00:00:00.000Z",
+    });
+    const emptyActivity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "E2E Empty Activity",
+      officeName: "E2E Empty Office",
+      scheduledDate: "2026-10-08T00:00:00.000Z",
+    });
+    const otherDesign = createDesignFixture("E2E Other Activity Record Plan");
+    const otherActivity = createActivityFixture({
+      activityDesignId: otherDesign.id,
+      name: "E2E Unrelated Activity Record",
+      officeName: "E2E Other Office",
+      scheduledDate: "2026-10-09T00:00:00.000Z",
+    });
+    const mealScheduleId = createMealScheduleFixture(populatedActivity.id);
+
+    try {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.goto(`/activity-designs/${design.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const activityRowWithActions = page
+        .getByRole("row")
+        .filter({ hasText: populatedActivity.name });
+      await activityRowWithActions
+        .getByRole("button", {
+          name: `Actions for ${populatedActivity.name}`,
+          exact: true,
+        })
+        .click();
+      await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toBeVisible();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const activityEditDialog = page.getByRole("dialog");
+      await expect(
+        activityEditDialog.getByRole("textbox", {
+          name: "Activity name",
+          exact: true,
+        }),
+      ).toHaveValue(populatedActivity.name);
+      await page.keyboard.press("Escape");
+      await expect(activityEditDialog).toHaveCount(0);
+
+      await activityRowWithActions
+        .getByRole("button", {
+          name: `Actions for ${populatedActivity.name}`,
+          exact: true,
+        })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const blockedActivityDeleteDialog = page.getByRole("alertdialog");
+      await expect(blockedActivityDeleteDialog).toContainText(
+        "This Activity cannot be deleted while it has 1 Meal Schedule.",
+      );
+      await blockedActivityDeleteDialog
+        .getByRole("button", { name: "Close", exact: true })
+        .click();
+
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+      );
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const mealScheduleRowWithActions = page
+        .getByRole("row")
+        .filter({ hasText: "Lunch" });
+      await mealScheduleRowWithActions
+        .getByRole("button", { name: "Actions for Lunch", exact: true })
+        .click();
+      await expect(page.getByRole("menuitem", { name: "Edit", exact: true })).toBeVisible();
+      await expect(page.getByRole("menuitem", { name: "Delete", exact: true })).toBeVisible();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const mealScheduleEditDialog = page.getByRole("dialog");
+      await expect(
+        mealScheduleEditDialog.getByRole("form", {
+          name: "Edit Meal Schedule",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        mealScheduleEditDialog.getByRole("textbox", {
+          name: "Meal Schedule label",
+          exact: true,
+        }),
+      ).toHaveValue("Lunch");
+      await expect(mealScheduleEditDialog.locator("#mealScheduleTime")).toHaveValue("12:00");
+      await page.keyboard.press("Escape");
+      await expect(mealScheduleEditDialog).toHaveCount(0);
+
+      await mealScheduleRowWithActions
+        .getByRole("button", { name: "Actions for Lunch", exact: true })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+      const mealScheduleDeleteDialog = page.getByRole("alertdialog");
+      await expect(mealScheduleDeleteDialog).toContainText("Delete “Lunch”?");
+      await mealScheduleDeleteDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
+
+      for (const viewport of [
+        { width: 1280, height: 800 },
+        { width: 320, height: 720 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto(`/activity-designs/${design.id}`);
+
+        const activityRow = page
+          .getByRole("row")
+          .filter({ hasText: populatedActivity.name });
+        await activityRow.getByRole("link", { name: /^Open Activity:/ }).click();
+
+        await expect(page).toHaveURL(
+          new RegExp(
+            `/activity-designs/${design.id}/activities/${populatedActivity.id}$`,
+          ),
+        );
+        await expect(
+          page.getByRole("heading", { name: populatedActivity.name, exact: true }),
+        ).toBeVisible();
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: design.activityDesignNo, exact: true }),
+        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        await expect(
+          page.getByRole("link", { name: "Back to Activity Design", exact: true }),
+        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
+        await expect(page.getByText("12:00", { exact: true })).toBeVisible();
+        await expect(page.getByText("1,250", { exact: true })).toBeVisible();
+
+        const mealScheduleRow = page
+          .getByRole("row")
+          .filter({ hasText: "Lunch" });
+        const openMealSchedule = mealScheduleRow.getByRole("link", {
+          name: /^Open Meal Schedule:/,
+          exact: true,
+        });
+        await expect(openMealSchedule).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
+        );
+        await openMealSchedule.focus();
+        await expect(openMealSchedule).toBeFocused();
+        await page.keyboard.press("Enter");
+
+        await expect(page).toHaveURL(
+          new RegExp(
+            `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}$`,
+          ),
+        );
+        await expect(
+          page.getByRole("heading", { name: "Lunch · 12:00", exact: true }),
+        ).toBeVisible();
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: populatedActivity.name, exact: true }),
+        ).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+        );
+        const backToActivity = page.getByRole("link", {
+          name: "Back to Activity",
+          exact: true,
+        });
+        await expect(backToActivity).toHaveAttribute(
+          "href",
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+        );
+        await expect(
+          page.getByText(
+            "Supply issuance will be prepared from this Meal Schedule in a later operational slice.",
+            { exact: true },
+          ),
+        ).toBeVisible();
+        await expect(page.getByText("Food Supplies", { exact: true })).toHaveCount(0);
+        await expect(
+          page.getByText("Direct-use Stock Items", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByText("Stock availability", { exact: true }),
+        ).toHaveCount(0);
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        await backToActivity.focus();
+        await expect(backToActivity).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(page).toHaveURL(
+          new RegExp(`/activity-designs/${design.id}/activities/${populatedActivity.id}$`),
+        );
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+
+        await page.goto(
+          `/activity-designs/${design.id}/activities/${emptyActivity.id}`,
+        );
+        await expect(
+          page.getByText("No Meal Schedules yet.", { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(4);
+        expect(
+          await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            clientWidth: document.documentElement.clientWidth,
+          })),
+        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+      }
+
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.goto(`/activity-designs/${design.id}/activities/${emptyActivity.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page
+        .getByRole("button", { name: "Add Meal Schedule", exact: true })
+        .last()
+        .click();
+      const createDialog = page.getByRole("dialog");
+      await expect(createDialog).toContainText(
+        `Add a Meal Schedule under “${emptyActivity.name}”`,
+      );
+      await createDialog
+        .getByRole("textbox", { name: "Meal Schedule label", exact: true })
+        .fill("Afternoon Snack");
+      await createDialog.locator("#mealScheduleTime").fill("15:30");
+      await createDialog
+        .getByRole("spinbutton", { name: "Planned servings (optional)", exact: true })
+        .fill("80");
+      await createDialog
+        .getByRole("button", { name: "Add Meal Schedule", exact: true })
+        .click();
+      await expect(createDialog).toHaveCount(0);
+      await expect(page.getByText("Afternoon Snack", { exact: true })).toBeVisible();
+      await expect(page.getByText("15:30", { exact: true })).toBeVisible();
+      await expect(page.getByText("80", { exact: true })).toBeVisible();
+
+      await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(`/activity-designs/${design.id}/activities/${otherActivity.id}`);
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/missing-meal-schedule`,
+      );
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
+      );
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await page.goto(
+        `/activity-designs/${design.id}/activities/${otherActivity.id}/meal-schedules/${mealScheduleId}`,
+      );
+      await expect(page.getByText("404", { exact: true })).toBeVisible();
+    } finally {
+      deleteDesigns([design, otherDesign]);
+    }
   });
 
   test("asks before discarding dirty Activity creation", async ({ page }) => {
