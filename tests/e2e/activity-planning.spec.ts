@@ -256,7 +256,6 @@ test.describe("Activity planning journey", () => {
             buttons.map((button) => getComputedStyle(button).fontFamily),
           ),
       ).toEqual(Array.from({ length: 10 }, () => designBodyFace));
-
       await page.goto(`/activity-designs/${activityDesign.id}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       const detailBodyFace = await page
