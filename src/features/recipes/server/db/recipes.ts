@@ -258,7 +258,7 @@ export async function updateRecipeWithActiveItems(id: string, input: RecipeInput
         where: { id },
         data: {
           name: input.name, normalizedName: input.normalizedName, preparationNote: input.preparationNote,
-          ...(input.baselinePax === undefined ? {} : { baselinePax: input.baselinePax }),
+          baselinePax: input.baselinePax!,
           ingredients: { deleteMany: {}, create: input.ingredients.map((ingredient) => ({ id: crypto.randomUUID(), itemId: ingredient.itemId, enteredQuantity: ingredient.enteredQuantity, itemUnitConversionId: ingredient.itemUnitConversionId })) },
         },
         select: recipeCatalogSelect,

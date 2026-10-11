@@ -291,7 +291,7 @@ export default function RecipeCreateEditor({
               <Field data-invalid={Boolean(fieldErrors.baselinePax?.length)}>
                 <FieldLabel htmlFor="recipe-baseline-pax">Ingredients for ___ pax <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <Input id="recipe-baseline-pax" className="max-w-48" inputMode="numeric" pattern="[1-9][0-9]*" required value={baselinePax} aria-invalid={Boolean(fieldErrors.baselinePax?.length)} aria-describedby={fieldErrors.baselinePax?.length ? "recipe-baseline-pax-error recipe-baseline-pax-help" : "recipe-baseline-pax-help"} onChange={(event) => { setBaselinePax(event.target.value); clearFieldError("baselinePax"); }} />
-                <p id="recipe-baseline-pax-help" className="text-body-sm text-muted-foreground">The entered ingredient quantities serve this many people. Changing this number does not change the quantities.</p>
+                <p id="recipe-baseline-pax-help" className="text-body-sm text-muted-foreground">The entered ingredient quantities serve this many people. Changing the baseline redefines this batch; it does not multiply or change ingredient quantities.</p>
                 <FieldMessages id="recipe-baseline-pax-error" errors={fieldErrors.baselinePax} />
               </Field>
               {recipe?.baselinePax === null ? <Alert><AlertTitle>Baseline pax not set</AlertTitle><AlertDescription>Supply a baseline when saving this Recipe.</AlertDescription></Alert> : null}

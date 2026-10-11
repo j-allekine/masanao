@@ -238,15 +238,19 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(listActiveRecipes()).resolves.toContainEqual(created.recipe);
   });
 
-  it("keeps a legacy Recipe unset and preserves it when an interim edit omits baseline", async () => {
+  it("requires a baseline when completing a legacy Recipe and preserves its ingredient quantity", async () => {
     await prisma.user.create({ data: { id: adminActor.id, name: adminActor.name, email: "recipes.admin@internal.masanao", username: adminActor.username, role: "admin" } });
     const { item } = await createRecipeReferences();
     await prisma.recipe.create({ data: { id: "legacy-recipe", name: "Legacy Soup", normalizedName: "legacy soup", ingredients: { create: { id: "legacy-ingredient", itemId: item.id, enteredQuantity: "0.1250" } } } });
     await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: null, canScale: false, ingredients: [{ enteredQuantity: "0.1250" }] });
-    await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: true, recipe: { baselinePax: null, canScale: false } });
-    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: null, canScale: false, ingredients: [{ enteredQuantity: "0.1250" }] });
+    for (const baselinePax of [undefined, "", "0", "-1", "1.5", "abc", "2147483648", "9007199254740993"]) {
+      await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax, ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baselinePax: expect.any(Array) } });
+    }
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ name: "Legacy Soup", baselinePax: null, canScale: false, ingredients: [{ enteredQuantity: "0.1250" }] });
     await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax: "50", ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: true, recipe: { baselinePax: 50, canScale: true } });
     await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: 50, canScale: true, ingredients: [{ enteredQuantity: "0.1250" }] });
+    await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax: "100", ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: true, recipe: { baselinePax: 100, canScale: true } });
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: 100, canScale: true, ingredients: [{ enteredQuantity: "0.1250" }] });
   });
 
   it("stores either an Item Base Unit selection or its exact Item Unit Conversion", async () => {
@@ -702,6 +706,7 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(
       updateRecipe(adminActor, created.recipe.id, {
         name: "Changed after deactivation",
+        baselinePax: "50",
         ingredients: [{ itemId: item.id, quantity: "2" }],
       }),
     ).resolves.toEqual({
