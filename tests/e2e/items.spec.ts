@@ -474,11 +474,20 @@ test.describe("Items catalog journey", () => {
     page: Page,
     dialog: Locator,
   ) {
-    const issuanceQuantities = dialog.getByRole("combobox", {
+    const issuanceQuantities = dialog.getByRole("group", {
       name: "Issuance quantities",
       exact: true,
     });
-    await expect(issuanceQuantities).toContainText("Allow decimals");
+    const allowDecimals = issuanceQuantities.getByRole("button", {
+      name: "Allow decimals",
+      exact: true,
+    });
+    const wholeNumbersOnly = issuanceQuantities.getByRole("button", {
+      name: "Whole numbers only",
+      exact: true,
+    });
+    await expect(allowDecimals).toHaveAttribute("aria-pressed", "true");
+    await expect(wholeNumbersOnly).toHaveAttribute("aria-pressed", "false");
     await expect(
       dialog.getByText(
         "This rule applies to the combined quantity for this Item after conversion to Base Units.",
@@ -486,14 +495,12 @@ test.describe("Items catalog journey", () => {
       ),
     ).toBeVisible();
 
-    await issuanceQuantities.focus();
+    await allowDecimals.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(wholeNumbersOnly).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(
-      page.getByRole("option", { name: "Whole numbers only", exact: true }),
-    ).toBeVisible();
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("Enter");
-    await expect(issuanceQuantities).toContainText("Whole numbers only");
+    await expect(wholeNumbersOnly).toHaveAttribute("aria-pressed", "true");
+    await expect(allowDecimals).toHaveAttribute("aria-pressed", "false");
   }
 
   test("creates and edits issuance quantity policy by keyboard on mobile", async ({
@@ -510,7 +517,7 @@ test.describe("Items catalog journey", () => {
 
     await page.getByRole("button", { name: "Create Item", exact: true }).click();
     const dialog = page.getByRole("dialog");
-    const issuanceQuantities = dialog.getByRole("combobox", {
+    const issuanceQuantities = dialog.getByRole("group", {
       name: "Issuance quantities",
       exact: true,
     });
@@ -554,16 +561,24 @@ test.describe("Items catalog journey", () => {
       .click();
     await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
     const editDialog = page.getByRole("dialog");
-    const editIssuanceQuantities = editDialog.getByRole("combobox", {
+    const editIssuanceQuantities = editDialog.getByRole("group", {
       name: "Issuance quantities",
       exact: true,
     });
-    await expect(editIssuanceQuantities).toContainText("Whole numbers only");
-    await editIssuanceQuantities.focus();
+    const editAllowDecimals = editIssuanceQuantities.getByRole("button", {
+      name: "Allow decimals",
+      exact: true,
+    });
+    const editWholeNumbersOnly = editIssuanceQuantities.getByRole("button", {
+      name: "Whole numbers only",
+      exact: true,
+    });
+    await expect(editWholeNumbersOnly).toHaveAttribute("aria-pressed", "true");
+    await editWholeNumbersOnly.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(editAllowDecimals).toBeFocused();
     await page.keyboard.press("Enter");
-    await page.keyboard.press("ArrowUp");
-    await page.keyboard.press("Enter");
-    await expect(editIssuanceQuantities).toContainText("Allow decimals");
+    await expect(editAllowDecimals).toHaveAttribute("aria-pressed", "true");
     await editDialog
       .getByRole("button", { name: "Save changes", exact: true })
       .click();

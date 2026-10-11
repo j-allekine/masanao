@@ -28,6 +28,10 @@ import {
 } from "@/components/ui/select";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 
 import { createItemAction, updateItemAction } from "../actions";
 import type {
@@ -356,41 +360,41 @@ export default function ItemForm({
               fieldErrors.issuanceQuantityPolicy?.length,
             )}
           >
-            <FieldLabel htmlFor={`${mode}-item-issuance-quantity-policy`}>
+            <FieldLabel id={`${mode}-item-issuance-quantity-policy-label`}>
               Issuance quantities
             </FieldLabel>
-            <Select
-              items={issuanceQuantityPolicyOptions}
-              value={formValues.issuanceQuantityPolicy}
-              onValueChange={(value) =>
-                updateField("issuanceQuantityPolicy", value ?? "")
+            <ToggleGroup
+              aria-labelledby={`${mode}-item-issuance-quantity-policy-label`}
+              aria-describedby={
+                fieldErrors.issuanceQuantityPolicy?.length
+                  ? `${mode}-item-issuance-quantity-policy-description ${mode}-item-issuance-quantity-policy-error`
+                  : `${mode}-item-issuance-quantity-policy-description`
               }
+              aria-invalid={Boolean(
+                fieldErrors.issuanceQuantityPolicy?.length,
+              )}
+              className="w-full"
+              variant="outline"
+              value={[formValues.issuanceQuantityPolicy]}
+              onValueChange={(values) => {
+                const value = values[0];
+                if (value) updateField("issuanceQuantityPolicy", value);
+              }}
             >
-              <SelectTrigger
-                id={`${mode}-item-issuance-quantity-policy`}
-                className="w-full"
-                aria-invalid={Boolean(
-                  fieldErrors.issuanceQuantityPolicy?.length,
-                )}
-                aria-describedby={
-                  fieldErrors.issuanceQuantityPolicy?.length
-                    ? `${mode}-item-issuance-quantity-policy-error`
-                    : undefined
-                }
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {issuanceQuantityPolicyOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <p className="text-body-sm text-muted-foreground">
+              {issuanceQuantityPolicyOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  className="min-w-0 flex-1 whitespace-normal px-2"
+                  value={option.value}
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <p
+              id={`${mode}-item-issuance-quantity-policy-description`}
+              className="text-body-sm text-muted-foreground"
+            >
               This rule applies to the combined quantity for this Item after
               conversion to Base Units.
             </p>
