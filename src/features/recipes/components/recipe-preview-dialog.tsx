@@ -69,7 +69,7 @@ export default function RecipePreviewDialog({
                   Ingredients
                 </h2>
                 <p className="text-body-sm text-muted-foreground">
-                  Usual quantities only. They are not issued quantities.
+                  {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
                 </p>
               </div>
               <div className="overflow-x-auto rounded-lg border">

@@ -62,10 +62,11 @@ function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
   return <FieldError id={id} errors={errors.map((message) => ({ message }))} />;
 }
 
-function getDraftSignature(name: string, preparationNote: string, ingredients: IngredientDraft[]) {
+function getDraftSignature(name: string, preparationNote: string, baselinePax: string, ingredients: IngredientDraft[]) {
   return JSON.stringify({
     name,
     preparationNote,
+    baselinePax,
     ingredients: ingredients.map(({ itemId, itemUnitConversionId, quantity }) => ({
       itemId,
       itemUnitConversionId,
@@ -84,6 +85,7 @@ export default function RecipeCreateEditor({
   const router = useRouter();
   const [name, setName] = useState(recipe?.name ?? "");
   const [preparationNote, setPreparationNote] = useState(recipe?.preparationNote ?? "");
+  const [baselinePax, setBaselinePax] = useState(recipe?.baselinePax?.toString() ?? "");
   const [ingredients, setIngredients] = useState<IngredientDraft[]>(() => recipe?.ingredients.map((ingredient) => ({ id: ingredient.id, itemId: ingredient.itemId, itemUnitConversionId: ingredient.itemUnitConversionId, quantity: ingredient.enteredQuantity })) ?? [createIngredientDraft()]);
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -93,6 +95,7 @@ export default function RecipeCreateEditor({
     getDraftSignature(
       recipe?.name ?? "",
       recipe?.preparationNote ?? "",
+      recipe?.baselinePax?.toString() ?? "",
       recipe?.ingredients.map((ingredient) => ({
         id: ingredient.id,
         itemId: ingredient.itemId,
@@ -110,8 +113,8 @@ export default function RecipeCreateEditor({
     [items],
   );
   const isDirty = useMemo(
-    () => getDraftSignature(name, preparationNote, ingredients) !== initialDraftSignature,
-    [ingredients, initialDraftSignature, name, preparationNote],
+    () => getDraftSignature(name, preparationNote, baselinePax, ingredients) !== initialDraftSignature,
+    [baselinePax, ingredients, initialDraftSignature, name, preparationNote],
   );
 
   useEffect(() => {
@@ -174,6 +177,7 @@ export default function RecipeCreateEditor({
     const formData = new FormData();
     formData.set("name", name);
     formData.set("preparationNote", preparationNote);
+    formData.set("baselinePax", baselinePax);
     formData.set(
       "ingredients",
       JSON.stringify(
@@ -280,10 +284,17 @@ export default function RecipeCreateEditor({
             <CardHeader>
               <CardTitle>Ingredients</CardTitle>
               <CardDescription>
-                Select active Items and enter each usual quantity in its Base Unit or a configured alternate Unit.
+                Select active Items and enter the quantity for the reference batch in its Base Unit or a configured alternate Unit.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <Field data-invalid={Boolean(fieldErrors.baselinePax?.length)}>
+                <FieldLabel htmlFor="recipe-baseline-pax">Ingredients for ___ pax <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
+                <Input id="recipe-baseline-pax" className="max-w-48" inputMode="numeric" pattern="[1-9][0-9]*" required value={baselinePax} aria-invalid={Boolean(fieldErrors.baselinePax?.length)} aria-describedby={fieldErrors.baselinePax?.length ? "recipe-baseline-pax-error recipe-baseline-pax-help" : "recipe-baseline-pax-help"} onChange={(event) => { setBaselinePax(event.target.value); clearFieldError("baselinePax"); }} />
+                <p id="recipe-baseline-pax-help" className="text-body-sm text-muted-foreground">The entered ingredient quantities serve this many people. Changing the baseline redefines this batch; it does not multiply or change ingredient quantities.</p>
+                <FieldMessages id="recipe-baseline-pax-error" errors={fieldErrors.baselinePax} />
+              </Field>
+              {recipe?.baselinePax === null ? <Alert><AlertTitle>Baseline pax not set</AlertTitle><AlertDescription>Supply a baseline when saving this Recipe.</AlertDescription></Alert> : null}
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>

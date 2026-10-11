@@ -23,6 +23,7 @@ export async function executeCreateRecipe(
     const ingredients = JSON.parse(String(formData.get("ingredients") ?? "[]"));
     const result = await createRecipe(actor, {
       name: formData.get("name"),
+      baselinePax: formData.get("baselinePax"),
       preparationNote: formData.get("preparationNote"),
       ingredients,
     });

@@ -94,7 +94,7 @@ export default function RecipeDetailContent({
               Ingredients
             </h2>
             <p className="text-body text-muted-foreground">
-              Usual quantities for this Recipe. They are not issued quantities.
+              {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
             </p>
           </div>
           <div className="overflow-x-auto rounded-lg border">

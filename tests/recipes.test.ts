@@ -122,6 +122,8 @@ describe("Recipes catalog and persistence foundation", () => {
       {
         id: "recipes-alpha",
         name: "Alpha Soup",
+        baselinePax: null,
+        canScale: false,
         ingredientCount: 0,
         isActive: true,
         needsAttention: false,
@@ -129,6 +131,8 @@ describe("Recipes catalog and persistence foundation", () => {
       {
         id: "recipes-zulu",
         name: "Zulu Soup",
+        baselinePax: null,
+        canScale: false,
         ingredientCount: 1,
         isActive: true,
         needsAttention: false,
@@ -166,6 +170,8 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(getActiveRecipe("recipes-staff-visible")).resolves.toEqual({
       id: "recipes-staff-visible",
       name: "Staff Visible Soup",
+      baselinePax: null,
+      canScale: false,
       preparationNote: "Use the usual kitchen pot.",
       isActive: true,
       ingredients: [
@@ -212,6 +218,39 @@ describe("Recipes catalog and persistence foundation", () => {
       fields: {},
     });
     await expect(prisma.recipe.count()).resolves.toBe(0);
+  });
+
+  it("requires a safe positive whole-number baseline and exposes eligible public reads", async () => {
+    await prisma.user.create({ data: { id: adminActor.id, name: adminActor.name, email: "recipes.admin@internal.masanao", username: adminActor.username, role: "admin" } });
+    const { item } = await createRecipeReferences();
+    const input = { name: "Baseline Soup", ingredients: [{ itemId: item.id, quantity: "1.250" }] };
+
+    for (const baselinePax of [undefined, "", "0", "-1", "1.5", "abc", "2147483648", "9007199254740993"]) {
+      const result = await createRecipe(adminActor, { ...input, baselinePax });
+      expect(result).toMatchObject({ ok: false, kind: "validation", fields: { baselinePax: expect.any(Array) } });
+    }
+    await expect(prisma.recipe.count()).resolves.toBe(0);
+
+    const created = await createRecipe(adminActor, { ...input, baselinePax: 2_147_483_647 });
+    expect(created).toMatchObject({ ok: true, recipe: { baselinePax: 2_147_483_647, canScale: true } });
+    if (!created.ok) throw new Error("Valid Recipe was rejected.");
+    await expect(getActiveRecipe(created.recipe.id)).resolves.toMatchObject({ baselinePax: 2_147_483_647, canScale: true, ingredients: [{ enteredQuantity: "1.250" }] });
+    await expect(listActiveRecipes()).resolves.toContainEqual(created.recipe);
+  });
+
+  it("requires a baseline when completing a legacy Recipe and preserves its ingredient quantity", async () => {
+    await prisma.user.create({ data: { id: adminActor.id, name: adminActor.name, email: "recipes.admin@internal.masanao", username: adminActor.username, role: "admin" } });
+    const { item } = await createRecipeReferences();
+    await prisma.recipe.create({ data: { id: "legacy-recipe", name: "Legacy Soup", normalizedName: "legacy soup", ingredients: { create: { id: "legacy-ingredient", itemId: item.id, enteredQuantity: "0.1250" } } } });
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: null, canScale: false, ingredients: [{ enteredQuantity: "0.1250" }] });
+    for (const baselinePax of [undefined, "", "0", "-1", "1.5", "abc", "2147483648", "9007199254740993"]) {
+      await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax, ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baselinePax: expect.any(Array) } });
+    }
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ name: "Legacy Soup", baselinePax: null, canScale: false, ingredients: [{ enteredQuantity: "0.1250" }] });
+    await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax: "50", ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: true, recipe: { baselinePax: 50, canScale: true } });
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: 50, canScale: true, ingredients: [{ enteredQuantity: "0.1250" }] });
+    await expect(updateRecipe(adminActor, "legacy-recipe", { name: "Legacy Soup Updated", baselinePax: "100", ingredients: [{ itemId: item.id, quantity: "0.1250" }] })).resolves.toMatchObject({ ok: true, recipe: { baselinePax: 100, canScale: true } });
+    await expect(getActiveRecipe("legacy-recipe")).resolves.toMatchObject({ baselinePax: 100, canScale: true, ingredients: [{ enteredQuantity: "0.1250" }] });
   });
 
   it("stores either an Item Base Unit selection or its exact Item Unit Conversion", async () => {
@@ -349,6 +388,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "  Chicken arroz caldo  ",
         preparationNote: " Simmer until tender. ",
         ingredients: [{ itemId: item.id, itemUnitConversionId: null, quantity: "2.5" }],
@@ -399,6 +439,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Converted Rice Porridge",
         ingredients: [
           {
@@ -421,6 +462,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Invalid Onion Soup",
         ingredients: [
           {
@@ -437,6 +479,7 @@ describe("Recipes catalog and persistence foundation", () => {
     });
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Invalid Base Unit Soup",
         ingredients: [
           {
@@ -468,6 +511,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Inactive Item Soup",
         ingredients: [{ itemId: item.id, quantity: "1" }],
       }),
@@ -499,6 +543,8 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(listActiveRecipes()).resolves.toContainEqual({
       id: "base-unit-needs-attention",
       name: "Base Unit Recipe",
+      baselinePax: null,
+      canScale: false,
       ingredientCount: 1,
       isActive: true,
       needsAttention: true,
@@ -518,6 +564,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Ingredient-free Recipe",
         ingredients: [],
       }),
@@ -544,6 +591,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Complete Template Check",
         ingredients: [
           { itemId: item.id, quantity: "0" },
@@ -576,6 +624,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "Unavailable Unit Soup",
         ingredients: [
           {
@@ -619,6 +668,7 @@ describe("Recipes catalog and persistence foundation", () => {
 
     await expect(
       createRecipe(adminActor, {
+        baselinePax: "50",
         name: "  RICE SOUP  ",
         ingredients: [{ itemId: item.id, quantity: "1" }],
       }),
@@ -642,6 +692,7 @@ describe("Recipes catalog and persistence foundation", () => {
     });
     const { item } = await createRecipeReferences();
     const created = await createRecipe(adminActor, {
+        baselinePax: "50",
       name: "Deactivation Guard Soup",
       ingredients: [{ itemId: item.id, quantity: "1" }],
     });
@@ -655,6 +706,7 @@ describe("Recipes catalog and persistence foundation", () => {
     await expect(
       updateRecipe(adminActor, created.recipe.id, {
         name: "Changed after deactivation",
+        baselinePax: "50",
         ingredients: [{ itemId: item.id, quantity: "2" }],
       }),
     ).resolves.toEqual({

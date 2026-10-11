@@ -317,6 +317,7 @@ model Recipe {
   id              String             @id
   name            String
   normalizedName  String             @unique(map: "recipe_normalized_name_key")
+  baselinePax     Int?
   preparationNote String?
   isActive        Boolean            @default(true)
   createdAt       DateTime           @default(now())

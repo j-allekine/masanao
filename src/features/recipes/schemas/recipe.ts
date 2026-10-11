@@ -10,6 +10,15 @@ import {
 import type { RecipeFieldErrors, RecipeIngredientField } from "../types";
 
 const positiveDecimal = /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
+const baselinePaxSchema = z
+  .union([z.string(), z.number()], { error: "Enter the number of people these ingredients serve." })
+  .transform((value) => String(value).trim())
+  .pipe(z.string()
+    .min(1, "Enter the number of people these ingredients serve.")
+    .regex(/^[1-9]\d*$/, "Enter a positive whole number of pax.")
+    .refine((value) => Number.isSafeInteger(Number(value)) && Number(value) <= 2_147_483_647,
+      "Enter a whole number no greater than 2,147,483,647."))
+  .transform(Number);
 
 const nameSchema = z
   .string({ error: "Recipe name is required" })
@@ -42,6 +51,7 @@ const ingredientSchema = z.object({
 export const recipeSchema = z
   .object({
     name: nameSchema,
+    baselinePax: baselinePaxSchema.optional(),
     preparationNote: z
       .string()
       .optional()
@@ -94,7 +104,7 @@ export function recipeFieldErrors(error: z.ZodError): RecipeFieldErrors {
       typeof index === "number" &&
       (ingredientField === "itemId" || ingredientField === "quantity" || ingredientField === "itemUnitConversionId")
         ? (`ingredients.${index}.${ingredientField}` as RecipeIngredientField)
-        : field === "name" || field === "preparationNote" || field === "ingredients"
+        : field === "name" || field === "preparationNote" || field === "baselinePax" || field === "ingredients"
         ? field
         : "form";
     fields[key] ??= [];

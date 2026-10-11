@@ -4,6 +4,8 @@ export type RecipeCatalogItem = {
   ingredientCount: number;
   isActive: boolean;
   needsAttention?: boolean;
+  baselinePax: number | null;
+  canScale: boolean;
 };
 
 export type RecipeDetailItem = {
@@ -11,6 +13,8 @@ export type RecipeDetailItem = {
   name: string;
   preparationNote: string | null;
   isActive: boolean;
+  baselinePax: number | null;
+  canScale: boolean;
   ingredients: Array<{
     id: string;
     itemId: string;
@@ -54,7 +58,7 @@ export type RecipeIngredientUnitConversionOption = {
   label: string;
 };
 
-export type RecipeField = "name" | "preparationNote" | "ingredients";
+export type RecipeField = "name" | "preparationNote" | "baselinePax" | "ingredients";
 export type RecipeIngredientField =
   | `ingredients.${number}.itemId`
   | `ingredients.${number}.quantity`
