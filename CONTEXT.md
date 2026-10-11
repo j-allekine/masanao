@@ -59,6 +59,9 @@ An LGU department or office associated with an Activity, never with the containi
 **Recipe**:
 A reusable reference for one food and its ingredient lines.
 
+**Recipe Baseline Pax**:
+The number of people served by the ingredient quantities recorded on a Recipe. It describes the reusable recipe batch, not the pax requested for a particular issuance.
+
 **Recipe Snapshot**:
 The Meal Schedule-specific copy of a Recipe's ingredient lines for a Food Supply, distinct from the master Recipe.
 
