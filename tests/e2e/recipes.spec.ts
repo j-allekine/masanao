@@ -76,6 +76,11 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(page.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Edit Recipe" })).toHaveCount(0);
+  await page.goto("/recipes/e2e-recipe-active/edit");
+  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Ingredients for ___ pax")).toHaveCount(0);
 });
 
 test("lets an administrator open the Recipe editor from the catalog action menu", async ({ page }) => {
@@ -219,6 +224,30 @@ test("shows accessible baseline errors and keeps the Recipe editor usable at 320
   await page.keyboard.type("1");
   await expect(baseline).toHaveValue("1");
   await expect(baseline).toHaveAttribute("aria-invalid", "false");
+  const widths = await page.locator("body").evaluate((body) => ({ client: body.clientWidth, scroll: body.scrollWidth }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+});
+
+test("shows field errors for nonempty invalid baseline values without losing the Recipe draft", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await signInAsAdministrator(page);
+  await page.goto("/recipes/new");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByLabel("Recipe name").fill("Invalid Baseline Soup");
+  await chooseIngredient(page, 1, "Rice");
+  await page.getByLabel("Ingredient 1 quantity").fill("1.2500");
+  const baseline = page.getByLabel("Ingredients for ___ pax");
+  for (const invalidValue of ["0", "1.5", "2147483648"]) {
+    await baseline.fill(invalidValue);
+    await baseline.press("Tab");
+    await page.getByRole("button", { name: "Create Recipe" }).click();
+    await expect(baseline).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("#recipe-baseline-pax-error")).toBeVisible();
+    await expect(page.getByLabel("Recipe name")).toHaveValue("Invalid Baseline Soup");
+    await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("1.2500");
+    await expect(baseline).toHaveValue(invalidValue);
+  }
+  await expect(page.getByText("Enter a whole number no greater than 2,147,483,647.")).toBeVisible();
   const widths = await page.locator("body").evaluate((body) => ({ client: body.clientWidth, scroll: body.scrollWidth }));
   expect(widths.scroll).toBeLessThanOrEqual(widths.client);
 });
