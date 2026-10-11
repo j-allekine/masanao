@@ -18,6 +18,16 @@ it("defaults existing Items while preserving inventory and conversion history", 
         "itemId" TEXT NOT NULL,
         "baseUnitQuantity" TEXT NOT NULL
       );
+      CREATE TABLE "delivery_receipt_line" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "itemId" TEXT NOT NULL,
+        "baseUnitId" TEXT NOT NULL,
+        "itemName" TEXT NOT NULL,
+        "baseUnitName" TEXT NOT NULL,
+        "enteredQuantity" TEXT NOT NULL,
+        "conversionFactor" TEXT NOT NULL,
+        "calculatedBaseUnitQuantity" TEXT NOT NULL
+      );
       CREATE TABLE "inventory_ledger_movement" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "itemId" TEXT NOT NULL,
@@ -25,6 +35,10 @@ it("defaults existing Items while preserving inventory and conversion history", 
       );
       INSERT INTO "item" VALUES ('rice', 'Rice', 'kilogram');
       INSERT INTO "item_unit_conversion" VALUES ('sack', 'rice', '25.00');
+      INSERT INTO "delivery_receipt_line" VALUES (
+        'receipt-line-1', 'rice', 'kilogram', 'Rice', 'Kilogram',
+        '2.00', '25.00', '50.00'
+      );
       INSERT INTO "inventory_ledger_movement" VALUES ('stock-in', 'rice', '12.500');
     `);
 
@@ -40,12 +54,30 @@ it("defaults existing Items while preserving inventory and conversion history", 
 
     expect(
       database
-        .prepare('SELECT "id", "issuanceQuantityPolicy" FROM "item"')
+        .prepare('SELECT "id", "baseUnitId", "issuanceQuantityPolicy" FROM "item"')
         .get(),
-    ).toEqual({ id: "rice", issuanceQuantityPolicy: "allow-decimals" });
+    ).toEqual({
+      id: "rice",
+      baseUnitId: "kilogram",
+      issuanceQuantityPolicy: "allow-decimals",
+    });
     expect(
       database.prepare('SELECT * FROM "item_unit_conversion"').all(),
     ).toEqual([{ id: "sack", itemId: "rice", baseUnitQuantity: "25.00" }]);
+    expect(
+      database.prepare('SELECT * FROM "delivery_receipt_line"').all(),
+    ).toEqual([
+      {
+        id: "receipt-line-1",
+        itemId: "rice",
+        baseUnitId: "kilogram",
+        itemName: "Rice",
+        baseUnitName: "Kilogram",
+        enteredQuantity: "2.00",
+        conversionFactor: "25.00",
+        calculatedBaseUnitQuantity: "50.00",
+      },
+    ]);
     expect(
       database.prepare('SELECT * FROM "inventory_ledger_movement"').all(),
     ).toEqual([{ id: "stock-in", itemId: "rice", quantity: "12.500" }]);

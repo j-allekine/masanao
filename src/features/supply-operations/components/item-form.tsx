@@ -49,6 +49,11 @@ const emptyFormValues: ItemFormValues = {
   note: "",
 };
 
+const issuanceQuantityPolicyOptions = [
+  { value: "allow-decimals", label: "Allow decimals" },
+  { value: "whole-numbers-only", label: "Whole numbers only" },
+];
+
 function initialValues(item?: ItemListItem): ItemFormValues {
   if (!item) return emptyFormValues;
 
@@ -355,13 +360,7 @@ export default function ItemForm({
               Issuance quantities
             </FieldLabel>
             <Select
-              items={[
-                { value: "allow-decimals", label: "Allow decimals" },
-                {
-                  value: "whole-numbers-only",
-                  label: "Whole numbers only",
-                },
-              ]}
+              items={issuanceQuantityPolicyOptions}
               value={formValues.issuanceQuantityPolicy}
               onValueChange={(value) =>
                 updateField("issuanceQuantityPolicy", value ?? "")
@@ -383,12 +382,11 @@ export default function ItemForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="allow-decimals">
-                    Allow decimals
-                  </SelectItem>
-                  <SelectItem value="whole-numbers-only">
-                    Whole numbers only
-                  </SelectItem>
+                  {issuanceQuantityPolicyOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>

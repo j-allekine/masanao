@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -470,6 +470,32 @@ test.describe("Items catalog journey", () => {
     restoreSeededRecipeItem();
   });
 
+  async function verifyIssuancePolicyKeyboardInteraction(
+    page: Page,
+    dialog: Locator,
+  ) {
+    const issuanceQuantities = dialog.getByRole("combobox", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    await expect(issuanceQuantities).toContainText("Allow decimals");
+    await expect(
+      dialog.getByText(
+        "This rule applies to the combined quantity for this Item after conversion to Base Units.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+
+    await issuanceQuantities.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("option", { name: "Whole numbers only", exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(issuanceQuantities).toContainText("Whole numbers only");
+  }
+
   test("creates and edits issuance quantity policy by keyboard on mobile", async ({
     page,
   }) => {
@@ -488,7 +514,6 @@ test.describe("Items catalog journey", () => {
       name: "Issuance quantities",
       exact: true,
     });
-    await expect(issuanceQuantities).toContainText("Allow decimals");
     const baseUnit = dialog.getByRole("combobox", {
       name: "Base Unit",
       exact: true,
@@ -500,21 +525,7 @@ test.describe("Items catalog journey", () => {
     expect(baseUnitBounds).not.toBeNull();
     expect(policyBounds).not.toBeNull();
     expect(policyBounds!.y).toBeGreaterThan(baseUnitBounds!.y);
-    await expect(
-      dialog.getByText(
-        "This rule applies to the combined quantity for this Item after conversion to Base Units.",
-        { exact: true },
-      ),
-    ).toBeVisible();
-
-    await issuanceQuantities.focus();
-    await page.keyboard.press("Enter");
-    await expect(
-      page.getByRole("option", { name: "Whole numbers only", exact: true }),
-    ).toBeVisible();
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.press("Enter");
-    await expect(issuanceQuantities).toContainText("Whole numbers only");
+    await verifyIssuancePolicyKeyboardInteraction(page, dialog);
 
     await dialog.getByLabel("Name").fill("Eggs Policy Journey");
     await dialog.getByRole("combobox", { name: "Category" }).click();
@@ -570,6 +581,23 @@ test.describe("Items catalog journey", () => {
         () => document.body.scrollWidth <= document.documentElement.clientWidth,
       ),
     ).toBe(true);
+  });
+
+  test("shows the issuance quantity policy and supports keyboard selection on desktop", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    expect(page.viewportSize()?.width).toBeGreaterThanOrEqual(1024);
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
+    await verifyIssuancePolicyKeyboardInteraction(page, page.getByRole("dialog"));
   });
 
   test("explains the posted-stock locks in the Item lifecycle UI", async ({ page }) => {
