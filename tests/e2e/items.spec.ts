@@ -470,6 +470,108 @@ test.describe("Items catalog journey", () => {
     restoreSeededRecipeItem();
   });
 
+  test("creates and edits issuance quantity policy by keyboard on mobile", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    const issuanceQuantities = dialog.getByRole("combobox", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    await expect(issuanceQuantities).toContainText("Allow decimals");
+    const baseUnit = dialog.getByRole("combobox", {
+      name: "Base Unit",
+      exact: true,
+    });
+    const [baseUnitBounds, policyBounds] = await Promise.all([
+      baseUnit.boundingBox(),
+      issuanceQuantities.boundingBox(),
+    ]);
+    expect(baseUnitBounds).not.toBeNull();
+    expect(policyBounds).not.toBeNull();
+    expect(policyBounds!.y).toBeGreaterThan(baseUnitBounds!.y);
+    await expect(
+      dialog.getByText(
+        "This rule applies to the combined quantity for this Item after conversion to Base Units.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+
+    await issuanceQuantities.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("option", { name: "Whole numbers only", exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(issuanceQuantities).toContainText("Whole numbers only");
+
+    await dialog.getByLabel("Name").fill("Eggs Policy Journey");
+    await dialog.getByRole("combobox", { name: "Category" }).click();
+    await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
+    await baseUnit.click();
+    await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    expect(
+      withE2eDatabase((database) =>
+        database
+          .prepare('SELECT "issuanceQuantityPolicy" FROM "item" WHERE "normalizedName" = ?')
+          .get("eggs policy journey"),
+      ),
+    ).toEqual({ issuanceQuantityPolicy: "whole-numbers-only" });
+
+    const itemCard = page
+      .locator('[data-items-mobile] [data-item-id]')
+      .filter({ hasText: "Eggs Policy Journey" });
+    await itemCard
+      .getByRole("button", {
+        name: "Actions for Eggs Policy Journey",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const editDialog = page.getByRole("dialog");
+    const editIssuanceQuantities = editDialog.getByRole("combobox", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    await expect(editIssuanceQuantities).toContainText("Whole numbers only");
+    await editIssuanceQuantities.focus();
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("ArrowUp");
+    await page.keyboard.press("Enter");
+    await expect(editIssuanceQuantities).toContainText("Allow decimals");
+    await editDialog
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(editDialog).toBeHidden();
+
+    expect(
+      withE2eDatabase((database) =>
+        database
+          .prepare('SELECT "issuanceQuantityPolicy" FROM "item" WHERE "normalizedName" = ?')
+          .get("eggs policy journey"),
+      ),
+    ).toEqual({ issuanceQuantityPolicy: "allow-decimals" });
+    expect(
+      await page.evaluate(
+        () => document.body.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+  });
+
   test("explains the posted-stock locks in the Item lifecycle UI", async ({ page }) => {
     test.setTimeout(120_000);
     const fixtures = createStockLockedItemFixtures();
@@ -719,6 +821,13 @@ test.describe("Items catalog journey", () => {
     await expect(activeRow.getByText("Dry Goods", { exact: true })).toBeVisible();
     await expect(activeRow.getByText("Kilogram", { exact: true })).toBeVisible();
     await expect(activeRow.getByText("Active", { exact: true })).toBeVisible();
+    await activeRow
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await expect(
+      page.getByRole("menuitem", { name: "Edit", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     const inactiveRow = page.getByRole("row").filter({
       has: page.getByText("Retired Rice", { exact: true }),

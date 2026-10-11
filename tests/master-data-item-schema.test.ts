@@ -66,4 +66,42 @@ describe("Master Data Item normalization", () => {
       note: ["Item Note must be 500 characters or fewer"],
     });
   });
+
+  it("accepts only the two issuance quantity policies and leaves omitted updates unset", () => {
+    const baseInput = {
+      name: "Eggs",
+      categoryId: "category-1",
+      baseUnitId: "unit-1",
+    };
+
+    const omitted = itemSchema.safeParse(baseInput);
+    expect(omitted.success).toBe(true);
+    if (omitted.success) {
+      expect(omitted.data).not.toHaveProperty("issuanceQuantityPolicy");
+    }
+
+    expect(
+      itemSchema.safeParse({
+        ...baseInput,
+        issuanceQuantityPolicy: "allow-decimals",
+      }).success,
+    ).toBe(true);
+    expect(
+      itemSchema.safeParse({
+        ...baseInput,
+        issuanceQuantityPolicy: "whole-numbers-only",
+      }).success,
+    ).toBe(true);
+
+    const tampered = itemSchema.safeParse({
+      ...baseInput,
+      issuanceQuantityPolicy: "infer-from-unit",
+    });
+    expect(tampered.success).toBe(false);
+    if (!tampered.success) {
+      expect(itemFieldErrors(tampered.error)).toHaveProperty(
+        "issuanceQuantityPolicy",
+      );
+    }
+  });
 });

@@ -184,6 +184,7 @@ describe("Master Data Items read path", () => {
         category: { id: category.id },
         baseUnit: { id: baseUnit.id },
         note: "Keep dry.\nUse oldest stock first.",
+        issuanceQuantityPolicy: "allow-decimals",
         isActive: true,
       },
     });
@@ -324,6 +325,106 @@ describe("Master Data Items read path", () => {
       ok: false,
       kind: "duplicate",
       fields: { name: ["An Item with that name already exists."] },
+    });
+  });
+
+  it("persists issuance policy in public reads and preserves it for older update callers", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+    const item = await prisma.item.create({
+      data: {
+        id: "items-policy-target",
+        name: "Individually tracked eggs",
+        normalizedName: "individually tracked eggs",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      },
+    });
+    const alternateUnit = await prisma.unit.create({
+      data: {
+        id: "items-policy-sack",
+        name: "Sack",
+        abbreviation: "sack",
+        normalizedName: "sack",
+        normalizedAbbreviation: "sack",
+      },
+    });
+    await prisma.itemUnitConversion.create({
+      data: {
+        id: "items-policy-sack-conversion",
+        itemId: item.id,
+        alternateUnitId: alternateUnit.id,
+        baseUnitQuantity: "25.00",
+      },
+    });
+
+    await expect(
+      listItems(),
+    ).resolves.toMatchObject([
+      {
+        id: item.id,
+        issuanceQuantityPolicy: "allow-decimals",
+        unitConversions: [
+          { baseUnitQuantity: "25.00", label: "Sack (25.00 kg)" },
+        ],
+      },
+    ]);
+
+    await expect(
+      updateItem(adminActor, item.id, {
+        name: item.name,
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+        issuanceQuantityPolicy: "whole-numbers-only",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      item: { issuanceQuantityPolicy: "whole-numbers-only" },
+    });
+
+    await expect(
+      updateItem(adminActor, item.id, {
+        name: item.name,
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      item: { issuanceQuantityPolicy: "whole-numbers-only" },
+    });
+
+    await expect(listItems()).resolves.toMatchObject([
+      {
+        id: item.id,
+        issuanceQuantityPolicy: "whole-numbers-only",
+        unitConversions: [
+          { baseUnitQuantity: "25.00", label: "Sack (25.00 kg)" },
+        ],
+      },
+    ]);
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
+    await expect(
+      prisma.itemUnitConversion.findUnique({
+        where: { id: "items-policy-sack-conversion" },
+      }),
+    ).resolves.toMatchObject({ baseUnitQuantity: "25.00" });
+  });
+
+  it("rejects unknown issuance policy values through the public interface", async () => {
+    await createActorUser(adminActor, "admin");
+    const { category, baseUnit } = await createLookupRecords();
+
+    await expect(
+      createItem(adminActor, {
+        name: "Tampered Item",
+        categoryId: category.id,
+        baseUnitId: baseUnit.id,
+        issuanceQuantityPolicy: "infer-from-unit",
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      kind: "validation",
+      fields: { issuanceQuantityPolicy: expect.any(Array) },
     });
   });
 

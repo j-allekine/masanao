@@ -123,6 +123,7 @@ model Item {
   categoryId      String
   baseUnitId      String
   note            String?
+  issuanceQuantityPolicy String @default("allow-decimals")
   isActive        Boolean              @default(true)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt

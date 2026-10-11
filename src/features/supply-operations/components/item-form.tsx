@@ -45,6 +45,7 @@ const emptyFormValues: ItemFormValues = {
   name: "",
   categoryId: "",
   baseUnitId: "",
+  issuanceQuantityPolicy: "allow-decimals",
   note: "",
 };
 
@@ -55,6 +56,7 @@ function initialValues(item?: ItemListItem): ItemFormValues {
     name: item.name,
     categoryId: item.category.id,
     baseUnitId: item.baseUnit.id,
+    issuanceQuantityPolicy: item.issuanceQuantityPolicy,
     note: item.note ?? "",
   };
 }
@@ -193,7 +195,7 @@ export default function ItemForm({
 
   useEffect(() => {
     const firstInvalidField = (
-      ["name", "categoryId", "baseUnitId", "note"] as ItemField[]
+      ["name", "categoryId", "baseUnitId", "issuanceQuantityPolicy", "note"] as ItemField[]
     ).find((field) => fieldErrors[field]?.length);
 
     if (!firstInvalidField) return;
@@ -343,6 +345,62 @@ export default function ItemForm({
                 : "Base Unit is locked while alternate Units are configured."}
             </p>
           ) : null}
+
+          <Field
+            data-invalid={Boolean(
+              fieldErrors.issuanceQuantityPolicy?.length,
+            )}
+          >
+            <FieldLabel htmlFor={`${mode}-item-issuance-quantity-policy`}>
+              Issuance quantities
+            </FieldLabel>
+            <Select
+              items={[
+                { value: "allow-decimals", label: "Allow decimals" },
+                {
+                  value: "whole-numbers-only",
+                  label: "Whole numbers only",
+                },
+              ]}
+              value={formValues.issuanceQuantityPolicy}
+              onValueChange={(value) =>
+                updateField("issuanceQuantityPolicy", value ?? "")
+              }
+            >
+              <SelectTrigger
+                id={`${mode}-item-issuance-quantity-policy`}
+                className="w-full"
+                aria-invalid={Boolean(
+                  fieldErrors.issuanceQuantityPolicy?.length,
+                )}
+                aria-describedby={
+                  fieldErrors.issuanceQuantityPolicy?.length
+                    ? `${mode}-item-issuance-quantity-policy-error`
+                    : undefined
+                }
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="allow-decimals">
+                    Allow decimals
+                  </SelectItem>
+                  <SelectItem value="whole-numbers-only">
+                    Whole numbers only
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <p className="text-body-sm text-muted-foreground">
+              This rule applies to the combined quantity for this Item after
+              conversion to Base Units.
+            </p>
+            <ItemFieldError
+              id={`${mode}-item-issuance-quantity-policy`}
+              errors={fieldErrors.issuanceQuantityPolicy}
+            />
+          </Field>
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
             <FieldLabel htmlFor={`${mode}-item-note`}>
