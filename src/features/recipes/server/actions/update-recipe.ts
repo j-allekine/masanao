@@ -9,7 +9,7 @@ export async function executeUpdateRecipe(id: string, formData: FormData): Promi
   const actor = await getCurrentRecipesActor();
   if (!actor) return { status: "error", kind: "authentication", error: "Authentication required", fields: {} };
   try {
-    const result = await updateRecipe(actor, id, { name: formData.get("name"), preparationNote: formData.get("preparationNote"), ingredients: JSON.parse(String(formData.get("ingredients") ?? "[]")) });
+    const result = await updateRecipe(actor, id, { name: formData.get("name"), baselinePax: formData.has("baselinePax") ? formData.get("baselinePax") : undefined, preparationNote: formData.get("preparationNote"), ingredients: JSON.parse(String(formData.get("ingredients") ?? "[]")) });
     if (!result.ok) return { status: "error", kind: result.kind, error: result.error, fields: result.fields };
     revalidatePath("/recipes"); revalidatePath(`/recipes/${id}`);
     return { status: "success", recipe: result.recipe };

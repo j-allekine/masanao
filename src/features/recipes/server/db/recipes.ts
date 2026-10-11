@@ -15,6 +15,7 @@ import { sortItemUnitConversions } from "@/features/supply-operations/domain/ite
 const recipeCatalogSelect = {
   id: true,
   name: true,
+  baselinePax: true,
   isActive: true,
   _count: { select: { ingredients: true } },
 } as const;
@@ -39,11 +40,12 @@ export async function getRecipeRecord(
   id: string,
   includeInactive = false,
 ): Promise<RecipeDetailItem | null> {
-  return prisma.recipe.findFirst({
+  const recipe = await prisma.recipe.findFirst({
     where: includeInactive ? { id } : { id, isActive: true },
     select: {
       id: true,
       name: true,
+      baselinePax: true,
       preparationNote: true,
       isActive: true,
       ingredients: {
@@ -68,11 +70,13 @@ export async function getRecipeRecord(
       },
     },
   });
+  return recipe ? { ...recipe, canScale: recipe.baselinePax !== null } : null;
 }
 
 function toRecipeCatalogItem(recipe: {
   id: string;
   name: string;
+  baselinePax: number | null;
   isActive: boolean;
   _count: { ingredients: number };
   ingredients?: Array<{ item: { isActive: boolean; baseUnit: { active: boolean } }; itemUnitConversion: { alternateUnit: { active: boolean } } | null }>;
@@ -80,6 +84,8 @@ function toRecipeCatalogItem(recipe: {
   return {
     id: recipe.id,
     name: recipe.name,
+    baselinePax: recipe.baselinePax,
+    canScale: recipe.baselinePax !== null,
     ingredientCount: recipe._count.ingredients,
     isActive: recipe.isActive,
     needsAttention: recipe.ingredients?.some((ingredient) => !ingredient.item.isActive || !ingredient.item.baseUnit.active || Boolean(ingredient.itemUnitConversion && !ingredient.itemUnitConversion.alternateUnit.active)) ?? false,
@@ -181,6 +187,7 @@ export async function createRecipeWithActiveItems(
         data: {
           id: crypto.randomUUID(),
           name: input.name,
+          baselinePax: input.baselinePax!,
           normalizedName: input.normalizedName,
           preparationNote: input.preparationNote,
           ingredients: {
@@ -251,6 +258,7 @@ export async function updateRecipeWithActiveItems(id: string, input: RecipeInput
         where: { id },
         data: {
           name: input.name, normalizedName: input.normalizedName, preparationNote: input.preparationNote,
+          ...(input.baselinePax === undefined ? {} : { baselinePax: input.baselinePax }),
           ingredients: { deleteMany: {}, create: input.ingredients.map((ingredient) => ({ id: crypto.randomUUID(), itemId: ingredient.itemId, enteredQuantity: ingredient.enteredQuantity, itemUnitConversionId: ingredient.itemUnitConversionId })) },
         },
         select: recipeCatalogSelect,

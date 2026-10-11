@@ -18,6 +18,9 @@ export async function createRecipeCommand(
   if (!parsedInput.success) {
     return validationResult(recipeFieldErrors(parsedInput.error));
   }
+  if (parsedInput.data.baselinePax === undefined) {
+    return validationResult({ baselinePax: ["Enter the number of people these ingredients serve."] });
+  }
 
   const result = await createRecipeWithActiveItems(parsedInput.data);
   if (result.kind === "invalid-ingredients") {

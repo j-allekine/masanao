@@ -8,9 +8,9 @@ import {
 import type { RecipeCatalogItem } from "@/features/recipes/types";
 
 const recipes: RecipeCatalogItem[] = [
-  { id: "arroz", name: "Arroz Caldo", ingredientCount: 3, isActive: true },
-  { id: "tinola", name: "Chicken Tinola", ingredientCount: 4, isActive: true },
-  { id: "soup", name: "Vegetable Soup", ingredientCount: 2, isActive: true },
+  { id: "arroz", name: "Arroz Caldo", ingredientCount: 3, isActive: true, baselinePax: null, canScale: false },
+  { id: "tinola", name: "Chicken Tinola", ingredientCount: 4, isActive: true, baselinePax: null, canScale: false },
+  { id: "soup", name: "Vegetable Soup", ingredientCount: 2, isActive: true, baselinePax: null, canScale: false },
 ];
 
 describe("Recipes catalog list state", () => {
