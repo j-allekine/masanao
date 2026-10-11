@@ -45,12 +45,14 @@ export default function WorkspaceRowActionMenu({
   groups,
   disabled = false,
   triggerProps,
+  contentClassName,
 }: {
   actionButtonId: string;
   ariaLabel: string;
   groups: readonly WorkspaceRowActionGroup[];
   disabled?: boolean;
   triggerProps?: WorkspaceRowActionTriggerProps;
+  contentClassName?: string;
 }) {
   function openAfterMenuCloses(action: () => void) {
     window.setTimeout(action, 0);
@@ -76,7 +78,7 @@ export default function WorkspaceRowActionMenu({
       >
         <Ellipsis aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-36">
+      <DropdownMenuContent align="end" className={cn("min-w-36", contentClassName)}>
         {nonEmptyGroups.map((group, groupIndex) => (
           <Fragment key={`group-${groupIndex}`}>
             {groupIndex > 0 ? <DropdownMenuSeparator /> : null}

@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 
 const Combobox = ComboboxPrimitive.Root;
 
+function ComboboxTrigger({ ...props }: ComboboxPrimitive.Trigger.Props) {
+  return <ComboboxPrimitive.Trigger data-slot="combobox-trigger" {...props} />;
+}
+
 function ComboboxInput({
   className,
   ...props
@@ -122,6 +126,7 @@ function ComboboxEmpty({
 
 export {
   Combobox,
+  ComboboxTrigger,
   ComboboxContent,
   ComboboxEmpty,
   ComboboxInput,

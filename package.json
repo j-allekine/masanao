@@ -7,6 +7,7 @@
     "predev": "pnpm exec prisma generate --generator client --config prisma7.config.ts && pnpm exec prisma migrate deploy --config prisma7.config.ts",
     "build": "next build",
     "start": "next start",
+    "prototype:recipe-scaling": "next dev --port 3117",
     "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",
