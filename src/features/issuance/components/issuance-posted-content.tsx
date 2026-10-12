@@ -1,8 +1,24 @@
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
+import {
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import type { IssuanceWorkspace } from "../types";
 
 /** Posted values come entirely from persisted evidence. Never recalculate here. */
@@ -16,6 +32,10 @@ export default function IssuancePostedContent({
   backUrl: string;
 }) {
   const { context, draft, review, posted } = workspace;
+  const [viewId, setViewId] = useState<string | null>(null);
+  const openerId = useRef<string | null>(null);
+  const jumpToTotals = useRef(false);
+  const view = draft.recipes.find((recipe) => recipe.id === viewId);
   return (
     <div
       className="flex h-svh min-h-0 flex-col bg-card"
@@ -76,7 +96,11 @@ export default function IssuancePostedContent({
           </AlertDescription>
         </Alert>
         <section aria-labelledby="posted-quantities" className="mt-6">
-          <h2 id="posted-quantities" className="text-heading-3 font-semibold">
+          <h2
+            id="posted-quantities"
+            tabIndex={-1}
+            className="text-heading-3 font-semibold"
+          >
             Issued quantities
           </h2>
           <ul className="mt-3 divide-y rounded-lg border">
@@ -119,27 +143,17 @@ export default function IssuancePostedContent({
                   <p className="text-body-sm text-muted-foreground">
                     Baseline: {recipe.baselinePax} pax
                   </p>
-                  <ul
-                    className="mt-2 flex flex-col gap-2"
-                    aria-label={`Saved ingredients for ${recipe.recipeName}`}
+                  <Button
+                    id={`posted-ingredients-${recipe.id}`}
+                    variant="ghost"
+                    onClick={() => {
+                      jumpToTotals.current = false;
+                      openerId.current = `posted-ingredients-${recipe.id}`;
+                      setViewId(recipe.id);
+                    }}
                   >
-                    {recipe.ingredients.map((ingredient) => (
-                      <li
-                        key={ingredient.id}
-                        className="break-words text-body-sm"
-                      >
-                        {ingredient.itemName}:{" "}
-                        <span className="break-all tabular-nums">
-                          {ingredient.enteredQuantity}{" "}
-                          {ingredient.selectedUnitAbbreviation}
-                        </span>{" "}
-                        at baseline
-                        {ingredient.conversionFactor !== "1"
-                          ? ` · 1 ${ingredient.selectedUnitAbbreviation} = ${ingredient.conversionFactor} ${ingredient.baseUnitAbbreviation}`
-                          : ""}
-                      </li>
-                    ))}
-                  </ul>
+                    View ingredients for {recipe.recipeName}
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -177,6 +191,94 @@ export default function IssuancePostedContent({
           )}
         </section>
       </main>
+      <Sheet
+        open={Boolean(view)}
+        onOpenChange={(open) => {
+          if (!open) setViewId(null);
+        }}
+      >
+        <SheetContent
+          finalFocus={() =>
+            jumpToTotals.current
+              ? document.getElementById("posted-quantities")
+              : openerId.current
+                ? document.getElementById(openerId.current)
+                : null
+          }
+          className="data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
+        >
+          <SheetHeader>
+            <SheetTitle>{view?.recipeName}</SheetTitle>
+            <SheetDescription>
+              Saved posting evidence. Baseline {view?.baselinePax} pax · To
+              issue {view?.targetPax} pax
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 overflow-y-auto px-4 pb-4">
+            <WorkspaceTableFrame
+              caption="Posted Recipe ingredients: saved baseline and to-issue quantities"
+              className="table-fixed"
+            >
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/2">Ingredient</TableHead>
+                  <TableHead className="whitespace-normal">
+                    Baseline ({view?.baselinePax} pax)
+                  </TableHead>
+                  <TableHead className="whitespace-normal">
+                    To issue ({view?.targetPax} pax)
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {view?.ingredients.map((ingredient) => (
+                  <TableRow key={ingredient.id}>
+                    <TableCell className="whitespace-normal">
+                      {ingredient.itemName}
+                      {review.some(
+                        (row) =>
+                          row.itemId === ingredient.itemId && row.adjusted,
+                      ) ? (
+                        <p className="mt-1 text-body-sm text-muted-foreground">
+                          Combined total adjusted. This contribution remains
+                          calculated.{" "}
+                          <Button
+                            variant="link"
+                            nativeButton={false}
+                            role="link"
+                            className="h-auto whitespace-normal text-left"
+                            render={<a href="#posted-quantities" />}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              jumpToTotals.current = true;
+                              setViewId(null);
+                            }}
+                          >
+                            View issued quantities
+                          </Button>
+                        </p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words tabular-nums">
+                      {ingredient.enteredQuantity}{" "}
+                      {ingredient.selectedUnitAbbreviation}
+                    </TableCell>
+                    <TableCell className="whitespace-normal break-words tabular-nums">
+                      {ingredient.postedContribution
+                        ? `${ingredient.postedContribution.approximate ? "≈ " : ""}${ingredient.postedContribution.quantity} ${ingredient.selectedUnitAbbreviation}`
+                        : "Saved contribution unavailable"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </WorkspaceTableFrame>
+            <p className="mt-3 text-body-sm text-muted-foreground">
+              Contributions are saved at posting. Final deductions belong to the
+              combined Item quantities, not individual ingredients.
+            </p>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

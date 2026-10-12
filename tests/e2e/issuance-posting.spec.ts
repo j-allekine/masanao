@@ -78,6 +78,9 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
       /No correction, reversal, return, or replacement posting/,
     ),
   ).toBeVisible();
+  await expect(
+    confirm.getByRole("button", { name: "Confirm and post issuance" }),
+  ).toBeEnabled();
   await page.screenshot({
     path: testInfo.outputPath("desktop-post-confirmation.png"),
     fullPage: true,
@@ -172,10 +175,82 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     path: testInfo.outputPath("mobile-posted-history.png"),
     fullPage: true,
   });
+  await expect(
+    page.getByRole("dialog", { name: "Posting Omelet", exact: true }),
+  ).toHaveCount(0);
+  const ingredientsButton = page.getByRole("button", {
+    name: "View ingredients for Posting Omelet",
+  });
+  await ingredientsButton.focus();
+  await page.keyboard.press("Enter");
+  const ingredients = page.getByRole("dialog", {
+    name: "Posting Omelet",
+    exact: true,
+  });
+  await expect(
+    ingredients.getByRole("columnheader", { name: "Baseline (2 pax)" }),
+  ).toBeVisible();
+  await expect(
+    ingredients.getByRole("columnheader", { name: "To issue (1 pax)" }),
+  ).toBeVisible();
+  await expect(
+    ingredients.getByRole("cell", { name: "37 pc", exact: true }),
+  ).toBeVisible();
+  await expect(
+    ingredients.getByRole("cell", { name: "18.5 pc", exact: true }),
+  ).toBeVisible();
+  await expect(
+    ingredients.getByText(
+      /Combined total adjusted. This contribution remains calculated/,
+    ),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    )
+    .toBe(true);
+  await ingredients.evaluate(async (element) => {
+    await Promise.all(
+      element
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  await page.screenshot({
+    path: testInfo.outputPath("mobile-posted-ingredients.png"),
+    fullPage: true,
+  });
+  await page.keyboard.press("Escape");
+  await expect(ingredientsButton).toBeFocused();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.screenshot({
     path: testInfo.outputPath("desktop-posted-history.png"),
     fullPage: true,
   });
+  await ingredientsButton.click();
+  await expect(
+    ingredients.getByRole("cell", { name: "18.5 pc", exact: true }),
+  ).toBeVisible();
+  await ingredients.evaluate(async (element) => {
+    await Promise.all(
+      element
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  await page.screenshot({
+    path: testInfo.outputPath("desktop-posted-ingredients.png"),
+    fullPage: true,
+  });
+  await ingredients
+    .getByRole("link", { name: "View issued quantities" })
+    .click();
+  await expect(ingredients).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Issued quantities" }),
+  ).toBeFocused();
+  await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
   db.close();
 });
