@@ -288,6 +288,7 @@ export async function deleteRecipeRecord(id: string) {
     await prisma.recipe.delete({ where: { id } });
     return { kind: "deleted" as const };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2003" || error.code === "P2014")) return { kind: "referenced" as const };
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return { kind: "not-found" as const };
     }

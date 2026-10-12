@@ -900,11 +900,8 @@ test.describe("Activity planning journey", () => {
           `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
         );
         await expect(
-          page.getByText(
-            "Supply issuance will be prepared from this Meal Schedule in a later operational slice.",
-            { exact: true },
-          ),
-        ).toBeVisible();
+          page.getByRole("link", { name: "Open issuance draft", exact: true }),
+        ).toHaveAttribute("href", `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}/issuance`);
         await expect(page.getByText("Food Supplies", { exact: true })).toHaveCount(0);
         await expect(
           page.getByText("Direct-use Stock Items", { exact: true }),

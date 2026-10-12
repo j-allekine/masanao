@@ -13,7 +13,7 @@ async function withActor(
   const actor = await getCurrentRecipesActor();
   if (!actor) return { status: "error", kind: "authentication", error: "Authentication required" };
   const result = await operation(actor);
-  if (!result.ok) return { status: "error", kind: result.kind === "forbidden" ? "forbidden" : "not-found", error: result.error ?? "Recipe not found" };
+  if (!result.ok) return { status: "error", kind: result.kind === "forbidden" ? "forbidden" : result.kind === "referenced" ? "referenced" : "not-found", error: result.error ?? "Recipe not found" };
   revalidatePath("/recipes");
   return { status: "success", message: successMessage };
 }

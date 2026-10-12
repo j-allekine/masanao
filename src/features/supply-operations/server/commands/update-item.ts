@@ -50,14 +50,18 @@ export async function updateItemCommand(
 
     if (result.kind === "not-found") return notFoundResult();
     if (result.kind === "base-unit-locked") {
-      const message = result.reason === "stock-activity"
+      const message = result.reason === "issuance"
+        ? "Base Unit cannot change while saved issuance references this Item."
+        : result.reason === "stock-activity"
         ? "Base Unit cannot change after stock activity is posted."
         : result.reason === "recipe-ingredients"
           ? "Base Unit cannot change while a Recipe Ingredient references this Item."
           : "Base Unit cannot change after alternate Units are configured.";
       return validationResult(
         { baseUnitId: [message] },
-        result.reason === "stock-activity"
+        result.reason === "issuance"
+          ? "Base Unit is locked because saved issuance references this Item."
+          : result.reason === "stock-activity"
           ? "Base Unit is locked because stock activity is posted for this Item."
           : result.reason === "recipe-ingredients"
             ? "Base Unit is locked because a Recipe Ingredient references this Item."

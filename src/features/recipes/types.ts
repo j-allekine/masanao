@@ -87,7 +87,7 @@ export type RecipeFormActionState =
 
 export type RecipeLifecycleActionState =
   | { status: "success"; message: string }
-  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "server"; error: string };
+  | { status: "error"; kind: "authentication" | "forbidden" | "not-found" | "referenced" | "server"; error: string };
 
 export type RecipePreviewActionState =
   | { status: "success"; recipe: RecipeDetailItem }

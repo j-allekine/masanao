@@ -49,7 +49,8 @@ function ScheduleContext({
           Meal Schedule context
         </CardTitle>
         <CardDescription>
-          The planning information recorded for this Meal Schedule and its Activity.
+          The planning information recorded for this Meal Schedule and its
+          Activity.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -89,7 +90,11 @@ export default function MealScheduleDetailContent({
       <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <SidebarTrigger />
-          <Separator orientation="vertical" className="h-8" aria-hidden="true" />
+          <Separator
+            orientation="vertical"
+            className="h-8"
+            aria-hidden="true"
+          />
           <div className="min-w-0">
             <p className="truncate text-heading-3 font-semibold">Planning</p>
             <p className="truncate text-body-sm text-muted-foreground">
@@ -110,7 +115,9 @@ export default function MealScheduleDetailContent({
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink
-                render={<Link href={`/activity-designs/${activityDesign.id}`} />}
+                render={
+                  <Link href={`/activity-designs/${activityDesign.id}`} />
+                }
               >
                 {activityDesign.activityDesignNo}
               </BreadcrumbLink>
@@ -155,15 +162,21 @@ export default function MealScheduleDetailContent({
 
         <ScheduleContext mealSchedule={mealSchedule} />
 
-        <section aria-labelledby="future-issuance-title">
+        <section aria-labelledby="issuance-title">
           <Card>
             <CardHeader>
-              <CardTitle id="future-issuance-title">Future issuance</CardTitle>
+              <CardTitle id="issuance-title">Issuance</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-body text-muted-foreground">
-                Supply issuance will be prepared from this Meal Schedule in a later operational slice.
+                Prepare and reopen the Recipe draft for this Meal Schedule.
               </p>
+              <Link
+                href={`${activityUrl}/meal-schedules/${mealSchedule.id}/issuance`}
+                className={cn(buttonVariants({ variant: "outline" }), "mt-3")}
+              >
+                Open issuance draft
+              </Link>
             </CardContent>
           </Card>
         </section>
