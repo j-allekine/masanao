@@ -644,6 +644,11 @@ test.describe("Items catalog journey", () => {
     test.setTimeout(120_000);
     const fixtures = createItemFixtures();
     fixturesToRemove = fixtures;
+    withE2eDatabase((database) => {
+      database
+        .prepare('UPDATE "item" SET "issuanceQuantityPolicy" = ? WHERE "id" = ?')
+        .run("whole-numbers-only", fixtures.activeItemId);
+    });
 
     await signIn(page);
     await page.goto("/items");
@@ -661,6 +666,8 @@ test.describe("Items catalog journey", () => {
       hasText: "Units for Alpha Beans",
     });
     await expect(unitsSheet).toBeVisible();
+    await expect(unitsSheet.getByText("Issuance quantities", { exact: true })).toBeVisible();
+    await expect(unitsSheet.getByText("Whole numbers only", { exact: true })).toBeVisible();
     await expect(
       unitsSheet.getByRole("button", { name: "Add alternate Unit", exact: true }),
     ).toHaveCount(0);

@@ -61,6 +61,18 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
         <XIcon aria-hidden="true" />
       </SheetClose>
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto bg-muted/20 px-6 py-5">
+        <Card size="sm" className="gap-1.5 bg-card shadow-none">
+          <CardHeader className="px-3">
+            <CardTitle className="text-body font-semibold">Issuance quantities</CardTitle>
+          </CardHeader>
+          <CardContent className="px-3">
+            <CardDescription className="text-body-sm">
+              {selectedItem.issuanceQuantityPolicy === "whole-numbers-only"
+                ? "Whole numbers only"
+                : "Allow decimals"}
+            </CardDescription>
+          </CardContent>
+        </Card>
         {conversions.length ? (
           <div className="flex flex-col gap-3" aria-label="Alternate Units">
             <div className="flex items-center justify-between gap-3">

@@ -209,7 +209,10 @@ export default function ItemForm({
 
     if (!firstInvalidField) return;
 
-    const targetId = `${mode}-item-${firstInvalidField}`;
+    const targetId =
+      firstInvalidField === "issuanceQuantityPolicy"
+        ? `${mode}-item-issuance-quantity-policy`
+        : `${mode}-item-${firstInvalidField}`;
     const timeoutId = window.setTimeout(() => {
       document.getElementById(targetId)?.focus();
     }, 0);
@@ -384,6 +387,11 @@ export default function ItemForm({
               {issuanceQuantityPolicyOptions.map((option) => (
                 <ToggleGroupItem
                   key={option.value}
+                  id={
+                    option.value === issuanceQuantityPolicyOptions[0]?.value
+                      ? `${mode}-item-issuance-quantity-policy`
+                      : undefined
+                  }
                   className="min-w-0 flex-1 whitespace-normal px-2"
                   value={option.value}
                 >
