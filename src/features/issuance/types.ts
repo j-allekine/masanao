@@ -12,6 +12,7 @@ export type IssuanceIngredient = {
   id: string; itemId: string; itemName: string; enteredQuantity: string;
   conversionFactor: string; selectedUnitId: string; selectedUnitName: string;
   selectedUnitAbbreviation: string; baseUnitId: string; baseUnitName: string; baseUnitAbbreviation: string;
+  postedContribution?: { quantity: string; approximate: boolean; numerator: string; denominator: string };
 };
 export type IssuanceRecipe = {
   id: string; recipeId: string; recipeName: string; baselinePax: number;
@@ -39,8 +40,9 @@ export type IssuanceReviewItem = IssuanceItemTotal & {
   availableQuantity: string; shortage: boolean;
 };
 export type IssuanceReviewReference = { itemId: string; policy: IssuanceQuantityPolicy; availableQuantity: string };
-export type IssuanceWorkspace = { context: IssuanceMealContext; draft: IssuanceDraft; review: IssuanceReviewItem[]; reviewPending: boolean; reviewReferences: IssuanceReviewReference[] };
+export type IssuancePosting = { postedAt: string; actorId: string; actorName: string; actorUsername: string };
+export type IssuanceWorkspace = { context: IssuanceMealContext; draft: IssuanceDraft; review: IssuanceReviewItem[]; reviewPending: boolean; reviewReferences: IssuanceReviewReference[]; posted?: IssuancePosting | null };
 export type IssuanceRecipeOption = { id: string; name: string; baselinePax: number | null; available: boolean; reason: string | null };
-export type IssuanceErrorKind = "authentication" | "forbidden" | "not-found" | "validation" | "conflict" | "source-changed" | "busy" | "immutable";
+export type IssuanceErrorKind = "authentication" | "forbidden" | "not-found" | "validation" | "conflict" | "source-changed" | "busy" | "immutable" | "shortage" | "reference" | "policy";
 export type IssuanceFailure = { ok: false; kind: IssuanceErrorKind; error: string; fields?: Record<string, string[]> };
 export type IssuanceResult<T> = { ok: true; value: T } | IssuanceFailure;

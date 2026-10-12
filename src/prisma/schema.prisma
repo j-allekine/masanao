@@ -261,13 +261,15 @@ model DeliveryReceiptLine {
 
 model InventoryLedgerMovement {
   id                    String              @id
-  deliveryReceiptLineId String              @unique
+  deliveryReceiptLineId String?             @unique
+  issuanceItemTotalId   String?             @unique
   itemId                String
   baseUnitId            String
   quantity              String
   movementType          String
   occurredAt            DateTime
-  deliveryReceiptLine   DeliveryReceiptLine @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+  deliveryReceiptLine   DeliveryReceiptLine? @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+  issuanceItemTotal     IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
   item                  Item                @relation("InventoryLedgerMovementItem", fields: [itemId], references: [id], onDelete: Restrict)
   baseUnit              Unit                @relation("InventoryLedgerMovementBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
 
@@ -343,6 +345,8 @@ model IssuanceRecord {
   mealPax Int?
   revision Int @default(1)
   status String @default("draft")
+  postedAt DateTime?
+  postingEvidence String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   mealSchedule MealSchedule @relation(fields: [mealScheduleId], references: [id], onDelete: Restrict)
@@ -361,6 +365,7 @@ model IssuanceItemTotal {
   calculatedDenominator String
   finalQuantity String
   adjusted Boolean @default(false)
+  movement InventoryLedgerMovement?
   issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
   item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
 

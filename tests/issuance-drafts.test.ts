@@ -209,7 +209,7 @@ describe("Issuance Recipe drafts through public gateways", () => {
     await prisma.user.update({ where: { id: staff.id }, data: { disabled: true } }); expect((await getIssuanceWorkspace(staff, context)).ok).toBe(false);
   });
   it("reserves posted state as immutable through the supported draft save", async () => {
-    const saved = workspace(await firstSave()); await prisma.issuanceRecord.update({ where: { id: saved.draft.id! }, data: { status: "posted" } });
+    const saved = workspace(await firstSave()); await prisma.issuanceRecord.update({ where: { id: saved.draft.id! }, data: { status: "posted", postingEvidence: JSON.stringify({ ...saved, draft: { ...saved.draft, status: "posted" } }) } });
     expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [] })).toMatchObject({ ok: false, kind: "immutable" });
     expect((await prisma.issuanceRecord.findUnique({ where: { id: saved.draft.id! } }))?.revision).toBe(1);
   });

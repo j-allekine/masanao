@@ -31,6 +31,11 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
   const meal = await database.mealSchedule.findFirst({ where: { id: context.mealScheduleId, activityId: context.activityId, activity: { activityDesignId: context.activityDesignId } }, include: { activity: { include: { activityDesign: true } } } });
   if (!meal) return null;
   const record = await database.issuanceRecord.findUnique({ where: { mealScheduleId: meal.id }, include: recordInclude });
+  // Posted evidence is complete and immutable; never consult current balances or masters.
+  if (record?.status === "posted") {
+    if (!record.postingEvidence) throw new Error("Posted issuance is missing historical evidence.");
+    return JSON.parse(record.postingEvidence) as IssuanceWorkspace;
+  }
   const draft: IssuanceDraft = record ? {
     id: record.id,
     revision: record.revision,
