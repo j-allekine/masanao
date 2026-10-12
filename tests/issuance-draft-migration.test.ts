@@ -38,6 +38,15 @@ describe("Issuance draft additive migration", () => {
     expect(() => database.prepare("DELETE FROM recipe WHERE id='recipe'").run()).toThrow();
     expect(() => database.prepare("DELETE FROM meal_schedule WHERE id='meal'").run()).toThrow();
     expect(() => database.prepare("INSERT INTO issuance_record (id,mealScheduleId,updatedAt) VALUES ('duplicate','meal',CURRENT_TIMESTAMP)").run()).toThrow();
+    const recipesBefore = database.prepare("SELECT * FROM issuance_recipe_ingredient").all();
+    database.exec(readFileSync(join(migrations, "20261012092000_issuance_stock_items", "migration.sql"), "utf8"));
+    expect(database.prepare("SELECT * FROM issuance_recipe_ingredient").all()).toEqual(recipesBefore);
+    expect(database.prepare("SELECT * FROM inventory_ledger_movement").all()).toEqual(ledgerBefore);
+    database.exec(`INSERT INTO issuance_stock_item (id,issuanceRecordId,itemId,itemName,enteredQuantity,conversionId,conversionFactor,selectedUnitId,selectedUnitName,selectedUnitAbbreviation,baseUnitId,baseUnitName,baseUnitAbbreviation) VALUES ('stock','issuance','rice','Rice','0.123456789123456789','removed-conversion','1','kg','Kilogram','kg','kg','Kilogram','kg');`);
+    expect(database.prepare("SELECT enteredQuantity FROM issuance_stock_item").get()).toEqual({ enteredQuantity: "0.123456789123456789" });
+    expect(() => database.prepare("DELETE FROM item WHERE id='rice'").run()).toThrow();
+    expect(() => database.prepare("DELETE FROM unit WHERE id='kg'").run()).toThrow();
+    expect(() => database.prepare("DELETE FROM issuance_record WHERE id='issuance'").run()).toThrow();
     database.close();
   });
 });

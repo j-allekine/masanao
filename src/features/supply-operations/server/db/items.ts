@@ -171,6 +171,7 @@ async function findItemRecord(database: ItemDatabase, id: string) {
           deliveryReceiptLines: true,
           recipeIngredients: true,
           issuanceIngredients: true,
+          issuanceStockItems: true,
         },
       },
     },
@@ -305,7 +306,7 @@ export async function updateItemWithActiveLookups(
       if (!existing) return { kind: "not-found" };
 
       if (existing.baseUnitId !== input.baseUnitId) {
-        if (existing._count.issuanceIngredients > 0) return { kind: "base-unit-locked" as const, reason: "issuance" as const };
+        if (existing._count.issuanceIngredients > 0 || existing._count.issuanceStockItems > 0) return { kind: "base-unit-locked" as const, reason: "issuance" as const };
         if (existing._count.unitConversions > 0) {
           return { kind: "base-unit-locked" as const, reason: "alternate-units" as const };
         }

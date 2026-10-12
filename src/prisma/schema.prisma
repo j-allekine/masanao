@@ -100,6 +100,8 @@ model Unit {
   baseDeliveryReceiptLines     DeliveryReceiptLine[] @relation("DeliveryReceiptLineBaseUnit")
   inventoryLedgerMovements     InventoryLedgerMovement[] @relation("InventoryLedgerMovementBaseUnit")
   selectedIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientSelectedUnit")
+  selectedIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockSelectedUnit")
+  baseIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockBaseUnit")
   baseIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientBaseUnit")
 
   @@map("unit")
@@ -136,6 +138,7 @@ model Item {
   inventoryLedgerMovements InventoryLedgerMovement[] @relation("InventoryLedgerMovementItem")
   recipeIngredients RecipeIngredient[]
   issuanceIngredients IssuanceRecipeIngredient[]
+  issuanceStockItems IssuanceStockItem[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -343,8 +346,33 @@ model IssuanceRecord {
   updatedAt DateTime @updatedAt
   mealSchedule MealSchedule @relation(fields: [mealScheduleId], references: [id], onDelete: Restrict)
   recipes IssuanceRecipeSnapshot[]
+  stockItems IssuanceStockItem[]
 
   @@map("issuance_record")
+}
+
+model IssuanceStockItem {
+  id String @id
+  issuanceRecordId String
+  itemId String
+  itemName String
+  enteredQuantity String
+  conversionId String?
+  conversionFactor String
+  selectedUnitId String
+  selectedUnitName String
+  selectedUnitAbbreviation String
+  baseUnitId String
+  baseUnitName String
+  baseUnitAbbreviation String
+  issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit Unit @relation("IssuanceStockSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("IssuanceStockBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+
+  @@index([issuanceRecordId])
+  @@index([itemId])
+  @@map("issuance_stock_item")
 }
 
 model IssuanceRecipeSnapshot {

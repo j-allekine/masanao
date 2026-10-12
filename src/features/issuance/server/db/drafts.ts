@@ -6,9 +6,10 @@ import type { CurrentActor } from "@/server/auth";
 import { getRecipeIssuanceSourceRecord, listRecipeIssuanceOptionRecords } from "@/features/recipes/server/db/issuance-source";
 import type { SaveDraftInput } from "../../schemas/draft";
 import type { IssuanceContext, IssuanceDraft, IssuanceResult, IssuanceWorkspace, IssuanceRecipeOption, IssuanceIngredient } from "../../types";
+import { getIssuanceStockSelectionRecord } from "./stock-items";
 
 type IssuanceDatabase = Pick<Prisma.TransactionClient, "mealSchedule" | "issuanceRecord" | "issuanceRecipeSnapshot" | "issuanceRecipeIngredient" | "recipe" | "user">;
-const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } } };
+const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } } };
 function ingredientCopy(ingredient: IssuanceIngredient) {
   return {
     itemId: ingredient.itemId, itemName: ingredient.itemName,
@@ -32,6 +33,7 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
     revision: record.revision,
     status: record.status === "posted" ? "posted" : "draft",
     mealPax: record.mealPax,
+    stockItems: record.stockItems.map((stock) => ({ id: stock.id, conversionId: stock.conversionId, ...ingredientCopy(stock) })),
     recipes: record.recipes.map((recipe) => ({
       id: recipe.id,
       recipeId: recipe.recipeId,
@@ -48,6 +50,7 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
     status: "draft",
     mealPax: meal.activity.plannedParticipantCount && meal.activity.plannedParticipantCount > 0 ? meal.activity.plannedParticipantCount : null,
     recipes: [],
+    stockItems: [],
   };
   return { context: { ...context, activityDesignNo: meal.activity.activityDesign.activityDesignNo, activityDesignTitle: meal.activity.activityDesign.title, activityName: meal.activity.name, mealLabel: meal.label, mealTime: meal.mealTime, plannedPax: meal.activity.plannedParticipantCount }, draft };
 }
@@ -71,6 +74,20 @@ export async function saveIssuanceDraftRecord(context: IssuanceContext, input: S
       const snapshotById = new Map(existing.recipes.map((recipe) => [recipe.id, recipe]));
       const recipeIds = new Set<string>();
       const additions = [];
+      const stockById = new Map(existing.stockItems.map((stock) => [stock.id, stock]));
+      const stockSelections = [];
+      const retainedStockIds = new Set<string>();
+      for (const entry of input.stockItems ?? []) {
+        if (entry.lineId) {
+          if (!stockById.has(entry.lineId) || retainedStockIds.has(entry.lineId)) return failure("validation", "A selected Stock item line does not belong to this issuance or was included twice.");
+          retainedStockIds.add(entry.lineId);
+        }
+        if ("itemId" in entry) {
+          const source = await getIssuanceStockSelectionRecord(entry.itemId, entry.conversionId, transaction);
+          if (!source) return failure("validation", "Select an active Stock item and its active Base Unit or configured alternate Unit. Remove unavailable selections or select a current Unit.");
+          stockSelections.push({ lineId: entry.lineId, source, enteredQuantity: entry.enteredQuantity });
+        }
+      }
       for (const entry of input.recipes) {
         if ("snapshotId" in entry) {
           const snapshot = snapshotById.get(entry.snapshotId);
@@ -87,10 +104,16 @@ export async function saveIssuanceDraftRecord(context: IssuanceContext, input: S
           additions.push({ entry, source });
         }
       }
-      if (!existing.id && !input.recipes.length) return failure("validation", "Add a Recipe before saving the first draft.");
+      if (!existing.id && !input.recipes.length && !input.stockItems?.length) return failure("validation", "Add a Recipe or Stock item before saving the first draft.");
       const recordId = existing.id ?? crypto.randomUUID();
       if (!existing.id) await transaction.issuanceRecord.create({ data: { id: recordId, mealScheduleId: context.mealScheduleId, mealPax: input.mealPax } });
       else await transaction.issuanceRecord.update({ where: { id: recordId }, data: { mealPax: input.mealPax } });
+      await transaction.issuanceStockItem.deleteMany({ where: { issuanceRecordId: recordId, id: { notIn: [...retainedStockIds] } } });
+      for (const selection of stockSelections) {
+        const data = { ...selection.source, enteredQuantity: selection.enteredQuantity };
+        if (selection.lineId) await transaction.issuanceStockItem.update({ where: { id: selection.lineId }, data });
+        else await transaction.issuanceStockItem.create({ data: { id: crypto.randomUUID(), issuanceRecordId: recordId, ...data } });
+      }
       const retainedIds = input.recipes.flatMap((entry) => "snapshotId" in entry ? [entry.snapshotId] : []);
       const removedIds = existing.recipes.filter((recipe) => !retainedIds.includes(recipe.id)).map((recipe) => recipe.id);
       await transaction.issuanceRecipeIngredient.deleteMany({ where: { recipeSnapshotId: { in: removedIds } } });

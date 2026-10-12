@@ -59,6 +59,7 @@ import {
   previewIssuanceRecipeAction,
   saveIssuanceDraftAction,
 } from "../actions";
+import StockPicker, { type LocalStockItem } from "./stock-picker";
 import { displayRational, recipeContribution } from "../domain/rational";
 import type {
   IssuanceWorkspace,
@@ -91,6 +92,8 @@ export default function IssuanceDraftContent({
   const [recipes, setRecipes] = useState<LocalRecipe[]>(
     workspace.draft.recipes,
   );
+  const [stockItems, setStockItems] = useState<LocalStockItem[]>(workspace.draft.stockItems);
+  const [stockPicker, setStockPicker] = useState<{ line: LocalStockItem | null } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -230,6 +233,10 @@ export default function IssuanceDraftContent({
         {
           revision: saved.draft.revision,
           mealPax: pax(mealPax),
+          stockItems: stockItems.map((line) => line.unsaved || line.changed ? {
+            ...(line.unsaved ? {} : { lineId: line.id }),
+            itemId: line.itemId, conversionId: line.conversionId, enteredQuantity: line.enteredQuantity,
+          } : { lineId: line.id }),
           recipes: recipes.map((recipe) => ({
             ...(recipe.unsaved
               ? {
@@ -248,6 +255,7 @@ export default function IssuanceDraftContent({
       }
       setSaved(result.value);
       setRecipes(result.value.draft.recipes);
+      setStockItems(result.value.draft.stockItems);
       setMealPax(result.value.draft.mealPax?.toString() ?? "");
       setDirty(false);
       setNotice("Draft saved. No stock has been issued.");
@@ -257,6 +265,7 @@ export default function IssuanceDraftContent({
     if (discard === "leave") router.push(leaveUrl ?? backUrl);
     else {
       setRecipes(saved.draft.recipes);
+      setStockItems(saved.draft.stockItems);
       setMealPax(saved.draft.mealPax?.toString() ?? "");
       setDirty(false);
       setError("");
@@ -321,7 +330,7 @@ export default function IssuanceDraftContent({
             </FieldGroup>
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button variant="outline" disabled={pending} />}
+                render={<Button id="issuance-add" variant="outline" disabled={pending} />}
               >
                 <Plus aria-hidden="true" />
                 Add
@@ -331,6 +340,9 @@ export default function IssuanceDraftContent({
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={openPicker}>
                     Recipe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStockPicker({ line: null })}>
+                    Stock item
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -351,7 +363,7 @@ export default function IssuanceDraftContent({
           <p id="meal-pax-help" className="text-body-sm text-muted-foreground">
             {pax(mealPax)
               ? "Recipes follow Meal pax unless their target is adjusted."
-              : "Meal pax pending. Enter pax before adding Recipes."}
+              : "Meal pax pending. Enter pax before adding Recipes and before posting. Stock items can be added now."}
           </p>
           {error ? (
             <Alert variant="destructive">
@@ -438,8 +450,41 @@ export default function IssuanceDraftContent({
               ))}
             </ul>
           )}
+          <section aria-labelledby="stock-heading" className="mt-6">
+            <h2 id="stock-heading" className="mb-3 text-heading-3 font-semibold">Stock</h2>
+            {stockItems.length === 0 ? (
+              <Empty><EmptyHeader><EmptyDescription>No Stock items selected. Add a Stock item for direct issuance.</EmptyDescription></EmptyHeader></Empty>
+            ) : (
+              <ul className="divide-y rounded-lg border">
+                {stockItems.map((line) => (
+                  <li key={line.id} className="flex min-w-0 items-center gap-2 px-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-body-sm font-medium">{line.itemName}</p>
+                      <p className="break-words text-body-sm text-muted-foreground tabular-nums">{line.enteredQuantity} {line.selectedUnitAbbreviation}{line.conversionId ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}` : ""}</p>
+                    </div>
+                    <WorkspaceRowActionMenu
+                      actionButtonId={`stock-actions-${line.id}`}
+                      ariaLabel={`Actions for Stock item ${line.itemName}`}
+                      disabled={pending}
+                      groups={[{ actions: [
+                        { label: "Edit Stock item", onSelect: () => setStockPicker({ line }) },
+                        { label: "Remove Stock item", variant: "destructive", onSelect: () => {
+                          setStockItems((current) => current.filter((row) => row.id !== line.id));
+                          setDirty(true); setNotice("");
+                        } },
+                      ] }]}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </section>
       </main>
+      {stockPicker ? <StockPicker line={stockPicker.line} onClose={() => setStockPicker(null)} onApply={(line) => {
+        setStockItems((current) => stockPicker.line ? current.map((row) => row.id === line.id ? line : row) : [...current, line]);
+        setDirty(true); setNotice(""); setError(""); setStockPicker(null);
+      }} /> : null}
       <Dialog open={picker} onOpenChange={setPicker}>
         <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>

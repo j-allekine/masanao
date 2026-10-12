@@ -19,9 +19,15 @@ export type IssuanceRecipe = {
   ingredients: IssuanceIngredient[];
 };
 export type IssuanceRecipeSource = Omit<IssuanceRecipe, "id" | "targetMode" | "targetPax">;
+export type IssuanceStockItem = Omit<IssuanceIngredient, "id"> & { id: string; conversionId: string | null };
+export type IssuanceStockItemOption = {
+  id: string; name: string;
+  baseUnit: { id: string; name: string; abbreviation: string };
+  conversions: { id: string; factor: string; alternateUnit: { id: string; name: string; abbreviation: string } }[];
+};
 export type IssuanceDraft = {
   id: string | null; revision: number; status: "draft" | "posted";
-  mealPax: number | null; recipes: IssuanceRecipe[];
+  mealPax: number | null; recipes: IssuanceRecipe[]; stockItems: IssuanceStockItem[];
 };
 export type IssuanceWorkspace = { context: IssuanceMealContext; draft: IssuanceDraft };
 export type IssuanceRecipeOption = { id: string; name: string; baselinePax: number | null; available: boolean; reason: string | null };
