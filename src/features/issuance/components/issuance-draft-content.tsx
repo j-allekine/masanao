@@ -2,12 +2,13 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   useTransition,
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Plus } from "lucide-react";
+import { AlertTriangle, LockKeyhole, ChevronDown, Plus } from "lucide-react";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -55,16 +56,30 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import {
+  getIssuanceReviewReferencesAction,
   listIssuanceRecipesAction,
   previewIssuanceRecipeAction,
   saveIssuanceDraftAction,
 } from "../actions";
+import QuantityReviewDialog from "./quantity-review-dialog";
+import {
+  calculateIssuanceReview,
+  confirmationIsAdjustment,
+  issuanceDemandSignatures,
+} from "../domain/quantities";
+import {
+  decimalRational,
+  finiteDecimal,
+} from "../domain/rational";
 import StockPicker, { type LocalStockItem } from "./stock-picker";
 import { displayRational, recipeContribution } from "../domain/rational";
 import type {
   IssuanceWorkspace,
   IssuanceRecipe,
   IssuanceRecipeOption,
+  IssuanceDraft,
+  IssuanceItemTotal,
+  IssuanceReviewReference,
 } from "../types";
 
 function pax(value: string) {
@@ -92,8 +107,23 @@ export default function IssuanceDraftContent({
   const [recipes, setRecipes] = useState<LocalRecipe[]>(
     workspace.draft.recipes,
   );
-  const [stockItems, setStockItems] = useState<LocalStockItem[]>(workspace.draft.stockItems);
-  const [stockPicker, setStockPicker] = useState<{ line: LocalStockItem | null } | null>(null);
+  const [stockItems, setStockItems] = useState<LocalStockItem[]>(
+    workspace.draft.stockItems,
+  );
+  const [stockPicker, setStockPicker] = useState<{
+    line: LocalStockItem | null;
+  } | null>(null);
+  const [itemTotals, setItemTotals] = useState<IssuanceItemTotal[]>(
+    workspace.draft.itemTotals ?? [],
+  );
+  const [quantityReviews, setQuantityReviews] = useState<
+    { itemId: string; finalQuantity: string }[]
+  >([]);
+  const [resetItemIds, setResetItemIds] = useState<string[]>([]);
+  const [references, setReferences] = useState<IssuanceReviewReference[]>(
+    workspace.reviewReferences,
+  );
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -108,11 +138,147 @@ export default function IssuanceDraftContent({
   const [adjustPax, setAdjustPax] = useState("");
   const [leaveUrl, setLeaveUrl] = useState<string | null>(null);
   const [discard, setDiscard] = useState<"leave" | "reset" | null>(null);
+  const browserBack = useRef(false);
+  const allowBack = useRef(false);
   const context = workspace.context;
   const backUrl = `/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}`;
   const view = recipes.find((recipe) => recipe.id === viewId);
   const adjust = recipes.find((recipe) => recipe.id === adjustId);
   const invalidMeal = mealPax !== "" && pax(mealPax) === null;
+  const localDraft: IssuanceDraft = {
+    ...saved.draft,
+    mealPax: pax(mealPax),
+    recipes,
+    stockItems,
+    itemTotals,
+  };
+  const { review, reviewPending } = calculateIssuanceReview(
+    localDraft,
+    references,
+  );
+  async function refreshReferences(itemIds: string[]) {
+    const result = await getIssuanceReviewReferencesAction([
+      ...new Set(itemIds),
+    ]);
+    if (!result.ok) {
+      setError(result.error);
+      return false;
+    }
+    setReferences((current) => [
+      ...current.filter((entry) => !itemIds.includes(entry.itemId)),
+      ...result.value,
+    ]);
+    return true;
+  }
+  function openReview() {
+    startTransition(async () => {
+      if (
+        await refreshReferences([
+          ...new Set([
+            ...recipes.flatMap((recipe) =>
+              recipe.ingredients.map((ingredient) => ingredient.itemId),
+            ),
+            ...stockItems.map((line) => line.itemId),
+          ]),
+        ])
+      )
+        setReviewOpen(true);
+    });
+  }
+  const demandLockedItemIds = review
+    .filter(
+      (row) =>
+        row.adjusted ||
+        (saved.draft.itemTotals?.some(
+          (entry) => entry.itemId === row.itemId && entry.adjusted,
+        ) &&
+          !resetItemIds.includes(row.itemId)),
+    )
+    .map((row) => row.itemId);
+  function changeDemand(next: Partial<IssuanceDraft>) {
+    const before = issuanceDemandSignatures(localDraft);
+    const after = issuanceDemandSignatures({ ...localDraft, ...next });
+    const locked = review.filter(
+      (row) =>
+        demandLockedItemIds.includes(row.itemId) &&
+        before.get(row.itemId) !== after.get(row.itemId),
+    );
+    if (locked.length) {
+      setError(
+        `Reset the adjustment for ${locked.map((row) => row.itemName).join(", ")} in combined review before changing its demand.`,
+      );
+      return false;
+    }
+    setError("");
+    setDirty(true);
+    setNotice("");
+    return true;
+  }
+  function confirmQuantity(itemId: string, enteredQuantity: string) {
+    const finalQuantity = finiteDecimal(decimalRational(enteredQuantity))!;
+    const row = review.find((entry) => entry.itemId === itemId)!;
+    const adjusted = confirmationIsAdjustment(row, finalQuantity);
+    setItemTotals((current) => [
+      ...current.filter((entry) => entry.itemId !== itemId),
+      {
+        itemId,
+        calculatedNumerator: row.calculatedNumerator,
+        calculatedDenominator: row.calculatedDenominator,
+        finalQuantity,
+        adjusted,
+      },
+    ]);
+    setQuantityReviews((current) => [
+      ...current.filter((entry) => entry.itemId !== itemId),
+      { itemId, finalQuantity },
+    ]);
+    setDirty(true);
+    setNotice("");
+    setError("");
+  }
+  function resetQuantity(itemId: string) {
+    if (
+      saved.draft.itemTotals?.some(
+        (entry) => entry.itemId === itemId && entry.adjusted,
+      )
+    ) {
+      setResetItemIds((current) => [...new Set([...current, itemId])]);
+    }
+    setItemTotals((current) =>
+      current.filter((entry) => entry.itemId !== itemId),
+    );
+    setQuantityReviews((current) =>
+      current.filter((entry) => entry.itemId !== itemId),
+    );
+    setDirty(true);
+    setNotice("");
+    setError("");
+  }
+  function applyTarget(
+    targetMode: "meal" | "explicit",
+    targetPax: number | null,
+  ) {
+    const next = recipes.map((row) =>
+      row.id === adjustId ? { ...row, targetMode, targetPax } : row,
+    );
+    if (!changeDemand({ recipes: next })) return;
+    setRecipes(next);
+    setAdjustId(null);
+  }
+
+  useEffect(() => {
+    if (dirty) return;
+    const currentUrl = window.location.href;
+    const skipSavedGuard = (event: PopStateEvent) => {
+      // A saved draft no longer needs the extra same-page guard entry.
+      // Skip it before Next handles Back, preserving the original destination.
+      if (window.location.href !== currentUrl) return;
+      event.stopImmediatePropagation();
+      window.history.back();
+    };
+    window.addEventListener("popstate", skipSavedGuard, true);
+    return () => window.removeEventListener("popstate", skipSavedGuard, true);
+  }, [dirty]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -141,28 +307,44 @@ export default function IssuanceDraftContent({
         return;
       event.preventDefault();
       event.stopPropagation();
+      browserBack.current = false;
       setLeaveUrl(anchor.href);
       setDiscard("leave");
     };
+    const currentUrl = window.location.href;
+    if (!window.history.state?.issuanceGuard)
+      window.history.pushState(
+        { ...window.history.state, issuanceGuard: true },
+        "",
+        currentUrl,
+      );
+    const back = (event: PopStateEvent) => {
+      if (allowBack.current || event.state?.issuanceGuard) return;
+      event.stopImmediatePropagation();
+      browserBack.current = true;
+      window.history.forward();
+      setLeaveUrl(null);
+      setDiscard("leave");
+    };
+    window.addEventListener("popstate", back, true);
     window.addEventListener("beforeunload", warn);
     document.addEventListener("click", navigate, true);
     return () => {
+      window.removeEventListener("popstate", back, true);
       window.removeEventListener("beforeunload", warn);
       document.removeEventListener("click", navigate, true);
     };
   }, [dirty]);
 
   function changeMeal(value: string) {
-    setMealPax(value);
-    setDirty(true);
-    setNotice("");
-    setRecipes((current) =>
-      current.map((recipe) =>
-        recipe.targetMode === "meal"
-          ? { ...recipe, targetPax: pax(value) }
-          : recipe,
-      ),
+    const next = recipes.map((recipe) =>
+      recipe.targetMode === "meal"
+        ? { ...recipe, targetPax: pax(value) }
+        : recipe,
     );
+    if (!changeDemand({ mealPax: pax(value), recipes: next })) return;
+    setMealPax(value);
+    setRecipes(next);
   }
   function openPicker() {
     setError("");
@@ -209,7 +391,17 @@ export default function IssuanceDraftContent({
             ]
           : [],
       );
-      setRecipes((current) => [...current, ...additions]);
+      if (
+        !(await refreshReferences(
+          additions.flatMap((recipe) =>
+            recipe.ingredients.map((ingredient) => ingredient.itemId),
+          ),
+        ))
+      )
+        return;
+      const next = [...recipes, ...additions];
+      if (!changeDemand({ recipes: next })) return;
+      setRecipes(next);
       setDirty(true);
       setNotice("");
       setPicker(false);
@@ -232,11 +424,19 @@ export default function IssuanceDraftContent({
         },
         {
           revision: saved.draft.revision,
+          quantityReviews,
+          resetItemIds,
           mealPax: pax(mealPax),
-          stockItems: stockItems.map((line) => line.unsaved || line.changed ? {
-            ...(line.unsaved ? {} : { lineId: line.id }),
-            itemId: line.itemId, conversionId: line.conversionId, enteredQuantity: line.enteredQuantity,
-          } : { lineId: line.id }),
+          stockItems: stockItems.map((line) =>
+            line.unsaved || line.changed
+              ? {
+                  ...(line.unsaved ? {} : { lineId: line.id }),
+                  itemId: line.itemId,
+                  conversionId: line.conversionId,
+                  enteredQuantity: line.enteredQuantity,
+                }
+              : { lineId: line.id },
+          ),
           recipes: recipes.map((recipe) => ({
             ...(recipe.unsaved
               ? {
@@ -254,6 +454,10 @@ export default function IssuanceDraftContent({
         return;
       }
       setSaved(result.value);
+      setReferences(result.value.reviewReferences);
+      setItemTotals(result.value.draft.itemTotals ?? []);
+      setQuantityReviews([]);
+      setResetItemIds([]);
       setRecipes(result.value.draft.recipes);
       setStockItems(result.value.draft.stockItems);
       setMealPax(result.value.draft.mealPax?.toString() ?? "");
@@ -262,8 +466,14 @@ export default function IssuanceDraftContent({
     });
   }
   function confirmDiscard() {
-    if (discard === "leave") router.push(leaveUrl ?? backUrl);
-    else {
+    if (discard === "leave") {
+      setDirty(false);
+      allowBack.current = true;
+      router.push(browserBack.current ? backUrl : (leaveUrl ?? backUrl));
+    } else {
+      setItemTotals(saved.draft.itemTotals ?? []);
+      setQuantityReviews([]);
+      setResetItemIds([]);
       setRecipes(saved.draft.recipes);
       setStockItems(saved.draft.stockItems);
       setMealPax(saved.draft.mealPax?.toString() ?? "");
@@ -306,7 +516,9 @@ export default function IssuanceDraftContent({
               disabled={pending}
               onClick={() =>
                 dirty
-                  ? (setLeaveUrl(null), setDiscard("leave"))
+                  ? ((browserBack.current = false),
+                    setLeaveUrl(null),
+                    setDiscard("leave"))
                   : router.push(backUrl)
               }
             >
@@ -330,7 +542,13 @@ export default function IssuanceDraftContent({
             </FieldGroup>
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button id="issuance-add" variant="outline" disabled={pending} />}
+                render={
+                  <Button
+                    id="issuance-add"
+                    variant="outline"
+                    disabled={pending}
+                  />
+                }
               >
                 <Plus aria-hidden="true" />
                 Add
@@ -341,12 +559,22 @@ export default function IssuanceDraftContent({
                   <DropdownMenuItem onClick={openPicker}>
                     Recipe
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStockPicker({ line: null })}>
+                  <DropdownMenuItem
+                    onClick={() => setStockPicker({ line: null })}
+                  >
                     Stock item
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button
+              id="issuance-review"
+              variant="outline"
+              disabled={pending}
+              onClick={openReview}
+            >
+              Review quantities and stock
+            </Button>
             <Button disabled={pending || !dirty} onClick={save}>
               {pending ? "Working…" : "Save draft"}
             </Button>
@@ -365,6 +593,32 @@ export default function IssuanceDraftContent({
               ? "Recipes follow Meal pax unless their target is adjusted."
               : "Meal pax pending. Enter pax before adding Recipes and before posting. Stock items can be added now."}
           </p>
+          {review.some((row) => row.warning) ? (
+            <Alert variant="destructive">
+              <AlertTriangle aria-label="Quantity review needed" />
+              <AlertDescription>
+                Some combined Item quantities require confirmation.{" "}
+                <Button variant="link" onClick={openReview}>
+                  Review quantities
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {review.some((row) => row.adjusted) ? (
+            <p className="flex items-start gap-2 text-body-sm">
+              <LockKeyhole
+                aria-label="Adjusted demand locked"
+                className="size-4 shrink-0"
+              />
+              <span>
+                Adjusted Item demand is locked. Reset its confirmation in{" "}
+                <Button variant="link" onClick={openReview}>
+                  combined review
+                </Button>{" "}
+                before changing affected Recipes, pax, or Stock items.
+              </span>
+            </p>
+          ) : null}
           {error ? (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -435,9 +689,11 @@ export default function IssuanceDraftContent({
                             label: "Remove Recipe",
                             variant: "destructive",
                             onSelect: () => {
-                              setRecipes((current) =>
-                                current.filter((row) => row.id !== recipe.id),
+                              const next = recipes.filter(
+                                (row) => row.id !== recipe.id,
                               );
+                              if (!changeDemand({ recipes: next })) return;
+                              setRecipes(next);
                               setDirty(true);
                               setNotice("");
                             },
@@ -451,28 +707,66 @@ export default function IssuanceDraftContent({
             </ul>
           )}
           <section aria-labelledby="stock-heading" className="mt-6">
-            <h2 id="stock-heading" className="mb-3 text-heading-3 font-semibold">Stock</h2>
+            <h2
+              id="stock-heading"
+              className="mb-3 text-heading-3 font-semibold"
+            >
+              Stock
+            </h2>
             {stockItems.length === 0 ? (
-              <Empty><EmptyHeader><EmptyDescription>No Stock items selected. Add a Stock item for direct issuance.</EmptyDescription></EmptyHeader></Empty>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyDescription>
+                    No Stock items selected. Add a Stock item for direct
+                    issuance.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <ul className="divide-y rounded-lg border">
                 {stockItems.map((line) => (
-                  <li key={line.id} className="flex min-w-0 items-center gap-2 px-3 py-3">
+                  <li
+                    key={line.id}
+                    className="flex min-w-0 items-center gap-2 px-3 py-3"
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="break-words text-body-sm font-medium">{line.itemName}</p>
-                      <p className="break-words text-body-sm text-muted-foreground tabular-nums">{line.enteredQuantity} {line.selectedUnitAbbreviation}{line.conversionId ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}` : ""}</p>
+                      <p className="break-words text-body-sm font-medium">
+                        {line.itemName}
+                      </p>
+                      <p className="break-words text-body-sm text-muted-foreground tabular-nums">
+                        {line.enteredQuantity} {line.selectedUnitAbbreviation}
+                        {line.conversionId
+                          ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}`
+                          : ""}
+                      </p>
                     </div>
                     <WorkspaceRowActionMenu
                       actionButtonId={`stock-actions-${line.id}`}
                       ariaLabel={`Actions for Stock item ${line.itemName}`}
                       disabled={pending}
-                      groups={[{ actions: [
-                        { label: "Edit Stock item", onSelect: () => setStockPicker({ line }) },
-                        { label: "Remove Stock item", variant: "destructive", onSelect: () => {
-                          setStockItems((current) => current.filter((row) => row.id !== line.id));
-                          setDirty(true); setNotice("");
-                        } },
-                      ] }]}
+                      groups={[
+                        {
+                          actions: [
+                            {
+                              label: "Edit Stock item",
+                              onSelect: () => setStockPicker({ line }),
+                            },
+                            {
+                              label: "Remove Stock item",
+                              variant: "destructive",
+                              onSelect: () => {
+                                const next = stockItems.filter(
+                                  (row) => row.id !== line.id,
+                                );
+                                if (!changeDemand({ stockItems: next })) return;
+                                setStockItems(next);
+                                setDirty(true);
+                                setNotice("");
+                              },
+                            },
+                          ],
+                        },
+                      ]}
                     />
                   </li>
                 ))}
@@ -481,10 +775,42 @@ export default function IssuanceDraftContent({
           </section>
         </section>
       </main>
-      {stockPicker ? <StockPicker line={stockPicker.line} onClose={() => setStockPicker(null)} onApply={(line) => {
-        setStockItems((current) => stockPicker.line ? current.map((row) => row.id === line.id ? line : row) : [...current, line]);
-        setDirty(true); setNotice(""); setError(""); setStockPicker(null);
-      }} /> : null}
+      {stockPicker ? (
+        <StockPicker
+          line={stockPicker.line}
+          onClose={() => setStockPicker(null)}
+          onApply={async (line) => {
+            if (!(await refreshReferences([line.itemId]))) return;
+            const next = stockPicker.line
+              ? stockItems.map((row) => (row.id === line.id ? line : row))
+              : [...stockItems, line];
+            if (!changeDemand({ stockItems: next })) {
+              setStockPicker(null);
+              return;
+            }
+            setStockItems(next);
+            setDirty(true);
+            setNotice("");
+            setError("");
+            setStockPicker(null);
+          }}
+        />
+      ) : null}
+      {reviewOpen ? (
+        <QuantityReviewDialog
+          rows={review}
+          pendingPax={reviewPending}
+          demandLockedItemIds={demandLockedItemIds}
+          pendingItemIds={recipes
+            .filter((recipe) => recipe.targetPax === null)
+            .flatMap((recipe) =>
+              recipe.ingredients.map((ingredient) => ingredient.itemId),
+            )}
+          onClose={() => setReviewOpen(false)}
+          onConfirm={confirmQuantity}
+          onReset={resetQuantity}
+        />
+      ) : null}
       <Dialog open={picker} onOpenChange={setPicker}>
         <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -627,6 +953,22 @@ export default function IssuanceDraftContent({
                     <TableRow key={ingredient.id}>
                       <TableCell className="whitespace-normal">
                         {ingredient.itemName}
+                        {review.find((row) => row.itemId === ingredient.itemId)
+                          ?.adjusted ? (
+                          <p className="mt-1 text-body-sm text-muted-foreground">
+                            Combined total adjusted. Contribution remains
+                            calculated.{" "}
+                            <Button
+                              variant="link"
+                              onClick={() => {
+                                setViewId(null);
+                                openReview();
+                              }}
+                            >
+                              View combined review
+                            </Button>
+                          </p>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         {ingredient.enteredQuantity}{" "}
@@ -674,42 +1016,21 @@ export default function IssuanceDraftContent({
               />
             </Field>
           </FieldGroup>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setRecipes((current) =>
-                  current.map((row) =>
-                    row.id === adjustId
-                      ? { ...row, targetMode: "meal", targetPax: pax(mealPax) }
-                      : row,
-                  ),
-                );
-                setDirty(true);
-                setNotice("");
-                setAdjustId(null);
-              }}
+              onClick={() => applyTarget("meal", pax(mealPax))}
             >
               Use Meal pax
             </Button>
             <Button
               disabled={!pax(adjustPax)}
-              onClick={() => {
-                setRecipes((current) =>
-                  current.map((row) =>
-                    row.id === adjustId
-                      ? {
-                          ...row,
-                          targetMode: "explicit",
-                          targetPax: pax(adjustPax),
-                        }
-                      : row,
-                  ),
-                );
-                setDirty(true);
-                setNotice("");
-                setAdjustId(null);
-              }}
+              onClick={() => applyTarget("explicit", pax(adjustPax))}
             >
               Apply target
             </Button>

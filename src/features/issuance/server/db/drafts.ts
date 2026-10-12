@@ -7,9 +7,12 @@ import { getRecipeIssuanceSourceRecord, listRecipeIssuanceOptionRecords } from "
 import type { SaveDraftInput } from "../../schemas/draft";
 import type { IssuanceContext, IssuanceDraft, IssuanceResult, IssuanceWorkspace, IssuanceRecipeOption, IssuanceIngredient } from "../../types";
 import { getIssuanceStockSelectionRecord } from "./stock-items";
+import { getIssuanceReviewReferences } from "./quantities";
+import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignatures } from "../../domain/quantities";
+import { decimalRational, finiteDecimal, isWholeRational } from "../../domain/rational";
 
-type IssuanceDatabase = Pick<Prisma.TransactionClient, "mealSchedule" | "issuanceRecord" | "issuanceRecipeSnapshot" | "issuanceRecipeIngredient" | "recipe" | "user">;
-const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } } };
+type IssuanceDatabase = Pick<Prisma.TransactionClient, "mealSchedule" | "issuanceRecord" | "issuanceRecipeSnapshot" | "issuanceRecipeIngredient" | "recipe" | "user" | "item" | "inventoryLedgerMovement">;
+const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } }, itemTotals: true };
 function ingredientCopy(ingredient: IssuanceIngredient) {
   return {
     itemId: ingredient.itemId, itemName: ingredient.itemName,
@@ -33,6 +36,7 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
     revision: record.revision,
     status: record.status === "posted" ? "posted" : "draft",
     mealPax: record.mealPax,
+    itemTotals: record.itemTotals.map(({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted }) => ({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted })),
     stockItems: record.stockItems.map((stock) => ({ id: stock.id, conversionId: stock.conversionId, ...ingredientCopy(stock) })),
     recipes: record.recipes.map((recipe) => ({
       id: recipe.id,
@@ -51,8 +55,10 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
     mealPax: meal.activity.plannedParticipantCount && meal.activity.plannedParticipantCount > 0 ? meal.activity.plannedParticipantCount : null,
     recipes: [],
     stockItems: [],
+    itemTotals: [],
   };
-  return { context: { ...context, activityDesignNo: meal.activity.activityDesign.activityDesignNo, activityDesignTitle: meal.activity.activityDesign.title, activityName: meal.activity.name, mealLabel: meal.label, mealTime: meal.mealTime, plannedPax: meal.activity.plannedParticipantCount }, draft };
+  const reviewReferences = await getIssuanceReviewReferences([...draft.stockItems.map((stock) => stock.itemId), ...draft.recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ingredient.itemId))], database);
+  return { context: { ...context, activityDesignNo: meal.activity.activityDesign.activityDesignNo, activityDesignTitle: meal.activity.activityDesign.title, activityName: meal.activity.name, mealLabel: meal.label, mealTime: meal.mealTime, plannedPax: meal.activity.plannedParticipantCount }, draft, reviewReferences, ...calculateIssuanceReview(draft, reviewReferences) };
 }
 export async function listIssuanceRecipeOptionRecords(): Promise<IssuanceRecipeOption[]> {
   return listRecipeIssuanceOptionRecords();
@@ -124,6 +130,30 @@ export async function saveIssuanceDraftRecord(context: IssuanceContext, input: S
         baselinePax: source.baselinePax, sourceRevision: source.sourceRevision, targetMode: entry.targetMode, targetPax: entry.targetPax,
         ingredients: { create: source.ingredients.map((ingredient) => ({ id: crypto.randomUUID(), ...ingredientCopy(ingredient) })) },
       } });
+      const proposed = (await getIssuanceWorkspaceRecord(context, transaction))!;
+      const resets = new Set(input.resetItemIds ?? []);
+      if (resets.size !== (input.resetItemIds?.length ?? 0) || [...resets].some((itemId) => !existing.itemTotals?.some((total) => total.itemId === itemId && total.adjusted))) return failure("validation", "Reset only an existing adjusted Item total.");
+      const before = issuanceDemandSignatures(existing);
+      const after = issuanceDemandSignatures(proposed.draft);
+      for (const total of existing.itemTotals ?? []) if (total.adjusted && !resets.has(total.itemId) && before.get(total.itemId) !== after.get(total.itemId)) return failure("validation", `Reset the confirmed quantity for ${workspace.review.find((item) => item.itemId === total.itemId)?.itemName ?? "the affected Item"} before changing its demand.`);
+      proposed.draft.itemTotals = (proposed.draft.itemTotals ?? []).filter((total) => !resets.has(total.itemId));
+      const calculation = calculateIssuanceReview(proposed.draft, proposed.reviewReferences);
+      const seen = new Set<string>();
+      for (const edit of input.quantityReviews ?? []) {
+        if (seen.has(edit.itemId)) return failure("validation", "Review an Item quantity only once.");
+        seen.add(edit.itemId);
+        const total = calculation.review.find((item) => item.itemId === edit.itemId);
+        if (!total) return failure("validation", "The reviewed Item does not belong to this issuance.");
+        if (proposed.draft.recipes.some((recipe) => !recipe.targetPax && recipe.ingredients.some((ingredient) => ingredient.itemId === edit.itemId))) return failure("validation", "Enter Recipe target pax before confirming its combined quantity.");
+        const final = decimalRational(edit.finalQuantity);
+        if (total.policy === "whole-only" && !isWholeRational(final)) return failure("validation", `${total.itemName} requires a positive whole-number final quantity.`);
+        const adjusted = confirmationIsAdjustment(total, edit.finalQuantity);
+        total.finalQuantity = finiteDecimal(final)!;
+        total.adjusted = adjusted;
+      }
+      // Exact source provenance and the accepted final decimal are stored independently.
+      await transaction.issuanceItemTotal.deleteMany({ where: { issuanceRecordId: recordId } });
+      for (const total of calculation.review) await transaction.issuanceItemTotal.create({ data: { id: crypto.randomUUID(), issuanceRecordId: recordId, itemId: total.itemId, calculatedNumerator: total.calculatedNumerator, calculatedDenominator: total.calculatedDenominator, finalQuantity: total.finalQuantity, adjusted: total.adjusted } });
       return { ok: true, value: (await getIssuanceWorkspaceRecord(context, transaction))! };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   } catch (error) {

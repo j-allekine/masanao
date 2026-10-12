@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getIssuanceWorkspace, listIssuanceRecipes, previewIssuanceRecipe, saveIssuanceDraft, listIssuanceStockItems } from "@/features/issuance/server";
+import { getIssuanceWorkspace, listIssuanceRecipes, previewIssuanceRecipe, saveIssuanceDraft, listIssuanceStockItems, getIssuanceReviewReferences } from "@/features/issuance/server";
 import { deleteRecipe, updateRecipe } from "@/features/recipes/server";
 import { deleteItem, updateItem } from "@/features/supply-operations/server";
 import { deleteMealSchedule } from "@/features/activity-planning/server";
@@ -34,8 +34,8 @@ function workspace(result: Awaited<ReturnType<typeof saveIssuanceDraft>>): Issua
 }
 describe("Issuance Recipe drafts through public gateways", () => {
   beforeEach(async () => {
-    await prisma.issuanceStockItem.deleteMany(); await prisma.issuanceRecipeIngredient.deleteMany(); await prisma.issuanceRecipeSnapshot.deleteMany(); await prisma.issuanceRecord.deleteMany();
-    await prisma.recipeIngredient.deleteMany(); await prisma.recipe.deleteMany(); await prisma.itemUnitConversion.deleteMany(); await prisma.inventoryLedgerMovement.deleteMany(); await prisma.deliveryReceiptLine.deleteMany(); await prisma.deliveryReceipt.deleteMany(); await prisma.purchaseOrder.deleteMany(); await prisma.item.deleteMany(); await prisma.category.deleteMany(); await prisma.unit.deleteMany();
+    await prisma.issuanceItemTotal.deleteMany(); await prisma.issuanceStockItem.deleteMany(); await prisma.issuanceRecipeIngredient.deleteMany(); await prisma.issuanceRecipeSnapshot.deleteMany(); await prisma.issuanceRecord.deleteMany();
+    await prisma.recipeIngredient.deleteMany(); await prisma.recipe.deleteMany(); await prisma.itemUnitConversion.deleteMany(); await prisma.inventoryLedgerMovement.deleteMany(); await prisma.deliveryReceiptLine.deleteMany(); await prisma.deliveryReceipt.deleteMany(); await prisma.purchaseOrder.deleteMany(); await prisma.vendor.deleteMany(); await prisma.item.deleteMany(); await prisma.category.deleteMany(); await prisma.unit.deleteMany();
     await prisma.mealSchedule.deleteMany(); await prisma.activity.deleteMany(); await prisma.activityDesign.deleteMany(); await prisma.session.deleteMany(); await prisma.account.deleteMany(); await prisma.user.deleteMany(); await fixture();
   });
   it("saves direct Stock-only drafts with pending pax and exact arbitrary input precision", async () => {
@@ -213,5 +213,97 @@ describe("Issuance Recipe drafts through public gateways", () => {
     expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [] })).toMatchObject({ ok: false, kind: "immutable" });
     expect((await prisma.issuanceRecord.findUnique({ where: { id: saved.draft.id! } }))?.revision).toBe(1);
   });
+  it("persists exact calculated provenance, confirmed precision, reset and equality", async () => {
+    const stockItems = [{ itemId: "issuance-rice", conversionId: null, enteredQuantity: "2.123456789123456789" }];
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "3.987654321987654321" }] }));
+    expect(saved.review[0]).toMatchObject({ automaticQuantity: "2.123456789123456789", finalQuantity: "3.987654321987654321", adjusted: true, shortage: true });
+    expect(saved.draft.itemTotals?.[0]).toMatchObject({ calculatedNumerator: "2123456789123456789", calculatedDenominator: "1000000000000000000", finalQuantity: "3.987654321987654321", adjusted: true });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: saved });
+    const retainedStock = [{ lineId: saved.draft.stockItems[0].id }];
+    const unchanged = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems: retainedStock }));
+    expect(unchanged.review[0].finalQuantity).toBe("3.987654321987654321");
+    const equal = workspace(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: 200, recipes: [], stockItems: retainedStock, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "0002.123456789123456789000" }] }));
+    expect(equal.review[0]).toMatchObject({ finalQuantity: "2.123456789123456789", adjusted: false });
+    const adjusted = workspace(await saveIssuanceDraft(staff, context, { revision: 3, mealPax: 200, recipes: [], stockItems: retainedStock, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "4" }] }));
+    const reset = workspace(await saveIssuanceDraft(staff, context, { revision: adjusted.draft.revision, mealPax: 200, recipes: [], stockItems: retainedStock, resetItemIds: ["issuance-rice"] }));
+    expect(reset.review[0]).toMatchObject({ finalQuantity: "2.123456789123456789", adjusted: false });
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
+  });
+  it("rejects affected Recipe changes and form bypass until explicit reset, allowing unrelated demand", async () => {
+    const saved = workspace(await firstSave());
+    const adjusted = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: saved.draft.recipes.map((recipe) => retained(recipe, 200)), quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "3" }] }));
+    const changed = { revision: 2, mealPax: 100, recipes: adjusted.draft.recipes.map((recipe) => retained(recipe, 100)) };
+    expect(await saveIssuanceDraft(staff, context, changed)).toMatchObject({ ok: false, kind: "validation", error: expect.stringContaining("Reset the confirmed quantity") });
+    expect(await saveIssuanceDraft(staff, context, { ...changed, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "1.250123" }] })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: null, recipes: [] })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: adjusted });
+    await prisma.item.create({ data: { id: "issuance-water", name: "Water", normalizedName: "water", categoryId: "issuance-category", baseUnitId: "issuance-kg" } });
+    const unrelated = workspace(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: 200, recipes: adjusted.draft.recipes.map((recipe) => retained(recipe, 200)), stockItems: [{ itemId: "issuance-water", conversionId: null, enteredQuantity: "1" }] }));
+    expect(unrelated.review.find((item) => item.itemId === "issuance-rice")).toMatchObject({ finalQuantity: "3", adjusted: true });
+    const reset = workspace(await saveIssuanceDraft(staff, context, { ...changed, revision: 3, stockItems: unrelated.draft.stockItems.map((line) => ({ lineId: line.id })), resetItemIds: ["issuance-rice"] }));
+    expect(reset.review.find((item) => item.itemId === "issuance-rice")).toMatchObject({ finalQuantity: "1.250123", adjusted: false });
+  });
+  it("locks direct edit/removal/addition of the adjusted Item without silently rebasing confirmation", async () => {
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems: [{ itemId: "issuance-rice", conversionId: "issuance-conversion", enteredQuantity: "1000" }], quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "2" }] }));
+    const line = saved.draft.stockItems[0];
+    for (const stockItems of [[], [{ lineId: line.id, itemId: line.itemId, conversionId: line.conversionId, enteredQuantity: "2000" }], [{ lineId: line.id }, { itemId: line.itemId, conversionId: null, enteredQuantity: "1" }]]) {
+      expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems })).toMatchObject({ ok: false, kind: "validation", error: expect.stringContaining("Reset") });
+    }
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: saved });
+    const reset = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems: [], resetItemIds: [line.itemId] }));
+    expect(reset.review).toEqual([]); expect(reset.draft.itemTotals).toEqual([]);
+  });
+  it("revalidates current whole policy, preserves an invalid existing confirmation and pending draft", async () => {
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems: [{ itemId: "issuance-rice", conversionId: null, enteredQuantity: "18.5" }], quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "19.5" }] }));
+    await prisma.item.update({ where: { id: "issuance-rice" }, data: { issuanceQuantityPolicy: "whole-only" } });
+    const current = await getIssuanceWorkspace(staff, context);
+    expect(current).toMatchObject({ ok: true, value: { review: [{ finalQuantity: "19.5", warning: "fractional", policy: "whole-only" }] } });
+    const stockItems = [{ lineId: saved.draft.stockItems[0].id }];
+    expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "19.5" }] })).toMatchObject({ ok: false, kind: "validation" });
+    const confirmed = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "19" }] }));
+    expect(confirmed.review[0]).toMatchObject({ finalQuantity: "19", adjusted: true, warning: null });
+    const pending = workspace(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: null, recipes: [], stockItems }));
+    expect(pending.reviewPending).toBe(true); expect(pending.review[0].shortage).toBe(false);
+  });
+  it("rejects invalid, duplicate, foreign quantity edits and forged reset IDs", async () => {
+    const saved = workspace(await firstSave()); const recipes = saved.draft.recipes.map((recipe) => retained(recipe, 200));
+    for (const finalQuantity of ["0", "-1", "1e3", "", ".5"]) expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes, quantityReviews: [{ itemId: "issuance-rice", finalQuantity }] })).toMatchObject({ ok: false, kind: "validation" });
+    for (const quantityReviews of [[{ itemId: "foreign", finalQuantity: "1" }], [{ itemId: "issuance-rice", finalQuantity: "1" }, { itemId: "issuance-rice", finalQuantity: "2" }]]) expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes, quantityReviews })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes, resetItemIds: ["issuance-rice"] })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: saved });
+  });
+  it("uses precise posted stock-in for advisory availability and restricts reference reads to requested Items", async () => {
+    await prisma.vendor.create({ data: { id: "issuance-vendor", name: "Vendor", normalizedName: "issuance-vendor" } });
+    await prisma.purchaseOrder.create({ data: { id: "issuance-po", purchaseOrderNo: "ISS-PO", normalizedPurchaseOrderNo: "iss-po", vendorId: "issuance-vendor" } });
+    const quantity = "19.000000000000000001";
+    await prisma.deliveryReceipt.create({ data: { id: "issuance-receipt", purchaseOrderId: "issuance-po", vendorId: "issuance-vendor", vendorName: "Vendor", purchaseOrderNo: "ISS-PO", receiptNo: "ISS-DR", normalizedReceiptNo: "iss-dr", receiptDate: new Date(), lines: { create: { id: "issuance-receipt-line", itemId: "issuance-rice", selectedUnitId: "issuance-kg", baseUnitId: "issuance-kg", itemName: "Rice", selectedUnitName: "Kilogram", baseUnitName: "Kilogram", enteredQuantity: quantity, conversionFactor: "1", calculatedBaseUnitQuantity: quantity, inventoryLedgerMovements: { create: { id: "issuance-inbound", itemId: "issuance-rice", baseUnitId: "issuance-kg", quantity, movementType: "stock-in", occurredAt: new Date() } } } } } });
+    expect(await getIssuanceReviewReferences(null, ["issuance-rice"])).toMatchObject({ ok: false, kind: "authentication" });
+    expect(await getIssuanceReviewReferences(staff, "issuance-rice")).toMatchObject({ ok: false, kind: "validation" });
+    expect(await getIssuanceReviewReferences(staff, [])).toEqual({ ok: true, value: [] });
+    expect(await getIssuanceReviewReferences(staff, ["issuance-rice", "issuance-rice"])).toEqual({ ok: true, value: [{ itemId: "issuance-rice", policy: "allow-decimals", availableQuantity: quantity }] });
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems: [{ itemId: "issuance-rice", conversionId: null, enteredQuantity: quantity }] }));
+    expect(saved.review[0]).toMatchObject({ finalQuantity: quantity, availableQuantity: quantity, shortage: false });
+    const excess = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems: saved.draft.stockItems.map((line) => ({ lineId: line.id })), quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "19.000000000000000002" }] }));
+    expect(excess.review[0].shortage).toBe(true);
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(1);
+  });
+  it("does not treat equal aggregate totals as permission to change locked contributions", async () => {
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems: [1, 2].map(() => ({ itemId: "issuance-rice", conversionId: null, enteredQuantity: "1" })), quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "3" }] }));
+    const stockItems = saved.draft.stockItems.map((line, index) => ({ lineId: line.id, itemId: line.itemId, conversionId: null, enteredQuantity: index ? "1.5" : "0.5" }));
+    expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems })).toMatchObject({ ok: false, kind: "validation", error: expect.stringContaining("Reset") });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: saved });
+    const reset = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems, resetItemIds: ["issuance-rice"] }));
+    expect(reset.review[0]).toMatchObject({ finalQuantity: "2", adjusted: false });
+  });
+  it("retains confirmation of a rounded whole value when exact Recipe demand is fractional", async () => {
+    await prisma.item.update({ where: { id: "issuance-rice" }, data: { issuanceQuantityPolicy: "whole-only" } });
+    await prisma.recipe.update({ where: { id: "issuance-recipe" }, data: { baselinePax: 2 } });
+    await prisma.recipeIngredient.update({ where: { id: "issuance-ingredient" }, data: { enteredQuantity: "36.0000002", itemUnitConversionId: null } });
+    const source = await previewIssuanceRecipe(staff, "issuance-recipe"); if (!source.ok) throw new Error(source.error);
+    const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 1, recipes: [{ recipeId: source.value.recipeId, sourceRevision: source.value.sourceRevision, targetMode: "meal", targetPax: 1 }] }));
+    expect(saved.review[0]).toMatchObject({ automaticQuantity: "18.0000001", finalQuantity: "18.0000001", warning: "fractional", adjusted: false });
+    const confirmed = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 1, recipes: saved.draft.recipes.map((recipe) => retained(recipe, 1)), quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "18" }] }));
+    expect(confirmed.review[0]).toMatchObject({ calculatedNumerator: "180000001", calculatedDenominator: "10000000", finalQuantity: "18", adjusted: true, warning: null });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: confirmed });
+  });
 });
-

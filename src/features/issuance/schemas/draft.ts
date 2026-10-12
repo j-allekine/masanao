@@ -15,6 +15,8 @@ export const saveDraftSchema = z.object({
   revision: z.number().int().nonnegative(), mealPax: paxSchema.nullable(),
   recipes: z.array(z.union([existingSchema, newSchema])),
   stockItems: z.array(z.union([retainedStockSchema, stockSelectionSchema])).default([]),
+  quantityReviews: z.array(z.object({ itemId: z.string().min(1), finalQuantity: z.string().refine(isPositiveExactDecimal, "Enter a positive exact quantity.") }).strict()).optional(),
+  resetItemIds: z.array(z.string().min(1)).optional(),
 }).strict().superRefine((input, context) => {
   const identities = new Set<string>();
   const stockIdentities = new Set<string>();

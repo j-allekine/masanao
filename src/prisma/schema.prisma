@@ -139,6 +139,7 @@ model Item {
   recipeIngredients RecipeIngredient[]
   issuanceIngredients IssuanceRecipeIngredient[]
   issuanceStockItems IssuanceStockItem[]
+  issuanceItemTotals IssuanceItemTotal[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -347,8 +348,24 @@ model IssuanceRecord {
   mealSchedule MealSchedule @relation(fields: [mealScheduleId], references: [id], onDelete: Restrict)
   recipes IssuanceRecipeSnapshot[]
   stockItems IssuanceStockItem[]
+  itemTotals IssuanceItemTotal[]
 
   @@map("issuance_record")
+}
+
+model IssuanceItemTotal {
+  id String @id
+  issuanceRecordId String
+  itemId String
+  calculatedNumerator String
+  calculatedDenominator String
+  finalQuantity String
+  adjusted Boolean @default(false)
+  issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([issuanceRecordId, itemId])
+  @@map("issuance_item_total")
 }
 
 model IssuanceStockItem {

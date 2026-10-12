@@ -5,6 +5,14 @@ import { contextSchema } from "../../schemas/draft";
 import { actorCanUseIssuance, getIssuanceWorkspaceRecord, listIssuanceRecipeOptionRecords } from "../db/drafts";
 import { listIssuanceStockItemOptionRecords } from "../db/stock-items";
 import type { IssuanceContext, IssuanceRecipeOption, IssuanceRecipeSource, IssuanceResult, IssuanceWorkspace } from "../../types";
+import { z } from "zod";
+import { getIssuanceReviewReferences } from "../db/quantities";
+export async function getIssuanceReviewReferencesQuery(actor: CurrentActor | null | undefined, itemIds: unknown) {
+  if (!await actorCanUseIssuance(actor)) return { ok: false as const, kind: actor ? "forbidden" as const : "authentication" as const, error: "Authentication required." };
+  const parsed = z.array(z.string().min(1)).safeParse(itemIds);
+  if (!parsed.success) return { ok: false as const, kind: "validation" as const, error: "Select valid Items for quantity review." };
+  return { ok: true as const, value: await getIssuanceReviewReferences(parsed.data) };
+}
 export async function getIssuanceWorkspaceQuery(actor: CurrentActor | null | undefined, context: IssuanceContext): Promise<IssuanceResult<IssuanceWorkspace>> {
   if (!await actorCanUseIssuance(actor)) return { ok: false, kind: actor ? "forbidden" : "authentication", error: "Sign in as kitchen staff or an administrator to prepare issuance." };
   const parsed = contextSchema.safeParse(context);
