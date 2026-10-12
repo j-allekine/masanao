@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -470,6 +470,151 @@ test.describe("Items catalog journey", () => {
     restoreSeededRecipeItem();
   });
 
+  async function verifyIssuancePolicyKeyboardInteraction(
+    page: Page,
+    dialog: Locator,
+  ) {
+    const issuanceQuantities = dialog.getByRole("group", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    const allowDecimals = issuanceQuantities.getByRole("button", {
+      name: "Allow decimals",
+      exact: true,
+    });
+    const wholeNumbersOnly = issuanceQuantities.getByRole("button", {
+      name: "Whole numbers only",
+      exact: true,
+    });
+    await expect(allowDecimals).toHaveAttribute("aria-pressed", "true");
+    await expect(wholeNumbersOnly).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      dialog.getByText(
+        "This rule applies to the combined quantity for this Item after conversion to Base Units.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+
+    await allowDecimals.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(wholeNumbersOnly).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(wholeNumbersOnly).toHaveAttribute("aria-pressed", "true");
+    await expect(allowDecimals).toHaveAttribute("aria-pressed", "false");
+  }
+
+  test("creates and edits issuance quantity policy by keyboard on mobile", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    const issuanceQuantities = dialog.getByRole("group", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    const baseUnit = dialog.getByRole("combobox", {
+      name: "Base Unit",
+      exact: true,
+    });
+    const [baseUnitBounds, policyBounds] = await Promise.all([
+      baseUnit.boundingBox(),
+      issuanceQuantities.boundingBox(),
+    ]);
+    expect(baseUnitBounds).not.toBeNull();
+    expect(policyBounds).not.toBeNull();
+    expect(policyBounds!.y).toBeGreaterThan(baseUnitBounds!.y);
+    await verifyIssuancePolicyKeyboardInteraction(page, dialog);
+
+    await dialog.getByLabel("Name").fill("Eggs Policy Journey");
+    await dialog.getByRole("combobox", { name: "Category" }).click();
+    await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
+    await baseUnit.click();
+    await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    expect(
+      withE2eDatabase((database) =>
+        database
+          .prepare('SELECT "issuanceQuantityPolicy" FROM "item" WHERE "normalizedName" = ?')
+          .get("eggs policy journey"),
+      ),
+    ).toEqual({ issuanceQuantityPolicy: "whole-numbers-only" });
+
+    const itemCard = page
+      .locator('[data-items-mobile] [data-item-id]')
+      .filter({ hasText: "Eggs Policy Journey" });
+    await itemCard
+      .getByRole("button", {
+        name: "Actions for Eggs Policy Journey",
+        exact: true,
+      })
+      .click();
+    await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+    const editDialog = page.getByRole("dialog");
+    const editIssuanceQuantities = editDialog.getByRole("group", {
+      name: "Issuance quantities",
+      exact: true,
+    });
+    const editAllowDecimals = editIssuanceQuantities.getByRole("button", {
+      name: "Allow decimals",
+      exact: true,
+    });
+    const editWholeNumbersOnly = editIssuanceQuantities.getByRole("button", {
+      name: "Whole numbers only",
+      exact: true,
+    });
+    await expect(editWholeNumbersOnly).toHaveAttribute("aria-pressed", "true");
+    await editWholeNumbersOnly.focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(editAllowDecimals).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(editAllowDecimals).toHaveAttribute("aria-pressed", "true");
+    await editDialog
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(editDialog).toBeHidden();
+
+    expect(
+      withE2eDatabase((database) =>
+        database
+          .prepare('SELECT "issuanceQuantityPolicy" FROM "item" WHERE "normalizedName" = ?')
+          .get("eggs policy journey"),
+      ),
+    ).toEqual({ issuanceQuantityPolicy: "allow-decimals" });
+    expect(
+      await page.evaluate(
+        () => document.body.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+  });
+
+  test("shows the issuance quantity policy and supports keyboard selection on desktop", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const fixtures = createItemFixtures();
+    fixturesToRemove = fixtures;
+
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    expect(page.viewportSize()?.width).toBeGreaterThanOrEqual(1024);
+    await page.goto("/items");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
+    await verifyIssuancePolicyKeyboardInteraction(page, page.getByRole("dialog"));
+  });
+
   test("explains the posted-stock locks in the Item lifecycle UI", async ({ page }) => {
     test.setTimeout(120_000);
     const fixtures = createStockLockedItemFixtures();
@@ -499,6 +644,11 @@ test.describe("Items catalog journey", () => {
     test.setTimeout(120_000);
     const fixtures = createItemFixtures();
     fixturesToRemove = fixtures;
+    withE2eDatabase((database) => {
+      database
+        .prepare('UPDATE "item" SET "issuanceQuantityPolicy" = ? WHERE "id" = ?')
+        .run("whole-numbers-only", fixtures.activeItemId);
+    });
 
     await signIn(page);
     await page.goto("/items");
@@ -516,6 +666,8 @@ test.describe("Items catalog journey", () => {
       hasText: "Units for Alpha Beans",
     });
     await expect(unitsSheet).toBeVisible();
+    await expect(unitsSheet.getByText("Issuance quantities", { exact: true })).toBeVisible();
+    await expect(unitsSheet.getByText("Whole numbers only", { exact: true })).toBeVisible();
     await expect(
       unitsSheet.getByRole("button", { name: "Add alternate Unit", exact: true }),
     ).toHaveCount(0);
@@ -719,6 +871,13 @@ test.describe("Items catalog journey", () => {
     await expect(activeRow.getByText("Dry Goods", { exact: true })).toBeVisible();
     await expect(activeRow.getByText("Kilogram", { exact: true })).toBeVisible();
     await expect(activeRow.getByText("Active", { exact: true })).toBeVisible();
+    await activeRow
+      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+      .click();
+    await expect(
+      page.getByRole("menuitem", { name: "Edit", exact: true }),
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     const inactiveRow = page.getByRole("row").filter({
       has: page.getByText("Retired Rice", { exact: true }),

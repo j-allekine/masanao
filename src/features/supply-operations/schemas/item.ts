@@ -8,6 +8,7 @@ import {
   normalizeItemNote,
 } from "../domain/item";
 import type { ItemFieldErrors } from "../types";
+import { itemIssuanceQuantityPolicies } from "../types";
 
 const itemNameSchema = z
   .string({ error: "Item name is required" })
@@ -44,6 +45,7 @@ const itemIdentitySchema = z.object({
   name: itemNameSchema,
   categoryId: itemLookupIdSchema("Category"),
   baseUnitId: itemLookupIdSchema("Base Unit"),
+  issuanceQuantityPolicy: z.enum(itemIssuanceQuantityPolicies).optional(),
   note: itemNoteSchema,
 });
 
@@ -63,6 +65,7 @@ export function itemFieldErrors(error: z.ZodError): ItemFieldErrors {
       field === "name" ||
       field === "categoryId" ||
       field === "baseUnitId" ||
+      field === "issuanceQuantityPolicy" ||
       field === "note"
         ? field
         : "form";

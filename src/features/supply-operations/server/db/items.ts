@@ -25,6 +25,7 @@ const itemListSelect = {
       active: true,
     },
   },
+  issuanceQuantityPolicy: true,
   note: true,
   isActive: true,
   createdAt: true,
@@ -72,6 +73,7 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
     name: item.name,
     category: item.category,
     baseUnit: item.baseUnit,
+    issuanceQuantityPolicy: item.issuanceQuantityPolicy as ItemListItem["issuanceQuantityPolicy"],
     note: item.note,
     isActive: item.isActive,
     createdAt: item.createdAt.toISOString(),
@@ -232,6 +234,7 @@ async function createItemRecord(database: ItemDatabase, input: ItemInput) {
       categoryId: input.categoryId,
       baseUnitId: input.baseUnitId,
       note: input.note,
+      issuanceQuantityPolicy: input.issuanceQuantityPolicy ?? "allow-decimals",
       isActive: true,
     },
     select: itemListSelect,
@@ -253,6 +256,9 @@ async function updateItemRecord(
       categoryId: input.categoryId,
       baseUnitId: input.baseUnitId,
       note: input.note,
+      ...(input.issuanceQuantityPolicy === undefined
+        ? {}
+        : { issuanceQuantityPolicy: input.issuanceQuantityPolicy }),
     },
     select: itemListSelect,
   });

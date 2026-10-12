@@ -28,6 +28,10 @@ import {
 } from "@/components/ui/select";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 
 import { createItemAction, updateItemAction } from "../actions";
 import type {
@@ -45,8 +49,14 @@ const emptyFormValues: ItemFormValues = {
   name: "",
   categoryId: "",
   baseUnitId: "",
+  issuanceQuantityPolicy: "allow-decimals",
   note: "",
 };
+
+const issuanceQuantityPolicyOptions = [
+  { value: "allow-decimals", label: "Allow decimals" },
+  { value: "whole-numbers-only", label: "Whole numbers only" },
+];
 
 function initialValues(item?: ItemListItem): ItemFormValues {
   if (!item) return emptyFormValues;
@@ -55,6 +65,7 @@ function initialValues(item?: ItemListItem): ItemFormValues {
     name: item.name,
     categoryId: item.category.id,
     baseUnitId: item.baseUnit.id,
+    issuanceQuantityPolicy: item.issuanceQuantityPolicy,
     note: item.note ?? "",
   };
 }
@@ -193,12 +204,15 @@ export default function ItemForm({
 
   useEffect(() => {
     const firstInvalidField = (
-      ["name", "categoryId", "baseUnitId", "note"] as ItemField[]
+      ["name", "categoryId", "baseUnitId", "issuanceQuantityPolicy", "note"] as ItemField[]
     ).find((field) => fieldErrors[field]?.length);
 
     if (!firstInvalidField) return;
 
-    const targetId = `${mode}-item-${firstInvalidField}`;
+    const targetId =
+      firstInvalidField === "issuanceQuantityPolicy"
+        ? `${mode}-item-issuance-quantity-policy`
+        : `${mode}-item-${firstInvalidField}`;
     const timeoutId = window.setTimeout(() => {
       document.getElementById(targetId)?.focus();
     }, 0);
@@ -343,6 +357,60 @@ export default function ItemForm({
                 : "Base Unit is locked while alternate Units are configured."}
             </p>
           ) : null}
+
+          <Field
+            data-invalid={Boolean(
+              fieldErrors.issuanceQuantityPolicy?.length,
+            )}
+          >
+            <FieldLabel id={`${mode}-item-issuance-quantity-policy-label`}>
+              Issuance quantities
+            </FieldLabel>
+            <ToggleGroup
+              aria-labelledby={`${mode}-item-issuance-quantity-policy-label`}
+              aria-describedby={
+                fieldErrors.issuanceQuantityPolicy?.length
+                  ? `${mode}-item-issuance-quantity-policy-description ${mode}-item-issuance-quantity-policy-error`
+                  : `${mode}-item-issuance-quantity-policy-description`
+              }
+              aria-invalid={Boolean(
+                fieldErrors.issuanceQuantityPolicy?.length,
+              )}
+              className="w-full"
+              variant="outline"
+              value={[formValues.issuanceQuantityPolicy]}
+              onValueChange={(values) => {
+                const value = values[0];
+                if (value) updateField("issuanceQuantityPolicy", value);
+              }}
+            >
+              {issuanceQuantityPolicyOptions.map((option) => (
+                <ToggleGroupItem
+                  key={option.value}
+                  id={
+                    option.value === issuanceQuantityPolicyOptions[0]?.value
+                      ? `${mode}-item-issuance-quantity-policy`
+                      : undefined
+                  }
+                  className="min-w-0 flex-1 whitespace-normal px-2"
+                  value={option.value}
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <p
+              id={`${mode}-item-issuance-quantity-policy-description`}
+              className="text-body-sm text-muted-foreground"
+            >
+              This rule applies to the combined quantity for this Item after
+              conversion to Base Units.
+            </p>
+            <ItemFieldError
+              id={`${mode}-item-issuance-quantity-policy`}
+              errors={fieldErrors.issuanceQuantityPolicy}
+            />
+          </Field>
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
             <FieldLabel htmlFor={`${mode}-item-note`}>

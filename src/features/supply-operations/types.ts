@@ -11,6 +11,13 @@ export type ItemLookupUnit = {
   active: boolean;
 };
 
+export const itemIssuanceQuantityPolicies = [
+  "allow-decimals",
+  "whole-numbers-only",
+] as const;
+export type ItemIssuanceQuantityPolicy =
+  (typeof itemIssuanceQuantityPolicies)[number];
+
 // These aliases describe lookup data as it is consumed by Items; the owning
 // Master Data feature remains responsible for maintaining the records.
 export type CategoryListItem = ItemLookupCategory & {
@@ -25,6 +32,7 @@ export type ItemListItem = {
   name: string;
   category: ItemLookupCategory;
   baseUnit: ItemLookupUnit;
+  issuanceQuantityPolicy: ItemIssuanceQuantityPolicy;
   note: string | null;
   isActive: boolean;
   createdAt: string;
@@ -63,7 +71,12 @@ export type ItemUnitConversionActionState =
       fields: ItemUnitConversionFieldErrors;
     };
 
-export type ItemField = "name" | "categoryId" | "baseUnitId" | "note";
+export type ItemField =
+  | "name"
+  | "categoryId"
+  | "baseUnitId"
+  | "issuanceQuantityPolicy"
+  | "note";
 export type ItemFieldErrors = Partial<Record<ItemField | "form", string[]>>;
 
 export type ItemCreateResult =
