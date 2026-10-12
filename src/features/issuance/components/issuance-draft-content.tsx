@@ -60,17 +60,16 @@ import {
   listIssuanceRecipesAction,
   previewIssuanceRecipeAction,
   saveIssuanceDraftAction,
+  postIssuanceAction,
 } from "../actions";
+import IssuancePostedContent from "./issuance-posted-content";
 import QuantityReviewDialog from "./quantity-review-dialog";
 import {
   calculateIssuanceReview,
   confirmationIsAdjustment,
   issuanceDemandSignatures,
 } from "../domain/quantities";
-import {
-  decimalRational,
-  finiteDecimal,
-} from "../domain/rational";
+import { decimalRational, finiteDecimal } from "../domain/rational";
 import StockPicker, { type LocalStockItem } from "./stock-picker";
 import { displayRational, recipeContribution } from "../domain/rational";
 import type {
@@ -124,6 +123,9 @@ export default function IssuanceDraftContent({
     workspace.reviewReferences,
   );
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [confirmation, setConfirmation] = useState<IssuanceWorkspace | null>(
+    null,
+  );
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -140,7 +142,7 @@ export default function IssuanceDraftContent({
   const [discard, setDiscard] = useState<"leave" | "reset" | null>(null);
   const browserBack = useRef(false);
   const allowBack = useRef(false);
-  const context = workspace.context;
+  const context = saved.context;
   const backUrl = `/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}`;
   const view = recipes.find((recipe) => recipe.id === viewId);
   const adjust = recipes.find((recipe) => recipe.id === adjustId);
@@ -152,10 +154,10 @@ export default function IssuanceDraftContent({
     stockItems,
     itemTotals,
   };
-  const { review, reviewPending } = calculateIssuanceReview(
-    localDraft,
-    references,
-  );
+  const { review, reviewPending } =
+    saved.draft.status === "posted"
+      ? { review: saved.review, reviewPending: false }
+      : calculateIssuanceReview(localDraft, references);
   async function refreshReferences(itemIds: string[]) {
     const result = await getIssuanceReviewReferencesAction([
       ...new Set(itemIds),
@@ -407,7 +409,7 @@ export default function IssuanceDraftContent({
       setPicker(false);
     });
   }
-  function save() {
+  async function persistDraft() {
     if (invalidMeal) {
       setError(
         "Meal pax must be a positive whole number, or leave it blank while pending.",
@@ -415,54 +417,105 @@ export default function IssuanceDraftContent({
       return;
     }
     setError("");
+    const result = await saveIssuanceDraftAction(
+      {
+        activityDesignId: context.activityDesignId,
+        activityId: context.activityId,
+        mealScheduleId: context.mealScheduleId,
+      },
+      {
+        revision: saved.draft.revision,
+        quantityReviews,
+        resetItemIds,
+        mealPax: pax(mealPax),
+        stockItems: stockItems.map((line) =>
+          line.unsaved || line.changed
+            ? {
+                ...(line.unsaved ? {} : { lineId: line.id }),
+                itemId: line.itemId,
+                conversionId: line.conversionId,
+                enteredQuantity: line.enteredQuantity,
+              }
+            : { lineId: line.id },
+        ),
+        recipes: recipes.map((recipe) => ({
+          ...(recipe.unsaved
+            ? {
+                recipeId: recipe.recipeId,
+                sourceRevision: recipe.sourceRevision,
+              }
+            : { snapshotId: recipe.id }),
+          targetMode: recipe.targetMode,
+          targetPax: recipe.targetPax,
+        })),
+      },
+    );
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setSaved(result.value);
+    setReferences(result.value.reviewReferences);
+    setItemTotals(result.value.draft.itemTotals ?? []);
+    setQuantityReviews([]);
+    setResetItemIds([]);
+    setRecipes(result.value.draft.recipes);
+    setStockItems(result.value.draft.stockItems);
+    setMealPax(result.value.draft.mealPax?.toString() ?? "");
+    setDirty(false);
+    setNotice("Draft saved. No stock has been issued.");
+    return result.value;
+  }
+  function save() {
     startTransition(async () => {
-      const result = await saveIssuanceDraftAction(
+      await persistDraft();
+    });
+  }
+  function preparePosting() {
+    setError("");
+    startTransition(async () => {
+      const current = dirty ? await persistDraft() : saved;
+      if (!current) return;
+      if (
+        !current.draft.id ||
+        !current.draft.mealPax ||
+        current.reviewPending ||
+        !current.review.length
+      ) {
+        setError(
+          "Save at least one supply line and enter positive Meal pax before posting.",
+        );
+        return;
+      }
+      if (current.review.some((row) => row.warning)) {
+        setError(
+          "Confirm the unresolved combined Item quantities in Review quantities and stock before posting.",
+        );
+        return;
+      }
+      setConfirmation(current);
+    });
+  }
+  function post() {
+    if (!confirmation || pending) return;
+    setError("");
+    startTransition(async () => {
+      const result = await postIssuanceAction(
         {
           activityDesignId: context.activityDesignId,
           activityId: context.activityId,
           mealScheduleId: context.mealScheduleId,
         },
-        {
-          revision: saved.draft.revision,
-          quantityReviews,
-          resetItemIds,
-          mealPax: pax(mealPax),
-          stockItems: stockItems.map((line) =>
-            line.unsaved || line.changed
-              ? {
-                  ...(line.unsaved ? {} : { lineId: line.id }),
-                  itemId: line.itemId,
-                  conversionId: line.conversionId,
-                  enteredQuantity: line.enteredQuantity,
-                }
-              : { lineId: line.id },
-          ),
-          recipes: recipes.map((recipe) => ({
-            ...(recipe.unsaved
-              ? {
-                  recipeId: recipe.recipeId,
-                  sourceRevision: recipe.sourceRevision,
-                }
-              : { snapshotId: recipe.id }),
-            targetMode: recipe.targetMode,
-            targetPax: recipe.targetPax,
-          })),
-        },
+        { revision: confirmation.draft.revision },
       );
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setSaved(result.value);
-      setReferences(result.value.reviewReferences);
-      setItemTotals(result.value.draft.itemTotals ?? []);
-      setQuantityReviews([]);
-      setResetItemIds([]);
-      setRecipes(result.value.draft.recipes);
-      setStockItems(result.value.draft.stockItems);
-      setMealPax(result.value.draft.mealPax?.toString() ?? "");
       setDirty(false);
-      setNotice("Draft saved. No stock has been issued.");
+      setConfirmation(null);
+      setNotice("");
     });
   }
   function confirmDiscard() {
@@ -483,6 +536,16 @@ export default function IssuanceDraftContent({
     }
     setDiscard(null);
     setLeaveUrl(null);
+  }
+
+  if (saved.draft.status === "posted") {
+    return (
+      <IssuancePostedContent
+        workspace={saved}
+        hydrated={hydrated}
+        backUrl={backUrl}
+      />
+    );
   }
 
   return (
@@ -577,6 +640,13 @@ export default function IssuanceDraftContent({
             </Button>
             <Button disabled={pending || !dirty} onClick={save}>
               {pending ? "Working…" : "Save draft"}
+            </Button>
+            <Button
+              id="issuance-post"
+              disabled={pending}
+              onClick={preparePosting}
+            >
+              Post issuance
             </Button>
             {dirty ? (
               <Button
@@ -775,6 +845,72 @@ export default function IssuanceDraftContent({
           </section>
         </section>
       </main>
+      <Dialog
+        open={Boolean(confirmation)}
+        onOpenChange={(open) => {
+          if (!pending && !open) {
+            setConfirmation(null);
+            setError("");
+          }
+        }}
+      >
+        <DialogContent
+          finalFocus={() => document.getElementById("issuance-post")}
+          showCloseButton={!pending}
+          className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Post issuance?</DialogTitle>
+            <DialogDescription>
+              These exact final quantities will be deducted together. Stock and
+              Item eligibility will be checked again when you confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <Alert>
+            <AlertTriangle aria-hidden="true" />
+            <AlertDescription>
+              Posting is final. No correction, reversal, return, or replacement
+              posting is available in this release.
+            </AlertDescription>
+          </Alert>
+          <ul
+            className="flex flex-col gap-3"
+            aria-label="Final quantities to issue"
+          >
+            {confirmation?.review.map((row) => (
+              <li
+                key={row.itemId}
+                className="flex flex-wrap justify-between gap-2 border-b pb-2"
+              >
+                <span className="min-w-0 break-words">{row.itemName}</span>
+                <strong className="break-all tabular-nums">
+                  {row.finalQuantity} {row.baseUnitAbbreviation}
+                </strong>
+              </li>
+            ))}
+          </ul>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                setConfirmation(null);
+                setError("");
+              }}
+            >
+              Keep draft
+            </Button>
+            <Button disabled={pending} onClick={post}>
+              {pending ? "Posting…" : "Confirm and post issuance"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {stockPicker ? (
         <StockPicker
           line={stockPicker.line}
