@@ -26,8 +26,6 @@ import { cn } from "@/lib/utils";
 
 import type { MealScheduleDetailItem } from "../types";
 
-const integerFormatter = new Intl.NumberFormat("en-US");
-
 function displayOptional(value: string | number | null) {
   return value === null ? "Not recorded" : value;
 }
@@ -39,12 +37,6 @@ function ScheduleContext({
 }) {
   const fields = [
     ["Meal time", mealSchedule.mealTime],
-    [
-      "Planned servings",
-      mealSchedule.plannedServings === null
-        ? "Not recorded"
-        : integerFormatter.format(mealSchedule.plannedServings),
-    ],
     ["Activity Office", mealSchedule.activity.officeName],
     ["Venue", displayOptional(mealSchedule.activity.venue)],
   ];

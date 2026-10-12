@@ -119,7 +119,6 @@ export async function createMealScheduleRecord(
         activityId,
         label: input.label,
         mealTime: input.mealTime,
-        plannedServings: input.plannedServings ?? null,
       },
       select: mealScheduleSelect,
     });
@@ -149,12 +148,12 @@ export async function updateMealScheduleRecord(
   if (!existingMealSchedule) return null;
 
   try {
+    // The retired plannedServings column is intentionally omitted to preserve legacy data.
     const mealSchedule = await prisma.mealSchedule.update({
       where: { id: mealScheduleId },
       data: {
         label: input.label,
         mealTime: input.mealTime,
-        plannedServings: input.plannedServings ?? null,
       },
       select: mealScheduleSelect,
     });

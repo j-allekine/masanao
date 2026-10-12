@@ -214,7 +214,7 @@ test.describe("Activity planning journey", () => {
 
       await expect(
         dialog.getByRole("textbox", {
-          name: "Planned participant count (optional)",
+          name: "Planned pax (optional)",
           exact: true,
         }),
       ).toHaveCSS("font-family", bodyFace);
@@ -366,7 +366,7 @@ test.describe("Activity planning journey", () => {
         .fill("E2E global venue");
       await creationDialog
         .getByRole("textbox", {
-          name: "Planned participant count (optional)",
+          name: "Planned pax (optional)",
           exact: true,
         })
         .fill("1250");
@@ -417,7 +417,7 @@ test.describe("Activity planning journey", () => {
       );
       await expect(
         editDialog.getByRole("textbox", {
-          name: "Planned participant count (optional)",
+          name: "Planned pax (optional)",
           exact: true,
         }),
       ).toHaveValue("1,250");
@@ -437,7 +437,7 @@ test.describe("Activity planning journey", () => {
         .fill("");
       await editDialog
         .getByRole("textbox", {
-          name: "Planned participant count (optional)",
+          name: "Planned pax (optional)",
           exact: true,
         })
         .fill("");
@@ -806,6 +806,12 @@ test.describe("Activity planning journey", () => {
         }),
       ).toHaveValue("Lunch");
       await expect(mealScheduleEditDialog.locator("#mealScheduleTime")).toHaveValue("12:00");
+      await expect(mealScheduleEditDialog.locator("#mealScheduleServings")).toHaveCount(0);
+      await mealScheduleEditDialog.locator("#mealScheduleTime").fill("12:30");
+      await mealScheduleEditDialog.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(mealScheduleEditDialog).toHaveCount(0);
+      expect(withE2eDatabase((database) => database.prepare('SELECT "mealTime", "plannedServings" FROM "meal_schedule" WHERE "id" = ?').get(mealScheduleId))).toEqual({ mealTime: "12:30", plannedServings: 1250 });
+      withE2eDatabase((database) => database.prepare('UPDATE "meal_schedule" SET "mealTime" = ? WHERE "id" = ?').run("12:00", mealScheduleId));
       await page.keyboard.press("Escape");
       await expect(mealScheduleEditDialog).toHaveCount(0);
 
@@ -848,7 +854,10 @@ test.describe("Activity planning journey", () => {
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
         await expect(page.getByText("12:00", { exact: true })).toBeVisible();
-        await expect(page.getByText("1,250", { exact: true })).toBeVisible();
+        await expect(page.getByText("Planned pax", { exact: true })).toBeVisible();
+        await page.screenshot({ path: `test-results/planning-activity-${viewport.width}.png`, fullPage: true });
+        await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
+        await expect(page.getByText("1,250", { exact: true })).toHaveCount(0);
 
         const mealScheduleRow = page
           .getByRole("row")
@@ -880,6 +889,8 @@ test.describe("Activity planning journey", () => {
           "href",
           `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
         );
+        await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
+        await page.screenshot({ path: `test-results/planning-meal-${viewport.width}.png`, fullPage: true });
         const backToActivity = page.getByRole("link", {
           name: "Back to Activity",
           exact: true,
@@ -950,16 +961,14 @@ test.describe("Activity planning journey", () => {
         .getByRole("textbox", { name: "Meal Schedule label", exact: true })
         .fill("Afternoon Snack");
       await createDialog.locator("#mealScheduleTime").fill("15:30");
-      await createDialog
-        .getByRole("spinbutton", { name: "Planned servings (optional)", exact: true })
-        .fill("80");
+      await expect(createDialog.locator("#mealScheduleServings")).toHaveCount(0);
       await createDialog
         .getByRole("button", { name: "Add Meal Schedule", exact: true })
         .click();
       await expect(createDialog).toHaveCount(0);
       await expect(page.getByText("Afternoon Snack", { exact: true })).toBeVisible();
       await expect(page.getByText("15:30", { exact: true })).toBeVisible();
-      await expect(page.getByText("80", { exact: true })).toBeVisible();
+      await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
 
       await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);
       await expect(page.getByText("404", { exact: true })).toBeVisible();

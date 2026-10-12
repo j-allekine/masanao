@@ -298,7 +298,7 @@ describe("Activity feature seams", () => {
       error: "Please correct the highlighted Activity fields.",
       fields: {
         plannedParticipantCount: [
-          "Planned participant count exceeds the supported maximum",
+          "Planned pax exceeds the supported maximum",
         ],
       },
     });

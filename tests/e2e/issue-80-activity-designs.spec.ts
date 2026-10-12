@@ -248,7 +248,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       });
       const office = dialog.getByRole("textbox", { name: "Office", exact: true });
       const participantCount = dialog.getByRole("textbox", {
-        name: "Planned participant count (optional)",
+        name: "Planned pax (optional)",
         exact: true,
       });
       const plannedBudget = dialog.getByRole("textbox", {

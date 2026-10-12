@@ -26,13 +26,11 @@ import type {
 type MealScheduleFormValues = {
   label: string;
   mealTime: string;
-  plannedServings: string;
 };
 
 const emptyFormValues: MealScheduleFormValues = {
   label: "",
   mealTime: "",
-  plannedServings: "",
 };
 
 function getInitialFormValues(
@@ -43,7 +41,6 @@ function getInitialFormValues(
   return {
     label: mealSchedule.label,
     mealTime: mealSchedule.mealTime,
-    plannedServings: mealSchedule.plannedServings?.toString() ?? "",
   };
 }
 
@@ -195,35 +192,6 @@ export default function MealScheduleCreateDialog({
                 <FieldError
                   id="mealScheduleTime-error"
                   errors={fieldErrors.mealTime?.map((message) => ({ message }))}
-                />
-              </Field>
-              <Field data-invalid={Boolean(fieldErrors.plannedServings?.length)}>
-                <FieldLabel htmlFor="mealScheduleServings">
-                  Planned servings (optional)
-                </FieldLabel>
-                <Input
-                  id="mealScheduleServings"
-                  name="plannedServings"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  value={formValues.plannedServings}
-                  aria-invalid={Boolean(fieldErrors.plannedServings?.length)}
-                  aria-describedby={
-                    fieldErrors.plannedServings?.length
-                      ? "mealScheduleServings-error"
-                      : undefined
-                  }
-                  onChange={(event) =>
-                    updateField("plannedServings", event.target.value)
-                  }
-                />
-                <FieldError
-                  id="mealScheduleServings-error"
-                  errors={fieldErrors.plannedServings?.map((message) => ({
-                    message,
-                  }))}
                 />
               </Field>
             </FieldGroup>
