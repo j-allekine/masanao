@@ -29,11 +29,12 @@ async function openIssuance(page: Page, suffix: string) {
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
 }
 async function addRecipe(page: Page) {
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Recipe", exact: true }).click();
+  await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("Regression Omelet");
   await page.getByRole("checkbox", { name: "Regression Omelet" }).check();
-  await page.getByRole("button", { name: "Add selected Recipes" }).click();
+  await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
+  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
 }
 async function confirmAutomatic(page: Page, quantity: string) {
   await page.getByRole("button", { name: "Review quantities and stock" }).click();
@@ -81,8 +82,7 @@ for (const cancel of ["cancel", "escape"] as const) {
   test(`canceled delayed Stock apply cannot mutate draft or a newer picker (${cancel})`, async ({ page }, testInfo) => {
     await signIn(page);
     await openIssuance(page, cancel);
-    await page.getByRole("button", { name: "Add", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Stock item", exact: true }).click();
+    await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
     const picker = page.getByRole("dialog", { name: "Add Stock item" });
     await picker.getByRole("combobox", { name: "Item", exact: true }).click();
     await page.getByRole("option", { name: "Rice", exact: true }).click();
@@ -102,8 +102,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     if (cancel === "cancel") await picker.getByRole("button", { name: "Cancel", exact: true }).click();
     else await page.keyboard.press("Escape");
     await expect(picker).not.toBeVisible();
-    await page.getByRole("button", { name: "Add", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Stock item", exact: true }).click();
+    await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
     const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}/issuance`));
     release();
     await (await response).finished();

@@ -34,11 +34,12 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Recipe", exact: true }).click();
+  await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("Review Omelet");
   await page.getByRole("checkbox", { name: "Review Omelet" }).check();
-  await page.getByRole("button", { name: "Add selected Recipes" }).click();
+  await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
+  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
   await expect(
     page.getByRole("alert").filter({ hasText: "require confirmation" }),
   ).toBeVisible();

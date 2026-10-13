@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, LockKeyhole, ChevronDown, Plus } from "lucide-react";
+import { AlertTriangle, LockKeyhole, Plus } from "lucide-react";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,10 @@ import {
   FieldLegend,
   FieldContent,
   FieldDescription,
+  FieldTitle,
 } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
+import PaxField from "./pax-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,13 +44,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import {
   TableHeader,
   TableBody,
@@ -81,11 +77,7 @@ import type {
   IssuanceReviewReference,
 } from "../types";
 
-function pax(value: string) {
-  return /^\d+$/.test(value) && Number(value) > 0 && Number(value) <= 2147483647
-    ? Number(value)
-    : null;
-}
+import { parseIssuancePax as pax } from "../domain/pax";
 type LocalRecipe = IssuanceRecipe & { unsaved?: boolean };
 
 export default function IssuanceDraftContent({
@@ -134,6 +126,8 @@ export default function IssuanceDraftContent({
   const [options, setOptions] = useState<IssuanceRecipeOption[]>([]);
   const [query, setQuery] = useState("");
   const [pickerPax, setPickerPax] = useState("");
+  const [customPickerPax, setCustomPickerPax] = useState(false);
+  const [pickerNotice, setPickerNotice] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [viewId, setViewId] = useState<string | null>(null);
   const [adjustId, setAdjustId] = useState<string | null>(null);
@@ -362,6 +356,8 @@ export default function IssuanceDraftContent({
   function openPicker() {
     setError("");
     setPickerPax(mealPax);
+    setCustomPickerPax(false);
+    setPickerNotice("");
     setSelected([]);
     setQuery("");
     setPicker(true);
@@ -372,7 +368,7 @@ export default function IssuanceDraftContent({
     });
   }
   function addRecipes() {
-    const target = pax(pickerPax);
+    const target = pax(customPickerPax ? pickerPax : mealPax);
     if (!pax(mealPax) || !target) {
       setError(
         "Enter positive whole-number Meal pax and Recipe pax before adding Recipes.",
@@ -417,7 +413,8 @@ export default function IssuanceDraftContent({
       setRecipes(next);
       setDirty(true);
       setNotice("");
-      setPicker(false);
+      setSelected([]);
+      setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added" : "Recipes added"} to this draft. Keep searching or choose Done.`);
     });
   }
   async function persistDraft() {
@@ -605,81 +602,13 @@ export default function IssuanceDraftContent({
               Back to Meal Schedule
             </Button>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <FieldGroup className="w-32">
-              <Field>
-                <FieldLabel htmlFor="meal-pax">Meal pax</FieldLabel>
-                <Input
-                  id="meal-pax"
-                  inputMode="numeric"
-                  value={mealPax}
-                  disabled={pending}
-                  aria-invalid={invalidMeal}
-                  aria-describedby="meal-pax-help"
-                  onChange={(event) => changeMeal(event.target.value)}
-                />
-              </Field>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <FieldGroup className="max-w-sm">
+              <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
+                description={mealPax === "" ? "Enter how many people this meal serves. You can add Stock items while pax is pending." : "Recipes follow Meal pax unless you set a custom target."} />
             </FieldGroup>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    id="issuance-add"
-                    variant="outline"
-                    disabled={pending}
-                  />
-                }
-              >
-                <Plus aria-hidden="true" />
-                Add
-                <ChevronDown aria-hidden="true" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={openPicker}>
-                    Recipe
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setStockPicker({ line: null })}
-                  >
-                    Stock item
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              id="issuance-review"
-              variant="outline"
-              disabled={pending}
-              onClick={openReview}
-            >
-              Review quantities and stock
-            </Button>
-            <Button disabled={pending || !dirty} onClick={save}>
-              {pending ? "Working…" : "Save draft"}
-            </Button>
-            <Button
-              id="issuance-post"
-              disabled={pending}
-              onClick={preparePosting}
-            >
-              Post issuance
-            </Button>
-            {dirty ? (
-              <Button
-                variant="ghost"
-                disabled={pending}
-                onClick={() => setDiscard("reset")}
-              >
-                Discard changes
-              </Button>
-            ) : null}
+            <Badge variant={dirty ? "secondary" : "outline"}>{dirty ? "Unsaved changes" : saved.draft.id ? "Saved draft" : "New draft"}</Badge>
           </div>
-          <p id="meal-pax-help" className="text-body-sm text-muted-foreground">
-            {pax(mealPax)
-              ? "Recipes follow Meal pax unless their target is adjusted."
-              : "Meal pax pending. Enter pax before adding Recipes and before posting. Stock items can be added now."}
-          </p>
           {review.some((row) => row.warning) ? (
             <Alert variant="destructive">
               <AlertTriangle aria-label="Quantity review needed" />
@@ -721,12 +650,10 @@ export default function IssuanceDraftContent({
           aria-labelledby="recipes-heading"
           className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
         >
-          <h2
-            id="recipes-heading"
-            className="mb-3 text-heading-3 font-semibold"
-          >
-            Recipes
-          </h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
+            <Button id="issuance-add-recipe" variant="outline" disabled={pending} onClick={openPicker}><Plus data-icon="inline-start" />Add Recipes</Button>
+          </div>
           {recipes.length === 0 ? (
             <Empty>
               <EmptyHeader>
@@ -749,11 +676,10 @@ export default function IssuanceDraftContent({
                   >
                     {recipe.recipeName}
                   </Button>
-                  <span className="shrink-0 text-body-sm tabular-nums">
-                    {recipe.targetPax === null
-                      ? "Pax pending"
-                      : `${recipe.targetPax} pax`}
-                  </span>
+                  <div className="min-w-0 text-right text-body-sm tabular-nums">
+                    <p>{recipe.targetPax === null ? "Pax pending" : `${recipe.targetPax} pax`}</p>
+                    <p className="text-muted-foreground">{recipe.targetMode === "meal" ? "Following meal" : "Custom target"}</p>
+                  </div>
                   <WorkspaceRowActionMenu
                     actionButtonId={`issuance-actions-${recipe.id}`}
                     ariaLabel={`Actions for ${recipe.recipeName}`}
@@ -761,10 +687,6 @@ export default function IssuanceDraftContent({
                     groups={[
                       {
                         actions: [
-                          {
-                            label: "View ingredients",
-                            onSelect: () => setViewId(recipe.id),
-                          },
                           {
                             label: "Adjust target pax",
                             onSelect: () => {
@@ -794,12 +716,10 @@ export default function IssuanceDraftContent({
             </ul>
           )}
           <section aria-labelledby="stock-heading" className="mt-6">
-            <h2
-              id="stock-heading"
-              className="mb-3 text-heading-3 font-semibold"
-            >
-              Stock
-            </h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 id="stock-heading" className="text-heading-3 font-semibold">Stock <span className="text-muted-foreground">({stockItems.length})</span></h2>
+              <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => setStockPicker({ line: null })}><Plus data-icon="inline-start" />Add Stock item</Button>
+            </div>
             {stockItems.length === 0 ? (
               <Empty>
                 <EmptyHeader>
@@ -861,6 +781,18 @@ export default function IssuanceDraftContent({
             )}
           </section>
         </section>
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-card px-4 py-4 sm:px-6">
+          <div className="text-body-sm text-muted-foreground">
+            <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
+            {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
+            <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
+            <Button disabled={pending || !dirty || invalidMeal} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
+            <Button id="issuance-post" variant="outline" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
+          </div>
+        </footer>
       </main>
       <Dialog
         open={Boolean(confirmation)}
@@ -931,21 +863,23 @@ export default function IssuanceDraftContent({
       {stockPicker ? (
         <StockPicker
           line={stockPicker.line}
+          addedItems={stockItems}
           onClose={() => setStockPicker(null)}
           onApply={async (line, signal) => {
-            if (!(await refreshReferences([line.itemId], signal))) return;
+            if (!(await refreshReferences([line.itemId], signal))) return false;
             const next = stockPicker.line
               ? stockItems.map((row) => (row.id === line.id ? line : row))
               : [...stockItems, line];
             if (!changeDemand({ stockItems: next })) {
               setStockPicker(null);
-              return;
+              return false;
             }
             setStockItems(next);
             setDirty(true);
             setNotice("");
             setError("");
-            setStockPicker(null);
+            if (stockPicker.line) setStockPicker(null);
+            return true;
           }}
         />
       ) : null}
@@ -962,35 +896,37 @@ export default function IssuanceDraftContent({
           onClose={() => setReviewOpen(false)}
           onConfirm={confirmQuantity}
           onReset={resetQuantity}
+          onSave={save}
+          saving={pending}
+          dirty={dirty}
+          error={error}
+          notice={notice}
         />
       ) : null}
-      <Dialog open={picker} onOpenChange={setPicker}>
-        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
+      <Dialog open={picker} onOpenChange={(open) => { if (!pending) setPicker(open); }}>
+        <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add Recipes</DialogTitle>
             <DialogDescription>
-              Select Recipes for this meal. Ingredient quantities are copied
-              when saved.
+              Search and select Recipes. Keep adding while viewing what is already in this draft.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="picker-pax">Recipe pax</FieldLabel>
-              <Input
-                aria-invalid={pickerPax !== "" && !pax(pickerPax)}
-                id="picker-pax"
-                inputMode="numeric"
-                value={pickerPax}
-                onChange={(event) => setPickerPax(event.target.value)}
-              />
+            <Field orientation="horizontal">
+              <Checkbox id="custom-recipe-pax" checked={customPickerPax} disabled={pending} onCheckedChange={(checked) => setCustomPickerPax(Boolean(checked))} />
+              <FieldContent><FieldLabel htmlFor="custom-recipe-pax">Use custom Recipe pax</FieldLabel><FieldDescription>{pax(mealPax) ? `Following Meal pax: ${pax(mealPax)} people` : "Enter valid Meal pax on the draft before adding Recipes."}</FieldDescription></FieldContent>
             </Field>
+            {customPickerPax ? <PaxField id="picker-pax" label="Recipe pax" value={pickerPax} onChange={setPickerPax} disabled={pending} description="This target applies to the Recipes you add now." /> : null}
           </FieldGroup>
+          <div className="grid min-w-0 gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+          <section aria-label="Find Recipes" className="flex min-w-0 flex-col gap-4">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="recipe-search">Search Recipes</FieldLabel>
               <Input
                 id="recipe-search"
                 value={query}
+                disabled={pending}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </Field>
@@ -1010,31 +946,27 @@ export default function IssuanceDraftContent({
                   (recipe) => recipe.recipeId === option.id,
                 );
                 return (
-                  <Field
-                    orientation="horizontal"
-                    key={option.id}
-                    className="flex gap-3 rounded-md border p-3"
-                  >
+                  <FieldLabel key={option.id} htmlFor={`recipe-${option.id}`} className="cursor-pointer">
+                  <Field orientation="horizontal" data-disabled={!option.available || added || pending}>
                     <Checkbox
                       id={`recipe-${option.id}`}
+                      aria-label={option.name}
+                      aria-describedby={`recipe-reason-${option.id}`}
                       disabled={!option.available || added || pending}
                       checked={selected.includes(option.id)}
                       onCheckedChange={(checked) =>
                         setSelected((current) =>
                           checked
-                            ? [...current, option.id]
+                            ? [...new Set([...current, option.id])]
                             : current.filter((id) => id !== option.id),
                         )
                       }
                     />
                     <FieldContent className="min-w-0">
-                      <FieldLabel
-                        htmlFor={`recipe-${option.id}`}
-                        className="break-words"
-                      >
+                      <FieldTitle className="break-words">
                         {option.name}
-                      </FieldLabel>
-                      <FieldDescription>
+                      </FieldTitle>
+                      <FieldDescription id={`recipe-reason-${option.id}`}>
                         {added
                           ? "Already selected"
                           : (option.reason ??
@@ -1042,23 +974,34 @@ export default function IssuanceDraftContent({
                       </FieldDescription>
                     </FieldContent>
                   </Field>
+                  </FieldLabel>
                 );
               })}
           </FieldSet>
+          {!pending && !options.some((option) => option.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())) ? <Empty><EmptyHeader><EmptyDescription>No Recipes match your search.</EmptyDescription></EmptyHeader></Empty> : null}
+          {pending ? <p role="status" className="text-body-sm">Loading Recipes…</p> : <p className="text-body-sm text-muted-foreground">{selected.length} selected to add</p>}
+          </section>
+          <section aria-labelledby="already-added-recipes" className="flex min-w-0 flex-col gap-3 rounded-lg border p-3">
+            <h3 id="already-added-recipes" className="font-semibold">Already added ({recipes.length})</h3>
+            {recipes.length ? <ul aria-label="Already added Recipes" className="flex max-h-64 flex-col gap-3 overflow-y-auto">{recipes.map((recipe) => <li key={recipe.id} className="break-words text-body-sm"><p className="font-medium">{recipe.recipeName}</p><p className="text-muted-foreground">{recipe.targetPax ?? "Pending"} pax · {recipe.targetMode === "meal" ? "Following meal" : "Custom target"}</p></li>)}</ul> : <p className="text-body-sm text-muted-foreground">Recipes you add will appear here.</p>}
+            <p className="text-body-sm text-muted-foreground">Added to the draft. Save draft to keep these changes.</p>
+          </section>
+          </div>
+          {pickerNotice ? <p role="status" className="text-body-sm">{pickerNotice}</p> : null}
           {error ? (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPicker(false)}>
-              Cancel
+            <Button variant="outline" disabled={pending} onClick={() => setPicker(false)}>
+              Done
             </Button>
             <Button
-              disabled={pending || selected.length === 0}
+              disabled={pending || selected.length === 0 || !pax(mealPax) || !pax(customPickerPax ? pickerPax : mealPax)}
               onClick={addRecipes}
             >
-              Add selected Recipes
+              {pending ? "Adding…" : `Add ${selected.length} ${selected.length === 1 ? "Recipe" : "Recipes"}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1158,16 +1101,7 @@ export default function IssuanceDraftContent({
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="adjust-pax">Target pax</FieldLabel>
-              <Input
-                aria-invalid={adjustPax !== "" && !pax(adjustPax)}
-                id="adjust-pax"
-                inputMode="numeric"
-                value={adjustPax}
-                onChange={(event) => setAdjustPax(event.target.value)}
-              />
-            </Field>
+            <PaxField id="adjust-pax" label="Target pax" value={adjustPax} onChange={setAdjustPax} disabled={pending} />
           </FieldGroup>
           {error ? (
             <Alert variant="destructive">

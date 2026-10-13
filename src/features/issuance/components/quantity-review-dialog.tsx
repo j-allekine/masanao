@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { isValidIssuanceFinalQuantity } from "../domain/quantities";
+import { Badge } from "@/components/ui/badge";
 
 type ReviewRow = IssuanceReviewItem;
 
@@ -32,6 +33,11 @@ export default function QuantityReviewDialog({
   onClose,
   onConfirm,
   onReset,
+  onSave,
+  saving,
+  dirty,
+  error: saveError,
+  notice,
 }: {
   rows: ReviewRow[];
   pendingPax: boolean;
@@ -40,6 +46,11 @@ export default function QuantityReviewDialog({
   onClose: () => void;
   onConfirm: (itemId: string, quantity: string) => void;
   onReset: (itemId: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  dirty: boolean;
+  error: string;
+  notice: string;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -57,23 +68,25 @@ export default function QuantityReviewDialog({
     setEditing(null);
     setError("");
   }
+  const orderedRows = [...rows].sort((a, b) => Number(Boolean(b.warning || b.shortage)) - Number(Boolean(a.warning || a.shortage)));
   return (
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open && !saving) onClose();
       }}
     >
       <DialogContent
         finalFocus={() => document.getElementById("issuance-review")}
+        showCloseButton={!saving}
         className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl"
       >
         <DialogHeader>
           <DialogTitle>Combined quantities and stock</DialogTitle>
           <DialogDescription>
-            Recipes and Stock items are combined by Item in Base Units. Save
-            draft to persist confirmations. Stock checks are advisory until
-            posting.
+            Review the combined quantities from Recipes and Stock items.
+            Confirm quantity updates the draft; Save draft keeps those changes.
+            Available stock is checked again when posting.
           </DialogDescription>
         </DialogHeader>
         {pendingPax ? (
@@ -89,12 +102,15 @@ export default function QuantityReviewDialog({
           <p>No calculated Item quantities yet.</p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {rows.map((row) => (
+            {orderedRows.map((row) => (
               <li
                 key={row.itemId}
                 className="flex min-w-0 flex-col gap-3 rounded-lg border p-3"
               >
-                <h3 className="break-words font-semibold">{row.itemName}</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="break-words font-semibold">{row.itemName}</h3>
+                  <Badge variant={row.warning || row.shortage ? "destructive" : "secondary"}>{row.warning ? "Needs confirmation" : row.shortage ? "Shortage" : row.adjusted ? "Adjusted" : "Stock sufficient"}</Badge>
+                </div>
                 <dl className="grid min-w-0 grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-body-sm">
                   <dt>Calculated</dt>
                   <dd className="break-words tabular-nums">
@@ -153,6 +169,7 @@ export default function QuantityReviewDialog({
                         Final quantity for {row.itemName}
                       </FieldLabel>
                       <Input
+                        disabled={saving}
                         id={`final-${row.itemId}`}
                         inputMode="decimal"
                         value={quantity}
@@ -169,11 +186,12 @@ export default function QuantityReviewDialog({
                       </FieldDescription>
                     </Field>
                     <div className="flex flex-wrap gap-2">
-                      <Button onClick={() => confirm(row)}>
+                      <Button disabled={saving} onClick={() => confirm(row)}>
                         Confirm quantity
                       </Button>
                       <Button
                         variant="outline"
+                        disabled={saving}
                         onClick={() => {
                           setEditing(null);
                           setError("");
@@ -187,7 +205,7 @@ export default function QuantityReviewDialog({
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      disabled={pendingItemIds.includes(row.itemId)}
+                      disabled={saving || pendingItemIds.includes(row.itemId)}
                       aria-label={`Adjust issued quantity for ${row.itemName}`}
                       onClick={() => {
                         setEditing(row.itemId);
@@ -200,6 +218,7 @@ export default function QuantityReviewDialog({
                     {demandLockedItemIds.includes(row.itemId) ? (
                       <Button
                         variant="ghost"
+                        disabled={saving}
                         aria-label={`Reset adjustment for ${row.itemName}`}
                         onClick={() => onReset(row.itemId)}
                       >
@@ -212,10 +231,13 @@ export default function QuantityReviewDialog({
             ))}
           </ul>
         )}
+        {saveError ? <Alert variant="destructive"><AlertDescription>{saveError}</AlertDescription></Alert> : null}
+        {notice ? <p role="status">{notice}</p> : null}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" disabled={saving} onClick={onClose}>
             Close review
           </Button>
+          <Button disabled={saving || !dirty || editing !== null} onClick={onSave}>{saving ? "Saving…" : "Save draft"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

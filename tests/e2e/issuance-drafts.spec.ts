@@ -31,16 +31,15 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
     timeout: 30_000,
   });
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("100");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Recipe", exact: true }).click();
-  await expect(page.getByLabel("Recipe pax", { exact: true })).toHaveValue(
-    "100",
-  );
+  await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
+  await expect(page.getByText("Following Meal pax: 100 people")).toBeVisible();
   await page.getByLabel("Search Recipes").fill("Training Rice");
   const recipe = page.getByRole("checkbox", { name: "Training Rice" });
   await recipe.focus();
   await page.keyboard.press("Space");
-  await page.getByRole("button", { name: "Add selected Recipes" }).click();
+  await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
+  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Training Rice", exact: true }),
   ).toBeVisible();
