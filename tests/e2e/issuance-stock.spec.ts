@@ -39,7 +39,7 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await page.getByLabel("Meal pax", { exact: true }).fill("100");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
-  expect(db.prepare("SELECT conversionFactor FROM issuance_stock_item").get()).toEqual({ conversionFactor: "0.001" });
+  expect(db.prepare("SELECT stock.conversionFactor FROM issuance_stock_item AS stock JOIN issuance_record AS record ON record.id = stock.issuanceRecordId WHERE record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ conversionFactor: "0.001" });
   await page.setViewportSize({ width: 320, height: 720 });
   await page.getByLabel("Actions for Stock item Rice").click();
   await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
@@ -62,14 +62,14 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.screenshot({ path: testInfo.outputPath("mobile-stock-saved.png"), fullPage: true });
-  expect(db.prepare("SELECT enteredQuantity,conversionFactor FROM issuance_stock_item").get()).toEqual({ enteredQuantity: "1500.987654321123", conversionFactor: "0.002" });
+  expect(db.prepare("SELECT stock.enteredQuantity,stock.conversionFactor FROM issuance_stock_item AS stock JOIN issuance_record AS record ON record.id = stock.issuanceRecordId WHERE record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ enteredQuantity: "1500.987654321123", conversionFactor: "0.002" });
   await page.getByLabel("Actions for Stock item Rice").click();
   await page.getByRole("menuitem", { name: "Remove Stock item" }).click();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.reload();
   await expect(page.getByText("No Stock items selected. Add a Stock item for direct issuance.")).toBeVisible();
-  expect(db.prepare("SELECT count(*) AS count FROM issuance_stock_item").get()).toEqual({ count: 0 });
-  expect(db.prepare("SELECT count(*) AS count FROM inventory_ledger_movement WHERE movementType = 'stock-out'").get()).toEqual({ count: 0 });
+  expect(db.prepare("SELECT count(*) AS count FROM issuance_stock_item AS stock JOIN issuance_record AS record ON record.id = stock.issuanceRecordId WHERE record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ count: 0 });
+  expect(db.prepare("SELECT count(*) AS count FROM inventory_ledger_movement AS movement JOIN issuance_item_total AS total ON total.id = movement.issuanceItemTotalId JOIN issuance_record AS record ON record.id = total.issuanceRecordId WHERE movement.movementType = 'stock-out' AND record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ count: 0 });
   db.close();
 });

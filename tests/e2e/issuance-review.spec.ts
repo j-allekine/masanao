@@ -221,7 +221,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   expect(
     db
       .prepare(
-        "SELECT count(*) AS count FROM inventory_ledger_movement WHERE movementType='stock-out'",
+        "SELECT count(*) AS count FROM inventory_ledger_movement AS movement JOIN issuance_item_total AS total ON total.id = movement.issuanceItemTotalId JOIN issuance_record AS record ON record.id = total.issuanceRecordId WHERE movement.movementType = 'stock-out' AND record.mealScheduleId = 'e2e-review-meal'",
       )
       .get(),
   ).toEqual({ count: 0 });
