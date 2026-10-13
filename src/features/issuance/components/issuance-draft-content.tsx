@@ -158,10 +158,13 @@ export default function IssuanceDraftContent({
     saved.draft.status === "posted"
       ? { review: saved.review, reviewPending: false }
       : calculateIssuanceReview(localDraft, references);
-  async function refreshReferences(itemIds: string[]) {
+  async function refreshReferences(itemIds: string[], signal?: AbortSignal) {
+    if (signal?.aborted) return false;
     const result = await getIssuanceReviewReferencesAction([
       ...new Set(itemIds),
     ]);
+    // Server Actions may finish after the picker that requested them closes.
+    if (signal?.aborted) return false;
     if (!result.ok) {
       setError(result.error);
       return false;
@@ -211,6 +214,13 @@ export default function IssuanceDraftContent({
       );
       return false;
     }
+    // Equal-to-automatic confirmations belong to the demand they reviewed.
+    // True adjustments are protected by the lock above until explicitly reset.
+    const changed = new Set(
+      [...before.keys()].filter((itemId) => before.get(itemId) !== after.get(itemId)),
+    );
+    setQuantityReviews((current) => current.filter((entry) => !changed.has(entry.itemId)));
+    setItemTotals((current) => current.filter((entry) => entry.adjusted || !changed.has(entry.itemId)));
     setError("");
     setDirty(true);
     setNotice("");
@@ -285,6 +295,7 @@ export default function IssuanceDraftContent({
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => {
+      if (allowBack.current) return;
       event.preventDefault();
     };
     const navigate = (event: MouseEvent) => {
@@ -522,7 +533,13 @@ export default function IssuanceDraftContent({
     if (discard === "leave") {
       setDirty(false);
       allowBack.current = true;
-      router.push(browserBack.current ? backUrl : (leaveUrl ?? backUrl));
+      if (browserBack.current) {
+        // Back was restored to the extra guard entry. Skip both it and the
+        // original issuance entry to resume the user's actual destination.
+        window.history.go(-2);
+      } else {
+        router.push(leaveUrl ?? backUrl);
+      }
     } else {
       setItemTotals(saved.draft.itemTotals ?? []);
       setQuantityReviews([]);
@@ -915,8 +932,8 @@ export default function IssuanceDraftContent({
         <StockPicker
           line={stockPicker.line}
           onClose={() => setStockPicker(null)}
-          onApply={async (line) => {
-            if (!(await refreshReferences([line.itemId]))) return;
+          onApply={async (line, signal) => {
+            if (!(await refreshReferences([line.itemId], signal))) return;
             const next = stockPicker.line
               ? stockItems.map((row) => (row.id === line.id ? line : row))
               : [...stockItems, line];

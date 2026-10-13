@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field";
@@ -16,7 +16,7 @@ export type LocalStockItem = IssuanceStockItem & { unsaved?: boolean; changed?: 
 export default function StockPicker({ line, onClose, onApply }: {
   line: LocalStockItem | null;
   onClose: () => void;
-  onApply: (line: LocalStockItem) => void;
+  onApply: (line: LocalStockItem, signal: AbortSignal) => Promise<void>;
 }) {
   const [options, setOptions] = useState<IssuanceStockItemOption[]>([]);
   const [query, setQuery] = useState("");
@@ -24,13 +24,22 @@ export default function StockPicker({ line, onClose, onApply }: {
   const [quantity, setQuantity] = useState(line?.enteredQuantity ?? "");
   const [unit, setUnit] = useState(line?.conversionId ?? "base");
   const [error, setError] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [loading, startTransition] = useTransition();
+  const [applying, setApplying] = useState(false);
+  const application = useRef<AbortController | null>(null);
+  const pending = loading || applying;
   useEffect(() => {
+    let active = true;
     startTransition(async () => {
       const result = await listIssuanceStockItemsAction();
+      if (!active) return;
       if (result.ok) setOptions(result.value);
       else setError(result.error);
     });
+    return () => {
+      active = false;
+      application.current?.abort();
+    };
   }, []);
   const item = options.find((option) => option.id === itemId);
   const units = item ? [
@@ -38,14 +47,24 @@ export default function StockPicker({ line, onClose, onApply }: {
     ...item.conversions.map((conversion) => ({ value: conversion.id, label: `${conversion.alternateUnit.name} (${conversion.alternateUnit.abbreviation}) · ${conversion.factor} ${item.baseUnit.abbreviation}` })),
   ] : [];
   const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
-  function apply() {
+  function close() {
+    application.current?.abort();
+    onClose();
+  }
+  async function apply() {
+    if (pending) return;
     const conversion = item?.conversions.find((entry) => entry.id === unit);
     if (!item || !isPositiveExactDecimal(quantity) || (unit !== "base" && !conversion)) {
       setError("Select an available Item and Unit, and enter a positive decimal quantity.");
       return;
     }
     const selectedUnit = conversion?.alternateUnit ?? item.baseUnit;
-    onApply({
+    const controller = new AbortController();
+    application.current?.abort();
+    application.current = controller;
+    setApplying(true);
+    try {
+      await onApply({
       id: line?.id ?? `new-${crypto.randomUUID()}`,
       itemId: item.id, itemName: item.name, enteredQuantity: quantity,
       conversionId: conversion?.id ?? null, conversionFactor: conversion?.factor ?? "1",
@@ -54,9 +73,12 @@ export default function StockPicker({ line, onClose, onApply }: {
       baseUnitId: item.baseUnit.id, baseUnitName: item.baseUnit.name,
       baseUnitAbbreviation: item.baseUnit.abbreviation,
       unsaved: line?.unsaved ?? !line, changed: true,
-    });
+      }, controller.signal);
+    } finally {
+      if (!controller.signal.aborted) setApplying(false);
+    }
   }
-  return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+  return <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
     <DialogContent finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
@@ -91,8 +113,8 @@ export default function StockPicker({ line, onClose, onApply }: {
       </FieldGroup>
       {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
-        <Button disabled={pending} onClick={apply}>{pending ? "Loading…" : line ? "Apply changes" : "Add Stock item"}</Button>
+        <Button variant="outline" onClick={close}>Cancel</Button>
+        <Button disabled={pending} onClick={apply}>{loading ? "Loading…" : applying ? "Applying…" : line ? "Apply changes" : "Add Stock item"}</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>;
