@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignatures } from "@/features/issuance/domain/quantities";
+import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignatures, isValidIssuanceFinalQuantity } from "@/features/issuance/domain/quantities";
 import type { IssuanceDraft, IssuanceIngredient, IssuanceQuantityPolicy } from "@/features/issuance/types";
 const ingredient: IssuanceIngredient = { id: "ingredient", itemId: "eggs", itemName: "Eggs", enteredQuantity: "25", conversionFactor: "1", selectedUnitId: "piece", selectedUnitName: "Piece", selectedUnitAbbreviation: "pc", baseUnitId: "piece", baseUnitName: "Piece", baseUnitAbbreviation: "pc" };
 function draft(quantities: string[], baselinePax = 2): IssuanceDraft {
@@ -54,5 +54,18 @@ describe("Combined issuance quantities", () => {
     const value = draft(["25", "25"]); const before = issuanceDemandSignatures(value).get("eggs");
     value.recipes[0].targetPax = 2; value.recipes[1].targetPax = null;
     expect(issuanceDemandSignatures(value).get("eggs")).not.toBe(before);
+  });
+});
+
+
+describe("Final issuance quantity policy", () => {
+  it("accepts positive whole decimals without losing large-number precision", () => {
+    expect(isValidIssuanceFinalQuantity("9007199254740993.000", "whole-only")).toBe(true);
+    expect(isValidIssuanceFinalQuantity("9007199254740993.000000000000000001", "whole-only")).toBe(false);
+    expect(isValidIssuanceFinalQuantity("0.000000000000000001", "allow-decimals")).toBe(true);
+  });
+  it.each(["0", "0.000", "-1", "+1", "1e3", " 1", "1.", ".1", ""])("rejects invalid final quantity %s for either policy", (quantity) => {
+    expect(isValidIssuanceFinalQuantity(quantity, "whole-only")).toBe(false);
+    expect(isValidIssuanceFinalQuantity(quantity, "allow-decimals")).toBe(false);
   });
 });

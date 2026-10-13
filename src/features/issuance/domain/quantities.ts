@@ -1,6 +1,12 @@
-import type { IssuanceDraft, IssuanceReviewItem, IssuanceReviewReference } from "../types";
+import type { IssuanceDraft, IssuanceQuantityPolicy, IssuanceReviewItem, IssuanceReviewReference } from "../types";
 import { addRational, compareRational, decimalRational, displayRational, finiteDecimal, isWholeRational, multiplyRational, rational, recipeContribution, roundRational } from "./rational";
 import type { Rational } from "./rational";
+import { isPositiveExactDecimal } from "@/features/supply-operations/domain/delivery-receipt";
+
+/** Validate accepted final quantities without rounding or coercing their precision. */
+export function isValidIssuanceFinalQuantity(quantity: string, policy: IssuanceQuantityPolicy): boolean {
+  return isPositiveExactDecimal(quantity) && (policy !== "whole-only" || isWholeRational(decimalRational(quantity)));
+}
 
 /** A policy-invalid automatic quantity cannot make an explicit confirmation redundant. */
 export function confirmationIsAdjustment(row: Pick<IssuanceReviewItem, "calculatedNumerator" | "calculatedDenominator" | "automaticQuantity" | "policy">, finalQuantity: string): boolean {

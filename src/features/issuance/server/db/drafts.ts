@@ -8,8 +8,8 @@ import type { SaveDraftInput } from "../../schemas/draft";
 import type { IssuanceContext, IssuanceDraft, IssuanceResult, IssuanceWorkspace, IssuanceRecipeOption, IssuanceIngredient } from "../../types";
 import { getIssuanceStockSelectionRecord } from "./stock-items";
 import { getIssuanceReviewReferences } from "./quantities";
-import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignatures } from "../../domain/quantities";
-import { decimalRational, finiteDecimal, isWholeRational } from "../../domain/rational";
+import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignatures, isValidIssuanceFinalQuantity } from "../../domain/quantities";
+import { decimalRational, finiteDecimal } from "../../domain/rational";
 
 type IssuanceDatabase = Pick<Prisma.TransactionClient, "mealSchedule" | "issuanceRecord" | "issuanceRecipeSnapshot" | "issuanceRecipeIngredient" | "recipe" | "user" | "item" | "inventoryLedgerMovement">;
 const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } }, itemTotals: true };
@@ -151,7 +151,7 @@ export async function saveIssuanceDraftRecord(context: IssuanceContext, input: S
         if (!total) return failure("validation", "The reviewed Item does not belong to this issuance.");
         if (proposed.draft.recipes.some((recipe) => !recipe.targetPax && recipe.ingredients.some((ingredient) => ingredient.itemId === edit.itemId))) return failure("validation", "Enter Recipe target pax before confirming its combined quantity.");
         const final = decimalRational(edit.finalQuantity);
-        if (total.policy === "whole-only" && !isWholeRational(final)) return failure("validation", `${total.itemName} requires a positive whole-number final quantity.`);
+        if (!isValidIssuanceFinalQuantity(edit.finalQuantity, total.policy)) return failure("validation", `${total.itemName} requires a positive whole-number final quantity.`);
         const adjusted = confirmationIsAdjustment(total, edit.finalQuantity);
         total.finalQuantity = finiteDecimal(final)!;
         total.adjusted = adjusted;

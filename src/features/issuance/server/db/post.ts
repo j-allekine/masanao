@@ -5,7 +5,8 @@ import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 import type { IssuanceContext, IssuanceErrorKind, IssuanceFailure, IssuanceResult, IssuanceWorkspace } from "../../types";
 import { getIssuanceWorkspaceRecord } from "./drafts";
-import { compareRational, decimalRational, displayRational, isWholeRational, recipeContribution } from "../../domain/rational";
+import { isValidIssuanceFinalQuantity } from "../../domain/quantities";
+import { compareRational, decimalRational, displayRational, recipeContribution } from "../../domain/rational";
 
 class PostingRejected extends Error {
   readonly result: IssuanceFailure;
@@ -43,7 +44,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       for (const row of workspace.review) {
         const final = decimalRational(row.finalQuantity);
         if (final.numerator <= BigInt(0)) reject("validation", `${row.itemName}: confirm a positive final quantity in ${row.baseUnitAbbreviation}.`);
-        if (row.warning || (row.policy === "whole-only" && !isWholeRational(final))) reject("policy", `${row.itemName}: current policy requires a whole final quantity. Review and confirm its combined quantity before posting.`);
+        if (row.warning || !isValidIssuanceFinalQuantity(row.finalQuantity, row.policy)) reject("policy", `${row.itemName}: current policy requires a whole final quantity. Review and confirm its combined quantity before posting.`);
         const savedTotal = workspace.draft.itemTotals?.find((total) => total.itemId === row.itemId);
         if (!savedTotal || compareRational(decimalRational(savedTotal.finalQuantity), final) !== 0) reject("policy", `${row.itemName}: the current quantity policy changes its final quantity. Review and save the current combined quantities before posting.`);
         if (row.shortage) reject("shortage", `${row.itemName}: requires ${row.finalQuantity} ${row.baseUnitAbbreviation}; available ${row.availableQuantity} ${row.baseUnitAbbreviation}. Reduce demand or receive stock before posting.`);

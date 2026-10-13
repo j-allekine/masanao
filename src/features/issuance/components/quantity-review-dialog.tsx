@@ -20,7 +20,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { isPositiveExactDecimal } from "@/features/supply-operations/domain/delivery-receipt";
+import { isValidIssuanceFinalQuantity } from "../domain/quantities";
 
 type ReviewRow = IssuanceReviewItem;
 
@@ -45,10 +45,7 @@ export default function QuantityReviewDialog({
   const [quantity, setQuantity] = useState("");
   const [error, setError] = useState("");
   function confirm(row: ReviewRow) {
-    if (
-      !isPositiveExactDecimal(quantity) ||
-      (row.policy === "whole-only" && !/^\d+(?:\.0+)?$/.test(quantity))
-    ) {
+    if (!isValidIssuanceFinalQuantity(quantity, row.policy)) {
       setError(
         row.policy === "whole-only"
           ? "Enter a positive whole quantity for this Item."
