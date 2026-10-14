@@ -32,7 +32,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   });
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("100");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
-  await expect(page.getByText("Following Meal pax: 100 people")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByLabel("Meal pax", { exact: true })).toHaveValue("100");
   await page.getByLabel("Search Recipes").fill("Training Rice");
   const recipe = page.getByRole("checkbox", { name: "Training Rice" });
   await recipe.focus();

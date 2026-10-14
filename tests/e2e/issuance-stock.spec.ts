@@ -49,8 +49,8 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   const edit = page.getByRole("dialog", { name: "Edit Stock item" });
   await expect(edit.getByLabel("Quantity", { exact: true })).toHaveValue("1250.123456789123");
   await edit.getByLabel("Quantity", { exact: true }).fill("0");
-  await edit.getByRole("button", { name: "Apply changes" }).click();
-  await expect(edit.getByRole("alert")).toContainText("positive decimal quantity");
+  await expect(edit.getByRole("button", { name: "Apply changes" })).toBeDisabled();
+  await expect(edit.getByText("Enter a positive decimal quantity, such as 0.25 or 2.")).toBeVisible();
   await expect(edit.getByLabel("Quantity", { exact: true })).toHaveAttribute("aria-invalid", "true");
   await page.screenshot({ path: testInfo.outputPath("mobile-stock-validation.png"), fullPage: true });
   await edit.getByLabel("Quantity", { exact: true }).fill("1500.987654321123");

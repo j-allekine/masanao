@@ -20,12 +20,12 @@ export default function PaxField({ id, label, value, onChange, disabled, descrip
   return <Field data-invalid={Boolean(error)} data-disabled={disabled}>
     <FieldLabel htmlFor={id}>{label}</FieldLabel>
     <Input id={id} inputMode="numeric" pattern="[0-9]*" value={value} disabled={disabled}
-      aria-invalid={Boolean(error)} aria-describedby={`${id}-help`}
+      aria-invalid={Boolean(error)} aria-describedby={error || description !== "" ? `${id}-help` : undefined}
       onChange={(event) => {
         if (!/^\d*$/.test(event.target.value)) { setRejected(true); return; }
         setRejected(false);
         onChange(event.target.value);
       }} />
-    {error ? <FieldError id={`${id}-help`}>{error}</FieldError> : <FieldDescription id={`${id}-help`}>{description ?? "Enter a whole number greater than 0."}</FieldDescription>}
+    {error ? <FieldError id={`${id}-help`}>{error}</FieldError> : description !== "" ? <FieldDescription id={`${id}-help`}>{description ?? "Enter a whole number greater than 0."}</FieldDescription> : null}
   </Field>;
 }

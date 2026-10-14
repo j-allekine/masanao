@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, FieldLabel, FieldDescription, FieldSet, FieldLegend } from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from "@/components/ui/select";
@@ -62,6 +63,8 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
     ...item.conversions.map((entry) => ({ value: entry.id, label: `${entry.alternateUnit.name} (${entry.alternateUnit.abbreviation}) · ${entry.factor} ${item.baseUnit.abbreviation}` })),
   ] : [];
   const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
+  const unavailableSavedItem = Boolean(line && !loading && !item && !options.some((option) => option.id === line.itemId));
+  const itemHelp = loading ? "Loading available Items…" : unavailableSavedItem ? "This saved Item is no longer available. Select an available Item to edit the line." : options.length === 0 ? "No active Stock items are available." : null;
   const validUnit = unit === "base" || Boolean(conversion);
   const baseQuantity = item && isPositiveExactDecimal(quantity) && validUnit
     ? multiplyExactPositiveDecimals(quantity, conversion?.factor ?? "1")
@@ -102,7 +105,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
         setQuery("");
         setQuantity("");
         setUnit("base");
-        setNotice(`${item.name} added to stock. Add another Item or close this dialog.`);
+        setNotice(`${item.name} added to stock.`);
       }
     } finally {
       if (!controller.signal.aborted) setApplying(false);
@@ -114,10 +117,10 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
       <DialogContent finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
-          <DialogDescription>Choose an Item and its Unit. Review the Stock lines already added to this issuance.</DialogDescription>
+          <DialogDescription className="sr-only">Choose an Item, quantity and Unit.</DialogDescription>
         </DialogHeader>
         <div className="grid min-w-0 gap-6 sm:grid-cols-2">
-          <FieldGroup>
+          <FieldGroup className="gap-3">
             <Field>
               <FieldLabel htmlFor="stock-item">Item</FieldLabel>
               <Combobox items={itemOptions} filteredItems={itemOptions.filter((option) => option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))} inputValue={query} isItemEqualToValue={(a: ItemOption, b: ItemOption) => a.value === b.value}
@@ -135,23 +138,20 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
                 setError("");
                 setNotice("");
               }}>
-                <ComboboxInput ref={itemInput} id="stock-item" placeholder="Search active Items" className="w-full" aria-describedby="stock-item-help" />
+                <ComboboxInput ref={itemInput} id="stock-item" placeholder="Search active Items" className="w-full" aria-describedby={itemHelp ? "stock-item-help" : undefined} />
                 <ComboboxContent>
                   <ComboboxList>{(option: ItemOption) => <ComboboxItem key={option.value} value={option}>{option.label}</ComboboxItem>}</ComboboxList>
                   <ComboboxEmpty>No active Items match your search.</ComboboxEmpty>
                 </ComboboxContent>
               </Combobox>
-              <FieldDescription id="stock-item-help">
-                {loading ? "Loading available Items…" : line && !item ? "This saved Item is no longer available. Select an available Item to edit the line." : options.length === 0 ? "No active Stock items are available." : "Type an Item name to find it."}
-              </FieldDescription>
+              {itemHelp ? <FieldDescription id="stock-item-help">{itemHelp}</FieldDescription> : null}
             </Field>
-            <FieldSet>
-              <FieldLegend variant="label">Quantity and Unit</FieldLegend>
-              <FieldGroup>
+            <FieldGroup className="gap-3">
+              <FieldGroup className="gap-3">
                 <Field data-invalid={invalidQuantity}>
                   <FieldLabel htmlFor="stock-quantity">Quantity</FieldLabel>
-                  <Input id="stock-quantity" inputMode="decimal" value={quantity} disabled={pending} aria-invalid={invalidQuantity} aria-describedby="stock-quantity-help" onChange={(event) => setQuantity(event.target.value)} />
-                  <FieldDescription id="stock-quantity-help">{invalidQuantity ? "Enter a positive decimal quantity, such as 0.25 or 2." : "Enter the exact quantity in the selected Unit."}</FieldDescription>
+                  <Input id="stock-quantity" inputMode="decimal" value={quantity} disabled={pending} aria-invalid={invalidQuantity} aria-describedby={invalidQuantity ? "stock-quantity-help" : undefined} onChange={(event) => { setQuantity(event.target.value); setError(""); }} />
+                  {invalidQuantity ? <FieldDescription id="stock-quantity-help">Enter a positive decimal quantity, such as 0.25 or 2.</FieldDescription> : null}
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="stock-unit">Unit</FieldLabel>
@@ -162,30 +162,36 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
                   {item && !validUnit ? <FieldDescription>This saved Unit is unavailable. Select a current Unit.</FieldDescription> : null}
                 </Field>
               </FieldGroup>
-              <FieldDescription className="break-words tabular-nums" aria-live="polite">{baseQuantity ? `Base quantity: ${baseQuantity} ${item!.baseUnit.abbreviation}` : "Select an Item, Unit, and quantity to preview the Base quantity."}</FieldDescription>
-            </FieldSet>
+              {baseQuantity ? <FieldDescription className="break-words tabular-nums" aria-live="polite">Base quantity: {baseQuantity} {item!.baseUnit.abbreviation}</FieldDescription> : null}
+            </FieldGroup>
           </FieldGroup>
           <section aria-label="Stock already added" className="flex min-w-0 flex-col gap-3">
+            {item ? <section aria-label="Selected Stock item" className="flex flex-col gap-2">
+              <h3 className="text-body-sm font-medium">{line ? "Changes" : "Selected to add (1)"}</h3>
+              <div className="flex min-w-0 items-center justify-between gap-2 rounded-md border p-2">
+                <div className="min-w-0"><p className="break-words font-medium">{item.name}</p><p className="text-muted-foreground tabular-nums">{quantity || "Quantity pending"} {units.find((entry) => entry.value === unit) ? (conversion?.alternateUnit.abbreviation ?? item.baseUnit.abbreviation) : ""}</p></div>
+                <Button variant="ghost" size="icon-sm" disabled={pending} aria-label="Clear Stock selection" onClick={() => { setItemId(""); setQuery(""); setQuantity(""); setUnit("base"); setError(""); setNotice(""); itemInput.current?.focus(); }}><X /></Button>
+              </div>
+            </section> : null}
             <h3 className="text-body-sm font-medium">Stock already added ({addedItems.length})</h3>
             {addedItems.length ? (
-              <ul className="flex max-h-64 flex-col gap-3 overflow-y-auto">
+              <ul className="flex max-h-48 flex-col divide-y overflow-y-auto">
                 {addedItems.map((entry) => (
-                  <li key={entry.id} className="flex min-w-0 flex-col gap-1 rounded-lg border p-3">
-                    <p className="break-words text-body-sm font-medium">{entry.itemName}</p>
+                  <li key={entry.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2">
+                    <p className="min-w-0 break-words text-body-sm font-medium">{entry.itemName}</p>
                     <p className="break-words text-body-sm tabular-nums">{entry.enteredQuantity} {entry.selectedUnitAbbreviation}</p>
-                    <p className="break-words text-body-sm text-muted-foreground tabular-nums">Base quantity: {multiplyExactPositiveDecimals(entry.enteredQuantity, entry.conversionFactor)} {entry.baseUnitAbbreviation}</p>
+                    {entry.conversionId ? <p className="w-full break-words text-label text-muted-foreground tabular-nums">Base quantity: {multiplyExactPositiveDecimals(entry.enteredQuantity, entry.conversionFactor)} {entry.baseUnitAbbreviation}</p> : null}
                   </li>
                 ))}
               </ul>
             ) : <Empty><EmptyHeader><EmptyDescription>No Stock lines added yet.</EmptyDescription></EmptyHeader></Empty>}
-            <p className="text-body-sm text-muted-foreground">These are direct Stock lines. Recipe ingredients appear in combined review.</p>
           </section>
         </div>
         {error || submissionError ? <Alert variant="destructive"><AlertDescription>{error || submissionError}</AlertDescription></Alert> : null}
         {notice ? <p role="status" className="text-body-sm">{notice}</p> : null}
         <DialogFooter>
           <Button variant="outline" onClick={close}>{line || !addedItems.length || applying ? "Cancel" : "Done"}</Button>
-          <Button disabled={pending} onClick={apply}>{loading ? "Loading…" : applying ? "Applying…" : line ? "Apply changes" : "Add Stock item"}</Button>
+          <Button disabled={pending || !item || !isPositiveExactDecimal(quantity) || !validUnit} onClick={apply}>{loading ? "Loading…" : applying ? "Applying…" : line ? "Apply changes" : "Add Stock item"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

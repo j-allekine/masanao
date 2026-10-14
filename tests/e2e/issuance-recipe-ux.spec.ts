@@ -47,11 +47,18 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   // Click the card padding, away from the checkbox and Recipe name.
   await card.click({ position: { x: 150, y: 45 } });
   await expect(alpha).toBeChecked();
+  await expect(picker.getByRole("region", { name: "Selected Recipes" }).getByText("Alpha Rice", { exact: true })).toBeVisible();
   await card.click({ position: { x: 150, y: 45 } });
   await expect(alpha).not.toBeChecked();
+  await expect(picker.getByRole("region", { name: "Selected Recipes" })).toHaveCount(0);
   await alpha.focus();
   await page.keyboard.press("Space");
   await expect(alpha).toBeChecked();
+  await picker.getByRole("button", { name: "Remove selection Alpha Rice", exact: true }).click();
+  await expect(alpha).not.toBeChecked();
+  await expect(alpha).toBeFocused();
+  await page.keyboard.press("Space");
+  await page.screenshot({ path: testInfo.outputPath("recipe-selected-preview.png"), fullPage: true });
   let release!: () => void;
   let requested!: () => void;
   const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
@@ -104,4 +111,27 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await expect(page.getByRole("button", { name: "View ingredients for Alpha Rice", exact: true })).toBeVisible();
   await expect(page.getByText("Custom target", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "View ingredients for Beta Rice", exact: true })).toBeVisible();
+});
+
+test("pending Meal pax can be completed without leaving the Recipe picker", async ({ page }) => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  db.exec("INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('e2e-ux-pending','e2e-ux-activity','Dinner','18:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+  db.close();
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.goto(path.replace("e2e-ux-meal/", "e2e-ux-pending/"));
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  await page.getByLabel("Meal pax", { exact: true }).fill("");
+  await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
+  const picker = page.getByRole("dialog", { name: "Add Recipes", exact: true });
+  await picker.getByLabel("Search Recipes").fill("Alpha Rice");
+  await picker.getByRole("checkbox", { name: "Alpha Rice", exact: true }).check();
+  await expect(picker.getByRole("button", { name: "Add 1 Recipe", exact: true })).toBeDisabled();
+  await picker.getByLabel("Meal pax", { exact: true }).fill("15");
+  await expect(picker.getByRole("button", { name: "Add 1 Recipe", exact: true })).toBeEnabled();
+  await picker.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  await expect(picker.getByRole("list", { name: "Already added Recipes" }).getByText("Alpha Rice", { exact: true })).toBeVisible();
+  await picker.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("15");
 });

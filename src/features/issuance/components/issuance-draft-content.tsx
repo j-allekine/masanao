@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, LockKeyhole, Plus } from "lucide-react";
+import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,7 @@ export default function IssuanceDraftContent({
   const [customPickerPax, setCustomPickerPax] = useState(false);
   const [pickerNotice, setPickerNotice] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  const recipeCheckboxes = useRef(new Map<string, HTMLElement>());
   const [viewId, setViewId] = useState<string | null>(null);
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustPax, setAdjustPax] = useState("");
@@ -419,7 +420,7 @@ export default function IssuanceDraftContent({
       setDirty(true);
       setNotice("");
       setSelected([]);
-      setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added" : "Recipes added"} to this draft. Keep searching or choose Done.`);
+      setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added." : "Recipes added."}`);
     });
   }
   async function persistDraft() {
@@ -619,7 +620,7 @@ export default function IssuanceDraftContent({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <FieldGroup className="max-w-sm">
               <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
-                description={mealPax === "" ? "Enter how many people this meal serves. You can add Stock items while pax is pending." : "Recipes follow Meal pax unless you set a custom target."} />
+                description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
             </FieldGroup>
             <Badge variant={dirty ? "secondary" : "outline"}>{dirty ? "Unsaved changes" : saved.draft.id ? "Saved draft" : "New draft"}</Badge>
           </div>
@@ -925,16 +926,18 @@ export default function IssuanceDraftContent({
         <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add Recipes</DialogTitle>
-            <DialogDescription>
-              Search and select Recipes. Keep adding while viewing what is already in this draft.
+            <DialogDescription className="sr-only">
+              Choose Recipes for this meal.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
+            <PaxField id="recipe-meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
+              description="" />
             <Field orientation="horizontal">
               <Checkbox id="custom-recipe-pax" checked={customPickerPax} disabled={pending} onCheckedChange={(checked) => setCustomPickerPax(Boolean(checked))} />
-              <FieldContent><FieldLabel htmlFor="custom-recipe-pax">Use custom Recipe pax</FieldLabel><FieldDescription>{pax(mealPax) ? `Following Meal pax: ${pax(mealPax)} people` : "Enter valid Meal pax on the draft before adding Recipes."}</FieldDescription></FieldContent>
+              <FieldContent><FieldLabel htmlFor="custom-recipe-pax">Use custom Recipe pax</FieldLabel>{!pax(mealPax) ? <FieldDescription>Enter Meal pax above to enable adding Recipes.</FieldDescription> : null}</FieldContent>
             </Field>
-            {customPickerPax ? <PaxField id="picker-pax" label="Recipe pax" value={pickerPax} onChange={setPickerPax} disabled={pending} description="This target applies to the Recipes you add now." /> : null}
+            {customPickerPax ? <PaxField id="picker-pax" label="Recipe pax" value={pickerPax} onChange={setPickerPax} disabled={pending} description="" /> : null}
           </FieldGroup>
           <div className="grid min-w-0 gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
           <section aria-label="Find Recipes" className="flex min-w-0 flex-col gap-4">
@@ -968,6 +971,7 @@ export default function IssuanceDraftContent({
                   <Field orientation="horizontal" data-disabled={!option.available || added || pending}>
                     <Checkbox
                       id={`recipe-${option.id}`}
+                      ref={(element) => { if (element) recipeCheckboxes.current.set(option.id, element); else recipeCheckboxes.current.delete(option.id); }}
                       aria-labelledby={`recipe-name-${option.id}`}
                       aria-describedby={`recipe-reason-${option.id}`}
                       disabled={!option.available || added || pending}
@@ -997,12 +1001,21 @@ export default function IssuanceDraftContent({
               })}
           </FieldSet>
           {!pending && !options.some((option) => option.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())) ? <Empty><EmptyHeader><EmptyDescription>No Recipes match your search.</EmptyDescription></EmptyHeader></Empty> : null}
-          {pending ? <p role="status" className="text-body-sm">Loading Recipes…</p> : <p className="text-body-sm text-muted-foreground">{selected.length} selected to add</p>}
+          {pending ? <p role="status" className="text-body-sm">Loading Recipes…</p> : null}
           </section>
           <section aria-labelledby="already-added-recipes" className="flex min-w-0 flex-col gap-3 rounded-lg border p-3">
+            {selected.length ? <section aria-label="Selected Recipes" className="flex flex-col gap-2">
+              <h3 className="font-semibold">Selected to add ({selected.length})</h3>
+              <ul className="flex max-h-40 flex-col gap-2 overflow-y-auto">{selected.map((id) => {
+                const option = options.find((entry) => entry.id === id);
+                return <li key={id} className="flex min-w-0 items-center justify-between gap-2 rounded-md border p-2">
+                  <div className="min-w-0"><p className="break-words font-medium">{option?.name}</p><p className="text-muted-foreground">{pax(customPickerPax ? pickerPax : mealPax) ?? "Pending"} pax</p></div>
+                  <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={`Remove selection ${option?.name}`} onClick={() => { setSelected((current) => current.filter((entry) => entry !== id)); recipeCheckboxes.current.get(id)?.focus(); }}><X /></Button>
+                </li>;
+              })}</ul>
+            </section> : null}
             <h3 id="already-added-recipes" className="font-semibold">Already added ({recipes.length})</h3>
-            {recipes.length ? <ul aria-label="Already added Recipes" className="flex max-h-64 flex-col gap-3 overflow-y-auto">{recipes.map((recipe) => <li key={recipe.id} className="break-words text-body-sm"><p className="font-medium">{recipe.recipeName}</p><p className="text-muted-foreground">{recipe.targetPax ?? "Pending"} pax · {recipe.targetMode === "meal" ? "Following meal" : "Custom target"}</p></li>)}</ul> : <p className="text-body-sm text-muted-foreground">Recipes you add will appear here.</p>}
-            <p className="text-body-sm text-muted-foreground">Added to the draft. Save draft to keep these changes.</p>
+            {recipes.length ? <ul aria-label="Already added Recipes" className="flex max-h-48 flex-col divide-y overflow-y-auto">{recipes.map((recipe) => <li key={recipe.id} className="flex min-w-0 flex-wrap justify-between gap-2 py-2 text-body-sm"><p className="min-w-0 break-words font-medium">{recipe.recipeName}</p><p className="text-muted-foreground tabular-nums">{recipe.targetPax ?? "Pending"} pax</p></li>)}</ul> : <p className="text-body-sm text-muted-foreground">None yet.</p>}
           </section>
           </div>
           {pickerNotice ? <p role="status" className="text-body-sm">{pickerNotice}</p> : null}
@@ -1019,7 +1032,7 @@ export default function IssuanceDraftContent({
               disabled={pending || selected.length === 0 || !pax(mealPax) || !pax(customPickerPax ? pickerPax : mealPax)}
               onClick={addRecipes}
             >
-              {pending ? "Adding…" : `Add ${selected.length} ${selected.length === 1 ? "Recipe" : "Recipes"}`}
+              {pending ? "Adding…" : selected.length ? `Add ${selected.length} ${selected.length === 1 ? "Recipe" : "Recipes"}` : "Add Recipes"}
             </Button>
           </DialogFooter>
         </DialogContent>
