@@ -28,5 +28,6 @@ Run relevant tests, architecture lint, type checking, Prisma validation/generati
 | Additive snapshots and preserved receipt ledger rows/source uniqueness | `tests/issuance-draft-migration.test.ts`, `tests/issuance-posting-migration.test.ts` |
 | Existing receiving behavior | `tests/delivery-receipts.test.ts`, `tests/delivery-receipt-migration.test.ts` |
 | Keyboard, 320px mobile, errors, exact quantity review, discard/Back, final confirmation, closed historical ingredient Sheet | `tests/e2e/issuance-drafts.spec.ts`, `tests/e2e/issuance-stock.spec.ts`, `tests/e2e/issuance-review.spec.ts`, `tests/e2e/issuance-posting.spec.ts` |
+| Whole-card Recipe selection, digits-only pax, searchable Stock, persistent added lists, repeated additions, saving from review, cancellation and browser history | `tests/e2e/issuance-recipe-ux.spec.ts`, `tests/e2e/issuance-stock-ux.spec.ts`, `tests/e2e/issuance-review-regressions.spec.ts` |
 
 Browser and database tests use isolated test data. Posting is final in this release; corrections, reversals, returns, and replacement postings remain outside the approved scope.

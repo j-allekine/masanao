@@ -141,6 +141,7 @@ export default function IssuanceDraftContent({
   const view = recipes.find((recipe) => recipe.id === viewId);
   const adjust = recipes.find((recipe) => recipe.id === adjustId);
   const invalidMeal = mealPax !== "" && pax(mealPax) === null;
+  const canSave = dirty && !invalidMeal && Boolean(saved.draft.id || recipes.length || stockItems.length);
   const localDraft: IssuanceDraft = {
     ...saved.draft,
     mealPax: pax(mealPax),
@@ -272,22 +273,26 @@ export default function IssuanceDraftContent({
     setAdjustId(null);
   }
 
-  useEffect(() => {
-    if (dirty) return;
-    const currentUrl = window.location.href;
-    const skipSavedGuard = (event: PopStateEvent) => {
-      // A saved draft no longer needs the extra same-page guard entry.
-      // Skip it before Next handles Back, preserving the original destination.
-      if (window.location.href !== currentUrl) return;
-      event.stopImmediatePropagation();
+  async function releaseHistoryGuard() {
+    if (!window.history.state?.issuanceGuard) return;
+    // Return to the original same-page entry while suppressing route handling.
+    // The next normal navigation then replaces the obsolete forward guard.
+    allowBack.current = true;
+    await new Promise<void>((resolve) => {
+      const released = (event: PopStateEvent) => {
+        event.stopImmediatePropagation();
+        window.removeEventListener("popstate", released, true);
+        allowBack.current = false;
+        resolve();
+      };
+      window.addEventListener("popstate", released, true);
       window.history.back();
-    };
-    window.addEventListener("popstate", skipSavedGuard, true);
-    return () => window.removeEventListener("popstate", skipSavedGuard, true);
-  }, [dirty]);
+    });
+  }
 
   useEffect(() => {
     if (!dirty) return;
+    allowBack.current = false;
     const warn = (event: BeforeUnloadEvent) => {
       if (allowBack.current) return;
       event.preventDefault();
@@ -462,6 +467,7 @@ export default function IssuanceDraftContent({
       setError(result.error);
       return;
     }
+    await releaseHistoryGuard();
     setSaved(result.value);
     setReferences(result.value.reviewReferences);
     setItemTotals(result.value.draft.itemTotals ?? []);
@@ -526,30 +532,37 @@ export default function IssuanceDraftContent({
       setNotice("");
     });
   }
+  function resetToSaved() {
+    setItemTotals(saved.draft.itemTotals ?? []);
+    setQuantityReviews([]);
+    setResetItemIds([]);
+    setRecipes(saved.draft.recipes);
+    setStockItems(saved.draft.stockItems);
+    setMealPax(saved.draft.mealPax?.toString() ?? "");
+    setDirty(false);
+    setError("");
+    setNotice("");
+  }
   function confirmDiscard() {
-    if (discard === "leave") {
-      setDirty(false);
-      allowBack.current = true;
-      if (browserBack.current) {
-        // Back was restored to the extra guard entry. Skip both it and the
-        // original issuance entry to resume the user's actual destination.
-        window.history.go(-2);
+    if (pending) return;
+    startTransition(async () => {
+      if (discard === "leave") {
+        if (!browserBack.current) await releaseHistoryGuard();
+        resetToSaved();
+        allowBack.current = true;
+        if (browserBack.current) {
+          // Resume Back from the restored guard to the original predecessor.
+          window.history.go(-2);
+        } else {
+          router.push(leaveUrl ?? backUrl);
+        }
       } else {
-        router.push(leaveUrl ?? backUrl);
+        await releaseHistoryGuard();
+        resetToSaved();
       }
-    } else {
-      setItemTotals(saved.draft.itemTotals ?? []);
-      setQuantityReviews([]);
-      setResetItemIds([]);
-      setRecipes(saved.draft.recipes);
-      setStockItems(saved.draft.stockItems);
-      setMealPax(saved.draft.mealPax?.toString() ?? "");
-      setDirty(false);
-      setError("");
-      setNotice("");
-    }
-    setDiscard(null);
-    setLeaveUrl(null);
+      setDiscard(null);
+      setLeaveUrl(null);
+    });
   }
 
   if (saved.draft.status === "posted") {
@@ -558,6 +571,7 @@ export default function IssuanceDraftContent({
         workspace={saved}
         hydrated={hydrated}
         backUrl={backUrl}
+        focusAfterPosting={workspace.draft.status !== "posted"}
       />
     );
   }
@@ -672,9 +686,10 @@ export default function IssuanceDraftContent({
                   <Button
                     variant="ghost"
                     className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left"
+                    aria-label={`View ingredients for ${recipe.recipeName}`}
                     onClick={() => setViewId(recipe.id)}
                   >
-                    {recipe.recipeName}
+                    <span className="flex min-w-0 flex-col gap-1"><span>{recipe.recipeName}</span><span className="text-muted-foreground">View ingredients</span></span>
                   </Button>
                   <div className="min-w-0 text-right text-body-sm tabular-nums">
                     <p>{recipe.targetPax === null ? "Pax pending" : `${recipe.targetPax} pax`}</p>
@@ -718,7 +733,7 @@ export default function IssuanceDraftContent({
           <section aria-labelledby="stock-heading" className="mt-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 id="stock-heading" className="text-heading-3 font-semibold">Stock <span className="text-muted-foreground">({stockItems.length})</span></h2>
-              <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => setStockPicker({ line: null })}><Plus data-icon="inline-start" />Add Stock item</Button>
+              <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => { setError(""); setStockPicker({ line: null }); }}><Plus data-icon="inline-start" />Add Stock item</Button>
             </div>
             {stockItems.length === 0 ? (
               <Empty>
@@ -756,7 +771,7 @@ export default function IssuanceDraftContent({
                           actions: [
                             {
                               label: "Edit Stock item",
-                              onSelect: () => setStockPicker({ line }),
+                              onSelect: () => { setError(""); setStockPicker({ line }); },
                             },
                             {
                               label: "Remove Stock item",
@@ -785,11 +800,12 @@ export default function IssuanceDraftContent({
           <div className="text-body-sm text-muted-foreground">
             <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
             {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
+            {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
             <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
-            <Button disabled={pending || !dirty || invalidMeal} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
+            <Button disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
             <Button id="issuance-post" variant="outline" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
           </div>
         </footer>
@@ -804,7 +820,7 @@ export default function IssuanceDraftContent({
         }}
       >
         <DialogContent
-          finalFocus={() => document.getElementById("issuance-post")}
+          finalFocus={() => document.getElementById("issuance-post") ?? document.getElementById("posted-quantities")}
           showCloseButton={!pending}
           className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl"
         >
@@ -864,8 +880,10 @@ export default function IssuanceDraftContent({
         <StockPicker
           line={stockPicker.line}
           addedItems={stockItems}
+          submissionError={error}
           onClose={() => setStockPicker(null)}
           onApply={async (line, signal) => {
+            setError("");
             if (!(await refreshReferences([line.itemId], signal))) return false;
             const next = stockPicker.line
               ? stockItems.map((row) => (row.id === line.id ? line : row))
@@ -898,7 +916,7 @@ export default function IssuanceDraftContent({
           onReset={resetQuantity}
           onSave={save}
           saving={pending}
-          dirty={dirty}
+          canSave={canSave}
           error={error}
           notice={notice}
         />
@@ -950,7 +968,7 @@ export default function IssuanceDraftContent({
                   <Field orientation="horizontal" data-disabled={!option.available || added || pending}>
                     <Checkbox
                       id={`recipe-${option.id}`}
-                      aria-label={option.name}
+                      aria-labelledby={`recipe-name-${option.id}`}
                       aria-describedby={`recipe-reason-${option.id}`}
                       disabled={!option.available || added || pending}
                       checked={selected.includes(option.id)}
@@ -963,7 +981,7 @@ export default function IssuanceDraftContent({
                       }
                     />
                     <FieldContent className="min-w-0">
-                      <FieldTitle className="break-words">
+                      <FieldTitle id={`recipe-name-${option.id}`} className="break-words">
                         {option.name}
                       </FieldTitle>
                       <FieldDescription id={`recipe-reason-${option.id}`}>
@@ -1127,13 +1145,13 @@ export default function IssuanceDraftContent({
       <Dialog
         open={Boolean(discard)}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!pending && !open) {
             setDiscard(null);
             setLeaveUrl(null);
           }
         }}
       >
-        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto">
+        <DialogContent finalFocus={() => document.getElementById("meal-pax")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Discard unsaved changes?</DialogTitle>
             <DialogDescription>
@@ -1143,6 +1161,7 @@ export default function IssuanceDraftContent({
           <DialogFooter>
             <Button
               variant="outline"
+              disabled={pending}
               onClick={() => {
                 setDiscard(null);
                 setLeaveUrl(null);
@@ -1150,7 +1169,7 @@ export default function IssuanceDraftContent({
             >
               Keep editing
             </Button>
-            <Button variant="destructive" onClick={confirmDiscard}>
+            <Button variant="destructive" disabled={pending} onClick={confirmDiscard}>
               Discard changes
             </Button>
           </DialogFooter>

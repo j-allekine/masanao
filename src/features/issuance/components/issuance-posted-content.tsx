@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,16 +26,21 @@ export default function IssuancePostedContent({
   workspace,
   hydrated,
   backUrl,
+  focusAfterPosting = false,
 }: {
   workspace: IssuanceWorkspace;
   hydrated: boolean;
   backUrl: string;
+  focusAfterPosting?: boolean;
 }) {
   const { context, draft, review, posted } = workspace;
   const [viewId, setViewId] = useState<string | null>(null);
   const openerId = useRef<string | null>(null);
   const jumpToTotals = useRef(false);
   const view = draft.recipes.find((recipe) => recipe.id === viewId);
+  useEffect(() => {
+    if (focusAfterPosting) document.getElementById("posted-quantities")?.focus();
+  }, [focusAfterPosting]);
   return (
     <div
       className="flex h-svh min-h-0 flex-col bg-card"

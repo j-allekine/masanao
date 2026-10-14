@@ -44,7 +44,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     page.getByRole("alert").filter({ hasText: "require confirmation" }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Review Omelet", exact: true })
+    .getByRole("button", { name: "View ingredients for Review Omelet", exact: true })
     .click();
   await expect(
     page.getByRole("cell", { name: "≈ 0.333333 pc", exact: true }),
@@ -119,7 +119,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
       .filter({ hasText: "Reset the adjustment for Review Eggs" }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Review Omelet", exact: true })
+    .getByRole("button", { name: "View ingredients for Review Omelet", exact: true })
     .click();
   await expect(
     page.getByText("Combined total adjusted. Contribution remains calculated."),

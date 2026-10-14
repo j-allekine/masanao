@@ -35,7 +35,7 @@ export default function QuantityReviewDialog({
   onReset,
   onSave,
   saving,
-  dirty,
+  canSave,
   error: saveError,
   notice,
 }: {
@@ -48,7 +48,7 @@ export default function QuantityReviewDialog({
   onReset: (itemId: string) => void;
   onSave: () => void;
   saving: boolean;
-  dirty: boolean;
+  canSave: boolean;
   error: string;
   notice: string;
 }) {
@@ -237,7 +237,7 @@ export default function QuantityReviewDialog({
           <Button variant="outline" disabled={saving} onClick={onClose}>
             Close review
           </Button>
-          <Button disabled={saving || !dirty || editing !== null} onClick={onSave}>{saving ? "Saving…" : "Save draft"}</Button>
+          <Button disabled={saving || !canSave || editing !== null} onClick={onSave}>{saving ? "Saving…" : "Save draft"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

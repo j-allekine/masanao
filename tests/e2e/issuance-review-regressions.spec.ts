@@ -117,21 +117,62 @@ for (const cancel of ["cancel", "escape"] as const) {
   });
 }
 
+// The history guard can deliberately supersede a navigation before Next loads it.
+// Assert the final destination below; surface every other navigation error.
+async function traverseHistory(page: Page, direction: "back" | "forward") {
+  try {
+    if (direction === "back") await page.goBack({ waitUntil: "domcontentloaded" });
+    else await page.goForward({ waitUntil: "domcontentloaded" });
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("net::ERR_ABORTED")) throw error;
+  }
+}
+
 test("dirty browser Back resumes the actual previous page without reopening issuance", async ({ page }, testInfo) => {
   await signIn(page);
   await page.goto("/activity-designs");
   await page.goto("/purchase-orders");
   await openIssuance(page, "history");
   await page.getByLabel("Meal pax", { exact: true }).fill("11");
-  await page.goBack();
+  await traverseHistory(page, "back");
   const discard = page.getByRole("dialog", { name: "Discard unsaved changes?" });
   await expect(discard).toBeVisible();
   await discard.getByRole("button", { name: "Keep editing" }).click();
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("11");
-  await page.goBack();
+  await traverseHistory(page, "back");
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(/\/purchase-orders$/);
-  await page.goBack();
+  await traverseHistory(page, "back");
   await expect(page).toHaveURL(/\/activity-designs$/);
   await page.screenshot({ path: testInfo.outputPath("original-history-destination.png"), fullPage: true });
+  await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
+  await traverseHistory(page, "forward");
+  await expect(page).toHaveURL(/\/purchase-orders$/);
+  await traverseHistory(page, "forward");
+  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("10");
+});
+
+test("saved draft preserves normal browser Back and Forward", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/activity-designs");
+  await openIssuance(page, "history");
+  await page.getByLabel("Meal pax", { exact: true }).fill("15");
+  await addRecipe(page);
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await page.getByRole("link", { name: "Purchase Orders", exact: true }).click();
+  await expect(page).toHaveURL(/\/purchase-orders$/);
+  await traverseHistory(page, "back");
+  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  await traverseHistory(page, "back");
+  await expect(page).toHaveURL(/\/activity-designs$/);
+  await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
+  await page.waitForLoadState("domcontentloaded");
+  await traverseHistory(page, "forward");
+  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  await traverseHistory(page, "forward");
+  await expect(page).toHaveURL(/\/purchase-orders$/);
 });

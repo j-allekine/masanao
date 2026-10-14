@@ -6,7 +6,7 @@ import { getIssuanceWorkspace } from "@/features/issuance/server";
 import { IssuanceDraftContent } from "@/features/issuance/ui";
 import { auth } from "@/server/auth";
 
-export const metadata: Metadata = { title: "Issuance draft | Masanao" };
+export const metadata: Metadata = { title: "Issuance | Masanao" };
 
 export default async function IssuanceRoute({
   params,

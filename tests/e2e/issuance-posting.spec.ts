@@ -133,6 +133,7 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await expect(
     page.getByRole("heading", { name: "Issued quantities" }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Issued quantities" })).toBeFocused();
   await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Post issuance", exact: true }),

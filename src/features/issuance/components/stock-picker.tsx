@@ -16,9 +16,10 @@ import type { IssuanceStockItem, IssuanceStockItemOption } from "../types";
 export type LocalStockItem = IssuanceStockItem & { unsaved?: boolean; changed?: boolean };
 type ItemOption = { value: string; label: string };
 
-export default function StockPicker({ line, addedItems = [], onClose, onApply }: {
+export default function StockPicker({ line, addedItems = [], submissionError, onClose, onApply }: {
   line: LocalStockItem | null;
   addedItems?: LocalStockItem[];
+  submissionError?: string;
   onClose: () => void;
   onApply: (line: LocalStockItem, signal: AbortSignal) => Promise<boolean>;
 }) {
@@ -119,7 +120,16 @@ export default function StockPicker({ line, addedItems = [], onClose, onApply }:
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="stock-item">Item</FieldLabel>
-              <Combobox items={itemOptions} inputValue={query} onInputValueChange={setQuery} value={itemOptions.find((option) => option.value === itemId) ?? null} disabled={pending} onValueChange={(option: ItemOption | null) => {
+              <Combobox items={itemOptions} filteredItems={itemOptions.filter((option) => option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))} inputValue={query} isItemEqualToValue={(a: ItemOption, b: ItemOption) => a.value === b.value}
+                onInputValueChange={(value, details) => {
+                  setQuery(value);
+                  if (details.reason === "input-change" && value !== item?.name) {
+                    setItemId("");
+                    setUnit("base");
+                    setError("");
+                    setNotice("");
+                  }
+                }} value={itemOptions.find((option) => option.value === itemId) ?? null} disabled={pending} onValueChange={(option: ItemOption | null) => {
                 setItemId(option?.value ?? "");
                 setUnit("base");
                 setError("");
@@ -171,7 +181,7 @@ export default function StockPicker({ line, addedItems = [], onClose, onApply }:
             <p className="text-body-sm text-muted-foreground">These are direct Stock lines. Recipe ingredients appear in combined review.</p>
           </section>
         </div>
-        {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
+        {error || submissionError ? <Alert variant="destructive"><AlertDescription>{error || submissionError}</AlertDescription></Alert> : null}
         {notice ? <p role="status" className="text-body-sm">{notice}</p> : null}
         <DialogFooter>
           <Button variant="outline" onClick={close}>{line || !addedItems.length || applying ? "Cancel" : "Done"}</Button>

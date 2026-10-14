@@ -41,11 +41,11 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
   await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Training Rice", exact: true }),
+    page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Training Rice", exact: true })
+    .getByRole("button", { name: "View ingredients for Training Rice", exact: true })
     .click();
   await expect(
     page.getByRole("cell", { name: "3 kg", exact: true }),
@@ -57,7 +57,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   });
   await page.keyboard.press("Escape");
   await expect(
-    page.getByRole("button", { name: "Training Rice", exact: true }),
+    page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
@@ -66,7 +66,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
     timeout: 30_000,
   });
   await expect(
-    page.getByRole("button", { name: "Training Rice", exact: true }),
+    page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeVisible();
   await page.getByLabel("Meal pax", { exact: true }).fill("125");
   await expect(page.getByText("125 pax", { exact: true })).toBeVisible();
@@ -80,7 +80,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.setViewportSize({ width: 320, height: 720 });
   await page
-    .getByRole("button", { name: "Training Rice", exact: true })
+    .getByRole("button", { name: "View ingredients for Training Rice", exact: true })
     .click();
   await expect(
     page.getByRole("cell", { name: "2.25 kg", exact: true }),
@@ -92,13 +92,13 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   });
   await page.keyboard.press("Escape");
   await expect(
-    page.getByRole("button", { name: "Training Rice", exact: true }),
+    page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeFocused();
   await page.getByLabel("Meal pax", { exact: true }).fill("0");
-  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
   await expect(
-    page.getByRole("alert").filter({ hasText: "positive whole number" }),
-  ).toContainText("positive whole number");
+    page.getByRole("alert").filter({ hasText: "Enter a whole number" }),
+  ).toContainText("Enter a whole number");
   await expect
     .poll(() =>
       page.evaluate(
