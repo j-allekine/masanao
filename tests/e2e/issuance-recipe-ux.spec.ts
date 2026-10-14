@@ -52,7 +52,26 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await alpha.focus();
   await page.keyboard.press("Space");
   await expect(alpha).toBeChecked();
+  let release!: () => void;
+  let requested!: () => void;
+  const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
+  const released = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(`**${path}`, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    requested();
+    await released;
+    await route.continue();
+  }, { times: 1 });
   await picker.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  await requestStarted;
+  try {
+    await expect(picker.getByRole("button", { name: "Done", exact: true })).toBeDisabled();
+    await expect(picker.getByRole("button", { name: "Adding…", exact: true })).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(picker).toBeVisible();
+  } finally {
+    release();
+  }
   const added = picker.getByRole("list", { name: "Already added Recipes" });
   await expect(added.getByText("Alpha Rice", { exact: true })).toBeVisible();
   await picker.getByLabel("Search Recipes").fill("Beta Rice");
