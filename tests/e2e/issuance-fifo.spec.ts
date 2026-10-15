@@ -2,7 +2,7 @@ import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
-const path = "/activity-designs/fifo-design/activities/fifo-activity/meal-schedules/fifo-meal/issuance";
+const path = "/activity-designs/fifo-design/activities/fifo-activity/meal-schedules/fifo-meal";
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec(`

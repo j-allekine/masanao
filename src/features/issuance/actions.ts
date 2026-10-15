@@ -9,11 +9,11 @@ export async function listIssuanceStockItemsAction() { return listIssuanceStockI
 export async function previewIssuanceRecipeAction(id: string) { return previewIssuanceRecipe(await getCurrentIssuanceActor(), id); }
 export async function postIssuanceAction(context: IssuanceContext, input: unknown) {
   const result = await postIssuance(await getCurrentIssuanceActor(), context, input);
-  if (result.ok) revalidatePath(`/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}/issuance`);
+  if (result.ok) revalidatePath(`/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}`);
   return result;
 }
 export async function saveIssuanceDraftAction(context: IssuanceContext, input: unknown) {
   const result = await saveIssuanceDraft(await getCurrentIssuanceActor(), context, input);
-  if (result.ok) revalidatePath(`/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}/issuance`);
+  if (result.ok) revalidatePath(`/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}`);
   return result;
 }

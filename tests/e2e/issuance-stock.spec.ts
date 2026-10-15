@@ -15,7 +15,6 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   test.setTimeout(120_000);
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(mealPath);
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();

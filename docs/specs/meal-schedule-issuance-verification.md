@@ -37,3 +37,5 @@ Run relevant tests, architecture lint, type checking, Prisma validation/generati
 Browser and database tests use isolated test data. Posting is final in this release; corrections, reversals, returns, and replacement postings remain outside the approved scope.
 
 The [2026-10-15 reverification report](issuance-reverification-2026-10-15.md) records alignment checks, discovered corrections, fresh results and the limits of the broader repository browser run.
+
+The unified-page refinement is recorded in [ADR 0009](../adr/0009-task-focused-record-pages.md). `tests/e2e/meal-schedule-layout.spec.ts` covers direct entry, legacy URL redirects, desktop/mobile Meal details, keyboard focus return, footer visibility and dirty breadcrumb navigation. Existing issuance journeys now verify the canonical Meal Schedule route.

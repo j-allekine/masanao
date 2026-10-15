@@ -27,7 +27,6 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   });
   expect(response.status()).toBe(200);
   await page.goto(mealPath);
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
@@ -112,13 +111,13 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
     fullPage: true,
     animations: "disabled",
   });
-  await page.getByRole("button", { name: "Back to Meal Schedule" }).click();
+  await page.getByRole("link", { name: "Staff training", exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes?" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await page
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();

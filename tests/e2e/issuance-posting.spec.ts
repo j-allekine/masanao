@@ -38,7 +38,6 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     ).status(),
   ).toBe(200);
   await page.goto(mealPath);
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });

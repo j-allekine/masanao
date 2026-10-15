@@ -891,17 +891,10 @@ test.describe("Activity planning journey", () => {
         );
         await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
         await page.screenshot({ path: `test-results/planning-meal-${viewport.width}.png`, fullPage: true });
-        const backToActivity = page.getByRole("link", {
-          name: "Back to Activity",
-          exact: true,
-        });
-        await expect(backToActivity).toHaveAttribute(
-          "href",
-          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
-        );
-        await expect(
-          page.getByRole("link", { name: "Open issuance draft", exact: true }),
-        ).toHaveAttribute("href", `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}/issuance`);
+        const backToActivity = page.getByRole("link", { name: populatedActivity.name, exact: true });
+        await expect(page.getByRole("button", { name: "Add Recipes", exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Meal details", exact: true })).toBeVisible();
+        await expect(page.getByRole("link", { name: "Open issuance draft", exact: true })).toHaveCount(0);
         await expect(page.getByText("Food Supplies", { exact: true })).toHaveCount(0);
         await expect(
           page.getByText("Direct-use Stock Items", { exact: true }),

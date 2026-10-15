@@ -33,7 +33,7 @@ async function openPicker(page: Page, suffix: string) {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
-  await page.goto(`${mealPath(suffix)}/issuance`);
+  await page.goto(`${mealPath(suffix)}`);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
   return page.getByRole("dialog", { name: "Add Stock item" });
@@ -108,7 +108,7 @@ test("canceling a pending searchable Stock addition leaves the draft unchanged",
   let requested!: () => void;
   const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
   const released = new Promise<void>((resolve) => { release = resolve; });
-  await page.route(`**${mealPath("cancel")}/issuance`, async (route) => {
+  await page.route(`**${mealPath("cancel")}`, async (route) => {
     requested();
     await released;
     await route.continue();
@@ -118,7 +118,7 @@ test("canceling a pending searchable Stock addition leaves the draft unchanged",
   await expect(picker.getByRole("button", { name: "Applying…" })).toBeDisabled();
   await page.screenshot({ path: testInfo.outputPath("pending-add-can-be-canceled.png"), fullPage: true });
   await picker.getByRole("button", { name: "Cancel", exact: true }).click();
-  const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath("cancel")}/issuance`));
+  const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath("cancel")}`));
   release();
   await (await response).finished();
   await expect(page.getByText("No Stock items selected. Add a Stock item for direct issuance.")).toBeVisible();

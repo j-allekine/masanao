@@ -30,8 +30,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
       })
     ).status(),
   ).toBe(200);
+  await page.goto("/activity-designs/e2e-review-design/activities/e2e-review-activity");
   await page.goto(mealPath);
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
@@ -97,17 +97,10 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.goBack();
+  await expect(page).toHaveURL(/\/activities\/e2e-review-activity$/);
+  await page.goForward();
   await expect(page).toHaveURL(new RegExp(`${mealPath}$`));
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
-  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
-    timeout: 30_000,
-  });
-  await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`${mealPath}$`));
-  await page.getByRole("link", { name: "Open issuance draft" }).click();
-  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await page.reload();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
@@ -212,14 +205,14 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     page.getByRole("dialog", { name: "Discard unsaved changes?" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
-  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
   await page.goBack();
   await page
     .getByRole("dialog", { name: "Discard unsaved changes?" })
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
-  await expect(page).toHaveURL(new RegExp(`${mealPath}$`));
+  await expect(page).toHaveURL(/\/activities\/e2e-review-activity$/);
   expect(
     db
       .prepare(

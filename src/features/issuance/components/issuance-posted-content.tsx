@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import type { MealScheduleDetailItem } from "@/features/activity-planning/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -28,12 +28,12 @@ import type { IssuanceWorkspace } from "../types";
 export default function IssuancePostedContent({
   workspace,
   hydrated,
-  backUrl,
+  mealSchedule,
   focusAfterPosting = false,
 }: {
   workspace: IssuanceWorkspace;
   hydrated: boolean;
-  backUrl: string;
+  mealSchedule: MealScheduleDetailItem;
   focusAfterPosting?: boolean;
 }) {
   const { context, draft, review, posted } = workspace;
@@ -52,38 +52,15 @@ export default function IssuancePostedContent({
       className="flex h-svh min-h-0 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
-        <SidebarTrigger />
-        <div className="min-w-0">
-          <p className="text-heading-3 font-semibold">Issuance</p>
-        </div>
-        <Badge>Posted</Badge>
-      </header>
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="break-words text-heading-2 font-semibold">
-              {context.mealLabel} · {context.mealTime}
-            </h1>
-            <p className="break-words text-body-sm text-muted-foreground">
-              {context.activityDesignTitle} / {context.activityName}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href={backUrl} />}
-          >
-            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-            Back to Meal Schedule
-          </Button>
-        </div>
+        <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated}
+          title={`${context.mealLabel} · ${context.mealTime}`} status={<Badge>Posted</Badge>} />
         <p role="status" className="sr-only">
           Issuance posted. Stock was deducted.
         </p>
         <p className="mt-3 break-words text-body-sm text-muted-foreground">
           {draft.mealPax} pax · {posted?.actorName} · {" "}
-          <time dateTime={posted?.postedAt}>
+          <time className="inline-block" dateTime={posted?.postedAt}>
             {posted
               ? new Intl.DateTimeFormat("en-PH", {
                   dateStyle: "medium",

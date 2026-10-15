@@ -26,7 +26,7 @@ async function signIn(page: Page) {
   })).status()).toBe(200);
 }
 async function openIssuance(page: Page, suffix: string) {
-  await page.goto(`${mealPath(suffix)}/issuance`);
+  await page.goto(`${mealPath(suffix)}`);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
 }
 async function addRecipe(page: Page) {
@@ -92,7 +92,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     let requested!: () => void;
     const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
     const released = new Promise<void>((resolve) => { release = resolve; });
-    await page.route(`**${mealPath(cancel)}/issuance`, async (route) => {
+    await page.route(`**${mealPath(cancel)}`, async (route) => {
       if (route.request().method() !== "POST") return route.continue();
       requested();
       await released;
@@ -104,7 +104,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     else await page.keyboard.press("Escape");
     await expect(picker).not.toBeVisible();
     await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
-    const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}/issuance`));
+    const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}`));
     release();
     await (await response).finished();
     await expect(picker.getByLabel("Quantity", { exact: true })).toBeEnabled();
@@ -150,7 +150,7 @@ test("dirty browser Back resumes the actual previous page without reopening issu
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/purchase-orders$/);
   await traverseHistory(page, "forward");
-  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("10");
 });
 
@@ -165,14 +165,14 @@ test("saved draft preserves normal browser Back and Forward", async ({ page }) =
   await page.getByRole("link", { name: "Purchase Orders", exact: true }).click();
   await expect(page).toHaveURL(/\/purchase-orders$/);
   await traverseHistory(page, "back");
-  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await traverseHistory(page, "back");
   await expect(page).toHaveURL(/\/activity-designs$/);
   await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
   await page.waitForLoadState("domcontentloaded");
   await traverseHistory(page, "forward");
-  await expect(page).toHaveURL(/\/issuance$/);
+  await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/purchase-orders$/);

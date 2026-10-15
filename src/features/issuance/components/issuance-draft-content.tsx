@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowLeft, LockKeyhole, Plus, X } from "lucide-react";
+import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,8 @@ import PaxField from "./pax-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import type { MealScheduleDetailItem } from "@/features/activity-planning/types";
 import {
   Dialog,
   DialogContent,
@@ -82,8 +83,10 @@ type LocalRecipe = IssuanceRecipe & { unsaved?: boolean };
 
 export default function IssuanceDraftContent({
   workspace,
+  mealSchedule,
 }: {
   workspace: IssuanceWorkspace;
+  mealSchedule: MealScheduleDetailItem;
 }) {
   const router = useRouter();
   const hydrated = useSyncExternalStore(
@@ -138,7 +141,7 @@ export default function IssuanceDraftContent({
   const browserBack = useRef(false);
   const allowBack = useRef(false);
   const context = saved.context;
-  const backUrl = `/activity-designs/${context.activityDesignId}/activities/${context.activityId}/meal-schedules/${context.mealScheduleId}`;
+  const backUrl = `/activity-designs/${context.activityDesignId}/activities/${context.activityId}`;
   const view = recipes.find((recipe) => recipe.id === viewId);
   const adjust = recipes.find((recipe) => recipe.id === adjustId);
   const invalidMeal = mealPax !== "" && pax(mealPax) === null;
@@ -571,7 +574,7 @@ export default function IssuanceDraftContent({
       <IssuancePostedContent
         workspace={saved}
         hydrated={hydrated}
-        backUrl={backUrl}
+        mealSchedule={mealSchedule}
         focusAfterPosting={workspace.draft.status !== "posted"}
       />
     );
@@ -582,49 +585,14 @@ export default function IssuanceDraftContent({
       className="flex h-svh min-h-0 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
-        <SidebarTrigger />
-        <div className="min-w-0">
-          <p className="text-heading-3 font-semibold">Issuance</p>
-          <p className="truncate text-body-sm text-muted-foreground">
-            {context.activityDesignNo} · {context.activityName}
-          </p>
-        </div>
-      </header>
       <main className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="break-words text-heading-2 font-semibold">
-                {context.mealLabel} · {context.mealTime}
-              </h1>
-              <p className="text-body-sm text-muted-foreground">
-                {context.activityDesignTitle} / {context.activityName} / Meal
-                Schedule
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              disabled={pending}
-              onClick={() =>
-                dirty
-                  ? ((browserBack.current = false),
-                    setLeaveUrl(null),
-                    setDiscard("leave"))
-                  : router.push(backUrl)
-              }
-            >
-              <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-              Back to Meal Schedule
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <FieldGroup className="max-w-sm">
-              <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
-                description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
-            </FieldGroup>
-            <Badge variant={dirty ? "secondary" : "outline"}>{dirty ? "Unsaved changes" : saved.draft.id ? "Saved draft" : "New draft"}</Badge>
-          </div>
+          <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
+            status={<Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>} />
+          <FieldGroup className="max-w-sm">
+            <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
+              description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
+          </FieldGroup>
           {review.some((row) => row.warning) ? (
             <Alert variant="destructive">
               <AlertTriangle aria-label="Quantity review needed" />
@@ -807,8 +775,8 @@ export default function IssuanceDraftContent({
           <div className="flex flex-wrap gap-2">
             {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
             <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
-            <Button disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
-            <Button id="issuance-post" variant="outline" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
+            <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
+            <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
           </div>
         </footer>
       </main>
