@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -56,9 +56,6 @@ export default function IssuancePostedContent({
         <SidebarTrigger />
         <div className="min-w-0">
           <p className="text-heading-3 font-semibold">Issuance</p>
-          <p className="break-words text-body-sm text-muted-foreground">
-            {context.activityDesignNo} · {context.activityName}
-          </p>
         </div>
         <Badge>Posted</Badge>
       </header>
@@ -69,8 +66,7 @@ export default function IssuancePostedContent({
               {context.mealLabel} · {context.mealTime}
             </h1>
             <p className="break-words text-body-sm text-muted-foreground">
-              {context.activityDesignTitle} / {context.activityName} / Meal
-              Schedule
+              {context.activityDesignTitle} / {context.activityName}
             </p>
           </div>
           <Button
@@ -82,31 +78,21 @@ export default function IssuancePostedContent({
             Back to Meal Schedule
           </Button>
         </div>
-        <p role="status" className="mt-4 text-body-sm">
+        <p role="status" className="sr-only">
           Issuance posted. Stock was deducted.
         </p>
-        <p className="mt-2 break-words text-body-sm">
-          Meal pax: {draft.mealPax} · Posted by {posted?.actorName} (
-          {posted?.actorUsername})
-        </p>
-        <p className="mt-1 break-words text-body-sm">
-          Posted at:{" "}
+        <p className="mt-3 break-words text-body-sm text-muted-foreground">
+          {draft.mealPax} pax · {posted?.actorName} · {" "}
           <time dateTime={posted?.postedAt}>
             {posted
               ? new Intl.DateTimeFormat("en-PH", {
                   dateStyle: "medium",
-                  timeStyle: "long",
+                  timeStyle: "short",
                   timeZone: "Asia/Manila",
                 }).format(new Date(posted.postedAt))
               : ""}
           </time>
         </p>
-        <Alert className="mt-4">
-          <AlertDescription>
-            This record is read-only. No correction, reversal, return, or
-            replacement posting is available in this release.
-          </AlertDescription>
-        </Alert>
         <section aria-labelledby="posted-quantities" className="mt-6">
           <h2
             id="posted-quantities"
@@ -117,27 +103,15 @@ export default function IssuancePostedContent({
           </h2>
           <ul className="mt-3 divide-y rounded-lg border">
             {review.map((row) => (
-              <li key={row.itemId} className="flex flex-col gap-2 p-3">
-                <div className="flex flex-wrap justify-between gap-2">
+              <li key={row.itemId} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 p-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <h3 className="min-w-0 break-words text-body-sm font-medium">
                     {row.itemName}
                   </h3>
-                  <strong className="break-all tabular-nums">
-                    {row.finalQuantity} {row.baseUnitAbbreviation}
-                  </strong>
+                  {row.adjusted ? <Badge variant="secondary">Adjusted</Badge> : null}
                 </div>
-                <p className="break-words text-body-sm text-muted-foreground">
-                  Calculated: {row.calculatedApproximate ? "≈ " : ""}
-                  {row.calculatedQuantity} {row.baseUnitAbbreviation}
-                  {row.adjusted ? " · Final quantity adjusted" : ""}
-                </p>
-                <p className="text-body-sm text-muted-foreground">
-                  Policy at posting:{" "}
-                  {row.policy === "whole-only"
-                    ? "Whole quantities only"
-                    : "Decimals allowed"}
-                </p>
-                {row.receiptAllocations?.length ? <Button id={`receipt-sources-${row.itemId}`} className="self-start" variant="ghost" size="sm" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }}>Receipt sources · FIFO</Button> : null}
+                <strong className="max-w-32 break-all text-body-sm tabular-nums">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
+                <Button id={`receipt-sources-${row.itemId}`} aria-label={`Details for ${row.itemName}`} variant="ghost" size="sm" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }}>Details</Button>
               </li>
             ))}
           </ul>
@@ -145,9 +119,16 @@ export default function IssuancePostedContent({
         <Dialog open={Boolean(receiptRow)} onOpenChange={(open) => { if (!open) setReceiptItemId(null); }}>
           <DialogContent finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : null} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
             <DialogHeader className="pr-8">
-              <DialogTitle>Receipt sources for {receiptRow?.itemName}</DialogTitle>
-              <DialogDescription>FIFO uses the oldest received stock first. Quantities are in the Item’s Base Unit.</DialogDescription>
+              <DialogTitle>Details for {receiptRow?.itemName}</DialogTitle>
+              <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
             </DialogHeader>
+            <dl className="grid grid-cols-2 gap-4 text-body-sm">
+              <div className="min-w-0"><dt className="text-muted-foreground">Calculated</dt><dd className="break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{receiptRow?.calculatedQuantity} {receiptRow?.baseUnitAbbreviation}</dd></div>
+              <div className="min-w-0"><dt className="text-muted-foreground">Issued</dt><dd className="break-all font-medium tabular-nums">{receiptRow?.finalQuantity} {receiptRow?.baseUnitAbbreviation}{receiptRow?.adjusted ? " · Adjusted" : ""}</dd></div>
+              <div className="col-span-2"><dt className="text-muted-foreground">Policy at posting</dt><dd>{receiptRow?.policy === "whole-only" ? "Whole quantities only" : "Decimals allowed"}</dd></div>
+            </dl>
+            <h3 className="font-medium">Receipt sources</h3>
+            {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">Receipt sources were not recorded for this older issuance.</p>}
             <ul className="flex flex-col divide-y sm:hidden" aria-label="Receipt allocations">
               {receiptRow?.receiptAllocations?.map((allocation) => <li key={allocation.receiptLineId} className="flex min-w-0 justify-between gap-3 py-3">
                 <div className="min-w-0">
@@ -169,67 +150,47 @@ export default function IssuancePostedContent({
             </Table></div>
           </DialogContent>
         </Dialog>
-        <section aria-labelledby="posted-recipes" className="mt-6">
-          <h2 id="posted-recipes" className="text-heading-3 font-semibold">
-            Recipes
-          </h2>
-          {draft.recipes.length ? (
-            <ul className="mt-3 flex flex-col gap-3">
-              {draft.recipes.map((recipe) => (
-                <li key={recipe.id} className="rounded-lg border p-3">
-                  <h3 className="break-words text-body-sm font-medium">
-                    {recipe.recipeName} · {recipe.targetPax} pax
-                  </h3>
-                  <p className="text-body-sm text-muted-foreground">
-                    Baseline: {recipe.baselinePax} pax
-                  </p>
-                  <Button
-                    id={`posted-ingredients-${recipe.id}`}
-                    variant="ghost"
-                    onClick={() => {
-                      jumpToTotals.current = false;
-                      openerId.current = `posted-ingredients-${recipe.id}`;
-                      setViewId(recipe.id);
-                    }}
-                  >
-                    View ingredients for {recipe.recipeName}
-                  </Button>
-                </li>
-              ))}
+        {draft.recipes.length ? <Collapsible className="mt-6 border-t pt-2">
+          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+            Recipes ({draft.recipes.length})<ChevronDown data-icon="inline-end" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <ul className="divide-y px-3">
+              {draft.recipes.map((recipe) => <li key={recipe.id} className="flex min-w-0 items-center justify-between gap-3 py-2">
+                <Button id={`posted-ingredients-${recipe.id}`} variant="link" className="h-auto min-w-0 whitespace-normal text-left" aria-label={`View ingredients for ${recipe.recipeName}`} onClick={() => { jumpToTotals.current = false; openerId.current = `posted-ingredients-${recipe.id}`; setViewId(recipe.id); }}>{recipe.recipeName}</Button>
+                <span className="shrink-0 text-body-sm text-muted-foreground tabular-nums">{recipe.targetPax} pax</span>
+              </li>)}
             </ul>
-          ) : (
-            <p className="mt-3 text-body-sm text-muted-foreground">
-              No Recipes.
-            </p>
-          )}
-        </section>
-        <section aria-labelledby="posted-stock" className="mt-6">
-          <h2 id="posted-stock" className="text-heading-3 font-semibold">
-            Stock
-          </h2>
-          {draft.stockItems.length ? (
-            <ul className="mt-3 flex flex-col gap-2">
-              {draft.stockItems.map((line) => (
-                <li
-                  key={line.id}
-                  className="break-words rounded-lg border p-3 text-body-sm"
-                >
-                  {line.itemName}:{" "}
-                  <span className="break-all tabular-nums">
-                    {line.enteredQuantity} {line.selectedUnitAbbreviation}
-                  </span>
-                  {line.conversionId
-                    ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}`
-                    : ""}
-                </li>
-              ))}
+          </CollapsibleContent>
+        </Collapsible> : null}
+        {draft.stockItems.length ? <Collapsible className="mt-2 border-t pt-2">
+          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+            Direct Stock ({draft.stockItems.length})<ChevronDown data-icon="inline-end" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <ul className="divide-y px-3">
+              {draft.stockItems.map((line) => <li key={line.id} className="flex min-w-0 flex-wrap justify-between gap-2 py-2 text-body-sm">
+                <span className="min-w-0 break-words">{line.itemName}</span>
+                <span className="break-all tabular-nums">{line.enteredQuantity} {line.selectedUnitAbbreviation}</span>
+                {line.conversionId ? <p className="w-full break-words text-muted-foreground">1 {line.selectedUnitAbbreviation} = {line.conversionFactor} {line.baseUnitAbbreviation}</p> : null}
+              </li>)}
             </ul>
-          ) : (
-            <p className="mt-3 text-body-sm text-muted-foreground">
-              No direct Stock items.
-            </p>
-          )}
-        </section>
+          </CollapsibleContent>
+        </Collapsible> : null}
+        <Collapsible className="mt-2 border-t pt-2">
+          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+            Record details<ChevronDown data-icon="inline-end" aria-hidden="true" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <dl className="grid gap-3 px-3 py-3 text-body-sm sm:grid-cols-2">
+              <div className="min-w-0"><dt className="text-muted-foreground">Activity Design</dt><dd className="break-words">{context.activityDesignNo} · {context.activityDesignTitle}</dd></div>
+              <div className="min-w-0"><dt className="text-muted-foreground">Activity</dt><dd className="break-words">{context.activityName}</dd></div>
+              <div className="min-w-0"><dt className="text-muted-foreground">Posted by</dt><dd className="break-words">{posted?.actorName} ({posted?.actorUsername})</dd></div>
+              <div className="min-w-0"><dt className="text-muted-foreground">Posted at</dt><dd>{posted ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "long", timeZone: "Asia/Manila" }).format(new Date(posted.postedAt)) : ""}</dd></div>
+            </dl>
+            <p className="px-3 pb-3 text-body-sm text-muted-foreground">This record is read-only. No correction, reversal, return, or replacement posting is available in this release.</p>
+          </CollapsibleContent>
+        </Collapsible>
       </main>
       <Sheet
         open={Boolean(view)}

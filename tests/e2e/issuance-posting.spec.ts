@@ -160,12 +160,11 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await expect(
     page.getByRole("heading", { name: "Posting Eggs", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Posting Omelet · 1 pax" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Policy at posting: Whole quantities only"),
-  ).toBeVisible();
+  const recipesToggle = page.getByRole("button", { name: "Recipes (1)", exact: true });
+  await expect(recipesToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "View ingredients for Posting Omelet" })).not.toBeVisible();
+  await expect(page.getByText("Whole quantities only", { exact: true })).not.toBeVisible();
+  await expect(page.getByText("No direct Stock items.")).toHaveCount(0);
   await expect
     .poll(() =>
       page.evaluate(
@@ -177,6 +176,18 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     path: testInfo.outputPath("mobile-posted-history.png"),
     fullPage: true,
   });
+  const itemDetails = page.getByRole("button", { name: "Details for Posting Eggs", exact: true });
+  await itemDetails.click();
+  const detail = page.getByRole("dialog", { name: "Details for Posting Eggs" });
+  await expect(detail.getByText("Whole quantities only", { exact: true })).toBeVisible();
+  await expect(detail.getByText("18.5 pc", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(itemDetails).toBeFocused();
+  const recordDetails = page.getByRole("button", { name: "Record details", exact: true });
+  await recordDetails.click();
+  await expect(page.getByText(/This record is read-only/)).toBeVisible();
+  await recordDetails.click();
+  await recipesToggle.click();
   await expect(
     page.getByRole("dialog", { name: "Posting Omelet", exact: true }),
   ).toHaveCount(0);
@@ -227,10 +238,12 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await page.keyboard.press("Escape");
   await expect(ingredientsButton).toBeFocused();
   await page.setViewportSize({ width: 1280, height: 900 });
+  await recipesToggle.click();
   await page.screenshot({
     path: testInfo.outputPath("desktop-posted-history.png"),
     fullPage: true,
   });
+  await recipesToggle.click();
   await ingredientsButton.click();
   await expect(
     ingredients.getByRole("cell", { name: "18.5 pc", exact: true }),
