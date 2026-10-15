@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import {
+  Table,
   TableHeader,
   TableBody,
   TableRow,
@@ -36,6 +38,9 @@ export default function IssuancePostedContent({
 }) {
   const { context, draft, review, posted } = workspace;
   const [viewId, setViewId] = useState<string | null>(null);
+  const [receiptItemId, setReceiptItemId] = useState<string | null>(null);
+  const receiptOpenerId = useRef<string | null>(null);
+  const receiptRow = review.find((row) => row.itemId === receiptItemId);
   const openerId = useRef<string | null>(null);
   const jumpToTotals = useRef(false);
   const view = draft.recipes.find((recipe) => recipe.id === viewId);
@@ -132,10 +137,38 @@ export default function IssuancePostedContent({
                     ? "Whole quantities only"
                     : "Decimals allowed"}
                 </p>
+                {row.receiptAllocations?.length ? <Button id={`receipt-sources-${row.itemId}`} className="self-start" variant="ghost" size="sm" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }}>Receipt sources · FIFO</Button> : null}
               </li>
             ))}
           </ul>
         </section>
+        <Dialog open={Boolean(receiptRow)} onOpenChange={(open) => { if (!open) setReceiptItemId(null); }}>
+          <DialogContent finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : null} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader className="pr-8">
+              <DialogTitle>Receipt sources for {receiptRow?.itemName}</DialogTitle>
+              <DialogDescription>FIFO uses the oldest received stock first. Quantities are in the Item’s Base Unit.</DialogDescription>
+            </DialogHeader>
+            <ul className="flex flex-col divide-y sm:hidden" aria-label="Receipt allocations">
+              {receiptRow?.receiptAllocations?.map((allocation) => <li key={allocation.receiptLineId} className="flex min-w-0 justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="break-words font-medium">{allocation.receiptNo}</p>
+                  <p className="break-words text-body-sm">{allocation.purchaseOrderNo}</p>
+                  <p className="text-body-sm text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>
+                  {allocation.basis === "reconstructed" ? <Badge variant="secondary">Reconstructed using FIFO</Badge> : null}
+                </div>
+                <p className="max-w-1/3 break-all text-body-sm tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</p>
+              </li>)}
+            </ul>
+            <div className="hidden sm:block"><Table>
+              <TableHeader><TableRow><TableHead>Receipt</TableHead><TableHead>Purchase Order</TableHead><TableHead>Quantity</TableHead></TableRow></TableHeader>
+              <TableBody>{receiptRow?.receiptAllocations?.map((allocation) => <TableRow key={allocation.receiptLineId}>
+                <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>{allocation.basis === "reconstructed" ? <Badge variant="secondary">Reconstructed using FIFO</Badge> : null}</TableCell>
+                <TableCell className="whitespace-normal break-words">{allocation.purchaseOrderNo}</TableCell>
+                <TableCell className="whitespace-normal break-all tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</TableCell>
+              </TableRow>)}</TableBody>
+            </Table></div>
+          </DialogContent>
+        </Dialog>
         <section aria-labelledby="posted-recipes" className="mt-6">
           <h2 id="posted-recipes" className="text-heading-3 font-semibold">
             Recipes

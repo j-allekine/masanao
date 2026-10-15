@@ -12,7 +12,7 @@ import { calculateIssuanceReview, confirmationIsAdjustment, issuanceDemandSignat
 import { decimalRational, finiteDecimal } from "../../domain/rational";
 
 type IssuanceDatabase = Pick<Prisma.TransactionClient, "mealSchedule" | "issuanceRecord" | "issuanceRecipeSnapshot" | "issuanceRecipeIngredient" | "recipe" | "user" | "item" | "inventoryLedgerMovement">;
-const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } }, itemTotals: true };
+const recordInclude = { recipes: { include: { ingredients: true }, orderBy: { id: "asc" as const } }, stockItems: { orderBy: { id: "asc" as const } }, itemTotals: { include: { receiptAllocations: true } } };
 function ingredientCopy(ingredient: IssuanceIngredient) {
   return {
     itemId: ingredient.itemId, itemName: ingredient.itemName,
@@ -34,7 +34,14 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
   // Posted evidence is complete and immutable; never consult current balances or masters.
   if (record?.status === "posted") {
     if (!record.postingEvidence) throw new Error("Posted issuance is missing historical evidence.");
-    return JSON.parse(record.postingEvidence) as IssuanceWorkspace;
+    const evidence = JSON.parse(record.postingEvidence) as IssuanceWorkspace;
+    // Supplemental source reconstruction is labelled; original posted evidence
+    // and quantities remain unchanged. New postings already contain allocations.
+    for (const row of evidence.review) {
+      const allocations = record.itemTotals.find((total) => total.itemId === row.itemId)?.receiptAllocations;
+      if (!row.receiptAllocations && allocations?.length) row.receiptAllocations = allocations.map((allocation) => ({ receiptLineId: allocation.deliveryReceiptLineId, quantity: allocation.quantity, receiptNo: allocation.receiptNo, purchaseOrderNo: allocation.purchaseOrderNo, receiptDate: allocation.receiptDate.toISOString(), basis: allocation.basis === "reconstructed" ? "reconstructed" : "fifo" }));
+    }
+    return evidence;
   }
   const draft: IssuanceDraft = record ? {
     id: record.id,

@@ -3,7 +3,8 @@ import { Prisma } from "@/prisma/generated/client";
 import type { PrismaClient } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
-import type { IssuanceContext, IssuanceErrorKind, IssuanceFailure, IssuanceResult, IssuanceWorkspace } from "../../types";
+import type { IssuanceContext, IssuanceErrorKind, IssuanceFailure, IssuanceResult, IssuanceWorkspace, IssuanceReviewItem } from "../../types";
+import { allocatePostedItemReceipts, FifoAllocationError } from "./fifo";
 import { getIssuanceWorkspaceRecord } from "./drafts";
 import { isValidIssuanceFinalQuantity } from "../../domain/quantities";
 import { compareRational, decimalRational, displayRational, recipeContribution } from "../../domain/rational";
@@ -51,7 +52,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       }
       const postedAt = new Date();
       // Capture live display evidence once; snapshot arithmetic remains authoritative.
-      const historicalReview = workspace.review.map((row) => {
+      const historicalReview: IssuanceReviewItem[] = workspace.review.map((row) => {
         const item = itemById.get(row.itemId)!;
         return { ...row, itemName: item.name, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation };
       });
@@ -62,6 +63,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       const result: IssuanceWorkspace = { ...workspace, draft: { ...workspace.draft, status: "posted", recipes: historicalRecipes, itemTotals: historicalReview.map(({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted }) => ({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted })) }, review: historicalReview, posted: { postedAt: postedAt.toISOString(), actorId: persistedActor.id, actorName: persistedActor.name, actorUsername: persistedActor.username ?? "" } };
       for (const [index, row] of historicalReview.entries()) {
         const total = await transaction.issuanceItemTotal.upsert({ where: { issuanceRecordId_itemId: { issuanceRecordId: workspace.draft.id, itemId: row.itemId } }, create: { id: crypto.randomUUID(), issuanceRecordId: workspace.draft.id, itemId: row.itemId, calculatedNumerator: row.calculatedNumerator, calculatedDenominator: row.calculatedDenominator, finalQuantity: row.finalQuantity, adjusted: row.adjusted }, update: { calculatedNumerator: row.calculatedNumerator, calculatedDenominator: row.calculatedDenominator, finalQuantity: row.finalQuantity, adjusted: row.adjusted } });
+        row.receiptAllocations = await allocatePostedItemReceipts(transaction, total.id, row.itemId, row.baseUnitId, row.finalQuantity);
         await transaction.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), issuanceItemTotalId: total.id, itemId: row.itemId, baseUnitId: row.baseUnitId, quantity: row.finalQuantity, movementType: "stock-out", occurredAt: postedAt } });
         if (index === 0) await hooks.afterFirstMovement?.();
       }
@@ -70,6 +72,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       return { ok: true, value: result };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 15000 });
   } catch (error) {
+    if (error instanceof FifoAllocationError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof PostingRejected) return error.result;
     if (error instanceof Error && /SQLITE_BUSY|database is locked|SocketTimeout/i.test(error.message)) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try posting again shortly; no stock was deducted by this attempt." };
     if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P1008", "P2028"].includes(error.code)) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try again shortly; no stock was deducted by this attempt." };

@@ -63,6 +63,7 @@ describe("Posting with independent SQLite processes on one isolated database", (
       expect(await postIssuanceRecord(actor, context(loser + 1), 1, database)).toMatchObject({ ok: false, kind: "shortage" });
       expect(await database.inventoryLedgerMovement.findMany({ where: { movementType: "stock-out" } })).toHaveLength(1);
       expect(await database.inventoryLedgerMovement.findFirst({ where: { movementType: "stock-out" } })).toMatchObject({ quantity: "15" });
+      expect(await database.issuanceReceiptAllocation.findMany()).toMatchObject([{ quantity: "15", basis: "fifo" }]);
       expect(await database.issuanceRecord.findUnique({ where: { id: `race-record-${loser + 1}` } })).toMatchObject({ revision: 1, status: "draft", postingEvidence: null });
       const movements = await database.inventoryLedgerMovement.findMany(); expect(movements.reduce((balance, row) => balance + (row.movementType === "stock-in" ? 1 : -1) * Number(row.quantity), 0)).toBe(5);
     } finally { await closeChildren(workers.map((entry) => entry.child)); await database.$disconnect(); rmSync(directory, { recursive: true, force: true }); }

@@ -253,6 +253,7 @@ model DeliveryReceiptLine {
   selectedUnit                    Unit            @relation("DeliveryReceiptLineSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
   baseUnit                        Unit            @relation("DeliveryReceiptLineBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   inventoryLedgerMovements        InventoryLedgerMovement[]
+  issuanceAllocations             IssuanceReceiptAllocation[]
 
   @@index([deliveryReceiptId])
   @@index([itemId])
@@ -366,11 +367,29 @@ model IssuanceItemTotal {
   finalQuantity String
   adjusted Boolean @default(false)
   movement InventoryLedgerMovement?
+  receiptAllocations IssuanceReceiptAllocation[]
   issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
   item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
 
   @@unique([issuanceRecordId, itemId])
   @@map("issuance_item_total")
+}
+
+model IssuanceReceiptAllocation {
+  id String @id
+  issuanceItemTotalId String
+  deliveryReceiptLineId String
+  quantity String
+  basis String @default("fifo")
+  receiptNo String
+  purchaseOrderNo String
+  receiptDate DateTime
+  issuanceItemTotal IssuanceItemTotal @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
+  deliveryReceiptLine DeliveryReceiptLine @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+
+  @@unique([issuanceItemTotalId, deliveryReceiptLineId])
+  @@index([deliveryReceiptLineId])
+  @@map("issuance_receipt_allocation")
 }
 
 model IssuanceStockItem {

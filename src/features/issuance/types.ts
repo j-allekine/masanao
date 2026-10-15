@@ -34,11 +34,13 @@ export type IssuanceDraft = {
 export type IssuanceItemTotal = { itemId: string; calculatedNumerator: string; calculatedDenominator: string; finalQuantity: string; adjusted: boolean };
 export type IssuanceQuantityPolicy = "whole-only" | "allow-decimals";
 export type IssuanceReviewItem = IssuanceItemTotal & {
+  receiptAllocations?: IssuanceReceiptAllocation[];
   itemName: string; baseUnitId: string; baseUnitName: string; baseUnitAbbreviation: string;
   calculatedQuantity: string; calculatedApproximate: boolean; automaticQuantity: string;
   policy: IssuanceQuantityPolicy; warning: "fractional" | "rounded-zero" | null;
   availableQuantity: string; shortage: boolean;
 };
+export type IssuanceReceiptAllocation = { receiptLineId: string; quantity: string; receiptNo: string; purchaseOrderNo: string; receiptDate: string; basis: "fifo" | "reconstructed" };
 export type IssuanceReviewReference = { itemId: string; policy: IssuanceQuantityPolicy; availableQuantity: string };
 export type IssuancePosting = { postedAt: string; actorId: string; actorName: string; actorUsername: string };
 export type IssuanceWorkspace = { context: IssuanceMealContext; draft: IssuanceDraft; review: IssuanceReviewItem[]; reviewPending: boolean; reviewReferences: IssuanceReviewReference[]; posted?: IssuancePosting | null };

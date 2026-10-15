@@ -6,7 +6,7 @@ import type { CurrentActor } from "@/server/auth";
 import type { IssuanceResult, IssuanceWorkspace } from "@/features/issuance/types";
 import { deleteMealSchedule } from "@/features/activity-planning/server";
 import { deleteRecipe } from "@/features/recipes/server";
-import { deleteItem } from "@/features/supply-operations/server";
+import { deleteItem, postDeliveryReceipt } from "@/features/supply-operations/server";
 
 const staff: CurrentActor = { id: "post-staff", name: "Kitchen staff", username: "poststaff" };
 const admin: CurrentActor = { id: "post-admin", name: "Administrator", username: "postadmin" };
@@ -43,6 +43,7 @@ async function assertDraftUnchanged(draft: IssuanceWorkspace) {
 }
 describe("Atomic issuance posting through public gateways", () => {
   beforeEach(async () => {
+    await prisma.issuanceReceiptAllocation.deleteMany();
     await prisma.inventoryLedgerMovement.deleteMany(); await prisma.issuanceItemTotal.deleteMany(); await prisma.issuanceStockItem.deleteMany(); await prisma.issuanceRecipeIngredient.deleteMany(); await prisma.issuanceRecipeSnapshot.deleteMany(); await prisma.issuanceRecord.deleteMany();
     await prisma.recipeIngredient.deleteMany(); await prisma.recipe.deleteMany(); await prisma.itemUnitConversion.deleteMany(); await prisma.deliveryReceiptLine.deleteMany(); await prisma.deliveryReceipt.deleteMany(); await prisma.purchaseOrder.deleteMany(); await prisma.vendor.deleteMany(); await prisma.item.deleteMany(); await prisma.category.deleteMany(); await prisma.unit.deleteMany();
     await prisma.mealSchedule.deleteMany(); await prisma.activity.deleteMany(); await prisma.activityDesign.deleteMany(); await prisma.session.deleteMany(); await prisma.account.deleteMany(); await prisma.user.deleteMany(); await fixture();
@@ -94,6 +95,42 @@ describe("Atomic issuance posting through public gateways", () => {
     expect(posted.draft.recipes[0]).toMatchObject({ recipeName: "Egg meal", baselinePax: 2, ingredients: [{ enteredQuantity: "3.7", conversionFactor: "10" }] });
     expect(posted.review[0]).toMatchObject({ calculatedNumerator: "37", calculatedDenominator: "2", finalQuantity: "19" });
   });
+  it("allocates across POs by receipt date and preserves exact source evidence after master edits", async () => {
+    await prisma.deliveryReceipt.update({ where: { id: "post-receipt" }, data: { receiptDate: new Date("2026-10-01") } });
+    await prisma.purchaseOrder.create({ data: { id: "post-po-second", purchaseOrderNo: "PO-SECOND", normalizedPurchaseOrderNo: "po-second", vendorId: "post-vendor" } });
+    expect(await postDeliveryReceipt(staff, { purchaseOrderId: "post-po-second", receiptNo: "DR-SECOND", receiptDate: "2026-10-02", lines: [{ itemId: "post-water", quantity: "20", unitPrice: "10" }] })).toMatchObject({ ok: true });
+    const draft = await stockDraft("25.123456789123456789");
+    const posted = value(await postIssuance(staff, context, { revision: draft.draft.revision }));
+    expect(posted.review[0].receiptAllocations).toMatchObject([
+      { receiptLineId: "receipt-post-water", quantity: "20", receiptNo: "DR-POST", purchaseOrderNo: "PO-POST", basis: "fifo" },
+      { quantity: "5.123456789123456789", receiptNo: "DR-SECOND", purchaseOrderNo: "PO-SECOND", basis: "fifo" },
+    ]);
+    expect(await prisma.issuanceReceiptAllocation.count()).toBe(2);
+    await prisma.purchaseOrder.update({ where: { id: "post-po-second" }, data: { purchaseOrderNo: "RENAMED-PO" } });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: posted });
+    expect(await postIssuance(staff, context, { revision: 1 })).toEqual({ ok: true, value: posted });
+    expect(await prisma.issuanceReceiptAllocation.count()).toBe(2);
+  });
+  it("reconstructs old source links once, labels the assumption and keeps original history unchanged", async () => {
+    const first = await stockDraft("5");
+    const original = value(await postIssuance(staff, context, { revision: first.draft.revision }));
+    delete original.review[0].receiptAllocations;
+    const originalEvidence = JSON.stringify(original);
+    await prisma.issuanceReceiptAllocation.deleteMany();
+    await prisma.issuanceRecord.update({ where: { id: first.draft.id! }, data: { postingEvidence: originalEvidence } });
+    const nextContext = { ...context, mealScheduleId: "post-second-meal" };
+    await prisma.mealSchedule.create({ data: { id: nextContext.mealScheduleId, activityId: context.activityId, label: "Dinner", mealTime: "18:00" } });
+    const next = value(await saveIssuanceDraft(staff, nextContext, { revision: 0, mealPax: 1, recipes: [], stockItems: [{ itemId: "post-water", conversionId: null, enteredQuantity: "4" }] }));
+    const posted = value(await postIssuance(staff, nextContext, { revision: next.draft.revision }));
+    expect(posted.review[0].receiptAllocations).toMatchObject([{ quantity: "4", basis: "fifo" }]);
+    expect(await prisma.issuanceReceiptAllocation.findMany({ where: { basis: "reconstructed" } })).toMatchObject([{ quantity: "5", deliveryReceiptLineId: "receipt-post-water" }]);
+    expect((await prisma.issuanceRecord.findUniqueOrThrow({ where: { id: first.draft.id! } })).postingEvidence).toBe(originalEvidence);
+    const historical = value(await getIssuanceWorkspace(staff, context));
+    expect(historical.review[0].receiptAllocations).toMatchObject([{ quantity: "5", basis: "reconstructed" }]);
+    expect(historical.review[0].finalQuantity).toBe("5");
+    await postIssuance(staff, nextContext, { revision: 1 });
+    expect(await prisma.issuanceReceiptAllocation.count()).toBe(2);
+  });
   it("reports aggregate shortage without claiming a revision or deducting stock", async () => {
     const draft = await stockDraft("21");
     expect(await postIssuance(staff, context, { revision: 1 })).toMatchObject({ ok: false, kind: "shortage", error: expect.stringContaining("requires 21 pc; available 20 pc") }); await assertDraftUnchanged(draft);
@@ -101,6 +138,7 @@ describe("Atomic issuance posting through public gateways", () => {
   it("rolls back an injected failure after the first movement and permits a clean retry", async () => {
     const draft = value(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 1, recipes: [], stockItems: [{ itemId: "post-eggs", conversionId: null, enteredQuantity: "2" }, { itemId: "post-water", conversionId: null, enteredQuantity: "3" }] }));
     await expect(postIssuanceRecord(staff, context, 1, prisma, { afterFirstMovement: () => { throw new Error("Injected failure after early stock-out"); } })).rejects.toThrow("Injected failure");
+    expect(await prisma.issuanceReceiptAllocation.count()).toBe(0);
     await assertDraftUnchanged(draft);
     expect((await postIssuance(staff, context, { revision: 1 })).ok).toBe(true);
     expect(await prisma.inventoryLedgerMovement.count({ where: { movementType: "stock-out" } })).toBe(2);

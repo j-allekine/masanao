@@ -35,6 +35,16 @@ describe("Unified issuance ledger migration", () => {
       expect(database.prepare("SELECT quantity,deliveryReceiptLineId,issuanceItemTotalId FROM inventory_ledger_movement WHERE id='stock-out'").get()).toEqual({ quantity: "1.123456789", deliveryReceiptLineId: null, issuanceItemTotalId: "issuance-total" });
       expect(() => database.exec("DELETE FROM delivery_receipt_line")).toThrow(/FOREIGN KEY/);
       expect(() => database.exec("DELETE FROM issuance_item_total")).toThrow(/FOREIGN KEY/);
+      const movementsBeforeFifo = database.prepare("SELECT * FROM inventory_ledger_movement ORDER BY id").all();
+      database.exec(readFileSync(join(process.cwd(), "src/prisma/migrations/20261015090000_issuance_fifo_allocations/migration.sql"), "utf8"));
+      expect(database.prepare("SELECT * FROM inventory_ledger_movement ORDER BY id").all()).toEqual(movementsBeforeFifo);
+      database.exec("INSERT INTO issuance_receipt_allocation VALUES ('allocation','issuance-total','receipt-line','1.123456789','reconstructed','DR-OLD','PO-OLD','2026-09-12')");
+      expect(() => database.exec("INSERT INTO issuance_receipt_allocation VALUES ('duplicate','issuance-total','receipt-line','1','fifo','DR-OLD','PO-OLD','2026-09-12')")).toThrow(/UNIQUE/);
+      expect(() => database.exec("UPDATE issuance_receipt_allocation SET basis='unknown'")).toThrow(/CHECK/);
+      database.exec("DELETE FROM inventory_ledger_movement");
+      expect(() => database.exec("DELETE FROM issuance_item_total")).toThrow(/FOREIGN KEY/);
+      expect(() => database.exec("DELETE FROM delivery_receipt_line")).toThrow(/FOREIGN KEY/);
+      expect(database.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     } finally { database.close(); }
   });
 });

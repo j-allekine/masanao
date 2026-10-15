@@ -4,6 +4,8 @@ Staff need to prepare and record supplies for a Meal Schedule containing multipl
 
 ## Solution
 
+Approved extension: [FIFO receipt allocation](issuance-fifo.md) adds receipt-to-issuance traceability without expiry or lot tracking.
+
 Create the Meal Schedule's single Issuance Record with saved draft preparation and one explicit Post issuance action. Prefill Meal pax from Activity Planned pax, add Recipes or Stock items through one searchable Add dropdown, calculate copied Recipe ingredients, and review ingredients in a side panel. Combine demand by Item in Base Units, allow secondary final-quantity adjustments, warn about fractional whole-only totals, and deduct the confirmed totals atomically after checking available stock. Posted issuance is final and read-only.
 
 ## User Stories
