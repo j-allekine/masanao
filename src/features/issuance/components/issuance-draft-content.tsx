@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, LockKeyhole, Plus, X } from "lucide-react";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -614,6 +614,7 @@ export default function IssuanceDraftContent({
                   : router.push(backUrl)
               }
             >
+              <ArrowLeft data-icon="inline-start" aria-hidden="true" />
               Back to Meal Schedule
             </Button>
           </div>

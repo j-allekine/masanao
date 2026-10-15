@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -72,6 +73,7 @@ export default function IssuancePostedContent({
             nativeButton={false}
             render={<Link href={backUrl} />}
           >
+            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
             Back to Meal Schedule
           </Button>
         </div>
