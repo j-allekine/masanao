@@ -172,7 +172,7 @@ describe("Meal Schedule Server Action adapters", () => {
         activityId: activity.id,
         label: "Lunch",
         mealTime: "12:00",
-        plannedServings: 120,
+        plannedServings: null,
       },
     });
     await expect(
@@ -199,7 +199,7 @@ describe("Meal Schedule Server Action adapters", () => {
         activityId: activity.id,
         label: "Lunch",
         mealTime: "12:00",
-        plannedServings: 120,
+        plannedServings: null,
       },
       {
         activityId: activity.id,
@@ -227,12 +227,18 @@ describe("Meal Schedule Server Action adapters", () => {
         activityDesignId: activity.activityDesignId,
         activityId: activity.id,
         ...validMealSchedule,
-        plannedServings: 120,
+        plannedServings: null,
       }),
     );
     if (createResult.status !== "success") {
       throw new Error(createResult.error);
     }
+
+    // A pre-transition record retains its count through normal label/time edits.
+    await prisma.mealSchedule.update({
+      where: { id: createResult.mealSchedule.id },
+      data: { plannedServings: 120 },
+    });
 
     const updateResult = await updateMealScheduleAction(
       toFormData({
@@ -252,7 +258,7 @@ describe("Meal Schedule Server Action adapters", () => {
         activityId: activity.id,
         label: "Dinner",
         mealTime: "18:45",
-        plannedServings: 240,
+        plannedServings: 120,
       },
     });
     await expect(readMealSchedules(activity.id)).resolves.toMatchObject([
@@ -260,7 +266,7 @@ describe("Meal Schedule Server Action adapters", () => {
         id: createResult.mealSchedule.id,
         label: "Dinner",
         mealTime: "18:45",
-        plannedServings: 240,
+        plannedServings: 120,
       },
     ]);
   });
@@ -268,7 +274,6 @@ describe("Meal Schedule Server Action adapters", () => {
   it.each([
     ["a blank label", { label: " " }, "label"],
     ["an invalid time", { mealTime: "24:00" }, "mealTime"],
-    ["negative planned servings", { plannedServings: -1 }, "plannedServings"],
   ] as const)(
     "rejects editing with %s and leaves the saved Meal Schedule unchanged",
     async (_description, invalidFields, expectedField) => {
@@ -279,7 +284,7 @@ describe("Meal Schedule Server Action adapters", () => {
           activityDesignId: activity.activityDesignId,
           activityId: activity.id,
           ...validMealSchedule,
-          plannedServings: 120,
+          plannedServings: null,
         }),
       );
       if (createResult.status !== "success") {
@@ -292,7 +297,7 @@ describe("Meal Schedule Server Action adapters", () => {
           activityId: activity.id,
           mealScheduleId: createResult.mealSchedule.id,
           ...validMealSchedule,
-          plannedServings: 120,
+          plannedServings: null,
           ...invalidFields,
         }),
       );
@@ -309,7 +314,7 @@ describe("Meal Schedule Server Action adapters", () => {
       ).resolves.toMatchObject({
         label: validMealSchedule.label,
         mealTime: validMealSchedule.mealTime,
-        plannedServings: 120,
+        plannedServings: null,
       });
     },
   );
@@ -402,13 +407,7 @@ describe("Meal Schedule Server Action adapters", () => {
     ["a blank label", { label: " " }, "label"],
     ["an invalid time", { mealTime: "12:60" }, "mealTime"],
     ["a time with seconds", { mealTime: "12:00:00" }, "mealTime"],
-    ["negative planned servings", { plannedServings: -1 }, "plannedServings"],
     ["an overlong label", { label: "x".repeat(101) }, "label"],
-    [
-      "planned servings outside the Prisma Int range",
-      { plannedServings: 2_147_483_648 },
-      "plannedServings",
-    ],
   ] as const)(
     "rejects %s without creating a Meal Schedule",
     async (_description, invalidFields, expectedField) => {

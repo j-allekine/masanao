@@ -4,12 +4,15 @@ import { notFound, redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { getMealSchedule } from "@/features/activity-planning/server";
-import { MealScheduleDetailContent } from "@/features/activity-planning/ui";
+import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import { getIssuanceWorkspace } from "@/features/issuance/server";
+import { IssuanceDraftContent } from "@/features/issuance/ui";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {
   title: "Meal Schedule | Masanao",
-  description: "Review a municipal kitchen Meal Schedule and its planning context.",
+  description: "Prepare and review supplies for a municipal kitchen Meal Schedule.",
 };
 
 export default async function MealScheduleDetailRoute(
@@ -24,7 +27,11 @@ export default async function MealScheduleDetailRoute(
     redirect("/");
   }
 
-  const mealSchedule = await getMealSchedule(id, activityId, mealScheduleId);
+  const [mealSchedule, issuance] = await Promise.all([
+    getMealSchedule(id, activityId, mealScheduleId),
+    getIssuanceWorkspace({ id: session.user.id, name: session.user.name, username: session.user.username ?? null },
+      { activityDesignId: id, activityId, mealScheduleId }),
+  ]);
   if (!mealSchedule) notFound();
 
   return (
@@ -35,7 +42,12 @@ export default async function MealScheduleDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      <MealScheduleDetailContent mealSchedule={mealSchedule} />
+      {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
+        <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">
+          <MealScheduleHeader mealSchedule={mealSchedule}  />
+          <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
+        </main>
+      )}
     </WorkspaceShell>
   );
 }

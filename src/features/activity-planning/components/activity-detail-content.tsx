@@ -66,7 +66,7 @@ function ActivityContext({ activity }: { activity: ActivityDetailItem }) {
     ["Office", activity.officeName],
     ["Venue", displayOptional(activity.venue)],
     [
-      "Planned participants",
+      "Planned pax",
       activity.plannedParticipantCount === null
         ? "Not recorded"
         : integerFormatter.format(activity.plannedParticipantCount),
@@ -123,15 +123,12 @@ function MealScheduleRows({
   return (
     <WorkspaceTableFrame
       caption="Meal Schedules under this Activity"
-      className="min-w-[46rem]"
+      className="min-w-[30rem]"
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Meal Schedule</TableHead>
           <TableHead scope="col">Time</TableHead>
-          <TableHead scope="col" className="text-right">
-            Planned servings
-          </TableHead>
           <TableHead scope="col" className="text-center">
             Actions
           </TableHead>
@@ -182,11 +179,6 @@ function MealScheduleRow({
         </TableCell>
         <TableCell className="font-mono tabular-nums">
           {schedule.mealTime}
-        </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {schedule.plannedServings === null
-            ? "Not recorded"
-            : integerFormatter.format(schedule.plannedServings)}
         </TableCell>
         <TableCell className="text-center">
           <ActivityActionsMenu

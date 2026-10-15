@@ -187,6 +187,16 @@ describe("Delivery Receipt alternate Unit posting", () => {
     });
   });
 
+  it.each(["base", "alternate"])("rejects an inactive Base Unit when receiving in the %s Unit", async (selection) => {
+    const { purchaseOrderId, itemId } = await receiptContext("inactive-base-vendor");
+    await prisma.unit.create({ data: { id: "active-sack", name: "Sack", abbreviation: "sack", normalizedName: "active sack", normalizedAbbreviation: "active sack" } });
+    await prisma.itemUnitConversion.create({ data: { id: "active-sack-conversion", itemId, alternateUnitId: "active-sack", baseUnitQuantity: "25" } });
+    await prisma.unit.update({ where: { id: "inactive-base-vendor-unit" }, data: { active: false } });
+    const selected = selection === "alternate" ? { selectedUnitId: "active-sack", conversionId: "active-sack-conversion" } : {};
+    expect(await postDeliveryReceipt(staff, { purchaseOrderId, itemId, ...selected, receiptNo: "DR-INACTIVE-BASE", receiptDate: "2026-10-15", quantity: "2", unitPrice: "100" })).toMatchObject({ ok: false, kind: "inactive", fields: { selectedUnitId: expect.any(Array) } });
+    expect(await prisma.deliveryReceipt.count()).toBe(0);
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
+  });
   it("rejects inactive or mismatched alternate Units without posting anything", async () => {
     const { purchaseOrderId, itemId } = await receiptContext("unavailable-vendor");
     await prisma.unit.create({ data: { id: "unavailable-vendor-sack", name: "Sack", abbreviation: "sack", normalizedName: "unavailable-vendor-sack", normalizedAbbreviation: "unavailable-vendor-sack-abbr", active: false } });

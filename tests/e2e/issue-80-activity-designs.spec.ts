@@ -180,6 +180,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
   test("uses a centered responsive Activity dialog and preserves exact values", async ({
     page,
   }) => {
+    await page.clock.setFixedTime(new Date("2026-09-15T04:00:00.000Z"));
     const title = `E2E Issue 80 Activity ${Date.now()}`;
     const designs: ActivityDesign[] = [];
 
@@ -248,7 +249,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       });
       const office = dialog.getByRole("textbox", { name: "Office", exact: true });
       const participantCount = dialog.getByRole("textbox", {
-        name: "Planned participant count (optional)",
+        name: "Planned pax (optional)",
         exact: true,
       });
       const plannedBudget = dialog.getByRole("textbox", {

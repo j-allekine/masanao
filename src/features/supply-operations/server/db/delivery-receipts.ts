@@ -28,7 +28,7 @@ export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceipt
       const selectedUnitId = line.selectedUnitId ?? item.baseUnitId;
       const isBaseUnit = selectedUnitId === item.baseUnitId;
       const conversion = isBaseUnit || !line.conversionId ? null : await database.itemUnitConversion.findFirst({ where: { id: line.conversionId, itemId: item.id, alternateUnitId: selectedUnitId, alternateUnit: { active: true } }, select: { baseUnitQuantity: true, alternateUnit: { select: { id: true, name: true } } } });
-      if ((isBaseUnit && (!item.baseUnit.active || line.conversionId)) || (!isBaseUnit && (!conversion || !isPositiveExactDecimal(conversion.baseUnitQuantity)))) return { kind: "invalid-unit" as const, lineIndex };
+      if (!item.baseUnit.active || (isBaseUnit && line.conversionId) || (!isBaseUnit && (!conversion || !isPositiveExactDecimal(conversion.baseUnitQuantity)))) return { kind: "invalid-unit" as const, lineIndex };
       const conversionFactor = conversion?.baseUnitQuantity ?? "1";
       const calculatedBaseUnitQuantity = multiplyExactPositiveDecimals(line.quantity, conversionFactor);
       const lineAmount = multiplyExactPositiveDecimals(line.quantity, line.unitPrice);

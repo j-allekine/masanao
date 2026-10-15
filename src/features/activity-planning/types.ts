@@ -20,7 +20,7 @@ export type ActivityFieldErrors = Partial<
   Record<ActivityField | "form", string[]>
 >;
 
-export type MealScheduleField = "label" | "mealTime" | "plannedServings";
+export type MealScheduleField = "label" | "mealTime";
 
 export type MealScheduleFieldErrors = Partial<
   Record<MealScheduleField | "form", string[]>

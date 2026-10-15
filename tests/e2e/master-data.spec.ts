@@ -1,6 +1,11 @@
+import { isolateMasterDataFixture } from "./master-data-fixtures";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+
+let restoreCatalogFixture: (() => void) | undefined;
+test.beforeEach(() => { restoreCatalogFixture = isolateMasterDataFixture(test.info().title); });
+test.afterEach(() => { restoreCatalogFixture?.(); restoreCatalogFixture = undefined; });
 
 const adminPassword = "administrator-password";
 const staffPassword = "correct-horse-battery-staple";
@@ -9,7 +14,7 @@ async function signIn(page: Page, username: string, password: string) {
   const response = await page.request.post("/api/auth/sign-in/username", {
     data: { username, password },
     headers: {
-      origin: process.env.PLAYWRIGHT_TEST_ORIGIN ?? "http://localhost:3019",
+      origin: process.env.BETTER_AUTH_URL ?? "http://localhost:3019",
     },
   });
 
@@ -836,6 +841,7 @@ test.describe("Master Data Item reference protection journey", () => {
 
     try {
       await openCategories(page, "municipal.admin", adminPassword);
+      await page.getByRole("searchbox", { name: "Search Categories", exact: true }).fill(fixture.categoryName);
       const categoryRow = page.getByRole("row").filter({
         has: page.getByText(fixture.categoryName, { exact: true }),
       });
@@ -881,6 +887,7 @@ test.describe("Master Data Item reference protection journey", () => {
 
     try {
       await openMasterData(page, "municipal.admin", adminPassword);
+      await page.getByRole("searchbox", { name: "Search Units", exact: true }).fill(fixture.unitName);
       const unitRowLocator = await unitRow(page, fixture.unitName);
       await expect(unitRowLocator).toBeVisible();
       await unitRowLocator
@@ -1290,6 +1297,7 @@ test.describe("Master Data Offices journey", () => {
       page.getByRole("columnheader", { name: "Actions", exact: true }),
     ).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Actions for/ })).toHaveCount(0);
+    await page.getByRole("searchbox", { name: "Search Offices", exact: true }).fill("Office 01");
     await expect(page.getByText("Office 01", { exact: true })).toBeVisible();
   });
 });
@@ -1601,6 +1609,9 @@ test.describe("Master Data Vendors journey", () => {
       .getByRole("table")
       .getByRole("row")
       .filter({ has: page.getByRole("button", { name: /Actions for/ }) });
+    // Wait for the just-created Vendor to reach the refreshed page before
+    // deciding which deletion will leave that page empty.
+    await expect(pageRows).toHaveCount(2);
     while ((await pageRows.count()) > 1) {
       const rowCount = await pageRows.count();
       await pageRows

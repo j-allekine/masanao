@@ -99,6 +99,10 @@ model Unit {
   selectedDeliveryReceiptLines DeliveryReceiptLine[] @relation("DeliveryReceiptLineSelectedUnit")
   baseDeliveryReceiptLines     DeliveryReceiptLine[] @relation("DeliveryReceiptLineBaseUnit")
   inventoryLedgerMovements     InventoryLedgerMovement[] @relation("InventoryLedgerMovementBaseUnit")
+  selectedIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientSelectedUnit")
+  selectedIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockSelectedUnit")
+  baseIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockBaseUnit")
+  baseIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientBaseUnit")
 
   @@map("unit")
 }
@@ -133,6 +137,9 @@ model Item {
   deliveryReceiptLines DeliveryReceiptLine[]
   inventoryLedgerMovements InventoryLedgerMovement[] @relation("InventoryLedgerMovementItem")
   recipeIngredients RecipeIngredient[]
+  issuanceIngredients IssuanceRecipeIngredient[]
+  issuanceStockItems IssuanceStockItem[]
+  issuanceItemTotals IssuanceItemTotal[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -246,6 +253,7 @@ model DeliveryReceiptLine {
   selectedUnit                    Unit            @relation("DeliveryReceiptLineSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
   baseUnit                        Unit            @relation("DeliveryReceiptLineBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   inventoryLedgerMovements        InventoryLedgerMovement[]
+  issuanceAllocations             IssuanceReceiptAllocation[]
 
   @@index([deliveryReceiptId])
   @@index([itemId])
@@ -254,13 +262,15 @@ model DeliveryReceiptLine {
 
 model InventoryLedgerMovement {
   id                    String              @id
-  deliveryReceiptLineId String              @unique
+  deliveryReceiptLineId String?             @unique
+  issuanceItemTotalId   String?             @unique
   itemId                String
   baseUnitId            String
   quantity              String
   movementType          String
   occurredAt            DateTime
-  deliveryReceiptLine   DeliveryReceiptLine @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+  deliveryReceiptLine   DeliveryReceiptLine? @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+  issuanceItemTotal     IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
   item                  Item                @relation("InventoryLedgerMovementItem", fields: [itemId], references: [id], onDelete: Restrict)
   baseUnit              Unit                @relation("InventoryLedgerMovementBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
 
@@ -309,6 +319,7 @@ model MealSchedule {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   activity        Activity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  issuanceRecord IssuanceRecord?
 
   @@index([activityId])
   @@map("meal_schedule")
@@ -324,8 +335,126 @@ model Recipe {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   ingredients     RecipeIngredient[]
+  issuanceSnapshots IssuanceRecipeSnapshot[]
 
   @@map("recipe")
+}
+
+model IssuanceRecord {
+  id String @id
+  mealScheduleId String @unique
+  mealPax Int?
+  revision Int @default(1)
+  status String @default("draft")
+  postedAt DateTime?
+  postingEvidence String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  mealSchedule MealSchedule @relation(fields: [mealScheduleId], references: [id], onDelete: Restrict)
+  recipes IssuanceRecipeSnapshot[]
+  stockItems IssuanceStockItem[]
+  itemTotals IssuanceItemTotal[]
+
+  @@map("issuance_record")
+}
+
+model IssuanceItemTotal {
+  id String @id
+  issuanceRecordId String
+  itemId String
+  calculatedNumerator String
+  calculatedDenominator String
+  finalQuantity String
+  adjusted Boolean @default(false)
+  movement InventoryLedgerMovement?
+  receiptAllocations IssuanceReceiptAllocation[]
+  issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([issuanceRecordId, itemId])
+  @@map("issuance_item_total")
+}
+
+model IssuanceReceiptAllocation {
+  id String @id
+  issuanceItemTotalId String
+  deliveryReceiptLineId String
+  quantity String
+  basis String @default("fifo")
+  receiptNo String
+  purchaseOrderNo String
+  receiptDate DateTime
+  issuanceItemTotal IssuanceItemTotal @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
+  deliveryReceiptLine DeliveryReceiptLine @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
+
+  @@unique([issuanceItemTotalId, deliveryReceiptLineId])
+  @@index([deliveryReceiptLineId])
+  @@map("issuance_receipt_allocation")
+}
+
+model IssuanceStockItem {
+  id String @id
+  issuanceRecordId String
+  itemId String
+  itemName String
+  enteredQuantity String
+  conversionId String?
+  conversionFactor String
+  selectedUnitId String
+  selectedUnitName String
+  selectedUnitAbbreviation String
+  baseUnitId String
+  baseUnitName String
+  baseUnitAbbreviation String
+  issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit Unit @relation("IssuanceStockSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("IssuanceStockBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+
+  @@index([issuanceRecordId])
+  @@index([itemId])
+  @@map("issuance_stock_item")
+}
+
+model IssuanceRecipeSnapshot {
+  id String @id
+  issuanceRecordId String
+  recipeId String
+  recipeName String
+  baselinePax Int
+  sourceRevision String
+  targetMode String
+  targetPax Int?
+  issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  ingredients IssuanceRecipeIngredient[]
+
+  @@unique([issuanceRecordId, recipeId])
+  @@index([recipeId])
+  @@map("issuance_recipe_snapshot")
+}
+
+model IssuanceRecipeIngredient {
+  id String @id
+  recipeSnapshotId String
+  itemId String
+  itemName String
+  enteredQuantity String
+  conversionFactor String
+  selectedUnitId String
+  selectedUnitName String
+  selectedUnitAbbreviation String
+  baseUnitId String
+  baseUnitName String
+  baseUnitAbbreviation String
+  recipeSnapshot IssuanceRecipeSnapshot @relation(fields: [recipeSnapshotId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit Unit @relation("IssuanceIngredientSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("IssuanceIngredientBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+
+  @@index([recipeSnapshotId])
+  @@index([itemId])
+  @@map("issuance_recipe_ingredient")
 }
 
 model RecipeIngredient {

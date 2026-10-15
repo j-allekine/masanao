@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import { FieldSet, FieldLegend } from "@/components/ui/field";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 
 import { setItemActiveAction } from "../actions";
@@ -63,6 +64,7 @@ function ItemsWorkspaceContent({
   canManageItems,
   currentQuery,
 }: ItemsWorkspaceProps & { currentQuery: string }) {
+  const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const pathname = usePathname();
   const router = useRouter();
   const [itemDialogState, setItemDialogState] =
@@ -73,6 +75,8 @@ function ItemsWorkspaceContent({
   );
   const [isMutating, startMutation] = useTransition();
   const latestQueryRef = useRef(currentQuery);
+  const lastObservedQueryRef = useRef(currentQuery);
+  const ownNavigationQueries = useRef(new Set<string>());
   const searchNavigationTimeoutRef = useRef<number | null>(null);
   const listState = useMemo(
     () => getItemListState(new URLSearchParams(currentQuery)),
@@ -103,7 +107,12 @@ function ItemsWorkspaceContent({
   const filtersAreActive = hasItemListFilters(filters);
 
   useEffect(() => {
+    if (lastObservedQueryRef.current === currentQuery) return;
     const syncSearchInputTimeout = window.setTimeout(() => {
+      lastObservedQueryRef.current = currentQuery;
+      // A completed URL update may acknowledge an older keystroke. Keep the
+      // newer local text instead of replacing it with that stale search value.
+      if (ownNavigationQueries.current.delete(currentQuery)) return;
       setSearchInput(getItemListState(new URLSearchParams(currentQuery)).search);
       latestQueryRef.current = currentQuery;
     }, 0);
@@ -112,7 +121,18 @@ function ItemsWorkspaceContent({
   }, [currentQuery]);
 
   useEffect(() => {
+    function restoreHistorySearch() {
+      ownNavigationQueries.current.clear();
+      if (searchNavigationTimeoutRef.current !== null) {
+        window.clearTimeout(searchNavigationTimeoutRef.current);
+        searchNavigationTimeoutRef.current = null;
+      }
+      latestQueryRef.current = window.location.search.slice(1);
+      setSearchInput(getItemListState(new URLSearchParams(latestQueryRef.current)).search);
+    }
+    window.addEventListener("popstate", restoreHistorySearch);
     return () => {
+      window.removeEventListener("popstate", restoreHistorySearch);
       if (searchNavigationTimeoutRef.current !== null) {
         window.clearTimeout(searchNavigationTimeoutRef.current);
       }
@@ -120,12 +140,16 @@ function ItemsWorkspaceContent({
   }, []);
 
   useEffect(() => {
-    if (listState.page <= pageCount) return;
+    if (listState.page <= pageCount || searchInput !== listState.search) return;
 
-    router.replace(getItemListUrl(pathname, currentQuery, { page: pageCount }), {
+    const nextUrl = getItemListUrl(pathname, currentQuery, { page: pageCount });
+    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
+    ownNavigationQueries.current.add(nextQuery);
+    latestQueryRef.current = nextQuery;
+    router.replace(nextUrl, {
       scroll: false,
     });
-  }, [currentQuery, listState.page, pageCount, pathname, router]);
+  }, [currentQuery, listState.page, listState.search, pageCount, pathname, router, searchInput]);
 
   function navigateList(
     updates: Parameters<typeof getItemListQuery>[1],
@@ -133,6 +157,7 @@ function ItemsWorkspaceContent({
   ) {
     const nextUrl = getItemListUrl(pathname, latestQueryRef.current, updates);
     latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
+    ownNavigationQueries.current.add(latestQueryRef.current);
     router[navigation](nextUrl, {
       scroll: false,
     });
@@ -265,6 +290,7 @@ function ItemsWorkspaceContent({
     <main
       className="flex min-w-0 flex-col gap-6"
       data-can-manage-items={canManageItems ? "true" : "false"}
+      data-items-ready={hydrated ? "true" : undefined}
     >
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -276,6 +302,7 @@ function ItemsWorkspaceContent({
         {canManageItems ? (
           <WorkspacePrimaryAction
             id="new-item"
+            disabled={!hydrated}
             className="sm:min-w-[8rem]"
             onClick={openCreateDialog}
           >
@@ -283,15 +310,18 @@ function ItemsWorkspaceContent({
           </WorkspacePrimaryAction>
         ) : null}
       </div>
-      <ItemToolbar
-        filters={filters}
-        categories={categories}
-        hasFilters={filtersAreActive}
-        onSearchChange={updateSearch}
-        onCategoryChange={updateCategory}
-        onStatusChange={updateStatus}
-        onClearFilters={clearFilters}
-      />
+      <FieldSet disabled={!hydrated} className="min-w-0">
+        <FieldLegend className="sr-only">Item catalog controls</FieldLegend>
+        <ItemToolbar
+          filters={filters}
+          categories={categories}
+          hasFilters={filtersAreActive}
+          onSearchChange={updateSearch}
+          onCategoryChange={updateCategory}
+          onStatusChange={updateStatus}
+          onClearFilters={clearFilters}
+        />
+      </FieldSet>
       <ItemsTable
         items={paginatedItems}
         hasFilters={filtersAreActive}
@@ -301,7 +331,7 @@ function ItemsWorkspaceContent({
         onSetActive={handleSetActive}
         onDeleted={handleDeleted}
         onUnits={setUnitsItem}
-        actionDisabled={isMutating}
+        actionDisabled={isMutating || !hydrated}
       />
       <ItemUnitsSheet
         item={unitsItem}

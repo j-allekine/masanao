@@ -112,7 +112,7 @@ export const activitySchema = z.object({
   scheduledDate: scheduledDateSchema,
   venue: optionalText("Venue", 300),
   plannedParticipantCount: optionalNonNegativeInteger(
-    "Planned participant count",
+    "Planned pax",
   ),
   plannedBudgetPesos: plannedBudgetPesosSchema,
 });

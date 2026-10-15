@@ -190,7 +190,7 @@ function ActivityParticipantCountField({
   return (
     <Field data-invalid={hasError}>
       <FieldLabel htmlFor="plannedParticipantCount">
-        Planned participant count (optional)
+        Planned pax (optional)
       </FieldLabel>
       <Input
         ref={inputRef}

@@ -1,0 +1,61 @@
+import Database from "better-sqlite3";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+describe("Issuance draft additive migration", () => {
+  it("preserves existing planning, master, and stock-in rows and independently restricts snapshot references", () => {
+    const database = new Database(":memory:");
+    database.pragma("foreign_keys = ON");
+    const migrations = join(process.cwd(), "src/prisma/migrations");
+    const migrationName = "20261012091000_issuance_recipe_drafts";
+    for (const directory of readdirSync(migrations).filter((name) => name < migrationName)) database.exec(readFileSync(join(migrations, directory, "migration.sql"), "utf8"));
+    database.exec(`
+      INSERT INTO unit (id,name,abbreviation,normalizedName,normalizedAbbreviation,updatedAt) VALUES ('kg','Migration kilogram','migkg','migration kilogram','migkg',CURRENT_TIMESTAMP);
+      INSERT INTO category (id,name,normalizedName,updatedAt) VALUES ('food','Migration food','migration food',CURRENT_TIMESTAMP);
+      INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,updatedAt) VALUES ('rice','Rice','rice','food','kg',CURRENT_TIMESTAMP);
+      INSERT INTO recipe (id,name,normalizedName,baselinePax,updatedAt) VALUES ('recipe','Rice meal','rice meal',100,CURRENT_TIMESTAMP);
+      INSERT INTO recipe_ingredient (id,recipeId,itemId,enteredQuantity,updatedAt) VALUES ('ingredient','recipe','rice','1.23456789',CURRENT_TIMESTAMP);
+      INSERT INTO activity_design (id,activityDesignNo,fiscalYear,title,updatedAt) VALUES ('design','AD-MIGRATION',2026,'Event',CURRENT_TIMESTAMP);
+      INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,updatedAt) VALUES ('activity','design','Training','Kitchen',CURRENT_TIMESTAMP,200,CURRENT_TIMESTAMP);
+      INSERT INTO meal_schedule (id,activityId,label,mealTime,plannedServings,updatedAt) VALUES ('meal','activity','Lunch','12:00',999,CURRENT_TIMESTAMP);
+      INSERT INTO vendor (id,name,normalizedName,updatedAt) VALUES ('vendor','Vendor','vendor',CURRENT_TIMESTAMP);
+      INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,updatedAt) VALUES ('po','PO-MIGRATION','po-migration','vendor',CURRENT_TIMESTAMP);
+      INSERT INTO delivery_receipt (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate) VALUES ('receipt','po','vendor','Vendor','PO-MIGRATION','DR-MIGRATION','dr-migration',CURRENT_TIMESTAMP);
+      INSERT INTO delivery_receipt_line (id,deliveryReceiptId,itemId,selectedUnitId,baseUnitId,itemName,selectedUnitName,baseUnitName,enteredQuantity,conversionFactor,calculatedBaseUnitQuantity) VALUES ('line','receipt','rice','kg','kg','Rice','Kilogram','Kilogram','10.123456789','1','10.123456789');
+      INSERT INTO inventory_ledger_movement (id,deliveryReceiptLineId,itemId,baseUnitId,quantity,movementType,occurredAt) VALUES ('stock-in','line','rice','kg','10.123456789','stock-in',CURRENT_TIMESTAMP);
+    `);
+    const ledgerBefore = database.prepare("SELECT * FROM inventory_ledger_movement").all();
+    database.exec(readFileSync(join(migrations, migrationName, "migration.sql"), "utf8"));
+    expect(database.prepare("SELECT * FROM inventory_ledger_movement").all()).toEqual(ledgerBefore);
+    expect(database.prepare("SELECT plannedServings FROM meal_schedule").get()).toEqual({ plannedServings: 999 });
+    database.exec(`
+      INSERT INTO issuance_record (id,mealScheduleId,mealPax,updatedAt) VALUES ('issuance','meal',200,CURRENT_TIMESTAMP);
+      INSERT INTO issuance_recipe_snapshot (id,issuanceRecordId,recipeId,recipeName,baselinePax,sourceRevision,targetMode,targetPax) VALUES ('snapshot','issuance','recipe','Rice meal',100,'source','meal',200);
+      INSERT INTO issuance_recipe_ingredient (id,recipeSnapshotId,itemId,itemName,enteredQuantity,conversionFactor,selectedUnitId,selectedUnitName,selectedUnitAbbreviation,baseUnitId,baseUnitName,baseUnitAbbreviation) VALUES ('copy','snapshot','rice','Rice','1.23456789','1','kg','Kilogram','kg','kg','Kilogram','kg');
+      DELETE FROM recipe_ingredient;
+    `);
+    expect(database.prepare("SELECT enteredQuantity FROM issuance_recipe_ingredient").get()).toEqual({ enteredQuantity: "1.23456789" });
+    expect(() => database.prepare("DELETE FROM recipe WHERE id='recipe'").run()).toThrow();
+    expect(() => database.prepare("DELETE FROM meal_schedule WHERE id='meal'").run()).toThrow();
+    expect(() => database.prepare("INSERT INTO issuance_record (id,mealScheduleId,updatedAt) VALUES ('duplicate','meal',CURRENT_TIMESTAMP)").run()).toThrow();
+    const recipesBefore = database.prepare("SELECT * FROM issuance_recipe_ingredient").all();
+    database.exec(readFileSync(join(migrations, "20261012092000_issuance_stock_items", "migration.sql"), "utf8"));
+    expect(database.prepare("SELECT * FROM issuance_recipe_ingredient").all()).toEqual(recipesBefore);
+    expect(database.prepare("SELECT * FROM inventory_ledger_movement").all()).toEqual(ledgerBefore);
+    database.exec(`INSERT INTO issuance_stock_item (id,issuanceRecordId,itemId,itemName,enteredQuantity,conversionId,conversionFactor,selectedUnitId,selectedUnitName,selectedUnitAbbreviation,baseUnitId,baseUnitName,baseUnitAbbreviation) VALUES ('stock','issuance','rice','Rice','0.123456789123456789','removed-conversion','1','kg','Kilogram','kg','kg','Kilogram','kg');`);
+    expect(database.prepare("SELECT enteredQuantity FROM issuance_stock_item").get()).toEqual({ enteredQuantity: "0.123456789123456789" });
+    expect(() => database.prepare("DELETE FROM item WHERE id='rice'").run()).toThrow();
+    expect(() => database.prepare("DELETE FROM unit WHERE id='kg'").run()).toThrow();
+    expect(() => database.prepare("DELETE FROM issuance_record WHERE id='issuance'").run()).toThrow();
+    const stocksBefore = database.prepare("SELECT * FROM issuance_stock_item").all();
+    database.exec(readFileSync(join(migrations, "20261012100000_issuance_item_totals", "migration.sql"), "utf8"));
+    expect(database.prepare("SELECT * FROM issuance_recipe_ingredient").all()).toEqual(recipesBefore);
+    expect(database.prepare("SELECT * FROM issuance_stock_item").all()).toEqual(stocksBefore);
+    expect(database.prepare("SELECT * FROM inventory_ledger_movement").all()).toEqual(ledgerBefore);
+    database.exec(`INSERT INTO issuance_item_total (id,issuanceRecordId,itemId,calculatedNumerator,calculatedDenominator,finalQuantity,adjusted) VALUES ('total','issuance','rice','123456789123456789','1000000000000000000','0.123456789123456789',true);`);
+    expect(database.prepare("SELECT calculatedNumerator,calculatedDenominator,finalQuantity,adjusted FROM issuance_item_total").get()).toEqual({ calculatedNumerator: "123456789123456789", calculatedDenominator: "1000000000000000000", finalQuantity: "0.123456789123456789", adjusted: 1 });
+    expect(() => database.exec(`INSERT INTO issuance_item_total (id,issuanceRecordId,itemId,calculatedNumerator,calculatedDenominator,finalQuantity) VALUES ('duplicate-total','issuance','rice','1','1','1');`)).toThrow();
+    database.close();
+  });
+});
+

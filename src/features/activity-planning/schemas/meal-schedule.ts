@@ -2,27 +2,6 @@ import { z } from "zod";
 
 import type { MealScheduleFieldErrors } from "../types";
 
-const optionalNonNegativeInteger = (label: string) =>
-  z.preprocess(
-    (value) => {
-      if (
-        value === null ||
-        (typeof value === "string" && value.trim() === "")
-      ) {
-        return undefined;
-      }
-
-      if (typeof value === "string") return Number(value);
-      return value;
-    },
-    z
-      .number()
-      .int(`${label} must be a whole number`)
-      .min(0, `${label} cannot be negative`)
-      .max(2_147_483_647, `${label} exceeds the supported maximum`)
-      .optional(),
-  );
-
 export const mealScheduleSchema = z.object({
   label: z
     .string()
@@ -36,7 +15,6 @@ export const mealScheduleSchema = z.object({
       /^(?:[01]\d|2[0-3]):[0-5]\d$/,
       "Meal time must use HH:mm format",
     ),
-  plannedServings: optionalNonNegativeInteger("Planned servings"),
 });
 
 export type MealScheduleInput = z.infer<typeof mealScheduleSchema>;

@@ -1,6 +1,6 @@
 # Recipe scaling production decisions
 
-Status: approved and published as GitHub specifications #219, #220, and #221, with implementation tickets #222 through #229. Testing direction is confirmed. This document records decisions, not production implementation.
+Status: approved and published as GitHub specifications #219, #220, and #221, with implementation tickets #222 through #229. Production issuance is implemented in PR #234. Later approved FIFO and UI refinements are recorded below and in the current specifications; the original code gaps are retained as historical context.
 
 ## Approved prototype direction
 
@@ -41,7 +41,7 @@ Status: approved and published as GitHub specifications #219, #220, and #221, wi
 - Copy the planning pax default when creating issuance. Later planning changes do not silently change saved draft pax or quantities.
 - Kitchen staff and administrators can prepare, save, and post issuance. Existing Recipe and Item setup management permissions stay unchanged.
 - Include direct-use stock Items without requiring a Recipe or introducing a new Item type. Staff enter their quantity and selected Item Unit explicitly; do not assume one Item per pax.
-- Use one top-level Add dropdown with Recipe and Stock item options. Recipe opens searchable selection with prefilled pax; Stock item opens searchable Item selection with quantity and Unit. Present Recipes and Stock items in separate sections, saved and posted together as one issuance.
+- Use direct Add Recipes and Add Stock item actions. Both pickers keep pending selections and compact added supplies visible during search, with explicit Add and Done actions. Recipe cards support whole-card selection; Meal pax can be completed inside the picker. Stock uses a single searchable Item combobox, quantity and Unit. Save and post both supply paths together as one issuance.
 - Adjust issued quantity applies to the meal's combined Base Unit Item total, including recipe and direct-use demand. Preserve per-recipe calculated quantities without inventing allocation of the adjustment to individual foods.
 - Changing pax or adding/removing/changing lines that affect an adjusted Item total requires explicitly resetting that Item's adjustment first. Unrelated additions remain possible.
 - Corrections, reversals, returns, and replacement posting workflows are explicitly outside this scope. Posting mistakes have no in-app correction workflow in this release; do not implement a hidden workaround.
@@ -50,13 +50,18 @@ Status: approved and published as GitHub specifications #219, #220, and #221, wi
 
 1. Recipe update spec: baseline setup/display, validation, existing-recipe eligibility, and tests. No stock movements.
 2. Items spec: quantity-rule setup, validation, public reads, backward-compatible migration, and tests.
-3. Issuance spec: planning label/field transition, persisted snapshots/drafts, Add dropdown, calculated and confirmed combined totals, quantity-review locks, permissions, atomic stock checks/posting, immutable history, and tests.
+3. Issuance spec: planning label/field transition, persisted snapshots/drafts, searchable supply pickers, calculated and confirmed combined totals, quantity-review locks, permissions, atomic stock checks/posting, immutable history, and tests.
 4. Implementation details must explicitly address exact arithmetic and tie rounding, existing-data migration, duplicate posting/concurrent drafts, snapshot Unit/conversion information, and UI evidence. These are not permission to add new product scope.
 
-## Current-code gaps
+## Approved extensions
+
+- FIFO source allocations link confirmed stock-out to receipt lines and POs in the same posting transaction. Existing sample history may be reconstructed with an explicit assumption label; original ledger and posting evidence stay unchanged. Expiry, FEFO, lot tracking and costing remain outside scope. See ADR 0008.
+- Posted detail defaults to compact Item quantities. Item Details retains calculation, policy and receipt evidence; Recipe and direct Stock contributions and full record metadata use accessible collapsed sections. Empty sections and repeated status explanations are omitted.
+
+## Original code gaps (resolved by implementation)
 
 - Recipe has no standard yield or servings baseline.
 - Meal Schedule already has optional planned servings; Activity has optional planned participant count.
 - The displayed issuance workspace is a throwaway prototype, not a production stock-out workflow.
 
-Record accepted domain terms in CONTEXT.md and durable boundary decisions in an ADR as the interview resolves them.
+Accepted domain terms are recorded in [CONTEXT.md](../CONTEXT.md); durable boundaries are recorded in ADRs 0007 and 0008. See the [reverification report](specs/issuance-reverification-2026-10-15.md) for current evidence and limits.

@@ -63,7 +63,7 @@ export type ItemUpdateWriteResult =
   | { kind: "not-found" }
   | {
       kind: "base-unit-locked";
-      reason: "alternate-units" | "stock-activity" | "recipe-ingredients";
+      reason: "alternate-units" | "stock-activity" | "recipe-ingredients" | "issuance";
     }
   | { kind: "invalid-lookups"; category: boolean; baseUnit: boolean };
 
@@ -170,6 +170,8 @@ async function findItemRecord(database: ItemDatabase, id: string) {
           unitConversions: true,
           deliveryReceiptLines: true,
           recipeIngredients: true,
+          issuanceIngredients: true,
+          issuanceStockItems: true,
         },
       },
     },
@@ -304,6 +306,7 @@ export async function updateItemWithActiveLookups(
       if (!existing) return { kind: "not-found" };
 
       if (existing.baseUnitId !== input.baseUnitId) {
+        if (existing._count.issuanceIngredients > 0 || existing._count.issuanceStockItems > 0) return { kind: "base-unit-locked" as const, reason: "issuance" as const };
         if (existing._count.unitConversions > 0) {
           return { kind: "base-unit-locked" as const, reason: "alternate-units" as const };
         }

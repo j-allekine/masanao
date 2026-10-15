@@ -11,6 +11,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
+import { FieldSet, FieldLegend } from "@/components/ui/field";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import CatalogPagination, {
   getCatalogPageAfterDeletion,
@@ -226,6 +227,7 @@ export default function PurchaseOrdersWorkspace({
         {canManagePurchaseOrders ? (
           <WorkspacePrimaryAction
             id="new-purchase-order"
+            disabled={!isHydrated}
             className="sm:min-w-[11rem]"
             onClick={() => setPurchaseOrderDialogState({ mode: "create" })}
           >
@@ -233,15 +235,19 @@ export default function PurchaseOrdersWorkspace({
           </WorkspacePrimaryAction>
         ) : null}
       </div>
-      <PurchaseOrderToolbar
-        search={searchInput}
-        onSearchChange={updateSearch}
-      />
+      <FieldSet disabled={!isHydrated} className="min-w-0">
+        <FieldLegend className="sr-only">Purchase Order catalog controls</FieldLegend>
+        <PurchaseOrderToolbar
+          search={searchInput}
+          onSearchChange={updateSearch}
+        />
+      </FieldSet>
       <PurchaseOrdersTable
         purchaseOrders={paginatedPurchaseOrders}
         hasFilters={filtersAreActive}
         onClearFilters={clearSearch}
         canManage={canManagePurchaseOrders}
+        actionDisabled={!isHydrated}
         onEdit={(purchaseOrder) =>
           setPurchaseOrderDialogState({ mode: "edit", purchaseOrder })
         }

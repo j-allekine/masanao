@@ -26,7 +26,7 @@ test.describe("workspace shell", () => {
 
     await expect(page.getByRole("link", { name: "Overview", exact: true })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Activity Designs", exact: true }),
+      page.getByRole("link", { name: "Planning", exact: true }),
     ).toBeVisible();
     for (const removedDestination of [
       "Activities",
@@ -48,45 +48,25 @@ test.describe("workspace shell", () => {
     await expect(page.getByRole("menuitem", { name: "Log out", exact: true })).toBeVisible();
   });
 
-  test("shows the local Planning sections with Activities enabled", async ({ page }) => {
+  test("keeps Planning as the single hierarchy entry without placeholder sections", async ({ page }) => {
     await signIn(page);
     await page.goto("/activity-designs");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-
-    await expect(
-      page.getByRole("main").getByText("Planning", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Planning", exact: true }),
-    ).toHaveCount(0);
-    const planningMenu = page.getByRole("navigation", { name: "Planning sections" });
-    const activePlanningLink = planningMenu.getByRole("link", {
-      name: "Activity Designs",
-      exact: true,
-    });
-    await expect(activePlanningLink).toBeVisible();
-    await expect(activePlanningLink).toHaveAttribute("aria-current", "page");
-    await expect(planningMenu.getByText("Activities", { exact: true })).toBeVisible();
-    await expect(planningMenu.getByText("Meal Schedules", { exact: true })).toBeVisible();
-    await expect(planningMenu.getByText("Coming later", { exact: true })).toHaveCount(1);
-    await expect(
-      planningMenu.getByRole("link", { name: "Activities", exact: true }),
-    ).toBeVisible();
-    await expect(
-      planningMenu.getByRole("link", { name: "Meal Schedules", exact: true }),
-    ).toHaveCount(0);
+    const planning = page.getByRole("link", { name: "Planning", exact: true });
+    await expect(planning).toHaveAttribute("href", "/activity-designs");
+    await expect(planning).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Planning sections" })).toHaveCount(0);
+    await expect(page.getByText("Coming later", { exact: true })).toHaveCount(0);
   });
 
-  test("opens the Activities workspace from its dedicated destination", async ({ page }) => {
+  test("keeps legacy Activities bookmarks usable with Planning selected", async ({ page }) => {
     await signIn(page);
     await page.goto("/activities");
-
     await expect(page).toHaveURL(/\/activities$/);
     await expect(page.getByRole("searchbox", { name: "Search Activities", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Activities", exact: true })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    await expect(page.getByText("Coming later", { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Planning", exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("link", { name: "Activities", exact: true })).toHaveCount(0);
+    await expect(page.getByText("Coming later", { exact: true })).toHaveCount(0);
   });
 });

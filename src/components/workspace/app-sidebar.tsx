@@ -199,14 +199,14 @@ export function AppSidebar({
                         render={
                           <Link
                             href={item.href}
-                            aria-label={item.label}
+                            aria-label={visibleLabel}
                             aria-current={
                               activeSection === item.id ? "page" : undefined
                             }
                           />
                         }
                         isActive={activeSection === item.id}
-                        tooltip={item.label}
+                        tooltip={visibleLabel}
                         className="h-10 rounded-lg px-3 text-body-sm"
                       >
                         <Icon />

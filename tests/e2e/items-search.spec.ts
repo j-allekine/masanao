@@ -29,4 +29,8 @@ test("keeps every character when search is typed slower than the debounce", asyn
 
   await expect(search).toHaveValue("golden");
   await expect(page).toHaveURL(/items\?itemsSearch=golden$/);
+  await page.goto("/items?itemsSearch=rice");
+  await expect(page.getByLabel("Search Items")).toHaveValue("rice");
+  await page.goBack();
+  await expect(page.getByLabel("Search Items")).toHaveValue("golden");
 });

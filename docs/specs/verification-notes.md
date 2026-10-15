@@ -1,4 +1,6 @@
-# Three-module specification verification
+# Historical three-module specification verification
+
+This file records the pre-implementation review on 2026-10-11. For current implemented behavior, including the approved direct Add actions, compact posted UI and FIFO receipt allocations, use [the issuance verification contract](meal-schedule-issuance-verification.md), [the FIFO specification](issuance-fifo.md), and ADR 0008. The historical statements below are not current implementation status.
 
 Reviewed 2026-10-11 against the approved conversation decisions, current authored models and mutation workflows, domain glossary, and ADRs 0004 through 0007. Specifications #219 through #221 and tickets #222 through #229 are now published; no production issuance behavior was implemented.
 

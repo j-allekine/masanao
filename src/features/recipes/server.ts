@@ -85,6 +85,7 @@ export async function deleteRecipe(actor: CurrentActor, id: string) {
   const authorizationFailure = await authorizeRecipeAdministrator(actor);
   if (authorizationFailure) return authorizationFailure;
   const result = await deleteRecipeCommand(id);
+  if (result.kind === "referenced") return { ok: false as const, kind: "referenced" as const, error: "This Recipe cannot be deleted because saved issuance references it." };
   if (result.kind === "not-found") return { ok: false as const, kind: "not-found" as const, error: "Recipe not found" };
   return { ok: true as const };
 }
