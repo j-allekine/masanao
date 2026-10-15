@@ -1227,6 +1227,7 @@ test.describe("Items catalog journey", () => {
     await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
 
     const searchHistoryLength = await page.evaluate(() => window.history.length);
+    await expect(page.getByLabel("Search Items")).toBeEnabled();
     await page.getByLabel("Search Items").pressSequentially("retired", { delay: 25 });
     await expect(page).toHaveURL(/items\?itemsSearch=retired$/);
     await expect(page.getByLabel("Search Items")).toHaveValue("retired");

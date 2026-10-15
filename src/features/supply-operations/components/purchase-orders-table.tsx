@@ -41,11 +41,13 @@ function displayReference(referenceNumber: string | null) {
 function PurchaseOrderMobileCard({
   purchaseOrder,
   canManage,
+  actionDisabled,
   onEdit,
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
   canManage: boolean;
+  actionDisabled: boolean;
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -65,6 +67,7 @@ function PurchaseOrderMobileCard({
         </CardTitle>
         {canManage ? (
           <PurchaseOrderActionsMenu
+            disabled={actionDisabled}
             purchaseOrderId={purchaseOrder.id}
             purchaseOrderNo={purchaseOrder.purchaseOrderNo}
             actionButtonId={`purchase-order-actions-mobile-${purchaseOrder.id}`}
@@ -115,11 +118,13 @@ function PurchaseOrderMobileCard({
 function PurchaseOrderRow({
   purchaseOrder,
   canManage,
+  actionDisabled,
   onEdit,
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
   canManage: boolean;
+  actionDisabled: boolean;
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -157,6 +162,7 @@ function PurchaseOrderRow({
         {canManage ? (
           <TableCell className="text-center align-top">
             <PurchaseOrderActionsMenu
+              disabled={actionDisabled}
               purchaseOrderId={purchaseOrder.id}
               purchaseOrderNo={purchaseOrder.purchaseOrderNo}
               actionButtonId={`purchase-order-actions-desktop-${purchaseOrder.id}`}
@@ -185,6 +191,7 @@ export default function PurchaseOrdersTable({
   hasFilters,
   onClearFilters,
   canManage,
+  actionDisabled,
   onEdit,
   onDeleted,
 }: {
@@ -192,6 +199,7 @@ export default function PurchaseOrdersTable({
   hasFilters: boolean;
   onClearFilters: () => void;
   canManage: boolean;
+  actionDisabled: boolean;
   onEdit: (purchaseOrder: PurchaseOrderListItem) => void;
   onDeleted: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
@@ -226,6 +234,7 @@ export default function PurchaseOrdersTable({
             key={purchaseOrder.id}
             purchaseOrder={purchaseOrder}
             canManage={canManage}
+            actionDisabled={actionDisabled}
             onEdit={() => onEdit(purchaseOrder)}
             onDeleted={() => onDeleted(purchaseOrder)}
           />
@@ -260,6 +269,7 @@ export default function PurchaseOrdersTable({
                 key={purchaseOrder.id}
                 purchaseOrder={purchaseOrder}
                 canManage={canManage}
+                actionDisabled={actionDisabled}
                 onEdit={() => onEdit(purchaseOrder)}
                 onDeleted={() => onDeleted(purchaseOrder)}
               />

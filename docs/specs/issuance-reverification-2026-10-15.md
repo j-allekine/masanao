@@ -2,6 +2,8 @@
 
 Scope: the #221 implementation and subsequent picker, numeric-input, navigation, FIFO and compact posted-page changes in PR #234. Verification uses isolated test databases; the manual preview's saved and posted sample records are preserved.
 
+This report records that earlier implementation state. See the [2026-10-16 system reverification](../system-reverification-2026-10-16.md) for the later full-application pass and corrections to the outstanding checks noted below.
+
 ## Contract alignment
 
 | Concern | Current contract and evidence |

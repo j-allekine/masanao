@@ -133,7 +133,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(mobileSidebar).toBeVisible();
       await expect(
         mobileSidebar.getByRole("link", {
-          name: "Activity Designs",
+          name: "Planning",
           exact: true,
         }),
       ).toBeVisible();

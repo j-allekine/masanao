@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import { FieldSet, FieldLegend } from "@/components/ui/field";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 
 import { setItemActiveAction } from "../actions";
@@ -63,6 +64,7 @@ function ItemsWorkspaceContent({
   canManageItems,
   currentQuery,
 }: ItemsWorkspaceProps & { currentQuery: string }) {
+  const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const pathname = usePathname();
   const router = useRouter();
   const [itemDialogState, setItemDialogState] =
@@ -288,6 +290,7 @@ function ItemsWorkspaceContent({
     <main
       className="flex min-w-0 flex-col gap-6"
       data-can-manage-items={canManageItems ? "true" : "false"}
+      data-items-ready={hydrated ? "true" : undefined}
     >
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -299,6 +302,7 @@ function ItemsWorkspaceContent({
         {canManageItems ? (
           <WorkspacePrimaryAction
             id="new-item"
+            disabled={!hydrated}
             className="sm:min-w-[8rem]"
             onClick={openCreateDialog}
           >
@@ -306,15 +310,18 @@ function ItemsWorkspaceContent({
           </WorkspacePrimaryAction>
         ) : null}
       </div>
-      <ItemToolbar
-        filters={filters}
-        categories={categories}
-        hasFilters={filtersAreActive}
-        onSearchChange={updateSearch}
-        onCategoryChange={updateCategory}
-        onStatusChange={updateStatus}
-        onClearFilters={clearFilters}
-      />
+      <FieldSet disabled={!hydrated} className="min-w-0">
+        <FieldLegend className="sr-only">Item catalog controls</FieldLegend>
+        <ItemToolbar
+          filters={filters}
+          categories={categories}
+          hasFilters={filtersAreActive}
+          onSearchChange={updateSearch}
+          onCategoryChange={updateCategory}
+          onStatusChange={updateStatus}
+          onClearFilters={clearFilters}
+        />
+      </FieldSet>
       <ItemsTable
         items={paginatedItems}
         hasFilters={filtersAreActive}
@@ -324,7 +331,7 @@ function ItemsWorkspaceContent({
         onSetActive={handleSetActive}
         onDeleted={handleDeleted}
         onUnits={setUnitsItem}
-        actionDisabled={isMutating}
+        actionDisabled={isMutating || !hydrated}
       />
       <ItemUnitsSheet
         item={unitsItem}

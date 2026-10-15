@@ -361,6 +361,7 @@ test.describe("Purchase Orders administration journey", () => {
         exact: true,
       });
       await expect(addButton).toBeVisible();
+      await expect(addButton).toBeEnabled();
       await addButton.focus();
       await page.keyboard.press("Enter");
 
