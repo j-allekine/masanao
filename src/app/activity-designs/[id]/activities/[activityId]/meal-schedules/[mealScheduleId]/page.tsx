@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { getMealSchedule } from "@/features/activity-planning/server";
 import { MealScheduleHeader } from "@/features/activity-planning/ui";
@@ -42,12 +43,20 @@ export default async function MealScheduleDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
-        <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">
-          <MealScheduleHeader mealSchedule={mealSchedule}  />
-          <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
-        </main>
-      )}
+      <div className="flex h-svh min-h-0 flex-col bg-card">
+        <header data-meal-workspace-header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
+          <SidebarTrigger />
+          <div className="min-w-0 border-l pl-3">
+            <p className="truncate text-heading-3 font-semibold">Planning</p>
+          </div>
+        </header>
+        {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
+          <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">
+            <MealScheduleHeader mealSchedule={mealSchedule}  />
+            <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
+          </main>
+        )}
+      </div>
     </WorkspaceShell>
   );
 }

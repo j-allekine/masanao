@@ -41,3 +41,9 @@ Reproduce the browser run with `pnpm exec playwright test`; the config generates
 Automated coverage is evidence for the exercised behavior, not a proof that the entire system is defect-free, a penetration test, full screen-reader certification, or a substitute for staff acceptance testing. Existing posting boundaries remain: posted issuance and receipts are immutable; corrections, reversals, returns, lot/expiry tracking and accounting valuation are outside the accepted release scope.
 
 The [record-page design guide](record-page-design.md) records future layout consistency work and exceptions. This pass fixes confirmed behavior and verification gaps; it does not apply the Meal Schedule layout globally.
+
+## Follow-up: restore the workspace header
+
+The unified page had also removed the standard Planning workspace header. User review identified this as an unwanted loss of application consistency. The Meal Schedule route now retains that header and sidebar toggle above the breadcrumbs, while keeping one meal heading and the compact draft/posted body. The breadcrumb row no longer duplicates the sidebar toggle. The body flexes within the remaining viewport so the fixed header does not push draft actions below the screen.
+
+Both focused layout/posting browser journeys passed, including legacy redirects, guarded breadcrumbs, Meal details focus, final posting and immutable history. Fresh draft and posted captures at desktop and 320px mobile widths were inspected. Source lint, both architecture checks, TypeScript and production build passed for this follow-up. The 86-case full-suite result above describes the preceding commit, not a rerun after this header correction.

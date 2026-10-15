@@ -49,7 +49,7 @@ export default function IssuancePostedContent({
   }, [focusAfterPosting]);
   return (
     <div
-      className="flex h-svh min-h-0 flex-col bg-card"
+      className="flex min-h-0 flex-1 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">

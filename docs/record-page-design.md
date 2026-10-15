@@ -4,6 +4,8 @@ The accepted Meal Schedule arrangement is a good fit for Masanao's nested planni
 
 ## Pattern
 
+Retain the standard Planning workspace header and its sidebar toggle above the record content. Removing repeated record/module headings does not remove this application header; the breadcrumb row contains no second sidebar toggle.
+
 1. Breadcrumbs provide the hierarchy and parent destinations.
 2. One heading identifies the record, with a nearby lifecycle badge when applicable.
 3. A plainly named details action opens optional supporting information.

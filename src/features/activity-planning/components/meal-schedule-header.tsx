@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import type { MealScheduleDetailItem } from "../types";
 
@@ -32,7 +31,6 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
   return (
     <div className="flex min-w-0 flex-col gap-4" data-client-ready={isReady ? "true" : undefined}>
       <div className="flex min-w-0 items-start gap-3">
-        <SidebarTrigger className="shrink-0" />
         <Breadcrumb className="min-w-0 pt-1">
           <BreadcrumbList className="break-words">
             <BreadcrumbItem><BreadcrumbLink render={<Link href="/activity-designs" />}>Activity Designs</BreadcrumbLink></BreadcrumbItem>

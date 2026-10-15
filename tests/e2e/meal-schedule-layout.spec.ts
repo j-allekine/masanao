@@ -31,6 +31,10 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await page.goto(`${meal}/issuance`);
   await expect(page).toHaveURL(new RegExp(`${meal}$`));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  const workspaceHeader = page.locator("header[data-meal-workspace-header]");
+  await expect(workspaceHeader.getByText("Planning", { exact: true })).toBeVisible();
+  await expect(workspaceHeader.getByRole("button", { name: "Toggle Sidebar", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Community kitchen", exact: true })).toHaveAttribute("href", activity);
   await expect(page.getByRole("link", { name: "Open issuance draft", exact: true })).toHaveCount(0);
@@ -38,6 +42,7 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await expect(page.getByText("Municipal hall", { exact: true })).toHaveCount(0);
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
+    await expect(workspaceHeader).toBeInViewport();
     const trigger = page.getByRole("button", { name: "Meal details", exact: true });
     await trigger.focus();
     await page.keyboard.press("Enter");
