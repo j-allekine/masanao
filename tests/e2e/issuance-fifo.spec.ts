@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -67,6 +68,9 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
   db.prepare("UPDATE purchase_order SET purchaseOrderNo='Changed document' WHERE id='fifo-po-older'").run();
   db.close();
   await page.reload();
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Details for FIFO Rice", exact: true }).click();
   await expect(sources.getByRole("list", { name: "Receipt allocations" }).getByText("FIFO-PO-older", { exact: true })).toBeVisible();
 });
+
+test.afterAll(cleanupIssuanceFixtures);

@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -228,3 +229,5 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   ).toEqual({ count: 0 });
   db.close();
 });
+
+test.afterAll(cleanupIssuanceFixtures);

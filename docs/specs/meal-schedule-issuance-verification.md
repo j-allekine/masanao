@@ -12,6 +12,8 @@ Implementation of #221 follows the dependent tickets #225 → #226 → #227 → 
 - Posting uses the saved revision, rechecks live references and policy, and commits all movements and history atomically.
 - Independent database connections prove concurrent posting cannot overspend or deduct twice. Injected failures prove rollback.
 - Posted reads retain posting evidence after master-data changes.
+- FIFO allocations match exact stock-out, split across receipt lines and POs, and preserve source snapshots. Sample-history reconstruction is labelled and never rewrites original ledger or posting evidence.
+- Posted detail keeps quantities visible while calculation, policy, receipt sources, Recipe ingredients and full metadata remain accessible through named dialogs and collapsed sections.
 - Desktop, keyboard, and mobile journeys cover visible errors, warnings, pickers, sheets, review, confirmation, and read-only history.
 
 Run relevant tests, architecture lint, type checking, Prisma validation/generation, and a production build. Record results in the implementation PR after completing the workflow.
@@ -27,7 +29,11 @@ Run relevant tests, architecture lint, type checking, Prisma validation/generati
 | Independent processes sharing one SQLite database: competing records, duplicate retry, busy writer | `tests/issuance-posting-concurrency.test.ts` |
 | Additive snapshots and preserved receipt ledger rows/source uniqueness | `tests/issuance-draft-migration.test.ts`, `tests/issuance-posting-migration.test.ts` |
 | Existing receiving behavior | `tests/delivery-receipts.test.ts`, `tests/delivery-receipt-migration.test.ts` |
+| FIFO ordering, tie-breaks, exact splits, source evidence, reconstruction, rollback and retries | `tests/issuance-fifo.test.ts`, `tests/issuance-posting.test.ts`, `tests/issuance-posting-concurrency.test.ts`, `tests/issuance-posting-migration.test.ts` |
+| Cross-PO FIFO Item Details, collapsed posted sections, keyboard focus, and compact two-Item desktop/mobile layouts | `tests/e2e/issuance-fifo.spec.ts`, `tests/e2e/issuance-posting.spec.ts` |
 | Keyboard, 320px mobile, errors, exact quantity review, discard/Back, final confirmation, closed historical ingredient Sheet | `tests/e2e/issuance-drafts.spec.ts`, `tests/e2e/issuance-stock.spec.ts`, `tests/e2e/issuance-review.spec.ts`, `tests/e2e/issuance-posting.spec.ts` |
 | Whole-card Recipe selection, digits-only pax, searchable Stock, persistent added lists, repeated additions, saving from review, cancellation and browser history | `tests/e2e/issuance-recipe-ux.spec.ts`, `tests/e2e/issuance-stock-ux.spec.ts`, `tests/e2e/issuance-review-regressions.spec.ts` |
 
 Browser and database tests use isolated test data. Posting is final in this release; corrections, reversals, returns, and replacement postings remain outside the approved scope.
+
+The [2026-10-15 reverification report](issuance-reverification-2026-10-15.md) records alignment checks, discovered corrections, fresh results and the limits of the broader repository browser run.

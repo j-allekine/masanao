@@ -9,7 +9,7 @@ Approved extension to Meal Schedule issuance: use receipt-level FIFO to trace is
 - A receipt line is a stock layer. Its capacity is its stock-in ledger quantity minus all recorded allocations. An issuance may split across lines, receipts and POs.
 - Keep exact decimal quantities. Allocations must sum exactly to the stock-out, and no receipt may be overdrawn.
 - Allocate inside the existing SQLite writer transaction alongside the stock-out and Draft-to-Posted transition. Failure rolls back allocations and ledger writes; successful retries return the same allocations.
-- Retain receipt number, PO number and receipt date as immutable source evidence. Posted quantities offer a secondary Receipt sources action. Draft editing stays unchanged.
+- Retain receipt number, PO number and receipt date as immutable source evidence. Posted quantities offer Item Details containing the FIFO receipt sources alongside calculation and policy. Draft editing stays unchanged.
 
 ## Existing sample history
 

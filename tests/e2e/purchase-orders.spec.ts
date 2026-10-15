@@ -35,6 +35,41 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
   }
 }
 
+test("receiving excludes Items whose Base Unit is inactive", async ({ page }, testInfo) => {
+  const suffix = randomUUID();
+  const itemId = `inactive-base-item-${suffix}`;
+  const unitId = `inactive-base-unit-${suffix}`;
+  const categoryId = `inactive-base-category-${suffix}`;
+  const purchaseOrderId = `inactive-base-po-${suffix}`;
+  withE2eDatabase((database) => {
+    database.prepare('INSERT INTO unit (id,name,abbreviation,normalizedName,normalizedAbbreviation,active,createdAt,updatedAt) VALUES (?,?,?,?,?,0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)').run(unitId, "Inactive test unit", "itu", unitId, unitId);
+    database.prepare('INSERT INTO category (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES (?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)').run(categoryId, categoryId, categoryId);
+    database.prepare('INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt) VALUES (?,?,?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)').run(itemId, "Unavailable Base Unit Rice", itemId, categoryId, unitId);
+    database.prepare('INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES (?,?,?, ?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)').run(purchaseOrderId, purchaseOrderId, purchaseOrderId, "e2e-vendor-acme");
+  });
+  try {
+    await signIn(page);
+    await page.goto(`/purchase-orders/${purchaseOrderId}/record-delivery`);
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+    const item = page.getByRole("combobox", { name: "Item", exact: true });
+    if (await item.count()) {
+      await item.fill("Unavailable Base Unit Rice");
+      await expect(page.getByRole("option", { name: "Unavailable Base Unit Rice", exact: true })).toHaveCount(0);
+      await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toBeDisabled();
+    }
+    await page.screenshot({ path: testInfo.outputPath("inactive-base-unit-excluded.png"), fullPage: true });
+  } finally {
+    withE2eDatabase((database) => {
+      database.prepare('DELETE FROM purchase_order WHERE id=?').run(purchaseOrderId);
+      database.prepare('DELETE FROM item WHERE id=?').run(itemId);
+      database.prepare('DELETE FROM category WHERE id=?').run(categoryId);
+      database.prepare('DELETE FROM unit WHERE id=?').run(unitId);
+    });
+  }
+});
+
 test.describe("Purchase Orders read journey", () => {
   test("lets staff open the responsive catalog and retain Vendor context", async ({
     page,
@@ -124,9 +159,11 @@ test.describe("Purchase Orders read journey", () => {
       await expect(
         page.getByRole("heading", { name: "Record delivery", exact: true }),
       ).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toBeDisabled();
-      await expect(page.getByRole("textbox", { name: "Item", exact: true })).toHaveValue("No active Items available");
-      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
+      // Global setup includes Recipe Items, so receiving offers a searchable
+      // picker even when this Purchase Order has no receipts yet.
+      await expect(page.getByRole("combobox", { name: "Item", exact: true })).toBeEnabled();
+      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeVisible();
       const cancelDelivery = page.getByRole("button", {
         name: "Cancel",
         exact: true,
@@ -505,6 +542,7 @@ test.describe("Purchase Orders administration journey", () => {
 
 test.describe("Delivery Receipt alternate Unit journey", () => {
   test("lets authenticated staff post configured alternate and Base Unit quantities", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-09-15T04:00:00.000Z"));
     test.setTimeout(120_000);
     const purchaseOrderId = randomUUID();
     const itemId = randomUUID();

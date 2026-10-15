@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -176,3 +177,5 @@ test("saved draft preserves normal browser Back and Forward", async ({ page }) =
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/purchase-orders$/);
 });
+
+test.afterAll(cleanupIssuanceFixtures);

@@ -20,6 +20,9 @@ _Avoid_: Activity description
 A named and timed meal occasion associated directly with an Activity. Lunch, Snack, and Feeding are user-entered labels, not fixed meal types.
 _Avoid_: Meal Occasion, Schedule Entry
 
+**Planned pax**:
+The Activity's planned number of participants, used as the initial Meal pax when positive.
+
 ### Master data
 
 **Item**:
@@ -42,8 +45,8 @@ _Avoid_: conversion
 **Item Unit Conversion**:
 A fixed relationship between an Item's alternate Unit and its Base Unit, such as one sack of rice equaling 25 kg. It is available for both receiving and issuance.
 
-**Conversion Override**:
-A transaction-specific Base Unit quantity that replaces the calculated quantity for that transaction without changing the Item Unit Conversion.
+**Issuance quantity policy**:
+An Item's rule allowing decimal issued quantities or requiring a whole final combined quantity in its Base Unit. It does not restrict receiving quantities or define the size of an alternate Unit.
 
 **Category**:
 A flat classification required for every Item. It does not determine the Item's Unit or expiry behavior.
@@ -63,16 +66,29 @@ A reusable reference for one food and its ingredient lines.
 The number of people served by the ingredient quantities recorded on a Recipe. It describes the reusable recipe batch, not the pax requested for a particular issuance.
 
 **Recipe Snapshot**:
-The Meal Schedule-specific copy of a Recipe's ingredient lines for a Food Supply, distinct from the master Recipe.
+An independent Meal Schedule-specific copy of a Recipe's identity, baseline pax, ingredient quantities and Item Unit Conversions. Later master edits do not rewrite it.
 
 **Food Supply**:
-The food context associated with an Issuance Record. Its ingredient lines identify the stock used for that food, and it requires a Recipe.
+The Recipe-based food contribution within an Issuance Record, represented by a Recipe Snapshot and its ingredient lines.
+
+**Meal pax**:
+The positive whole-number count of people served by a particular issuance. A saved draft may leave this count pending, but posting requires it.
+
+**Recipe target pax**:
+The positive whole-number count used to scale one Recipe Snapshot. It either follows Meal pax or is an explicit target for that Recipe.
+
+**Combined Item requirement**:
+The total Base Unit demand for one Item across all Recipe and direct-use Stock contributions in a meal.
+
+**Issued quantity adjustment**:
+An explicitly confirmed final Base Unit quantity replacing a combined Item requirement for issuance. The original calculation is retained and the master Item Unit Conversion is unchanged.
+_Avoid_: Conversion Override
 
 **Direct-use Stock Item**:
 An inventory item issued separately from the ingredient lines of a Food Supply.
 
 **Issuance Record**:
-A record of supplies associated with a Meal Schedule. A Meal Schedule can have zero or one Issuance Record; the record is created when supply lines are added.
+A Draft or Posted record of supplies associated with a Meal Schedule, created when the first supply lines are saved. A Meal Schedule has zero or one Issuance Record; drafts do not move stock and posted records are final.
 
 ### Purchasing and inventory
 
@@ -110,7 +126,19 @@ Item than the accepted receiving quantity. It is not modeled by the current
 Purchase Order reference slice.
 
 **Inventory Ledger**:
-The accountable record of posted inventory movements.
+The accountable record of stock-in from Delivery Receipt Lines and stock-out from issued Item totals. Movement quantities use each Item's Base Unit.
+
+**Available stock**:
+An Item's posted stock-in less its posted stock-out, expressed in its Base Unit. Draft demand does not reserve or deduct this stock.
+
+**Receipt allocation**:
+The Base Unit quantity of an issued Item total attributed to one Delivery Receipt Line, tracing that quantity to its receipt and Purchase Order. Allocations explain stock-out sources without deducting stock a second time.
+
+**FIFO**:
+First in, first out: issuance uses the oldest available receipt date first, continuing into later receipts when needed. This is a source-selection rule, not expiry tracking or inventory costing.
+
+**Reconstructed receipt allocation**:
+A FIFO source attribution inferred for an earlier issuance whose receipt usage was not recorded. It is labelled as an assumption rather than an observed historical picking choice.
 
 **Posted Transaction**:
 A transaction recorded as posted and represented as a movement in the Inventory Ledger.

@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -269,3 +270,5 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
   db.close();
 });
+
+test.afterAll(cleanupIssuanceFixtures);

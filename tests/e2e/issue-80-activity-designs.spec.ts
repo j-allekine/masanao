@@ -180,6 +180,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
   test("uses a centered responsive Activity dialog and preserves exact values", async ({
     page,
   }) => {
+    await page.clock.setFixedTime(new Date("2026-09-15T04:00:00.000Z"));
     const title = `E2E Issue 80 Activity ${Date.now()}`;
     const designs: ActivityDesign[] = [];
 

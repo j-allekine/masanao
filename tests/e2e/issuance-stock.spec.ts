@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -72,3 +73,5 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   expect(db.prepare("SELECT count(*) AS count FROM inventory_ledger_movement AS movement JOIN issuance_item_total AS total ON total.id = movement.issuanceItemTotalId JOIN issuance_record AS record ON record.id = total.issuanceRecordId WHERE movement.movementType = 'stock-out' AND record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ count: 0 });
   db.close();
 });
+
+test.afterAll(cleanupIssuanceFixtures);

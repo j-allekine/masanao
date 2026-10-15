@@ -73,6 +73,8 @@ function ItemsWorkspaceContent({
   );
   const [isMutating, startMutation] = useTransition();
   const latestQueryRef = useRef(currentQuery);
+  const lastObservedQueryRef = useRef(currentQuery);
+  const ownNavigationQueries = useRef(new Set<string>());
   const searchNavigationTimeoutRef = useRef<number | null>(null);
   const listState = useMemo(
     () => getItemListState(new URLSearchParams(currentQuery)),
@@ -103,7 +105,12 @@ function ItemsWorkspaceContent({
   const filtersAreActive = hasItemListFilters(filters);
 
   useEffect(() => {
+    if (lastObservedQueryRef.current === currentQuery) return;
     const syncSearchInputTimeout = window.setTimeout(() => {
+      lastObservedQueryRef.current = currentQuery;
+      // A completed URL update may acknowledge an older keystroke. Keep the
+      // newer local text instead of replacing it with that stale search value.
+      if (ownNavigationQueries.current.delete(currentQuery)) return;
       setSearchInput(getItemListState(new URLSearchParams(currentQuery)).search);
       latestQueryRef.current = currentQuery;
     }, 0);
@@ -112,7 +119,18 @@ function ItemsWorkspaceContent({
   }, [currentQuery]);
 
   useEffect(() => {
+    function restoreHistorySearch() {
+      ownNavigationQueries.current.clear();
+      if (searchNavigationTimeoutRef.current !== null) {
+        window.clearTimeout(searchNavigationTimeoutRef.current);
+        searchNavigationTimeoutRef.current = null;
+      }
+      latestQueryRef.current = window.location.search.slice(1);
+      setSearchInput(getItemListState(new URLSearchParams(latestQueryRef.current)).search);
+    }
+    window.addEventListener("popstate", restoreHistorySearch);
     return () => {
+      window.removeEventListener("popstate", restoreHistorySearch);
       if (searchNavigationTimeoutRef.current !== null) {
         window.clearTimeout(searchNavigationTimeoutRef.current);
       }
@@ -120,12 +138,16 @@ function ItemsWorkspaceContent({
   }, []);
 
   useEffect(() => {
-    if (listState.page <= pageCount) return;
+    if (listState.page <= pageCount || searchInput !== listState.search) return;
 
-    router.replace(getItemListUrl(pathname, currentQuery, { page: pageCount }), {
+    const nextUrl = getItemListUrl(pathname, currentQuery, { page: pageCount });
+    const nextQuery = nextUrl.split("?", 2)[1] ?? "";
+    ownNavigationQueries.current.add(nextQuery);
+    latestQueryRef.current = nextQuery;
+    router.replace(nextUrl, {
       scroll: false,
     });
-  }, [currentQuery, listState.page, pageCount, pathname, router]);
+  }, [currentQuery, listState.page, listState.search, pageCount, pathname, router, searchInput]);
 
   function navigateList(
     updates: Parameters<typeof getItemListQuery>[1],
@@ -133,6 +155,7 @@ function ItemsWorkspaceContent({
   ) {
     const nextUrl = getItemListUrl(pathname, latestQueryRef.current, updates);
     latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
+    ownNavigationQueries.current.add(latestQueryRef.current);
     router[navigation](nextUrl, {
       scroll: false,
     });

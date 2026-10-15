@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -148,3 +149,5 @@ test("unavailable saved Stock Items show their saved line and a visible editing 
     db.close();
   }
 });
+
+test.afterAll(cleanupIssuanceFixtures);

@@ -111,7 +111,7 @@ export default function IssuancePostedContent({
                   {row.adjusted ? <Badge variant="secondary">Adjusted</Badge> : null}
                 </div>
                 <strong className="max-w-32 break-all text-body-sm tabular-nums">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
-                <Button id={`receipt-sources-${row.itemId}`} aria-label={`Details for ${row.itemName}`} variant="ghost" size="sm" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }}>Details</Button>
+                <Button id={`receipt-sources-${row.itemId}`} disabled={!hydrated} aria-label={`Details for ${row.itemName}`} variant="ghost" size="sm" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }}>Details</Button>
               </li>
             ))}
           </ul>
@@ -151,7 +151,7 @@ export default function IssuancePostedContent({
           </DialogContent>
         </Dialog>
         {draft.recipes.length ? <Collapsible className="mt-6 border-t pt-2">
-          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+          <CollapsibleTrigger disabled={!hydrated} render={<Button variant="ghost" className="w-full justify-between" />}>
             Recipes ({draft.recipes.length})<ChevronDown data-icon="inline-end" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -164,7 +164,7 @@ export default function IssuancePostedContent({
           </CollapsibleContent>
         </Collapsible> : null}
         {draft.stockItems.length ? <Collapsible className="mt-2 border-t pt-2">
-          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+          <CollapsibleTrigger disabled={!hydrated} render={<Button variant="ghost" className="w-full justify-between" />}>
             Direct Stock ({draft.stockItems.length})<ChevronDown data-icon="inline-end" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -178,7 +178,7 @@ export default function IssuancePostedContent({
           </CollapsibleContent>
         </Collapsible> : null}
         <Collapsible className="mt-2 border-t pt-2">
-          <CollapsibleTrigger render={<Button variant="ghost" className="w-full justify-between" />}>
+          <CollapsibleTrigger disabled={!hydrated} render={<Button variant="ghost" className="w-full justify-between" />}>
             Record details<ChevronDown data-icon="inline-end" aria-hidden="true" />
           </CollapsibleTrigger>
           <CollapsibleContent>

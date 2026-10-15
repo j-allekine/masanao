@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -136,3 +137,5 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   ).toEqual({ count: 0 });
   db.close();
 });
+
+test.afterAll(cleanupIssuanceFixtures);

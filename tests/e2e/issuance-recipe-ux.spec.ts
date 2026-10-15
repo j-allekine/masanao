@@ -1,3 +1,4 @@
+import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 
@@ -135,3 +136,5 @@ test("pending Meal pax can be completed without leaving the Recipe picker", asyn
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("15");
 });
+
+test.afterAll(cleanupIssuanceFixtures);

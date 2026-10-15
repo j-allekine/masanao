@@ -4,7 +4,7 @@ The approved tracker specifications are [Recipe #219](https://github.com/j-allek
 
 ## Starting checkout
 
-Until this documentation is merged, create implementation worktrees from `origin/codex/recipe-scaling-prototype`, which includes current main at handoff time, the prototype, and supporting documentation. After merge, use current `origin/main`. Do not start from the older prototype-only commit when the complete handoff is required. Recheck current remote state before starting.
+Production implementation and the approved FIFO/UI extensions are in [PR #234](https://github.com/j-allekine/masanao/pull/234), on `codex/issue-221-meal-issuance`. Verify the current PR head and merge state before choosing a checkout; after merge, use current `origin/main`. The earlier prototype branch is a historical design reference, not the production implementation baseline.
 
 ## Ticket order
 
@@ -19,7 +19,7 @@ Until this documentation is merged, create implementation worktrees from `origin
 | #228 | Combined review and availability | #224, #227 |
 | #229 | Atomic posting and immutable history | #228 |
 
-Each ticket includes its own public-interface tests and relevant browser coverage. Complete prerequisites before their dependent work; do not treat a ready-for-agent label as absence of blockers. Start with #222 for a simple sequential implementation path.
+Each ticket includes its own public-interface tests and relevant browser coverage. The table records the original delivery order; check current tracker state before starting follow-up work. For new dependent work, complete prerequisites first rather than treating a ready-for-agent label as absence of blockers.
 
 ## Prototype A
 
@@ -29,6 +29,6 @@ The prototype supplies visual hierarchy and interaction inspiration, not product
 
 ## Scope and completion
 
-Draft saving never deducts stock. Posting is all-or-nothing and immutable. Corrections, reversals, returns, replacement posting, and negative-stock overrides are excluded. No production issuance behavior has been implemented by this documentation handoff.
+Draft saving never deducts stock. Posting is all-or-nothing and immutable. [FIFO receipt allocation](issuance-fifo.md), recorded in [ADR 0008](../adr/0008-fifo-receipt-allocation.md), provides receipt and PO traceability without expiry tracking. Corrections, reversals, returns, replacement posting, and negative-stock overrides are excluded. Follow the current [verification contract](meal-schedule-issuance-verification.md), rather than the original pre-implementation gap notes.
 
 Follow repository verification requirements per change: relevant tests, lint/type checks, schema migration validation/generation and build when applicable, plus fresh browser evidence for changed UI. Documentation review does not establish runtime stock safety.

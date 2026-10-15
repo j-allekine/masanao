@@ -59,7 +59,7 @@ type ItemPickerProps = {
 };
 
 function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: ItemPickerProps) {
-  const options = items.map((item) => ({ value: item.id, label: item.name, item }));
+  const options = items.filter((item) => item.isActive && item.baseUnit.active).map((item) => ({ value: item.id, label: item.name, item }));
 
   if (!options.length) {
     return <Input id={id} aria-label="Item" aria-describedby={describedBy} aria-invalid={invalid} disabled value="No active Items available" readOnly />;
