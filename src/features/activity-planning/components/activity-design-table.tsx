@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -16,7 +16,7 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ActivityDesignListItem } from "../types";
 import { hasActivityDesignFilters } from "./activity-design-filters";
-import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { withPlanningReturn } from "./planning-return-state";
 import ActivityDesignActionsMenu from "./activity-design-actions-menu";
 import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 
@@ -24,18 +24,18 @@ const activityCountFormatter = new Intl.NumberFormat("en-US");
 
 function ActivityDesignRow({
   activityDesign,
+  catalogUrl,
   onEdit,
   onAddActivity,
   onDeleted,
 }: {
   activityDesign: ActivityDesignListItem;
+  catalogUrl: string;
   onEdit: () => void;
   onAddActivity: () => void;
   onDeleted: () => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const searchParams = useSearchParams();
-  const catalogUrl = getPlanningReturnUrl(`/activity-designs?${searchParams}`);
   const formattedActivityCount = activityCountFormatter.format(
     activityDesign.activityCount,
   );
@@ -91,12 +91,14 @@ function ActivityDesignRow({
 
 export default function ActivityDesignTable({
   activityDesigns,
+  catalogUrl = "/activity-designs",
   filters,
   onClearFilters,
   onEdit,
   onAddActivity,
 }: {
   activityDesigns: ActivityDesignListItem[];
+  catalogUrl?: string;
   filters: { search: string };
   onClearFilters: () => void;
   onEdit: (activityDesign: ActivityDesignListItem) => void;
@@ -174,6 +176,7 @@ export default function ActivityDesignTable({
           <ActivityDesignRow
             key={activityDesign.id}
             activityDesign={activityDesign}
+            catalogUrl={catalogUrl}
             onEdit={() => onEdit(activityDesign)}
             onAddActivity={() => onAddActivity(activityDesign)}
             onDeleted={() => handleDeleted(activityDesign.id)}

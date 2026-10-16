@@ -172,33 +172,31 @@ Meal Schedules (2)                              [+ Add Meal Schedule]
 
 These illustrate hierarchy and grouping, not fixed pixel coordinates. Use the current semantic type scale and compact spacing guidance (8/12px within control groups, 16px related content, 24px sections) as existing starting points. Do not alter runtime font sizes or global tokens just to match a sketch.
 
-## Implementation sequence within the new PR
+## Implemented delivery sequence
 
-1. Establish the current main baseline and bring forward missing header restoration; inventory route/state consumers and preserve current work.
-2. Extract WorkspaceHeader; adopt across Planning and its loading/error states without changing other modules.
-3. Clean catalogs and record identity/navigation; replace context cards with useful, non-repeated inline details.
-4. Clean Meal Schedule supporting details and posted Item inspection while preserving snapshot/transaction behavior.
-5. Align Planning form copy/grouping/actions within their existing workflows.
-6. Reconcile DESIGN.md stale navigation/domain examples against current routes and CONTEXT.md. Amend ADR 0009 and record-page guidance explicitly for the accepted Sheet-to-disclosure refinement; do not rewrite historical rationale as if it had always been the decision.
-7. Verify affected routes/states and shared consumers; update evidence and prepare one reviewable PR with screenshots and relevant test results.
+1. Establish main as the baseline and preserve the existing issuance preview and sample records.
+2. Deliver shared WorkspaceHeader presentation and authenticated route adoption in PR #235, including matching loading/error states and sidebar keyboard regressions.
+3. Deliver the Planning body cleanup in dependent PR #236: concise record identity, breadcrumbs, unique optional facts, mobile child collections and posted Item inspection.
+4. Preserve domain workflows and document the accepted presentation refinement in ADR 0009, record-page guidance and DESIGN.md.
+5. Verify each PR's affected routes and record the evidence below. Merge the foundation first; retarget Planning to main before its required CI review.
 
 The user approved the two-layer delivery split. Preserve the explicit boundaries above; changes to inventory or workflow contracts require separate scope.
 
 ## Acceptance criteria
 
-- [ ] All Planning pages use the shared header; one sidebar toggle and one main heading are present per page, including loading/error states.
-- [ ] Working collections and task actions lead; routine subtitles, context cards and redundant record labels/values are removed.
-- [ ] Activity Design has usable breadcrumbs before its Back button is removed; other records have no duplicate parent button.
-- [ ] Returning to a known catalog restores search/filter/page; direct entry has a safe parent destination; dirty issuance navigation is still guarded.
-- [ ] Unique supporting fields remain readable and reachable, without duplicating page identity or rendering empty disclosures.
-- [ ] Activity date/Office/planned pax and Design fiscal year remain visible under the proposed placement rules.
-- [ ] Posted Item inspection leads with final quantities; calculation comparison, source evidence, uncertainty and saved policy remain available.
-- [ ] Current planning and historical snapshots are visibly distinguishable when different; history is never rewritten by the presentation.
-- [ ] Catalogs/forms retain permissions, filtering, pagination, action availability, validation, precision, pending behavior and existing guards.
-- [ ] At 320px and desktop widths, long text/breadcrumbs wrap, local comparison tables remain usable, and actions/focus are not obscured by header/footer chrome.
-- [ ] Keyboard/touch can use disclosures, row menus, dialogs and sidebar; focus return, visible labels and state announcements remain correct.
-- [ ] Source and browser evidence cover every changed route/state; other shared-surface consumers have no unintended regression.
-- [ ] Research, final accepted design guidance, PR description and actual implementation agree; results identify exact commit and tested scope.
+- [x] All Planning pages use the shared header; one sidebar toggle and one main heading are present per page, including loading/error states.
+- [x] Working collections and task actions lead; routine subtitles, context cards and redundant record labels/values are removed.
+- [x] Activity Design has usable breadcrumbs before its Back button is removed; other records have no duplicate parent button.
+- [x] Returning to a known catalog restores search/filter/page; direct entry has a safe parent destination; dirty issuance navigation is still guarded.
+- [x] Unique supporting fields remain readable and reachable, without duplicating page identity or rendering empty disclosures.
+- [x] Activity date/Office/planned pax and Design fiscal year remain visible under the proposed placement rules.
+- [x] Posted Item inspection leads with final quantities; calculation comparison, source evidence, uncertainty and saved policy remain available.
+- [x] Current planning and historical snapshots are visibly distinguishable when different; history is never rewritten by the presentation.
+- [x] Catalogs/forms retain permissions, filtering, pagination, action availability, validation, precision, pending behavior and existing guards.
+- [x] At 320px and desktop widths, long text/breadcrumbs wrap, local comparison tables remain usable, and actions/focus are not obscured by header/footer chrome.
+- [x] Keyboard/touch can use disclosures, row menus, dialogs and sidebar; focus return, visible labels and state announcements remain correct.
+- [x] Source and browser evidence cover every changed route/state; other shared-surface consumers have no unintended regression.
+- [x] Research, final accepted design guidance, PR description and actual implementation agree; results identify exact commit and tested scope.
 
 ## Verification plan
 
@@ -206,7 +204,7 @@ The user approved the two-layer delivery split. Preserve the explicit boundaries
 | --- | --- |
 | Planning catalogs | Populated/empty/no-match; long titles; search/page state; allowed/read-only actions; keyboard and mobile |
 | Design record | Optional AIP present/absent; zero/many Activities; breadcrumb return; no redundant summary |
-| Activity record | Optional fields present/absent; missing date/pax; zero/many meals; long particulars; correct creation context |
+| Activity record | Optional fields present/absent; missing planned pax (scheduled date remains required); zero/many meals; long particulars; correct creation context |
 | Meal draft | New/incomplete/saved; Recipe/Stock selection; adjustment restrictions; save/reopen; unsaved breadcrumbs/history; reachable footer |
 | Posted meal | Master/planning names changed; exact final result; original saved policy; FIFO/reconstructed/missing sources; focus after posting and closing inspection |
 | Forms | Invalid/server-error/pending/success/cancel; existing discard guards; numeric rules and preserved input |
@@ -218,14 +216,27 @@ Run source/changed-test lint, architecture checks, TypeScript and production bui
 
 Before promoting the pattern to every module, review representative tasks with staff: locate an Activity, add a meal, prepare/post issuance, inspect a source and recover from a validation error. Record observed confusion and follow-up decisions; do not invent usability success metrics.
 
+## Verification evidence — 2026-10-16
+
+Implementation base: Planning commit `642894a` on shared-header commit `d90a9e5`, followed by the final cleanup/return-state regression commit on PR #236. The PR head is the authoritative final revision.
+
+- Full isolated browser run: **90 passed**, covering Planning, issuance/posting/FIFO, permissions, Items, Recipes, Purchase Orders/receiving, Master Data and shared navigation. Log: `C:/Users/LENOVO/.codex/planning-cleanup-confirmed.log`.
+- A subsequent delayed-navigation regression reproduced a newly introduced return-link defect. Links now use the catalog's current local search/page state instead of waiting for the URL update. Focused final run: **2 passed**, including the desktop/mobile compact Planning journey and the delayed-navigation regression. Log: `C:/Users/LENOVO/.codex/planning-return-final.log`. This was additional coverage after the 90-test run, not a single 91-test full run.
+- Final unit/integration suite: **433 passed across 62 files**; source lint and two architecture checks passed. Log: `C:/Users/LENOVO/.codex/planning-final-quality.log`.
+- Final production build and TypeScript check: **passed**; see `C:/Users/LENOVO/.codex/planning-final-build.log`.
+- Reviewed fresh 1280px/320px Design and Activity captures, meal draft and posted Item inspection. Breadcrumbs wrap, optional facts remain reachable, child tables adapt, and empty collections have one primary create/add action. Only the two intentionally changed Planning catalog baselines were updated.
+- Shared-header PR #235 is ready for review, with current `quality`, `native-windows`, `production-runtime` and Greptile checks green on `d90a9e5`.
+- Planning PR #236 remains draft while based on the foundation branch. Repository CI triggers only for PRs targeting main; after #235 merges, retarget #236 and require fresh CI before merge. Neither PR has been merged by this task.
+
+The checkbox completion records implementation and automated/visual evidence; it is not a claim of complete accessibility certification or staff usability testing. Staff task review and broader module body adoption remain follow-up work. No manual preview database reset, ledger reconstruction or sample deletion was performed.
+
 ## Review checkpoints
 
-The proposed default visibility table, inline-disclosure replacement, posted Item hierarchy and first-PR form scope are now explicit for review. If these are accepted, update the research's pending-decision notes and accepted ADR/design guidance during implementation. System-wide adoption after Planning remains a sequence of scoped PRs, not an unreviewed global replacement.
+The accepted visibility table, inline disclosure, posted Item hierarchy and form scope are implemented and recorded in the ADR/design guidance. System-wide adoption after Planning remains a sequence of scoped PRs, not an unreviewed global replacement.
 
-## Proposed PR review package
+## PR review package
 
-Title: `Standardize workspace headers and simplify Planning information hierarchy`.
+- [PR #235: shared workspace header](https://github.com/j-allekine/masanao/pull/235): universal header presentation, authenticated consumers and shell keyboard behavior.
+- [PR #236: compact Planning](https://github.com/j-allekine/masanao/pull/236): Planning catalog/record hierarchy, optional inline details, responsive child collections, preserved return state and posted Item inspection.
 
-Description: Planning repeats record metadata, explanatory context cards and independently styled headers before the working collections. Introduce shared header presentation, keep one record heading and deliberate parent navigation, disclose only useful additional information, and simplify posted Item inspection while retaining immutable quantity/source evidence.
-
-Attach before/after captures for Design, Activity, draft meal and posted Item details at desktop/mobile widths. State the exact affected routes, any exceptions, test results and whether global surfaces were changed. Describe only implemented behavior; do not present this checklist or proposed results as completed verification. Keep the first PR focused on Planning while documenting the reusable standard for later module adoption.
+Fresh captures and exact verification scope are listed above. Inventory arithmetic, immutable snapshots, FIFO, authorization and save/post semantics remain governed by the existing domain specifications.

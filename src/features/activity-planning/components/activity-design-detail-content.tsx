@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -148,9 +147,9 @@ function ActivityRow({
   );
 }
 
-function ActivitiesEmptyState({ onCreate }: { onCreate: () => void }) {
+function ActivitiesEmptyState() {
   return (
-    <Empty className="min-h-60 rounded-lg border bg-background">
+    <Empty className="min-h-40 rounded-lg border bg-background">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Inbox aria-hidden="true" />
@@ -160,12 +159,6 @@ function ActivitiesEmptyState({ onCreate }: { onCreate: () => void }) {
           Activities created here stay under this Activity Design.
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent>
-        <Button onClick={onCreate}>
-          <Plus data-icon="inline-start" aria-hidden="true" />
-          Create Activity
-        </Button>
-      </EmptyContent>
     </Empty>
   );
 }
@@ -242,7 +235,7 @@ export default function ActivityDesignDetailContent({
             </Button>
           </div>
           {activityDesign.activities.length === 0 ? (
-            <ActivitiesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
+            <ActivitiesEmptyState />
           ) : (
             <ActivityRows
               activityDesign={createParent}

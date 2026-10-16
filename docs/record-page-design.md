@@ -1,8 +1,10 @@
 # Record-page design direction
 
-The accepted Meal Schedule arrangement is a good fit for Masanao's nested planning workflow. It is a system direction, not a claim that one layout is proven best for every user task. [ADR 0009](adr/0009-task-focused-record-pages.md) records the decision. No global tokens, shell, primitives or other feature layouts change in this implementation.
+Masanao uses one shared workspace header across authenticated modules, with task-specific page bodies. All Planning adopts the compact record direction described here; other module bodies remain separate rollout work. [ADR 0009](adr/0009-task-focused-record-pages.md) records the original Meal Schedule choice and its later Planning refinement. Global palette/type tokens are unchanged. The original capture notes below are historical; current evidence belongs to the linked implementation specs.
 
 ## Pattern
+
+Retain the shared workspace header and one sidebar toggle above the record body. Its module title is orientation, not a second record heading.
 
 1. Breadcrumbs provide the hierarchy and parent destinations.
 2. One heading identifies the record, with a nearby lifecycle badge when applicable.

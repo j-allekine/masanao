@@ -693,7 +693,7 @@ test.describe("Activity planning journey", () => {
         ).toBeVisible();
         await expect(
           page.getByRole("button", { name: "Create Activity", exact: true }),
-        ).toHaveCount(2);
+        ).toHaveCount(1);
         expect(
           await page.evaluate(() => ({
             scrollWidth: document.documentElement.scrollWidth,
@@ -850,9 +850,7 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByRole("link", { name: design.activityDesignNo, exact: true }),
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
-        await expect(
-          page.getByRole("link", { name: design.activityDesignNo, exact: true }),
-        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        await expect(page.getByRole("link", { name: "Back to Activity Design", exact: true })).toHaveCount(0);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
         await expect(page.getByText(viewport.width < 640 ? "Time: 12:00" : "12:00", { exact: true })).toBeVisible();
         await expect(page.getByText("Planned pax", { exact: true })).toBeVisible();
@@ -948,7 +946,7 @@ test.describe("Activity planning journey", () => {
         .click();
       const createDialog = page.getByRole("dialog");
       await expect(createDialog).toContainText(
-        `Add a Meal Schedule under “${emptyActivity.name}”`,
+        `Under “${emptyActivity.name}”.`,
       );
       await createDialog
         .getByRole("textbox", { name: "Meal Schedule label", exact: true })

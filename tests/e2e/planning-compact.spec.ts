@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 
 const design = "/activity-designs/e2e-issuance-compact-design-11";
-const activity = `${design}/activities/e2e-issuance-compact-activity`;
 const detailedActivity = `${design}/activities/e2e-issuance-compact-detailed`;
 const catalog = "/activity-designs?activityDesignsSearch=Compact+Plan&activityDesignsPage=2";
 

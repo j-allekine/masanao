@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -145,9 +144,9 @@ function MealScheduleRow({
   );
 }
 
-function MealSchedulesEmptyState({ onCreate }: { onCreate: () => void }) {
+function MealSchedulesEmptyState() {
   return (
-    <Empty className="min-h-60 rounded-lg border bg-background">
+    <Empty className="min-h-40 rounded-lg border bg-background">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <CalendarDays aria-hidden="true" />
@@ -157,12 +156,6 @@ function MealSchedulesEmptyState({ onCreate }: { onCreate: () => void }) {
           Add the first Meal Schedule for this Activity when its meal details are ready.
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent>
-        <Button onClick={onCreate}>
-          <Plus data-icon="inline-start" aria-hidden="true" />
-          Add Meal Schedule
-        </Button>
-      </EmptyContent>
     </Empty>
   );
 }
@@ -255,7 +248,7 @@ export default function ActivityDetailContent({
             </Button>
           </div>
           {activity.mealSchedules.length === 0 ? (
-            <MealSchedulesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
+            <MealSchedulesEmptyState />
           ) : (
             <MealScheduleRows
               activityDesignId={activity.activityDesign.id}

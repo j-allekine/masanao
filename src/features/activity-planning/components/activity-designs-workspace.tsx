@@ -18,6 +18,7 @@ import {
   type ActivityDesignFilters,
 } from "./activity-design-filters";
 import ActivityDesignTable from "./activity-design-table";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import ActivityDesignToolbar from "./activity-design-toolbar";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
@@ -161,6 +162,7 @@ export default function ActivityDesignsWorkspace({
       />
       <ActivityDesignTable
         activityDesigns={paginatedActivityDesigns}
+        catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
         filters={filters}
         onClearFilters={clearFilters}
         onEdit={(activityDesign) =>
