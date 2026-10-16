@@ -261,7 +261,7 @@ test.describe("Activity planning journey", () => {
       const detailBodyFace = await page
         .getByText(activityDesign.activityDesignNo, { exact: true })
         .evaluate((element) => getComputedStyle(element).fontFamily);
-      await expect(page.getByText("FY 2026", { exact: true })).toHaveCSS(
+      await expect(page.getByText("Fiscal year: 2026", { exact: true })).toHaveCSS(
         "font-family",
         detailBodyFace,
       );
@@ -646,9 +646,10 @@ test.describe("Activity planning journey", () => {
           }),
         ).toBeVisible();
         await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await page.getByRole("button", { name: "Additional details", exact: true }).click();
         await expect(page.getByText("AIP-E2E-215", { exact: true })).toBeVisible();
         await expect(
-          page.getByText("1 Activity", { exact: true }).first(),
+          page.getByRole("heading", { name: "Activities (1)", exact: true }),
         ).toBeVisible();
 
         const activityRow = page
@@ -664,7 +665,7 @@ test.describe("Activity planning journey", () => {
           page.getByText("E2E Unrelated Activity", { exact: true }),
         ).toHaveCount(0);
         await expect(
-          page.getByRole("link", { name: "Back to Activity Designs", exact: true }),
+          page.getByRole("link", { name: "Activity Designs", exact: true }),
         ).toBeVisible();
         expect(
           await page.evaluate(() => ({
@@ -850,10 +851,10 @@ test.describe("Activity planning journey", () => {
           page.getByRole("link", { name: design.activityDesignNo, exact: true }),
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
         await expect(
-          page.getByRole("link", { name: "Back to Activity Design", exact: true }),
+          page.getByRole("link", { name: design.activityDesignNo, exact: true }),
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
-        await expect(page.getByText("12:00", { exact: true })).toBeVisible();
+        await expect(page.getByText(viewport.width < 640 ? "Time: 12:00" : "12:00", { exact: true })).toBeVisible();
         await expect(page.getByText("Planned pax", { exact: true })).toBeVisible();
         await page.screenshot({ path: `test-results/planning-activity-${viewport.width}.png`, fullPage: true });
         await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
@@ -870,6 +871,7 @@ test.describe("Activity planning journey", () => {
           "href",
           `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
         );
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
         await openMealSchedule.focus();
         await expect(openMealSchedule).toBeFocused();
         await page.keyboard.press("Enter");
@@ -893,7 +895,7 @@ test.describe("Activity planning journey", () => {
         await page.screenshot({ path: `test-results/planning-meal-${viewport.width}.png`, fullPage: true });
         const backToActivity = page.getByRole("link", { name: populatedActivity.name, exact: true });
         await expect(page.getByRole("button", { name: "Add Recipes", exact: true })).toBeVisible();
-        await expect(page.getByRole("button", { name: "Meal details", exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Additional details", exact: true })).toBeVisible();
         await expect(page.getByRole("link", { name: "Open issuance draft", exact: true })).toHaveCount(0);
         await expect(page.getByText("Food Supplies", { exact: true })).toHaveCount(0);
         await expect(
@@ -927,7 +929,8 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByText("No Meal Schedules yet.", { exact: true }),
         ).toBeVisible();
-        await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(4);
+        await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(1);
+        await expect(page.getByRole("button", { name: "Additional details", exact: true })).toHaveCount(0);
         expect(
           await page.evaluate(() => ({
             scrollWidth: document.documentElement.scrollWidth,

@@ -6,7 +6,7 @@ The accepted Meal Schedule arrangement is a good fit for Masanao's nested planni
 
 1. Breadcrumbs provide the hierarchy and parent destinations.
 2. One heading identifies the record, with a nearby lifecycle badge when applicable.
-3. A plainly named details action opens optional supporting information.
+3. A plainly named inline disclosure reveals useful, non-repeated supporting information; omit it when empty. Larger inspection tasks may still use a Sheet or dialog.
 4. The main body contains the user's working data and controls.
 5. Draft actions distinguish secondary save from primary final posting. Finality, validation and errors remain visible.
 
@@ -52,3 +52,7 @@ The subsequent [system reverification](system-reverification-2026-10-16.md) reco
 - Coverage includes direct Meal Schedule entry, old-link redirect, unsaved breadcrumb navigation, saved Back/Forward, keyboard focus, 320px layout, Recipe/Stock selection, exact quantity review, posting, immutable master-data snapshots and FIFO receipt detail.
 
 Reproduce with `pnpm exec playwright test tests/e2e/activity-planning.spec.ts tests/e2e/issuance tests/e2e/meal-schedule-layout.spec.ts`. CI status is recorded against the pushed PR head; CI does not run the browser suite.
+
+## Shared foundation and Planning adoption
+
+The later approved split is system-wide WorkspaceHeader presentation first, then all Planning page bodies in a dependent PR. The [Planning spec](specs/planning-frontend-standard.md) and ADR 0009 refinement supersede the initial default Meal details Sheet arrangement. Remove repetitive context cards and disclose only additional values. Existing historical capture/verification notes above describe their original implementation state, not fresh evidence for the later refinement.

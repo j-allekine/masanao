@@ -224,10 +224,7 @@ export default function ActivitiesWorkspace({
     >
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">Activities</h1>
-          <p className="text-body text-muted-foreground">
-            Browse municipal kitchen activities across planning contexts.
-          </p>
+          <h1 className="text-heading-2 font-semibold">Activities</h1>
         </div>
         <WorkspacePrimaryAction
           id="new-activity"

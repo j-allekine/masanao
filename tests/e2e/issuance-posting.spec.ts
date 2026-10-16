@@ -179,8 +179,12 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   const itemDetails = page.getByRole("button", { name: "Details for Posting Eggs", exact: true });
   await itemDetails.click();
   const detail = page.getByRole("dialog", { name: "Details for Posting Eggs" });
+  await expect(detail.getByText("Whole quantities only", { exact: true })).not.toBeVisible();
+  await detail.getByRole("button", { name: "Calculation details", exact: true }).click();
   await expect(detail.getByText("Whole quantities only", { exact: true })).toBeVisible();
   await expect(detail.getByText("18.5 pc", { exact: true })).toBeVisible();
+  await expect(detail.locator("dd").filter({ hasText: /^19 pc$/ })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("mobile-item-details.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(itemDetails).toBeFocused();
   const recordDetails = page.getByRole("button", { name: "Record details", exact: true });

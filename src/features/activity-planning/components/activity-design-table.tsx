@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -16,6 +16,7 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ActivityDesignListItem } from "../types";
 import { hasActivityDesignFilters } from "./activity-design-filters";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivityDesignActionsMenu from "./activity-design-actions-menu";
 import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 
@@ -33,6 +34,8 @@ function ActivityDesignRow({
   onDeleted: () => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const catalogUrl = getPlanningReturnUrl(`/activity-designs?${searchParams}`);
   const formattedActivityCount = activityCountFormatter.format(
     activityDesign.activityCount,
   );
@@ -45,7 +48,7 @@ function ActivityDesignRow({
         </TableCell>
         <TableCell className="max-w-[28rem]">
           <Link
-            href={`/activity-designs/${activityDesign.id}`}
+            href={withPlanningReturn(`/activity-designs/${activityDesign.id}`, catalogUrl)}
             className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activityDesign.title}

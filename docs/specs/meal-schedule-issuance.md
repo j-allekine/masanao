@@ -10,9 +10,9 @@ Create the Meal Schedule's single Issuance Record with saved draft preparation a
 
 ## Unified Meal Schedule workspace
 
-[ADR 0009](../adr/0009-task-focused-record-pages.md) records the approved navigation refinement. The Meal Schedule page directly contains draft preparation or posted review. Retain its full navigable breadcrumbs, one meal heading, issuance state and a Meal details Sheet for current planning information. Remove the intermediate issuance card/page, repeated module heading and duplicate Back-to-parent button. Existing `/issuance` bookmarks redirect to the Meal Schedule URL. Breadcrumb links retain dirty-draft protection; saving and posting revalidate the canonical Meal Schedule page. Save draft is secondary; Post issuance is primary with the existing final confirmation.
+[ADR 0009](../adr/0009-task-focused-record-pages.md) records the approved navigation refinement. The Meal Schedule page directly contains draft preparation or posted review. Retain its full navigable breadcrumbs, one meal heading, issuance state and an inline Additional details disclosure for useful non-repeated planning information. Remove the intermediate issuance card/page, repeated module heading and duplicate Back-to-parent button. Existing `/issuance` bookmarks redirect to the Meal Schedule URL. Breadcrumb links retain dirty-draft protection; saving and posting revalidate the canonical Meal Schedule page. Save draft is secondary; Post issuance is primary with the existing final confirmation.
 
-Posted headings and record evidence remain immutable snapshots. The Meal details panel is explicitly current planning information; a later planning edit never rewrites issuance history. Keep the same permission boundaries and all quantity, save, posting and FIFO rules below.
+Posted headings and record evidence remain immutable snapshots. Additional planning information is explicitly current planning information; a later planning edit never rewrites issuance history. Keep the same permission boundaries and all quantity, save, posting and FIFO rules below.
 
 ## User Stories
 

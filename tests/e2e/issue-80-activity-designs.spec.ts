@@ -225,7 +225,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       const dialog = await openActivityDialog(page, title);
       await expect(dialog).toHaveAccessibleName(`Add Activity to “${title}”`);
       await expect(dialog).toContainText(
-        "The Activity Design context is fixed for this workflow.",
+        "The Activity Design is fixed for this Activity.",
       );
       await expect(
         dialog.getByRole("textbox", { name: "Activity name", exact: true }),

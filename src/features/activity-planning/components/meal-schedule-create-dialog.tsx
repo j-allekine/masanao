@@ -130,8 +130,8 @@ export default function MealScheduleCreateDialog({
           </DialogTitle>
           <DialogDescription>
             {mode === "edit"
-              ? "Update the saved Meal Schedule details. Its Activity context cannot be changed here."
-              : `Add a Meal Schedule under “${activity.name}”. The Activity Design and Activity context are fixed for this workflow.`}
+              ? "The Activity cannot be changed here."
+              : `Under “${activity.name}”.`}
           </DialogDescription>
         </DialogHeader>
         <form

@@ -71,7 +71,7 @@ export default function ActivityDesignDialog({
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="sr-only">
                 {dialogState.mode === "edit"
                   ? "Update this planning context. Changes to its number are checked for duplicates before saving."
                   : "Create a planning context for related Activities."}

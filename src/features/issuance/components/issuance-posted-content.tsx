@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { RecordDetails } from "@/components/workspace/record-details";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MealScheduleHeader } from "@/features/activity-planning/ui";
@@ -99,10 +100,9 @@ export default function IssuancePostedContent({
               <DialogTitle>Details for {receiptRow?.itemName}</DialogTitle>
               <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
             </DialogHeader>
-            <dl className="grid grid-cols-2 gap-4 text-body-sm">
-              <div className="min-w-0"><dt className="text-muted-foreground">Calculated</dt><dd className="break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{receiptRow?.calculatedQuantity} {receiptRow?.baseUnitAbbreviation}</dd></div>
-              <div className="min-w-0"><dt className="text-muted-foreground">Issued</dt><dd className="break-all font-medium tabular-nums">{receiptRow?.finalQuantity} {receiptRow?.baseUnitAbbreviation}{receiptRow?.adjusted ? " · Adjusted" : ""}</dd></div>
-              <div className="col-span-2"><dt className="text-muted-foreground">Policy at posting</dt><dd>{receiptRow?.policy === "whole-only" ? "Whole quantities only" : "Decimals allowed"}</dd></div>
+            <dl className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
+              <div><dt className="text-body-sm text-muted-foreground">Issued</dt><dd className="mt-1 break-all text-heading-2 font-semibold tabular-nums">{receiptRow?.finalQuantity} {receiptRow?.baseUnitAbbreviation}</dd></div>
+              <div><dt className="text-body-sm text-muted-foreground">Calculated</dt><dd className="mt-1 break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{receiptRow?.calculatedQuantity} {receiptRow?.baseUnitAbbreviation}</dd>{receiptRow?.adjusted ? <Badge variant="outline" className="mt-2">Adjusted</Badge> : null}</div>
             </dl>
             <h3 className="font-medium">Receipt sources</h3>
             {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">Receipt sources were not recorded for this older issuance.</p>}
@@ -110,21 +110,23 @@ export default function IssuancePostedContent({
               {receiptRow?.receiptAllocations?.map((allocation) => <li key={allocation.receiptLineId} className="flex min-w-0 justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="break-words font-medium">{allocation.receiptNo}</p>
-                  <p className="break-words text-body-sm">{allocation.purchaseOrderNo}</p>
+                  <p className="break-words text-body-sm"><span className="text-muted-foreground">PO: </span><span>{allocation.purchaseOrderNo}</span></p>
                   <p className="text-body-sm text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>
-                  {allocation.basis === "reconstructed" ? <Badge variant="secondary">Reconstructed using FIFO</Badge> : null}
+                  {allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}
                 </div>
                 <p className="max-w-1/3 break-all text-body-sm tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</p>
               </li>)}
             </ul>
             <div className="hidden sm:block"><Table>
-              <TableHeader><TableRow><TableHead>Receipt</TableHead><TableHead>Purchase Order</TableHead><TableHead>Quantity</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Receipt</TableHead><TableHead>Purchase Order</TableHead><TableHead className="text-right">Quantity</TableHead></TableRow></TableHeader>
               <TableBody>{receiptRow?.receiptAllocations?.map((allocation) => <TableRow key={allocation.receiptLineId}>
-                <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>{allocation.basis === "reconstructed" ? <Badge variant="secondary">Reconstructed using FIFO</Badge> : null}</TableCell>
+                <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>{allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}</TableCell>
                 <TableCell className="whitespace-normal break-words">{allocation.purchaseOrderNo}</TableCell>
-                <TableCell className="whitespace-normal break-all tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</TableCell>
+                <TableCell className="whitespace-normal break-all text-right tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</TableCell>
               </TableRow>)}</TableBody>
             </Table></div>
+            {receiptRow?.receiptAllocations?.some((allocation) => allocation.basis === "reconstructed") ? <p className="text-body-sm text-muted-foreground">Historical receipt sources were inferred using FIFO; they do not prove which receipts were picked at the original posting.</p> : null}
+            <RecordDetails label="Calculation details" fields={[{ label: "Quantity rule at posting", value: receiptRow?.policy === "whole-only" ? "Whole quantities only" : "Decimals allowed" }]} />
           </DialogContent>
         </Dialog>
         {draft.recipes.length ? <Collapsible className="mt-6 border-t pt-2">
