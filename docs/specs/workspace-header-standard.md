@@ -24,3 +24,12 @@ Meal Schedule's draft/posted body fills the viewport remaining below the shared 
 - Run lint, architecture checks, relevant unit/browser tests, typecheck and production build; record exact results in the PR.
 
 The second PR removes redundant Planning context cards/copy, improves optional details and posted Item inspection. It does not reimplement or fork this header. Later module cleanup PRs reuse the same presentation boundaries.
+
+## Verification evidence
+
+- 425 unit/integration tests passed across 61 files, including six loading/error orientation cases. Lint, both architecture checks, TypeScript and production build passed.
+- Full browser run: 87/89 passed. One existing Planning keyboard journey needed a client-ready wait before focusing its next navigation link; the new desktop-tooltip test needed a header-scoped toggle locator and actual Tab navigation rather than programmatic pointer-modality focus.
+- The two failed cases and the mobile Escape/focus regression have subsequent focused passing evidence (three checks, across two focused runs). All 89 unique browser scenarios therefore have passing evidence; this is not a claim of one uninterrupted 89/89 run.
+- The all-family journey covers 14 authenticated routes at desktop and 320px with one shared header and fresh captures. Six intentional header visual baselines were individually reviewed. Master Data's existing subsection-based body was retained; the header introduces no h1.
+- A failing mobile Escape regression exposed visually hidden but active sidebar tooltips. Use the supported Tooltip disabled prop while expanded/on mobile; collapsed-desktop keyboard tooltips remain verified.
+- Local artifacts: `C:/Users/LENOVO/.codex/header-foundation-full`, `header-foundation-focused-final`, `header-desktop-final` and adjacent logs; source checks: `header-foundation-final-checks.log`. These are isolated generated databases, not the manual preview data.
