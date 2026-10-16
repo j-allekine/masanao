@@ -73,9 +73,11 @@ test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => 
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/overview");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-  await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+  await page.locator('[data-slot="workspace-header"]').getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
   await expect(page.locator('[data-state="collapsed"][data-slot="sidebar"]')).toBeVisible();
-  await page.getByRole("link", { name: "Planning", exact: true }).focus();
+  await page.getByRole("link", { name: "Overview", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Planning", exact: true })).toBeFocused();
   await expect(page.getByRole("tooltip").getByText("Planning", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("tooltip")).toBeHidden();

@@ -870,6 +870,7 @@ test.describe("Activity planning journey", () => {
           "href",
           `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
         );
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
         await openMealSchedule.focus();
         await expect(openMealSchedule).toBeFocused();
         await page.keyboard.press("Enter");
