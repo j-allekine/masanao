@@ -1,8 +1,8 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import WorkspaceHeader from "@/components/workspace/workspace-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import {
-  getWorkspaceSectionDetails,
+  getWorkspaceHeaderTitle,
   type WorkspaceSectionId,
 } from "@/lib/workspace-navigation";
 
@@ -31,18 +31,11 @@ export default function WorkspaceRouteLoading({
   activeSection: WorkspaceSectionId;
   children?: React.ReactNode;
 }) {
-  const section = getWorkspaceSectionDetails(activeSection);
 
   return (
     <WorkspaceShell user={loadingUser} activeSection={activeSection}>
       <div className="flex min-h-svh flex-col bg-background">
-        <header className="flex min-h-16 items-center gap-3 border-b px-4 sm:px-6">
-          <SidebarTrigger />
-          <div className="min-w-0 border-l pl-3">
-            <p className="truncate text-label text-muted-foreground">Masanao municipality</p>
-            <p className="truncate text-body-sm font-medium">{section.label}</p>
-          </div>
-        </header>
+        <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
         <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
           {children ?? <DefaultLoadingLayout />}
         </div>

@@ -12,8 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   WorkspaceCatalogToolbar,
   WorkspacePrimaryLink,
@@ -172,18 +171,7 @@ export default function RecipesContent({
 
   return (
     <div className="flex min-h-svh flex-col bg-card">
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-8" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="truncate text-heading-3 font-semibold">Recipes</p>
-            <p className="truncate text-body-sm text-muted-foreground">
-              Browse reusable food templates for the municipal kitchen.
-            </p>
-          </div>
-        </div>
-      </header>
+      <WorkspaceHeader title="Supply Operations" />
 
       <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">

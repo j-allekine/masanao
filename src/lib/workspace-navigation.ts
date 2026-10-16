@@ -72,3 +72,10 @@ export function getWorkspaceSection(value: string): WorkspaceSectionId | undefin
 export function getWorkspaceSectionDetails(id: WorkspaceSectionId) {
   return workspaceSections.find((section) => section.id === id) ?? workspaceSections[0]
 }
+
+/** Display labels shared by ready, loading and failed workspace surfaces. */
+export function getWorkspaceHeaderTitle(id: WorkspaceSectionId) {
+  if (id === "activity-designs") return "Planning"
+  const section = getWorkspaceSectionDetails(id)
+  return section.groupId === "supply-operations" ? "Supply Operations" : section.label
+}

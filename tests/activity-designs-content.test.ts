@@ -41,8 +41,6 @@ describe("Activity Designs header", () => {
 
     expect(markup).toContain('aria-label="Open sidebar"');
     expect(markup).toContain("Planning");
-    expect(markup).toContain(
-      "Plan upcoming municipal activities.",
-    );
+    expect(markup).not.toContain("Plan upcoming municipal activities.");
   });
 });

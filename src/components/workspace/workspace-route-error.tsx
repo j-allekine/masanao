@@ -4,9 +4,10 @@ import { RefreshCw } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import {
+  getWorkspaceHeaderTitle,
   getWorkspaceSectionDetails,
   type WorkspaceSectionId,
 } from "@/lib/workspace-navigation";
@@ -31,13 +32,7 @@ export default function WorkspaceRouteError({
   return (
     <WorkspaceShell user={errorUser} activeSection={activeSection}>
       <div className="flex min-h-svh flex-col bg-background">
-        <header className="flex min-h-16 items-center gap-3 border-b px-4 sm:px-6">
-          <SidebarTrigger />
-          <div className="min-w-0 border-l pl-3">
-            <p className="truncate text-label text-muted-foreground">Masanao municipality</p>
-            <p className="truncate text-body-sm font-medium">{section.label}</p>
-          </div>
-        </header>
+        <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
         <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
           {children}
           <Alert variant="destructive" role="alert">
