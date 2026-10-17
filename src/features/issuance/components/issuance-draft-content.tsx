@@ -582,7 +582,7 @@ export default function IssuanceDraftContent({
 
   return (
     <div
-      className="flex h-svh min-h-0 flex-col bg-card"
+      className="flex min-h-0 flex-1 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <main className="flex min-h-0 flex-1 flex-col">

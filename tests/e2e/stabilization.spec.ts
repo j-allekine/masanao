@@ -182,7 +182,7 @@ test.describe("frontend stabilization regression seam", () => {
         await openActivityDesigns(page);
 
         await expect(
-          page.getByText("Plan upcoming municipal activities.", { exact: true }),
+          page.locator('[data-slot="workspace-header"]').getByText("Planning", { exact: true }),
         ).toBeVisible();
         const search = page.getByRole("searchbox", {
           name: "Search Activity Designs",

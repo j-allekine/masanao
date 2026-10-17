@@ -29,8 +29,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
   TableCell,
@@ -257,18 +256,7 @@ export default function ActivityDetailContent({
       className="flex min-h-svh flex-col bg-card"
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <header className="flex min-h-16 items-center justify-between gap-3 border-b px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-8" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="truncate text-heading-3 font-semibold">Planning</p>
-            <p className="truncate text-body-sm text-muted-foreground">
-              Review an Activity and its Meal Schedules.
-            </p>
-          </div>
-        </div>
-      </header>
+      <WorkspaceHeader title="Planning" />
 
       <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
         <Breadcrumb>
