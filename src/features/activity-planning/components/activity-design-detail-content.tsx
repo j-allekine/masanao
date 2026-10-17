@@ -105,7 +105,7 @@ function ActivityRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] font-medium">
+        <TableCell className="max-w-[24rem] whitespace-normal font-medium">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, returnUrl)}
             aria-label={`Open Activity: ${activity.name}`}

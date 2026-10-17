@@ -586,6 +586,7 @@ export default function IssuanceDraftContent({
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <main className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
           <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
             status={<Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>} />
@@ -632,7 +633,7 @@ export default function IssuanceDraftContent({
         </div>
         <section
           aria-labelledby="recipes-heading"
-          className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6"
+          className="px-4 py-5 sm:px-6"
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
@@ -766,6 +767,7 @@ export default function IssuanceDraftContent({
             )}
           </section>
         </section>
+        </div>
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-card px-4 py-4 sm:px-6">
           <div className="text-body-sm text-muted-foreground">
             <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>

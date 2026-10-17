@@ -2,7 +2,7 @@
 
 ## Scope and revision
 
-Reviewed PR #236 against specification #238 and tickets #241–#245, with shared-header specification #237 supplied by merged PR #235. The checked application revision is `15422dcecb21166d07cfa624ffa04f34d85c4dbe`; any following report-only commit does not alter that source/test tree.
+Reviewed PR #236 against specification #238 and tickets #241–#245, with shared-header specification #237 supplied by merged PR #235. The initial checked application revision was `15422dcecb21166d07cfa624ffa04f34d85c4dbe`. The mobile review follow-up below records later source changes; earlier results remain evidence for their stated revision.
 
 PR #235 is merged. PR #236 was retargeted from its former header branch to main so repository CI can run. This task does not authorize merging PR #236.
 
@@ -38,3 +38,19 @@ Fresh Activities desktop/mobile screenshots were inspected. The catalog retains 
 ## Limits
 
 This is implementation, source, automated behavior and rendered-layout verification. It is not a complete accessibility certification or staff usability study. No new operational workflows, blanket dialog replacements or broad page-body redesign of other modules are included. Parent issue bodies and original requirements are unchanged.
+
+## Mobile review follow-up
+
+Greptile subsequently identified two valid mobile layout gaps on `a9b09e7`: a long Office in Activity mobile facts inherited no-wrap from the shared table cell, and expanded Meal Schedule metadata could consume the non-scrolling draft header and displace its working collection/footer.
+
+Both were reproduced with valid maximum-length Office (200 characters) and Venue (300 characters) data. The Office regression failed its local table overflow assertion. The expanded-details regression failed because Post issuance was outside the viewport. An initial version of that second test also pressed Escape before the Recipe picker had settled; its final version uses the visible Done action and asserts footer visibility before opening the picker.
+
+The Activity identity/facts cell now explicitly allows normal whitespace wrapping. Draft metadata and supply collections share one scrolling work area below the universal workspace header, while the existing action footer stays outside that scroller. This changes no domain rules, inputs, workflow or posting behavior.
+
+- Affected browser verification: **12 passed** in one run, covering draft preparation, Stock editing, canceled delayed application, history guards, Meal Schedule layout, compact Planning and the two new regressions.
+- The long-details journey covers 320×640, 320×480 and 1280×800; it inspects expanded Venue, opens Recipes, reaches Stock and keeps Post issuance visible without collapsing the details or growing the document beyond the viewport.
+- Reviewed fresh long-Office and expanded-work screenshots. Manual sample data remains untouched.
+- Final source checks: **433 tests across 62 files passed**, source/changed-test lint and both architecture checks passed. Production build and TypeScript passed. GitHub checks must match the final pushed revision before merge.
+- One account-creation unit test timed out at five seconds during concurrent compilation. It is retained in the raw log; the complete 433-test suite then passed without altered assertions or timeout settings; do not treat this as an account-management code change.
+
+Evidence: `C:/Users/LENOVO/.codex/pr236-long-details-red/`, `pr236-expanded-red/`, `pr236-mobile-fixed/`, `pr236-mobile-fixed.log`, `pr236-mobile-quality-confirmed.log` and `pr236-mobile-build.log`. The earlier 93-scenario browser evidence was not rerun wholesale for these two scoped layout fixes; the current 12-test affected run supplies fresh browser evidence for them.
