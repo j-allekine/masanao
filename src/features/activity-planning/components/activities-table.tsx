@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import {
   TableBody,
@@ -19,15 +20,18 @@ import {
 } from "./activity-filters";
 import ActivityActionsMenu from "./activity-actions-menu";
 import DeleteActivityDialog from "./delete-activity-dialog";
+import { withPlanningReturn } from "./planning-return-state";
 
 const mealScheduleCountFormatter = new Intl.NumberFormat("en-US");
 
 function ActivityRow({
   activity,
+  catalogUrl,
   onEdit,
   onDelete,
 }: {
   activity: ActivityWorkspaceListItem;
+  catalogUrl: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -40,7 +44,12 @@ function ActivityRow({
     <>
       <TableRow className="hover:bg-muted/35">
       <TableCell className="max-w-[28rem]">
-        <span className="block truncate">{activity.name}</span>
+        <Link
+          href={withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, catalogUrl)}
+          className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {activity.name}
+        </Link>
       </TableCell>
       <TableCell className="max-w-[28rem]">
         <span className="block truncate">{activity.activityDesignTitle}</span>
@@ -73,12 +82,14 @@ function ActivityRow({
 
 export default function ActivitiesTable({
   activities,
+  catalogUrl = "/activities",
   filters,
   onClearSearch,
   onEdit,
   onDeleted,
 }: {
   activities: ActivityWorkspaceListItem[];
+  catalogUrl?: string;
   filters: ActivityFilters;
   onClearSearch: () => void;
   onEdit: (activity: ActivityWorkspaceListItem) => void;
@@ -132,6 +143,7 @@ export default function ActivitiesTable({
           <ActivityRow
             key={activity.id}
             activity={activity}
+            catalogUrl={catalogUrl}
             onEdit={() => onEdit(activity)}
             onDelete={() => onDeleted(activity.id)}
           />

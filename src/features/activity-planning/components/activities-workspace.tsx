@@ -12,6 +12,7 @@ import type {
   ActivityWorkspaceListItem,
 } from "../types";
 import ActivitiesTable from "./activities-table";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import ActivitiesToolbar from "./activities-toolbar";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
@@ -240,6 +241,7 @@ export default function ActivitiesWorkspace({
       />
       <ActivitiesTable
         activities={paginatedActivities}
+        catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
         filters={filters}
         onClearSearch={() => updateSearch("")}
         onEdit={setActivityForEdit}
