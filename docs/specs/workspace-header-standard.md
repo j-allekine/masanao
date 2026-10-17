@@ -1,35 +1,63 @@
-# Shared workspace header foundation
+## Problem Statement
 
-Status: implementation. First of two PRs: universal header foundation, then [Planning cleanup](planning-frontend-standard.md). Research: [frontend standard](../research/frontend-standard-research-2026-10-16.md).
+Staff see independently built headers across Masanao. Sidebar access, spacing, titles and loading/error orientation drift between modules. Some editors lack the same orientation, and the Meal Schedule once repeated its sidebar toggle inside breadcrumbs. This makes the system feel inconsistent.
 
-## Scope and ownership
+## Solution
 
-Every authenticated workspace uses `src/components/workspace/workspace-header.tsx`: Overview; Planning catalogs and Design/Activity/Meal records; Items; Recipe catalog/detail/create/edit; Purchase Order catalog/detail and its receiving background; Master Data; shared loading/error states. Login, API routes and isolated prototypes retain their own presentation.
+Use one shared workspace header throughout authenticated production pages. Keep familiar sidebar access and a clear workspace title above each page's task. Let each module retain its own record identity, actions and working layout. Deliver this foundation separately from the Planning page-body cleanup.
 
-The component owns the SidebarTrigger, decorative Separator, semantic heading appearance, responsive wrapping, spacing and optional description/action slots. Callers own title/copy, actions, data, permissions and route/record identity. It does not infer the route, fetch data or inject itself automatically from WorkspaceShell.
+## User Stories
 
-Planning title is `Planning`; supply modules use `Supply Operations`; Master Data uses `Master Data`; Overview uses `Overview`. `getWorkspaceHeaderTitle` supplies the same display mapping for shared loading/error views. This is presentation terminology, not a sidebar/navigation or domain rename.
+1. As a staff member, I want the same header layout across workspaces, so that I can orient myself without relearning each page.
+2. As a staff member, I want a clearly named sidebar toggle, so that I can open navigation with a pointer or keyboard.
+3. As a mobile staff member, I want the header to fit narrow screens, so that navigation remains reachable without horizontal page scrolling.
+4. As a staff member, I want a clear workspace title, so that I know which operational area I am using.
+5. As a staff member, I want record identity below the header, so that I can distinguish my workspace from my current task.
+6. As a staff member opening a Recipe editor, I want familiar workspace orientation, so that entering an editor does not remove navigation.
+7. As a staff member preparing issuance, I want its actions reachable below the header, so that consistent chrome does not obstruct work.
+8. As a staff member waiting for a page, I want the loading view to retain workspace orientation, so that I know where I am.
+9. As a staff member recovering from a page error, I want familiar orientation and recovery controls, so that I can continue confidently.
+10. As a keyboard user, I want Escape to dismiss mobile navigation and restore focus, so that I can resume the page.
+11. As a keyboard user with collapsed desktop navigation, I want readable navigation tooltips, so that icons remain understandable.
+12. As a staff member moving between modules, I want my permissions, forms and records preserved, so that visual consistency does not change operational behavior.
 
-Use the existing 64px minimum height, gutters and type roles; allow wrapping rather than truncating important content. The title is orientation text, not a second page h1. Pages keep one main task/record heading and existing bodies. Routine header subtitles are omitted. The universal component is the only workspace owner of SidebarTrigger; the breadcrumb row does not repeat it.
+## Implementation Decisions
 
-Meal Schedule's draft/posted body fills the viewport remaining below the shared header, preserving action reachability. Recipe editors gain the same workspace orientation as their catalog/detail pages. The shared shell itself does not change.
+- Introduce one feature-independent WorkspaceHeader composing the existing shadcn sidebar trigger and separator, with a title and optional description/action content.
+- The shared component owns header appearance, responsive wrapping and interaction chrome. Features own copy, data, permissions, record identity and actions; the component does not fetch data or infer routes.
+- Adopt across Overview, Planning catalogs and records, Items, Recipe catalog/detail/create/edit, Purchase Order catalog/detail and receiving background, Master Data, and shared loading/error views.
+- Display Planning, Supply Operations, Master Data or Overview according to the current module. Loading/error display mapping matches ready views. This does not rename navigation or domain concepts.
+- Keep the existing semantic design tokens, 64px minimum header height and responsive gutters. Workspace orientation is not an additional page h1.
+- Use one header sidebar toggle per page. Do not repeat it in breadcrumbs or inject an automatic second header from the shell.
+- Omit routine header subtitles; retain the optional description slot for genuinely useful orientation. Actions remain caller-supplied.
+- Keep existing page bodies. Allow Meal Schedule draft/posted content to fill the remaining viewport and preserve reachable actions.
+- Disable sidebar tooltips when expanded or on mobile, preserving collapsed-desktop keyboard tooltips and mobile Sheet dismissal.
+- Preserve the single Next.js application, existing architecture boundaries, authorization, URLs and domain workflows. No schema or API changes.
 
-## Compatibility and verification
+## Testing Decisions
 
-- Preserve all domain rules, permissions, body content, URL/filter state, dialogs and mutations.
-- Shared loading/error views retain their recovery/loading content and match ready-state orientation.
-- Verify every listed route family at desktop and 320px, one header/toggle/h1, no header overflow, and keyboard mobile sidebar open/close/focus return.
-- Exercise draft/posted Meal Schedule and representative catalogs, records, editors and receiving; retain existing login and posting regression coverage.
-- Review expected visual-baseline changes individually; do not use broad snapshot refresh to hide unrelated differences.
-- Run lint, architecture checks, relevant unit/browser tests, typecheck and production build; record exact results in the PR.
+- The user confirmed real browser journeys as the primary verification boundary. Assert visible orientation, navigation and focus behavior rather than internal component structure.
+- Exercise authenticated route families at desktop and 320px, including catalogs, records, Recipe editors, receiving background, Meal Schedule draft/posted states and Master Data.
+- Check a single visible header/toggle, readable wrapping, no header-induced page overflow and reachable task actions. Preserve existing heading semantics; do not invent a new main heading for untouched bodies.
+- Exercise mobile navigation opening, Escape dismissal and focus return, plus collapsed-desktop keyboard tooltips.
+- Use existing shared loading/error rendering tests to verify title mapping and retained recovery content.
+- Reuse existing workspace-shell, header, Planning, issuance and catalog browser journeys. Review intentional visual baseline changes individually.
+- Retain domain regression coverage. Run source/changed-test lint, architecture checks, TypeScript and a production build for route/composition changes.
+- Use isolated browser databases and build outputs. Preserve manual sample records. Automated checks and screenshots do not establish complete accessibility conformance or staff usability.
 
-The second PR removes redundant Planning context cards/copy, improves optional details and posted Item inspection. It does not reimplement or fork this header. Later module cleanup PRs reuse the same presentation boundaries.
+## Out of Scope
 
-## Verification evidence
+- Global redesign of page bodies, record fields, tables, forms, filters or dialogs.
+- Sidebar destination changes, global palette/typeface/token changes, or a generic page/CRUD framework.
+- Login, API routes and isolated prototypes.
+- Permissions, inventory movements, FIFO, receiving/posting semantics, validation or database changes.
+- Automatic merger of the linked PR or its dependent Planning PR.
 
-- 425 unit/integration tests passed across 61 files, including six loading/error orientation cases. Lint, both architecture checks, TypeScript and production build passed.
-- Full browser run: 87/89 passed. One existing Planning keyboard journey needed a client-ready wait before focusing its next navigation link; the new desktop-tooltip test needed a header-scoped toggle locator and actual Tab navigation rather than programmatic pointer-modality focus.
-- The two failed cases and the mobile Escape/focus regression have subsequent focused passing evidence (three checks, across two focused runs). All 89 unique browser scenarios therefore have passing evidence; this is not a claim of one uninterrupted 89/89 run.
-- The all-family journey covers 14 authenticated routes at desktop and 320px with one shared header and fresh captures. Six intentional header visual baselines were individually reviewed. Master Data's existing subsection-based body was retained; the header introduces no h1.
-- A failing mobile Escape regression exposed visually hidden but active sidebar tooltips. Use the supported Tooltip disabled prop while expanded/on mobile; collapsed-desktop keyboard tooltips remain verified.
-- Local artifacts: `C:/Users/LENOVO/.codex/header-foundation-full`, `header-foundation-focused-final`, `header-desktop-final` and adjacent logs; source checks: `header-foundation-final-checks.log`. These are isolated generated databases, not the manual preview data.
+## Further Notes
+
+- This is specification 1 of 2. Specification 2 applies the quieter information hierarchy across Planning and depends on this header foundation.
+- Existing implementation: [PR #235](https://github.com/j-allekine/masanao/pull/235), still open when this specification was rewritten on 2026-10-17. The issue records agreed scope; it is not a request to reimplement completed changes.
+- Prior evidence: 425 unit/integration tests; lint, architecture, TypeScript and production build passed. All 89 unique browser scenarios have passing evidence across a full run and focused corrections, rather than one uninterrupted 89/89 run. The dependent Planning branch subsequently passed a 90-test full browser run including the header journeys.
+- Recheck the current PR revision and required CI before merging. Preserve prior research and the accepted ADR refinement. No merge is authorized by this spec rewrite.
+
+- Tracking specification: [#237](https://github.com/j-allekine/masanao/issues/237). Dependent Planning specification: [#238](https://github.com/j-allekine/masanao/issues/238).

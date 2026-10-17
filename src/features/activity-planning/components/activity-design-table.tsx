@@ -16,6 +16,7 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { ActivityDesignListItem } from "../types";
 import { hasActivityDesignFilters } from "./activity-design-filters";
+import { withPlanningReturn } from "./planning-return-state";
 import ActivityDesignActionsMenu from "./activity-design-actions-menu";
 import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 
@@ -23,11 +24,13 @@ const activityCountFormatter = new Intl.NumberFormat("en-US");
 
 function ActivityDesignRow({
   activityDesign,
+  catalogUrl,
   onEdit,
   onAddActivity,
   onDeleted,
 }: {
   activityDesign: ActivityDesignListItem;
+  catalogUrl: string;
   onEdit: () => void;
   onAddActivity: () => void;
   onDeleted: () => void;
@@ -45,7 +48,7 @@ function ActivityDesignRow({
         </TableCell>
         <TableCell className="max-w-[28rem]">
           <Link
-            href={`/activity-designs/${activityDesign.id}`}
+            href={withPlanningReturn(`/activity-designs/${activityDesign.id}`, catalogUrl)}
             className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activityDesign.title}
@@ -88,12 +91,14 @@ function ActivityDesignRow({
 
 export default function ActivityDesignTable({
   activityDesigns,
+  catalogUrl = "/activity-designs",
   filters,
   onClearFilters,
   onEdit,
   onAddActivity,
 }: {
   activityDesigns: ActivityDesignListItem[];
+  catalogUrl?: string;
   filters: { search: string };
   onClearFilters: () => void;
   onEdit: (activityDesign: ActivityDesignListItem) => void;
@@ -171,6 +176,7 @@ export default function ActivityDesignTable({
           <ActivityDesignRow
             key={activityDesign.id}
             activityDesign={activityDesign}
+            catalogUrl={catalogUrl}
             onEdit={() => onEdit(activityDesign)}
             onAddActivity={() => onAddActivity(activityDesign)}
             onDeleted={() => handleDeleted(activityDesign.id)}

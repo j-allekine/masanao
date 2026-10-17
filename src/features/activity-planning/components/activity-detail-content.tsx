@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { ArrowLeft, CalendarDays, ClipboardList, Plus } from "lucide-react";
+import { CalendarDays, Plus } from "lucide-react";
 
-import { buttonVariants, Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,20 +15,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -39,7 +33,6 @@ import {
 } from "@/components/ui/table";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { formatCentavosAsPesos } from "@/features/activity-planning/domain/planned-budget";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 import type { ActivityDetailItem, MealScheduleListItem } from "../types";
@@ -54,57 +47,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   year: "numeric",
   timeZone: "UTC",
 });
-
-function displayOptional(value: string | number | null) {
-  return value === null ? "Not recorded" : value;
-}
-
-function ActivityContext({ activity }: { activity: ActivityDetailItem }) {
-  const fields = [
-    ["Scheduled date", dateFormatter.format(new Date(activity.scheduledDate))],
-    ["Office", activity.officeName],
-    ["Venue", displayOptional(activity.venue)],
-    [
-      "Planned pax",
-      activity.plannedParticipantCount === null
-        ? "Not recorded"
-        : integerFormatter.format(activity.plannedParticipantCount),
-    ],
-    [
-      "Planned budget",
-      activity.plannedBudgetCentavos === null
-        ? "Not recorded"
-        : formatCentavosAsPesos(activity.plannedBudgetCentavos),
-    ],
-    ["Particulars", displayOptional(activity.particulars)],
-  ];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ClipboardList aria-hidden="true" />
-          Activity context
-        </CardTitle>
-        <CardDescription>
-          The planning information recorded for this Activity.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fields.map(([label, value]) => (
-            <div key={label} className="min-w-0">
-              <dt className="text-label font-medium text-muted-foreground">
-                {label}
-              </dt>
-              <dd className="mt-1 break-words text-body">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
-  );
-}
 
 function MealScheduleRows({
   activityDesignId,
@@ -122,12 +64,12 @@ function MealScheduleRows({
   return (
     <WorkspaceTableFrame
       caption="Meal Schedules under this Activity"
-      className="min-w-[30rem]"
+      className="w-full"
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Meal Schedule</TableHead>
-          <TableHead scope="col">Time</TableHead>
+          <TableHead scope="col" className="hidden sm:table-cell">Time</TableHead>
           <TableHead scope="col" className="text-center">
             Actions
           </TableHead>
@@ -163,20 +105,22 @@ function MealScheduleRow({
   onDeleted: (schedule: MealScheduleListItem) => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
 
   return (
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[24rem] font-medium">
           <Link
-            href={`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`}
+            href={withPlanningReturn(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, returnUrl)}
             aria-label={`Open Meal Schedule: ${schedule.label}`}
             className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {schedule.label}
           </Link>
+          <p className="mt-1 text-body-sm text-muted-foreground sm:hidden">Time: {schedule.mealTime}</p>
         </TableCell>
-        <TableCell className="font-mono tabular-nums">
+        <TableCell className="hidden font-mono tabular-nums sm:table-cell">
           {schedule.mealTime}
         </TableCell>
         <TableCell className="text-center">
@@ -200,9 +144,9 @@ function MealScheduleRow({
   );
 }
 
-function MealSchedulesEmptyState({ onCreate }: { onCreate: () => void }) {
+function MealSchedulesEmptyState() {
   return (
-    <Empty className="min-h-60 rounded-lg border bg-background">
+    <Empty className="min-h-40 rounded-lg border bg-background">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <CalendarDays aria-hidden="true" />
@@ -212,12 +156,6 @@ function MealSchedulesEmptyState({ onCreate }: { onCreate: () => void }) {
           Add the first Meal Schedule for this Activity when its meal details are ready.
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent>
-        <Button onClick={onCreate}>
-          <Plus data-icon="inline-start" aria-hidden="true" />
-          Add Meal Schedule
-        </Button>
-      </EmptyContent>
     </Empty>
   );
 }
@@ -228,6 +166,7 @@ export default function ActivityDetailContent({
   activity: ActivityDetailItem;
 }) {
   const router = useRouter();
+  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -258,59 +197,46 @@ export default function ActivityDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href="/activity-designs" />}>
-                Activity Designs
+              <BreadcrumbLink render={<Link href={returnUrl} />}>
+                {returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={parentUrl} />}>
+              <BreadcrumbLink render={<Link href={withPlanningReturn(parentUrl, returnUrl)} />}>
                 {activity.activityDesign.activityDesignNo}
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0 max-w-full">
-              <BreadcrumbPage className="block truncate">{activity.name}</BreadcrumbPage>
+              <BreadcrumbPage className="break-words">{activity.name}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-label text-primary">
-              Activity
-            </p>
-            <h1 className="break-words text-heading-1 font-semibold">{activity.name}</h1>
-            <p className="text-body text-muted-foreground">
-              {dateFormatter.format(new Date(activity.scheduledDate))} · {activity.officeName}
-            </p>
-          </div>
-          <Link
-            href={parentUrl}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "self-start sm:self-auto",
-            )}
-          >
-            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-            Back to Activity Design
-          </Link>
+        <div className="flex flex-col gap-3">
+          <h1 className="break-words text-heading-2 font-semibold">{activity.name}</h1>
+          <RecordFacts fields={[
+            { label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) },
+            { label: "Office", value: activity.officeName },
+            { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) },
+          ]} />
         </div>
-
-        <ActivityContext activity={activity} />
+        <RecordDetails disabled={!isHydrated} fields={[
+          ...(activity.venue ? [{ label: "Venue", value: activity.venue }] : []),
+          ...(activity.plannedBudgetCentavos !== null ? [{ label: "Planned budget", value: formatCentavosAsPesos(activity.plannedBudgetCentavos) }] : []),
+          ...(activity.particulars ? [{ label: "Particulars", value: activity.particulars }] : []),
+        ]} />
 
         <section aria-labelledby="activity-meal-schedules-title" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="activity-meal-schedules-title" className="text-heading-2 font-semibold">
-                Meal Schedules
+              <h2 id="activity-meal-schedules-title" className="text-heading-3 font-semibold">
+                Meal Schedules ({activity.mealSchedules.length})
               </h2>
-              <p className="text-body text-muted-foreground">
-                Meals planned directly under this Activity.
-              </p>
             </div>
             <Button
               id="new-meal-schedule"
@@ -322,7 +248,7 @@ export default function ActivityDetailContent({
             </Button>
           </div>
           {activity.mealSchedules.length === 0 ? (
-            <MealSchedulesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
+            <MealSchedulesEmptyState />
           ) : (
             <MealScheduleRows
               activityDesignId={activity.activityDesign.id}

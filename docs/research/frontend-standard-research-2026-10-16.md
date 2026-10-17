@@ -203,3 +203,7 @@ Passing automated checks and screenshot review supports these tested behaviors; 
 - Confirmed: clean and easily digestible frontend; whole Planning scope for the proposed separate PR; remove routine explanations; lead with working collections/actions; research principles intended for all modules.
 - Recommended, awaiting final agreement: one shared workspace header, breadcrumbs without duplicate parent Back actions, optional unique metadata disclosed inline, no empty details controls, and issued-Item result-first inspection.
 - Still to settle: exact always-visible Activity metadata, mobile collection behavior, form cleanup extent, and whether all screenshot-specific changes belong in the first PR. No application changes, accepted ADR amendments or new PR have been made by this research pass.
+
+## Implementation follow-through
+
+The later user-approved split is [PR #235](https://github.com/j-allekine/masanao/pull/235) for universal header presentation and [PR #236](https://github.com/j-allekine/masanao/pull/236) for all Planning cleanup, based on that foundation. The concrete defaults and current verification supersede the initial unresolved interview notes above; see [Planning spec](../specs/planning-frontend-standard.md) and [header spec](../specs/workspace-header-standard.md). This does not imply a completed usability study or adoption of every page-body pattern across every module.

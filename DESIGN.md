@@ -319,13 +319,13 @@ Borders should be thin and low contrast. Focus indicators must remain visible an
 
 Primary buttons are green and reserved for the main safe action on a screen. Secondary buttons use quiet surfaces with green text. Clay is an accent, not the default call to action. Destructive actions use the danger treatment and should be labeled with an explicit verb.
 
-The Workbench shell uses grouped navigation labels such as Today, Plan, Supplies, Accountability, and Admin. The selected item uses the soft-green active state, while the clay secondary token is reserved for attention cues, draft or review emphasis, and the next-action panel. Contextual tabs belong to the selected workspace and should not replace the stable global navigation.
+Current workspace navigation is grouped under Workspace, Supply Operations and Master Data, with Planning as the hierarchy entry. Use `src/lib/workspace-navigation.ts` as navigation authority; do not introduce aspirational destinations as part of a presentation cleanup. The selected item uses the soft-green active state, while the clay secondary token is reserved for attention cues, draft or review emphasis, and the next-action panel. Contextual tabs belong to the selected workspace and should not replace the stable global navigation.
 
 Data tables should support scanning: stable column alignment, compact rows, clear headers, readable quantities, and visible status labels. Use monospace type selectively for IDs, quantities, and reference numbers rather than styling the entire table as code.
 
 The Admin and User role badges are compact labels, not status indicators of personal importance. Admin-only controls should be grouped under administration or settings and should use the same surfaces, controls, and spacing as the rest of the system.
 
-In Masanao's domain model, planning context is not the same as an inventory movement. Activity Design, Activity, Meal Schedule, Schedule Entry, Recipe, and Food Supply should not be visually presented as if they change stock. Posted Delivery Receipts and posted Issuance Records are the actions that should receive strong operational confirmation and ledger-related status treatment.
+In Masanao's domain model, planning context is not the same as an inventory movement. Activity Design, Activity, Meal Schedule, Recipe and Item should not be visually presented as if they change stock. Posted Delivery Receipts and posted Issuance Records are the actions that should receive strong operational confirmation and ledger-related status treatment.
 
 ## Do's and Don'ts
 
@@ -348,3 +348,9 @@ In Masanao's domain model, planning context is not the same as an inventory move
 - Do not rely on color alone to communicate role, status, success, or danger.
 - Do not use a different palette to make Admin feel artificially superior to User.
 - Do not use large rounded cards, excessive pills, or heavy shadows as the default visual language.
+
+## Shared workspace presentation and Planning
+
+Authenticated modules compose WorkspaceHeader for consistent sidebar access, module orientation, spacing and responsive behavior. Record heading, state, actions and domain data remain feature-owned below it. Loading/error views reuse that orientation. Catalog, record, editor and transaction bodies follow task-specific patterns rather than one universal form.
+
+Show each fact where it supports the task. Remove redundant context cards and routine copy; use labelled inline disclosure for small optional groups and omit empty controls. Help icons explain concepts rather than hide record data. Preserve visible identity, quantities, units, warnings, input constraints and final-post consequences. Larger structured inspections may retain dialogs/Sheets. See `docs/specs/planning-frontend-standard.md` and `docs/specs/workspace-header-standard.md` for the staged adoption and verification contract.

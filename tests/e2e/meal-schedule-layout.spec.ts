@@ -38,15 +38,18 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await expect(page.getByText("Municipal hall", { exact: true })).toHaveCount(0);
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
-    const trigger = page.getByRole("button", { name: "Meal details", exact: true });
+    const trigger = page.getByRole("button", { name: "Additional details", exact: true });
     await trigger.focus();
     await page.keyboard.press("Enter");
-    const details = page.getByRole("dialog", { name: "Meal details", exact: true });
+    const details = page.locator('[data-slot="collapsible-content"]');
     await expect(details.getByText("Municipal hall", { exact: true })).toBeVisible();
     await expect(details.getByText("Kitchen", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`04-meal-details-${width}.png`), fullPage: true, animations: "disabled" });
-    await page.keyboard.press("Escape");
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await expect(trigger).toBeFocused();
     await expect(page.getByRole("button", { name: "Post issuance", exact: true })).toBeInViewport();
     await page.screenshot({ path: info.outputPath(`05-meal-workspace-${width}.png`), fullPage: true, animations: "disabled" });

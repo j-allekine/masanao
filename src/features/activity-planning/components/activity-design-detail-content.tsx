@@ -1,31 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import {
-  ArrowLeft,
-  ClipboardList,
   Inbox,
   Plus,
 } from "lucide-react";
 
-import { buttonVariants, Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
-  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { RecordDetails } from "@/components/workspace/record-details";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -35,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 import type {
@@ -55,58 +47,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   timeZone: "UTC",
 });
 
-function formatActivityCount(count: number) {
-  return `${activityCountFormatter.format(count)} ${count === 1 ? "Activity" : "Activities"}`;
-}
-
-function ActivityDesignContext({
-  activityDesign,
-}: {
-  activityDesign: ActivityDesignDetailItem;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ClipboardList aria-hidden="true" />
-          Activity Design context
-        </CardTitle>
-        <CardDescription>
-          The planning information recorded for this Activity Design.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-3">
-        <div className="min-w-0">
-          <p className="text-label font-medium text-muted-foreground">
-            Fiscal Year
-          </p>
-          <p className="mt-1 text-body font-medium tabular-nums">
-            FY {activityDesign.fiscalYear}
-          </p>
-        </div>
-        {activityDesign.aipReferenceCode ? (
-          <div className="min-w-0">
-            <p className="text-label font-medium text-muted-foreground">
-              AIP reference
-            </p>
-            <p className="mt-1 break-words text-body">
-              {activityDesign.aipReferenceCode}
-            </p>
-          </div>
-        ) : null}
-        <div className="min-w-0">
-          <p className="text-label font-medium text-muted-foreground">
-            Activities
-          </p>
-          <p className="mt-1 text-body font-medium tabular-nums">
-            {formatActivityCount(activityDesign.activityCount)}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ActivityRows({
   activityDesign,
   activities,
@@ -119,13 +59,13 @@ function ActivityRows({
   onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   return (
-    <WorkspaceTableFrame caption="Activities under this Activity Design" className="min-w-[46rem]">
+    <WorkspaceTableFrame caption="Activities under this Activity Design" className="w-full">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Activity</TableHead>
-          <TableHead scope="col">Scheduled date</TableHead>
-          <TableHead scope="col">Office</TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="hidden sm:table-cell">Scheduled date</TableHead>
+          <TableHead scope="col" className="hidden sm:table-cell">Office</TableHead>
+          <TableHead scope="col" className="hidden text-center sm:table-cell">
             Meal Schedules
           </TableHead>
           <TableHead scope="col" className="text-center">
@@ -160,26 +100,32 @@ function ActivityRow({
   onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
 
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] font-medium">
+        <TableCell className="max-w-[24rem] whitespace-normal font-medium">
           <Link
-            href={`/activity-designs/${activityDesign.id}/activities/${activity.id}`}
+            href={withPlanningReturn(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, returnUrl)}
             aria-label={`Open Activity: ${activity.name}`}
             className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activity.name}
           </Link>
+          <dl className="mt-2 grid gap-1 text-body-sm font-normal sm:hidden">
+            <div><dt className="inline text-muted-foreground">Date: </dt><dd className="inline">{dateFormatter.format(new Date(activity.scheduledDate))}</dd></div>
+            <div><dt className="inline text-muted-foreground">Office: </dt><dd className="inline break-words">{activity.officeName}</dd></div>
+            <div><dt className="inline text-muted-foreground">Meal Schedules: </dt><dd className="inline">{activityCountFormatter.format(activity.mealScheduleCount)}</dd></div>
+          </dl>
         </TableCell>
-        <TableCell className="tabular-nums">
+        <TableCell className="hidden tabular-nums sm:table-cell">
           {dateFormatter.format(new Date(activity.scheduledDate))}
         </TableCell>
-        <TableCell className="max-w-[20rem]">
+        <TableCell className="hidden max-w-[20rem] sm:table-cell">
           <span className="block truncate">{activity.officeName}</span>
         </TableCell>
-        <TableCell className="text-center tabular-nums">
+        <TableCell className="hidden text-center tabular-nums sm:table-cell">
           {activityCountFormatter.format(activity.mealScheduleCount)}
         </TableCell>
         <TableCell className="text-center">
@@ -201,9 +147,9 @@ function ActivityRow({
   );
 }
 
-function ActivitiesEmptyState({ onCreate }: { onCreate: () => void }) {
+function ActivitiesEmptyState() {
   return (
-    <Empty className="min-h-60 rounded-lg border bg-background">
+    <Empty className="min-h-40 rounded-lg border bg-background">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Inbox aria-hidden="true" />
@@ -213,12 +159,6 @@ function ActivitiesEmptyState({ onCreate }: { onCreate: () => void }) {
           Activities created here stay under this Activity Design.
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent>
-        <Button onClick={onCreate}>
-          <Plus data-icon="inline-start" aria-hidden="true" />
-          Create Activity
-        </Button>
-      </EmptyContent>
     </Empty>
   );
 }
@@ -229,6 +169,7 @@ export default function ActivityDesignDetailContent({
   activityDesign: ActivityDesignDetailItem;
 }) {
   const router = useRouter();
+  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -266,42 +207,23 @@ export default function ActivityDesignDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-label text-primary">
-              Activity Design
-            </p>
-            <h1 className="break-words text-heading-1 font-semibold">
-              {activityDesign.title}
-            </h1>
-            <p className="text-body text-muted-foreground">
-              {activityDesign.activityDesignNo}
-            </p>
-          </div>
-          <Link
-            href="/activity-designs"
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "self-start sm:self-auto",
-            )}
-          >
-            <ArrowLeft data-icon="inline-start" aria-hidden="true" />
-            Back to Activity Designs
-          </Link>
+      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+        <Breadcrumb><BreadcrumbList className="break-words">
+          <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage className="break-words">{activityDesign.activityDesignNo}</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList></Breadcrumb>
+        <div className="flex flex-col gap-2">
+          <h1 className="break-words text-heading-2 font-semibold">{activityDesign.title}</h1>
+          <p className="text-body-sm text-muted-foreground">Fiscal year: {activityDesign.fiscalYear}</p>
         </div>
-
-        <ActivityDesignContext activityDesign={activityDesign} />
+        <RecordDetails disabled={!isHydrated} fields={activityDesign.aipReferenceCode ? [{ label: "AIP reference", value: activityDesign.aipReferenceCode }] : []} />
 
         <section aria-labelledby="activity-design-activities-title" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="activity-design-activities-title" className="text-heading-2 font-semibold">
-                Activities
+              <h2 id="activity-design-activities-title" className="text-heading-3 font-semibold">
+                Activities ({activityDesign.activityCount})
               </h2>
-              <p className="text-body text-muted-foreground">
-                Undertakings planned under this Activity Design.
-              </p>
             </div>
             <Button
               id="new-activity"
@@ -313,7 +235,7 @@ export default function ActivityDesignDetailContent({
             </Button>
           </div>
           {activityDesign.activities.length === 0 ? (
-            <ActivitiesEmptyState onCreate={() => setIsCreateDialogOpen(true)} />
+            <ActivitiesEmptyState />
           ) : (
             <ActivityRows
               activityDesign={createParent}

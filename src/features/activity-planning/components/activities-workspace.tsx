@@ -12,6 +12,7 @@ import type {
   ActivityWorkspaceListItem,
 } from "../types";
 import ActivitiesTable from "./activities-table";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import ActivitiesToolbar from "./activities-toolbar";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
@@ -224,10 +225,7 @@ export default function ActivitiesWorkspace({
     >
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">Activities</h1>
-          <p className="text-body text-muted-foreground">
-            Browse municipal kitchen activities across planning contexts.
-          </p>
+          <h1 className="text-heading-2 font-semibold">Activities</h1>
         </div>
         <WorkspacePrimaryAction
           id="new-activity"
@@ -243,6 +241,7 @@ export default function ActivitiesWorkspace({
       />
       <ActivitiesTable
         activities={paginatedActivities}
+        catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
         filters={filters}
         onClearSearch={() => updateSearch("")}
         onEdit={setActivityForEdit}

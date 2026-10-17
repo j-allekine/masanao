@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { useSyncExternalStore, type ReactNode } from "react";
+import { RecordDetails } from "@/components/workspace/record-details";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import type { MealScheduleDetailItem } from "../types";
 
 /** Planning details remain live; a posted heading may use its saved evidence. */
@@ -17,27 +18,25 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
 }) {
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const isReady = ready ?? hydrated;
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
   const { activity } = mealSchedule;
   const design = activity.activityDesign;
+  const currentTitle = `${mealSchedule.label} · ${mealSchedule.mealTime}`;
   const fields = [
-    ["Activity Design", `${design.activityDesignNo} · ${design.title}`],
-    ["Activity", activity.name],
-    ["Meal", mealSchedule.label],
-    ["Meal time", mealSchedule.mealTime],
-    ["Office", activity.officeName],
-    ...(activity.venue ? [["Venue", activity.venue]] : []),
+    { label: "Office", value: activity.officeName },
+    ...(activity.venue ? [{ label: "Venue", value: activity.venue }] : []),
+    ...(title && title !== currentTitle ? [{ label: "Current planning meal", value: currentTitle }] : []),
   ];
   return (
     <div className="flex min-w-0 flex-col gap-4" data-client-ready={isReady ? "true" : undefined}>
       <div className="flex min-w-0 items-start gap-3">
         <Breadcrumb className="min-w-0 pt-1">
           <BreadcrumbList className="break-words">
-            <BreadcrumbItem><BreadcrumbLink render={<Link href="/activity-designs" />}>Activity Designs</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink render={<Link href={`/activity-designs/${design.id}`} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><BreadcrumbLink render={<Link href={withPlanningReturn(`/activity-designs/${design.id}`, returnUrl)} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem className="min-w-0"><BreadcrumbLink className="break-words" render={<Link href={`/activity-designs/${design.id}/activities/${activity.id}`} />}>{activity.name}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink className="break-words" render={<Link href={withPlanningReturn(`/activity-designs/${design.id}/activities/${activity.id}`, returnUrl)} />}>{activity.name}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0"><BreadcrumbPage className="break-words">{mealSchedule.label}</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
@@ -47,20 +46,10 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
         <h1 className="min-w-0 break-words text-heading-2 font-semibold">{title ?? `${mealSchedule.label} · ${mealSchedule.mealTime}`}</h1>
         <div className="flex flex-wrap items-center gap-2">
           {status}
-          <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-            <SheetTrigger render={<Button variant="outline" disabled={!isReady || disabled} />}>Meal details</SheetTrigger>
-            <SheetContent className="overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Meal details</SheetTitle>
-                <SheetDescription>Current planning details.</SheetDescription>
-              </SheetHeader>
-              <dl className="flex flex-col gap-4 px-4 pb-6">
-                {fields.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-label text-muted-foreground">{label}</dt><dd className="mt-1 break-words text-body">{value}</dd></div>)}
-              </dl>
-            </SheetContent>
-          </Sheet>
+
         </div>
       </div>
+      <RecordDetails fields={fields} disabled={!isReady || disabled} />
     </div>
   );
 }
