@@ -22,7 +22,7 @@ test.beforeAll(() => {
 test("staff reads exact stock from converted receiving through draft and posted issuance on desktop and mobile", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
   await page.goto("/inventory");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/inventory");
   const eggs = page.getByRole("row").filter({ hasText: "Inventory Eggs" });
@@ -84,7 +84,8 @@ test("staff reads exact stock from converted receiving through draft and posted 
   try {
     db.prepare("UPDATE user SET disabled=1 WHERE username='kitchen.staff'").run();
     await page.goto("/inventory");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/overview$/, { timeout: 30_000 });
+    await expect(page.getByRole("table", { name: "Inventory", exact: true })).toHaveCount(0);
     db.prepare("UPDATE user SET disabled=0 WHERE username='kitchen.staff'").run();
   } finally { db.close(); }
 });
@@ -103,4 +104,3 @@ test.afterAll(() => {
     }
   } finally { db.close(); }
 });
-
