@@ -28,10 +28,12 @@ test.describe("workspace shell", () => {
     await expect(
       page.getByRole("link", { name: "Planning", exact: true }),
     ).toBeVisible();
+    const inventory = page.getByRole("link", { name: "Inventory", exact: true });
+    await expect(inventory).toBeVisible();
+    await expect(inventory).toHaveAttribute("href", "/inventory");
     for (const removedDestination of [
       "Activities",
       "Schedule",
-      "Inventory",
       "Deliveries",
       "Issuance",
       "Records",
