@@ -27,7 +27,7 @@ test("every workspace family retains one shared header and usable mobile navigat
     ["/overview", "Overview"], ["/activity-designs", "Planning"], ["/activities", "Planning"],
     ["/activity-designs/e2e-issuance-header-design", "Planning"], [activity, "Planning"],
     [`${activity}/meal-schedules/e2e-issuance-header-meal`, "Planning"],
-    ["/items", "Supply Operations"], ["/recipes", "Supply Operations"],
+    ["/inventory", "Supply Operations"], ["/items", "Supply Operations"], ["/recipes", "Supply Operations"],
     ["/recipes/e2e-recipe-active", "Supply Operations"], ["/recipes/new", "Supply Operations"],
     ["/recipes/e2e-recipe-active/edit", "Supply Operations"],
     ["/purchase-orders", "Supply Operations"], ["/purchase-orders/e2e-issuance-header-po", "Supply Operations"],
