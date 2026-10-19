@@ -39,6 +39,7 @@ export async function executeDeleteItem(
     }
 
     revalidatePath("/items");
+    revalidatePath("/inventory");
     return { status: "success" };
   } catch {
     return {
