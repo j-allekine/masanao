@@ -46,6 +46,41 @@ test("mobile Activity facts wrap long Office names and keep row actions reachabl
   await page.screenshot({ path: info.outputPath("long-office-mobile.png"), fullPage: true });
 });
 
+test("Activity record details wrap optional facts and support keyboard disclosure", async ({ page }, info) => {
+  const particulars = "Arrange supplies and meal service for the community kitchen. ".repeat(12).trim();
+  const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    database.prepare("UPDATE activity SET particulars = ?, plannedBudgetCentavos = 123456 WHERE id = ?").run(particulars, activityId);
+    for (const width of [1280, 320]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(`${designUrl}/activities/${activityId}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(page.getByText(office, { exact: true })).toBeVisible();
+      await expect(page.getByText("75", { exact: true })).toBeVisible();
+      await expect(page.getByText("Scheduled date", { exact: true })).toBeVisible();
+      const disclosure = page.getByRole("button", { name: "Additional details", exact: true });
+      await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+      await expect(page.getByText(venue, { exact: true })).not.toBeVisible();
+      await disclosure.focus();
+      await page.keyboard.press("Enter");
+      await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByText(venue, { exact: true })).toBeVisible();
+      await expect(page.getByText(particulars, { exact: true })).toBeVisible();
+      await expect(page.getByText("Planned budget", { exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`activity-optional-details-${width}.png`), fullPage: true });
+      await page.keyboard.press("Space");
+      await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+      await expect(page.getByText(office, { exact: true })).toBeVisible();
+      await expect(page.getByText("75", { exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
+    }
+  } finally {
+    database.prepare("UPDATE activity SET particulars = NULL, plannedBudgetCentavos = NULL WHERE id = ?").run(activityId);
+    database.close();
+  }
+});
+
 test("expanded meal details remain scrollable without hiding draft work or its footer", async ({ page }, info) => {
   test.setTimeout(90_000);
   for (const viewport of [{ width: 320, height: 640 }, { width: 320, height: 480 }, { width: 1280, height: 800 }]) {
