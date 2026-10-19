@@ -131,8 +131,8 @@ export default async function globalSetup() {
   database
     .prepare(
       `INSERT INTO "item"
-       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
-       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+       ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
+       VALUES ('10', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     )
     .run(
       "e2e-recipe-item-rice",

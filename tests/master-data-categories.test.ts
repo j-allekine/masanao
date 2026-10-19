@@ -177,7 +177,7 @@ describe("Master Data Categories gateway", () => {
       },
     });
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "category-item-reference-item",
         name: "Referenced Item",
         normalizedName: "referenced item",

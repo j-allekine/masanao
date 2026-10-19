@@ -27,7 +27,7 @@ function item(
       abbreviation: "kg",
       active: true,
     },
-    issuanceQuantityPolicy: "allow-decimals",
+    reorderLevel: "10", issuanceQuantityPolicy: "allow-decimals",
     note: null,
     isActive,
     hasPostedDeliveryReceiptLines: false,

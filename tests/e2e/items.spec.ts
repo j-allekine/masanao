@@ -120,8 +120,8 @@ function restoreSeededRecipeItem() {
       database
         .prepare(
           `INSERT OR IGNORE INTO "item"
-           ("id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
-           VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+           ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "isActive", "createdAt", "updatedAt")
+           VALUES ('10', ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         )
         .run(
           "e2e-recipe-item-rice",
@@ -285,8 +285,8 @@ function createItemFixtures() {
 
     const insertItem = database.prepare(
       `INSERT INTO "item"
-       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+       ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+       VALUES ('10', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     );
     insertItem.run(
       activeItemId,
@@ -308,7 +308,7 @@ function createItemFixtures() {
     );
   });
 
-  return {
+  return { reorderLevel: "10",
     activeItemId,
     inactiveItemId,
     categoryId,
@@ -440,8 +440,8 @@ function createPagingFixtures(categoryId: string, baseUnitId: string) {
   withE2eDatabase((database) => {
     const insertItem = database.prepare(
       `INSERT INTO "item"
-       ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-       VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+       ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+       VALUES ('10', ?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     );
 
     for (const name of names) {
@@ -539,6 +539,7 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await baseUnit.click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await dialog.getByLabel("Reorder level").fill("0.125");
     await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(dialog).toBeHidden();
 
@@ -994,6 +995,7 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await dialog.getByRole("combobox", { name: "Base Unit" }).click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await dialog.getByLabel("Reorder level").fill("10");
     await dialog.getByLabel("Item Note (optional)").fill("Kitchen staple");
     await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
 
@@ -1026,6 +1028,7 @@ test.describe("Items catalog journey", () => {
     await page
       .getByRole("option", { name: "Piece (pc)", exact: true })
       .click();
+    await editDialog.getByLabel("Reorder level").fill("12.5");
     await editDialog.getByLabel("Item Note (optional)").fill("Updated note");
     await editDialog
       .getByRole("button", { name: "Save changes", exact: true })
@@ -1139,6 +1142,7 @@ test.describe("Items catalog journey", () => {
     await page.getByRole("option", { name: "Dry Goods", exact: true }).click();
     await duplicateDialog.getByRole("combobox", { name: "Base Unit" }).click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+    await duplicateDialog.getByLabel("Reorder level").fill("10");
     await duplicateDialog.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(
       duplicateDialog.locator(

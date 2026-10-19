@@ -73,6 +73,10 @@ function ItemMobileCard({
             </span>
             <span className="min-w-0 break-words text-right">{item.baseUnit.name}</span>
           </div>
+          <div className="flex items-start justify-between gap-3">
+            <span className="text-label font-semibold text-muted-foreground">Reorder level</span>
+            <span className="min-w-0 break-words text-right">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
+          </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-label font-semibold text-muted-foreground">
               Status
@@ -122,6 +126,9 @@ function ItemRow({
         </TableCell>
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
           <span className="block break-words">{item.baseUnit.name}</span>
+        </TableCell>
+        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+          <span className="block break-words">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
         </TableCell>
         <TableCell className="text-center">
           <WorkspaceLifecycleBadge isActive={item.isActive} />
@@ -229,6 +236,7 @@ export default function ItemsTable({
               <TableHead scope="col" className="text-left">
                 Base Unit
               </TableHead>
+              <TableHead scope="col">Reorder level</TableHead>
               <TableHead scope="col" className="text-center">
                 Status
               </TableHead>

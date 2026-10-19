@@ -27,7 +27,7 @@ async function receiptContext(vendorId = "receipt-vendor") {
   await prisma.purchaseOrder.create({ data: { id: `${vendorId}-po`, purchaseOrderNo: `${vendorId}-po`, normalizedPurchaseOrderNo: `${vendorId}-po`, vendorId } });
   await prisma.unit.create({ data: { id: `${vendorId}-unit`, name: "Kilogram", abbreviation: "kg", normalizedName: `${vendorId}-unit`, normalizedAbbreviation: `${vendorId}-kg` } });
   await prisma.category.create({ data: { id: `${vendorId}-category`, name: `${vendorId}-category`, normalizedName: `${vendorId}-category` } });
-  await prisma.item.create({ data: { id: `${vendorId}-item`, name: "Rice", normalizedName: `${vendorId}-item`, categoryId: `${vendorId}-category`, baseUnitId: `${vendorId}-unit` } });
+  await prisma.item.create({ data: { reorderLevel: "10", id: `${vendorId}-item`, name: "Rice", normalizedName: `${vendorId}-item`, categoryId: `${vendorId}-category`, baseUnitId: `${vendorId}-unit` } });
   return { purchaseOrderId: `${vendorId}-po`, itemId: `${vendorId}-item` };
 }
 
@@ -126,7 +126,7 @@ describe("Delivery Receipt direct Base Unit posting", () => {
       kind: "referenced",
       error: "This Item cannot be deactivated because posted Delivery Receipts reference it.",
     });
-    await expect(updateItem(administrator, itemId, {
+    await expect(updateItem(administrator, itemId, { reorderLevel: "10",
       name: "Rice",
       categoryId: "receipt-vendor-category",
       baseUnitId: replacementUnit.id,

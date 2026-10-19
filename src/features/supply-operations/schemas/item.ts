@@ -45,6 +45,11 @@ const itemIdentitySchema = z.object({
   name: itemNameSchema,
   categoryId: itemLookupIdSchema("Category"),
   baseUnitId: itemLookupIdSchema("Base Unit"),
+  reorderLevel: z.string({ error: "Reorder level is required." }).trim()
+    .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "Enter a positive decimal Reorder level.")
+    .refine((value) => /[1-9]/.test(value), "Reorder level must be greater than zero.")
+    .transform((value) => value.includes(".") ? value.replace(/0+$/, "").replace(/\.$/, "") : value),
+  reorderLevelBaseUnitId: z.string().optional(),
   issuanceQuantityPolicy: z.enum(itemIssuanceQuantityPolicies).optional(),
   note: itemNoteSchema,
 });
@@ -65,6 +70,7 @@ export function itemFieldErrors(error: z.ZodError): ItemFieldErrors {
       field === "name" ||
       field === "categoryId" ||
       field === "baseUnitId" ||
+      field === "reorderLevel" ||
       field === "issuanceQuantityPolicy" ||
       field === "note"
         ? field
