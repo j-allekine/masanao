@@ -148,7 +148,7 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
       .all(),
   ).toEqual([{ quantity: "19" }]);
   db.exec(
-    "UPDATE item SET name='Renamed Eggs',issuanceQuantityPolicy='allow-decimals' WHERE id='e2e-post-eggs'; UPDATE recipe SET name='Renamed Omelet' WHERE id='e2e-post-recipe'; UPDATE meal_schedule SET label='Renamed meal' WHERE id='e2e-post-meal'; UPDATE activity SET name='Renamed activity' WHERE id='e2e-post-activity';",
+    "UPDATE item SET name='Renamed Eggs',issuanceQuantityPolicy='allow-decimals' WHERE id='e2e-post-eggs'; UPDATE recipe SET name='Renamed Omelet' WHERE id='e2e-post-recipe'; UPDATE meal_schedule SET label='Renamed meal',mealTime='13:00' WHERE id='e2e-post-meal'; UPDATE activity SET name='Renamed activity',officeName='Current kitchen office',venue='Current distribution hall' WHERE id='e2e-post-activity';",
   );
   await page.reload();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
@@ -157,6 +157,27 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await expect(
     page.getByRole("heading", { name: "Lunch · 12:00" }),
   ).toBeVisible();
+  const additionalDetails = page.getByRole("button", { name: "Additional details", exact: true });
+  await expect(additionalDetails).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByText("Current distribution hall", { exact: true })).not.toBeVisible();
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await additionalDetails.focus();
+    await page.keyboard.press("Enter");
+    await expect(additionalDetails).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByText("Current kitchen office", { exact: true })).toBeVisible();
+    await expect(page.getByText("Current distribution hall", { exact: true })).toBeVisible();
+    await expect(page.getByText("Current planning meal", { exact: true })).toBeVisible();
+    await expect(page.getByText("Renamed meal · 13:00", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Renamed activity", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`posted-planning-details-${width}.png`), fullPage: true });
+    await page.keyboard.press("Enter");
+    await expect(additionalDetails).toHaveAttribute("aria-expanded", "false");
+    await expect(additionalDetails).toBeFocused();
+  }
+  await page.setViewportSize({ width: 320, height: 720 });
   await expect(
     page.getByRole("heading", { name: "Posting Eggs", exact: true }),
   ).toBeVisible();
@@ -190,6 +211,10 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   const recordDetails = page.getByRole("button", { name: "Record details", exact: true });
   await recordDetails.click();
   await expect(page.getByText(/This record is read-only/)).toBeVisible();
+  await expect(page.getByText("AD-POST · Posting training", { exact: true })).toBeVisible();
+  await expect(page.getByText("Supply preparation", { exact: true })).toBeVisible();
+  await expect(page.getByText("Kitchen Staff (kitchen.staff)", { exact: true })).toBeVisible();
+  await expect(page.getByText("Posted at", { exact: true })).toBeVisible();
   await recordDetails.click();
   await recipesToggle.click();
   await expect(
@@ -271,6 +296,14 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     page.getByRole("heading", { name: "Issued quantities" }),
   ).toBeFocused();
   await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
+  await itemDetails.click();
+  await expect(detail.locator("dd")).toHaveText(["19 pc", "18.5 pc"]);
+  await expect(detail.getByText("Adjusted", { exact: true })).toBeVisible();
+  await detail.getByRole("button", { name: "Calculation details", exact: true }).click();
+  await expect(detail.getByText("Whole quantities only", { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("desktop-item-details.png"), fullPage: true });
+  await page.keyboard.press("Escape");
+  await expect(itemDetails).toBeFocused();
   db.close();
 });
 
