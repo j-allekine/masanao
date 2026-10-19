@@ -23,5 +23,22 @@ of this task.
 
 ## Current verification
 
-Pending. Results below will identify their exact source revision, commands,
-outcomes and limits before this PR becomes ready for review.
+Source verification on `13b0fe7` (application code identical to the starting
+revision):
+
+| Command | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed |
+| `pnpm exec prisma generate --generator client --config prisma7.config.ts` | Passed |
+| `pnpm test:run` | 433 tests passed in 62 files |
+| `pnpm lint` | Passed |
+| `pnpm test:architecture` | Both checks passed |
+| `pnpm build` | Passed with isolated `.next-build-issue238` output |
+| `pnpm exec tsc --noEmit` | Passed after build |
+
+Raw logs: `C:/Users/LENOVO/.codex/issue-238-evidence/` (`install.log`,
+`generate.log`, `unit.log`, `lint.log`, `architecture.log`, `build.log`,
+`typecheck.log`). The build's generated tsconfig additions were restored after
+type checking; they are not authored changes.
+
+Ticket-specific browser verification and final review are pending.
