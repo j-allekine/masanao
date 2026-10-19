@@ -47,6 +47,7 @@ for (const width of [1280, 320]) {
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
     await page.goto("/inventory");
+    await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const search = page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true });
     const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
     const brown = width === 320
@@ -73,7 +74,8 @@ for (const width of [1280, 320]) {
     // Category text must not act as an Item-name match.
     await search.fill("Staples & Dry Goods");
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
-    await expect(page.getByText("No active Items match your search. Clear the search to see all active Items.")).toBeVisible();
+    await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: evidence ? join(evidence, `inventory-search-no-match-${width}.png`) : testInfo.outputPath(`no-match-${width}.png`), fullPage: true });
     await page.getByRole("button", { name: "Clear search", exact: true }).last().click();
