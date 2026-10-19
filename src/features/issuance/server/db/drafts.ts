@@ -39,7 +39,11 @@ export async function getIssuanceWorkspaceRecord(context: IssuanceContext, datab
     // and quantities remain unchanged. New postings already contain allocations.
     for (const row of evidence.review) {
       const allocations = record.itemTotals.find((total) => total.itemId === row.itemId)?.receiptAllocations;
-      if (!row.receiptAllocations && allocations?.length) row.receiptAllocations = allocations.map((allocation) => ({ receiptLineId: allocation.deliveryReceiptLineId, quantity: allocation.quantity, receiptNo: allocation.receiptNo, purchaseOrderNo: allocation.purchaseOrderNo, receiptDate: allocation.receiptDate.toISOString(), basis: allocation.basis === "reconstructed" ? "reconstructed" : "fifo" }));
+      // Only order supplemental copies by their saved dates. Keep same-date
+      // ties and explicit posting-evidence sources intact; no live reads.
+      if (!row.receiptAllocations && allocations?.length) row.receiptAllocations = [...allocations]
+        .sort((left, right) => left.receiptDate.getTime() - right.receiptDate.getTime())
+        .map((allocation) => ({ receiptLineId: allocation.deliveryReceiptLineId, quantity: allocation.quantity, receiptNo: allocation.receiptNo, purchaseOrderNo: allocation.purchaseOrderNo, receiptDate: allocation.receiptDate.toISOString(), basis: allocation.basis === "reconstructed" ? "reconstructed" : "fifo" }));
     }
     return evidence;
   }
