@@ -13,6 +13,7 @@ import { stockStatusLabels } from "../domain/inventory";
 import InventorySearch from "./inventory-search";
 import { filterInventoryCategory, inventoryCategories } from "../domain/inventory-category-filter";
 import { InventoryCategoryFilter } from "./inventory-category-filter";
+import { InventoryStatusFilter, type InventoryStatusFilterValue } from "./inventory-status-filter";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
@@ -61,15 +62,17 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [stockStatus, setStockStatus] = useState<InventoryStatusFilterValue>("");
   const normalizedSearch = search.trim().toLowerCase();
-  const matchingItems = filterInventoryCategory(items, categoryId).filter((item) => item.name.toLowerCase().includes(normalizedSearch));
+  const matchingItems = filterInventoryCategory(items, categoryId).filter((item) => item.name.toLowerCase().includes(normalizedSearch) && (!stockStatus || item.stockStatus === stockStatus));
   return <div className="flex min-h-svh flex-col bg-card">
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
       <InventorySearch search={search} onSearchChange={setSearch} />
       <InventoryCategoryFilter categories={inventoryCategories(items)} value={categoryId} onValueChange={setCategoryId} />
-      <InventoryTable items={matchingItems} hasFilters={Boolean(normalizedSearch || categoryId)} onClearFilters={() => { setSearch(""); setCategoryId(""); }} />
+      <InventoryStatusFilter value={stockStatus} onChange={setStockStatus} />
+      <InventoryTable items={matchingItems} hasFilters={Boolean(normalizedSearch || categoryId || stockStatus)} onClearFilters={() => { setSearch(""); setCategoryId(""); setStockStatus(""); }} />
     </div>
   </div>;
 }
