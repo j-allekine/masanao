@@ -1,0 +1,88 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+import Database from "better-sqlite3";
+import { expect, test } from "@playwright/test";
+
+test.beforeAll(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    const insert = db.prepare(`INSERT INTO item
+      (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
+      VALUES (?, ?, ?, 'default-category-staples-dry-goods', 'default-unit-kilogram', '2.5', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`);
+    insert.run("search-251-brown", "Brown Rice", "brown rice", 1);
+    insert.run("search-251-white", "White Rice", "white rice", 1);
+    insert.run("search-251-inactive", "Retired Brown Rice", "retired brown rice", 0);
+    db.exec(`
+      INSERT INTO vendor (id,name,normalizedName,isActive,createdAt,updatedAt)
+      VALUES ('search-251-vendor','Search Vendor','search vendor',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+      INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt)
+      VALUES ('search-251-po','SEARCH-251','search-251','search-251-vendor',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+      INSERT INTO delivery_receipt (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate)
+      VALUES ('search-251-receipt','search-251-po','search-251-vendor','Search Vendor','SEARCH-251','SEARCH-251-DR','search-251-dr',CURRENT_TIMESTAMP);
+      INSERT INTO delivery_receipt_line (id,deliveryReceiptId,itemId,selectedUnitId,baseUnitId,itemName,selectedUnitName,baseUnitName,enteredQuantity,conversionFactor,calculatedBaseUnitQuantity)
+      VALUES ('search-251-line','search-251-receipt','search-251-brown','default-unit-kilogram','default-unit-kilogram','Brown Rice','Kilogram','Kilogram','2.500000000000000001','1','2.500000000000000001');
+      INSERT INTO inventory_ledger_movement (id,deliveryReceiptLineId,itemId,baseUnitId,quantity,movementType,occurredAt)
+      VALUES ('search-251-stock','search-251-line','search-251-brown','default-unit-kilogram','2.500000000000000001','stock-in',CURRENT_TIMESTAMP);
+    `);
+  } finally { db.close(); }
+});
+
+test.afterAll(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.prepare("DELETE FROM inventory_ledger_movement WHERE id='search-251-stock'").run();
+    for (const table of ["delivery_receipt_line", "delivery_receipt", "purchase_order", "vendor"]) {
+      db.prepare(`DELETE FROM ${table} WHERE id LIKE 'search-251-%'`).run();
+    }
+    db.prepare("DELETE FROM item WHERE id LIKE 'search-251-%'").run();
+  } finally { db.close(); }
+});
+
+for (const width of [1280, 320]) {
+  test(`name search preserves stock and offers keyboard clearing at ${width}px`, async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width, height: 800 });
+    expect((await page.request.post("/api/auth/sign-in/username", {
+      data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+      headers: { origin: process.env.BETTER_AUTH_URL! },
+    })).status()).toBe(200);
+    await page.goto("/inventory");
+    const search = page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true });
+    const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+    const brown = width === 320
+      ? page.locator('[data-inventory-mobile] [data-item-id="search-251-brown"]')
+      : page.getByRole("row").filter({ hasText: "Brown Rice" });
+    await expect(brown).toContainText("2.500000000000000001 kg");
+    await expect(brown).toContainText("Good");
+    await search.focus();
+    await search.pressSequentially("  bRoWn  ");
+    await expect(brown).toBeVisible();
+    await expect(brown).toContainText("2.500000000000000001 kg");
+    await expect(brown).toContainText("Good");
+    await expect(page.getByText("White Rice", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Retired Brown Rice", { exact: true })).toHaveCount(0);
+    const evidence = process.env.MASANAO_INVENTORY_EVIDENCE_DIR;
+    if (evidence) mkdirSync(evidence, { recursive: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: evidence ? join(evidence, `inventory-search-matched-${width}.png`) : testInfo.outputPath(`matched-${width}.png`), fullPage: true });
+    await search.press("Tab");
+    await expect(page.getByRole("button", { name: "Clear search", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(search).toHaveValue("");
+    await expect(list.getByText("White Rice", { exact: true })).toBeVisible();
+    // Category text must not act as an Item-name match.
+    await search.fill("Staples & Dry Goods");
+    await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
+    await expect(page.getByText("No active Items match your search. Clear the search to see all active Items.")).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: evidence ? join(evidence, `inventory-search-no-match-${width}.png`) : testInfo.outputPath(`no-match-${width}.png`), fullPage: true });
+    await page.getByRole("button", { name: "Clear search", exact: true }).last().click();
+    await expect(search).toHaveValue("");
+    await expect(brown).toBeVisible();
+    await search.fill("  ");
+    await expect(brown).toBeVisible();
+    await expect(list.getByText("White Rice", { exact: true })).toBeVisible();
+    await page.screenshot({ path: evidence ? join(evidence, `inventory-search-${width}.png`) : testInfo.outputPath(`search-${width}.png`), fullPage: true });
+  });
+}
+
