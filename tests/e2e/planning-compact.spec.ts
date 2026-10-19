@@ -43,6 +43,7 @@ test("Planning shows useful information once, reveals optional facts and preserv
     await expect(page.getByText("AIP-COMPACT",{exact:true})).toBeVisible();
     await page.screenshot({path:info.outputPath(`design-${width}.png`),fullPage:true});
     await page.getByRole("link",{name:"Open Activity: Compact Activity",exact:true}).click();
+    await page.waitForURL((url) => url.pathname === `${design}/activities/e2e-issuance-compact-activity`);
     await expect(page.getByRole("heading",{name:"Compact Activity",exact:true})).toBeVisible();
     await expect(page.getByText("75",{exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"Additional details",exact:true})).toHaveCount(0);
