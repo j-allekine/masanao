@@ -107,7 +107,8 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
       : sources.getByRole("row").filter({ hasText: /FIFO-DR-/ });
     await expect(allocations).toHaveText([/FIFO-DR-older/, /FIFO-DR-newer/]);
     if (viewport.width < 640) {
-      await expect(allocations.last().getByText("kg", { exact: true })).toHaveCSS("white-space", "nowrap");
+      const unit = allocations.last().getByText("kg", { exact: true });
+      expect(await unit.evaluate((element) => element.getBoundingClientRect().height <= Number.parseFloat(getComputedStyle(element).lineHeight))).toBe(true);
     }
     await sources.getByRole("button", { name: "Calculation details", exact: true }).click();
     await expect(sources.getByText("Decimals allowed", { exact: true })).toBeVisible();
@@ -125,6 +126,25 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
     await page.screenshot({ path: testInfo.outputPath(`missing-sources-${viewport.width}.png`), fullPage: true });
     await page.keyboard.press("Escape");
     await expect(saltOpener).toBeFocused();
+  }
+
+  // Exercise a valid maximum-length Unit label in saved evidence only.
+  const longUnit = "W".repeat(30);
+  evidence.review.find((row) => row.itemId === "fifo-rice")!.baseUnitAbbreviation = longUnit;
+  const longUnitDb = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  longUnitDb.prepare("UPDATE issuance_record SET postingEvidence=? WHERE mealScheduleId='fifo-meal'").run(JSON.stringify(evidence));
+  longUnitDb.close();
+  for (const viewport of [{ width: 1280, height: 900 }, { width: 320, height: 720 }]) {
+    await page.setViewportSize(viewport);
+    await page.reload();
+    await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+    await opener.click();
+    await expect(sources.locator("dd")).toHaveText([`15.25 ${longUnit}`, `15.25 ${longUnit}`]);
+    await page.screenshot({ path: testInfo.outputPath(`maximum-unit-${viewport.width}.png`), fullPage: true });
+    expect(await sources.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(opener).toBeFocused();
   }
 });
 
