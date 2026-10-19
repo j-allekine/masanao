@@ -21,7 +21,7 @@ The final PR collects ticket evidence and any repairs. No merge of this PR,
 schema/API changes, inventory changes or manual sample-data deletion is part
 of this task.
 
-## Current verification
+## Initial verification before ticket integration
 
 Source verification on `13b0fe7` (application code identical to the starting
 revision):
@@ -41,4 +41,35 @@ Raw logs: `C:/Users/LENOVO/.codex/issue-238-evidence/` (`install.log`,
 `typecheck.log`). The build's generated tsconfig additions were restored after
 type checking; they are not authored changes.
 
-Ticket-specific browser verification and final review are pending.
+These initial checks precede the Item inspection repair and additional ticket
+coverage. They remain historical evidence for that starting revision.
+
+## Integrated verification
+
+Tickets #241–#244 are integrated at
+`5901b169fd11a7e1c779cdcafd8e1211bae2c3be`. Production repair `7d32498`
+adds stable date ordering for supplemental reconstructed receipt
+evidence and readable mobile quantity/Unit presentation. Explicit saved source
+order, numeric values, posting and inventory contracts remain unchanged. Review
+subsequently identified a valid long-Unit wrapping edge case, repaired in
+`748de7d` and integrated at `4a8dfbdfe7740b82db585df92fb47dba38f5cf38`.
+The integrated report separates the 98/100 broad browser result from the six
+passing focused journeys, including both initially timed-out Recipe cases.
+All 100 distinct scenarios have passing evidence across runs; this is not one
+uninterrupted 100/100 result.
+
+Final local source checks at `4a8dfbd` passed: 433 unit/integration tests across
+62 files, source and changed-test lint, both architecture checks, TypeScript and
+production build. Independent review's one long-Unit finding was repaired and
+re-reviewed with no remaining findings. Manual sample data remains intact.
+
+See the [integrated #245 report](verification/issue-245-2026-10-19.md) for exact
+revisions, fresh check results, failures and corrections, screenshot review,
+ticket evidence and remaining verification limits. Historical PR #235/#236
+evidence and the earlier ADR decision have not been rewritten as current results.
+
+The delivery is [PR #247](https://github.com/j-allekine/masanao/pull/247), based on
+`main` after the original header and Planning PRs were merged by an authorized
+actor. This task does not authorize merging it. Final independent review,
+current-head repository CI and ready-for-review status are handled after the
+evidence commit.
