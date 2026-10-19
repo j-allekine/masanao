@@ -8,7 +8,8 @@ Specification: [#248](https://github.com/j-allekine/masanao/issues/248).
 - #250: Read-only Inventory and exact stock status (after #249).
 - #251, #252, #253: Name search, Category and Stock status filters (after #250).
 - #254: Combined filters and pagination (after #251–#253).
-- #255, #256: Freshness and CSV export (after #254).
+- #255: Freshness (after #254).
+- #256: CSV export and the complete authenticated journey (after #255).
 
 ## Scope
 
