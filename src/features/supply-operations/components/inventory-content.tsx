@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { PackageOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +10,7 @@ import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import type { InventoryListItem } from "../types";
 import { stockStatusLabels } from "../domain/inventory";
+import { InventoryStatusFilter, type InventoryStatusFilterValue } from "./inventory-status-filter";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
@@ -52,11 +56,21 @@ export function InventoryTable({ items }: { items: InventoryListItem[] }) {
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+  const [stockStatus, setStockStatus] = useState<InventoryStatusFilterValue>("");
+  const visibleItems = stockStatus ? items.filter((item) => item.stockStatus === stockStatus) : items;
   return <div className="flex min-h-svh flex-col bg-card">
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2"><h1 className="text-heading font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
-      <InventoryTable items={items} />
+      <InventoryStatusFilter value={stockStatus} onChange={setStockStatus} />
+      {stockStatus && !visibleItems.length ? (
+        <ListEmptyState
+          icon={<PackageOpen aria-hidden="true" />}
+          hasFilters
+          filteredState={{ title: "No Items match this Stock status.", description: "Choose another Stock status or clear it to see all active Items.", action: { label: "Clear Stock status", onClick: () => setStockStatus("") } }}
+          emptyState={{ title: "No active Items.", description: "Active Items in the supply catalog will appear here." }}
+        />
+      ) : <InventoryTable items={visibleItems} />}
     </div>
   </div>;
 }
