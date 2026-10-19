@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { PackageOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +10,8 @@ import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import type { InventoryListItem } from "../types";
 import { stockStatusLabels } from "../domain/inventory";
+import { filterInventoryCategory, inventoryCategories } from "../domain/inventory-category-filter";
+import { InventoryCategoryFilter } from "./inventory-category-filter";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
@@ -16,10 +21,11 @@ function onHand(item: InventoryListItem) {
   return item.balance.kind === "valid" ? `${item.balance.quantity} ${item.baseUnit.abbreviation}` : "Unavailable";
 }
 
-export function InventoryTable({ items }: { items: InventoryListItem[] }) {
+export function InventoryTable({ items, hasFilters = false, onClearFilters }: { items: InventoryListItem[]; hasFilters?: boolean; onClearFilters?: () => void }) {
   if (!items.length) {
     const emptyState = { title: "No active Items.", description: "Active Items in the supply catalog will appear here, including Items with no stock." };
-    return <ListEmptyState icon={<PackageOpen aria-hidden="true" />} hasFilters={false} filteredState={emptyState} emptyState={emptyState} />;
+    const filteredState = { title: "No matching Items.", description: "Try changing or clearing the filters.", action: onClearFilters ? { label: "Clear filters", onClick: onClearFilters } : undefined };
+    return <ListEmptyState icon={<PackageOpen aria-hidden="true" />} hasFilters={hasFilters} filteredState={filteredState} emptyState={emptyState} />;
   }
   return <>
     <div className="flex flex-col gap-3 sm:hidden" data-inventory-mobile>
@@ -52,11 +58,14 @@ export function InventoryTable({ items }: { items: InventoryListItem[] }) {
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+  const [categoryId, setCategoryId] = useState("");
+  const filteredItems = filterInventoryCategory(items, categoryId);
   return <div className="flex min-h-svh flex-col bg-card">
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2"><h1 className="text-heading font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
-      <InventoryTable items={items} />
+      <InventoryCategoryFilter categories={inventoryCategories(items)} value={categoryId} onValueChange={setCategoryId} />
+      <InventoryTable items={filteredItems} hasFilters={Boolean(categoryId)} onClearFilters={() => setCategoryId("")} />
     </div>
   </div>;
 }
