@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PackageOpen, RefreshCw } from "lucide-react";
+import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -126,6 +126,9 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={() => startRefresh(() => router.refresh())}>
             <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+          <Button variant="outline" nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
+            <Download data-icon="inline-start" aria-hidden="true" />Export CSV
           </Button>
         </div>
       </header>
