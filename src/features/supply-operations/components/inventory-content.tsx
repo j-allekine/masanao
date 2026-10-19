@@ -11,6 +11,8 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import type { InventoryListItem } from "../types";
 import { stockStatusLabels } from "../domain/inventory";
 import InventorySearch from "./inventory-search";
+import { filterInventoryCategory, inventoryCategories } from "../domain/inventory-category-filter";
+import { InventoryCategoryFilter } from "./inventory-category-filter";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
@@ -23,7 +25,8 @@ function onHand(item: InventoryListItem) {
 export function InventoryTable({ items, hasFilters = false, onClearFilters }: { items: InventoryListItem[]; hasFilters?: boolean; onClearFilters?: () => void }) {
   if (!items.length) {
     const emptyState = { title: "No active Items.", description: "Active Items in the supply catalog will appear here, including Items with no stock." };
-    return <ListEmptyState icon={<PackageOpen aria-hidden="true" />} hasFilters={hasFilters} filteredState={{ title: "No matching Items.", description: "No active Items match your search. Clear the search to see all active Items.", action: onClearFilters ? { label: "Clear search", onClick: onClearFilters, variant: "outline" } : undefined }} emptyState={emptyState} />;
+    const filteredState = { title: "No matching Items.", description: "Try changing or clearing the filters.", action: onClearFilters ? { label: "Clear filters", onClick: onClearFilters } : undefined };
+    return <ListEmptyState icon={<PackageOpen aria-hidden="true" />} hasFilters={hasFilters} filteredState={filteredState} emptyState={emptyState} />;
   }
   return <>
     <div className="flex flex-col gap-3 sm:hidden" data-inventory-mobile>
@@ -57,14 +60,16 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const normalizedSearch = search.trim().toLowerCase();
-  const matchingItems = items.filter((item) => item.name.toLowerCase().includes(normalizedSearch));
+  const matchingItems = filterInventoryCategory(items, categoryId).filter((item) => item.name.toLowerCase().includes(normalizedSearch));
   return <div className="flex min-h-svh flex-col bg-card">
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
       <InventorySearch search={search} onSearchChange={setSearch} />
-      <InventoryTable items={matchingItems} hasFilters={Boolean(normalizedSearch)} onClearFilters={() => setSearch("")} />
+      <InventoryCategoryFilter categories={inventoryCategories(items)} value={categoryId} onValueChange={setCategoryId} />
+      <InventoryTable items={matchingItems} hasFilters={Boolean(normalizedSearch || categoryId)} onClearFilters={() => { setSearch(""); setCategoryId(""); }} />
     </div>
   </div>;
 }
