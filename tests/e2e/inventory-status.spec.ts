@@ -34,6 +34,7 @@ for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
     expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
     await page.goto("/inventory");
+    await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
     await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
     const filter = page.getByRole("group", { name: "Stock status", exact: true });
@@ -65,8 +66,11 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     // Simulate a persisted level edit; the next server read must calculate again.
     db.prepare("UPDATE item SET reorderLevel='20' WHERE id='status-good'").run();
     await page.goto("/inventory");
+    await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await page.getByRole("button", { name: "Good", exact: true }).click();
-    await expect(page.getByText("No Items match this Stock status.", { exact: true })).toBeVisible();
+    await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Clear Stock status", exact: true }).last().click();
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-good"]')).toContainText("Reorder now");
     await page.goto("/purchase-orders/status-po/record-delivery");
@@ -79,6 +83,7 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await page.getByRole("button", { name: "Post delivery", exact: true }).click();
     await expect(page).toHaveURL(/\/purchase-orders\/status-po#delivery-receipt-/, { timeout: 30_000 });
     await page.goto("/inventory");
+    await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await page.getByRole("button", { name: "Good", exact: true }).click();
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-out"]')).toContainText("20 pc");
     await page.getByRole("button", { name: "Out of stock", exact: true }).click();
