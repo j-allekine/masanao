@@ -9,7 +9,7 @@ test.beforeAll(() => {
   db.exec(`
     INSERT OR IGNORE INTO activity_design (id,activityDesignNo,fiscalYear,title,createdAt,updatedAt) VALUES ('e2e-regression-design','AD-REGRESSION',2026,'Regression training',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT OR IGNORE INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('e2e-regression-activity','e2e-regression-design','Regression preparation','Kitchen',CURRENT_TIMESTAMP,10,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT OR IGNORE INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES ('e2e-regression-item','Regression Eggs','regression eggs','default-category-staples-dry-goods','default-unit-piece',1,'whole-only',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT OR IGNORE INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (10, 'e2e-regression-item','Regression Eggs','regression eggs','default-category-staples-dry-goods','default-unit-piece',1,'whole-only',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT OR IGNORE INTO recipe (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES ('e2e-regression-recipe','Regression Omelet','regression omelet',1,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT OR IGNORE INTO recipe_ingredient (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES ('e2e-regression-ingredient','e2e-regression-recipe','e2e-regression-item','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
   `);

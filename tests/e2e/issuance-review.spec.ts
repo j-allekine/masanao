@@ -9,7 +9,7 @@ test.beforeAll(() => {
   db.exec(`INSERT INTO activity_design (id,activityDesignNo,fiscalYear,title,createdAt,updatedAt) VALUES ('e2e-review-design','AD-REVIEW',2026,'Review training',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('e2e-review-activity','e2e-review-design','Quantity preparation','Kitchen',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('e2e-review-meal','e2e-review-activity','Lunch','12:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES ('e2e-review-eggs','Review Eggs','review eggs','default-category-staples-dry-goods','default-unit-piece',1,'whole-only',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (10, 'e2e-review-eggs','Review Eggs','review eggs','default-category-staples-dry-goods','default-unit-piece',1,'whole-only',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO recipe (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES ('e2e-review-recipe','Review Omelet','review omelet',3,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO recipe_ingredient (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES ('e2e-review-ingredient','e2e-review-recipe','e2e-review-eggs','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
   db.close();

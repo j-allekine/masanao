@@ -26,7 +26,7 @@ function fixture() {
     INSERT INTO user (id,name,email,username,role,updatedAt) VALUES ('race-staff','Staff','race@test.local','racestaff','staff',CURRENT_TIMESTAMP);
     INSERT INTO unit (id,name,abbreviation,normalizedName,normalizedAbbreviation,updatedAt) VALUES ('race-unit','Race piece','racepc','race piece','racepc',CURRENT_TIMESTAMP);
     INSERT INTO category (id,name,normalizedName,updatedAt) VALUES ('race-category','Race food','race food',CURRENT_TIMESTAMP);
-    INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,issuanceQuantityPolicy,updatedAt) VALUES ('race-item','Eggs','race eggs','race-category','race-unit','whole-only',CURRENT_TIMESTAMP);
+    INSERT INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,issuanceQuantityPolicy,updatedAt) VALUES (10, 'race-item','Eggs','race eggs','race-category','race-unit','whole-only',CURRENT_TIMESTAMP);
     INSERT INTO activity_design (id,activityDesignNo,fiscalYear,title,updatedAt) VALUES ('race-design','AD-RACE',2026,'Race event',CURRENT_TIMESTAMP);
     INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,updatedAt) VALUES ('race-activity','race-design','Training','Kitchen',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP);
     INSERT INTO vendor (id,name,normalizedName,updatedAt) VALUES ('race-vendor','Race supplier','race supplier',CURRENT_TIMESTAMP);

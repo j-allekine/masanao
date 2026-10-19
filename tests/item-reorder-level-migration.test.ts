@@ -26,8 +26,8 @@ it("backfills sample Items once without a future default or history changes", ()
     expect((db.prepare("PRAGMA table_info(item)").all() as Array<{ name: string; notnull: number; dflt_value: unknown }>).find((column) => column.name === "reorderLevel")).toMatchObject({ notnull: 1, dflt_value: null });
     expect(() => db.exec(`INSERT INTO item (id, name, normalizedName, categoryId, baseUnitId, updatedAt) VALUES ('new', 'New', 'new', 'default-category-staples-dry-goods', 'default-unit-kilogram', CURRENT_TIMESTAMP)`)).toThrow(/NOT NULL/);
     db.exec(`UPDATE item SET reorderLevel = '0.125' WHERE id = 'sample'`);
-    // Existing seed-like fixture writes use INSERT OR IGNORE; a repeated write cannot reset edits.
-    db.exec(`INSERT OR IGNORE INTO item (id, name, normalizedName, categoryId, baseUnitId, reorderLevel, updatedAt) VALUES ('sample', 'Sample', 'sample', 'default-category-staples-dry-goods', 'default-unit-kilogram', '10', CURRENT_TIMESTAMP)`);
+    // The repository seeds only default lookups through these migrations; there is no Item seed command.
+    for (const name of ["20260915090000_add_default_units", "20260915091000_add_default_categories", "20260915092000_add_default_offices"]) db.exec(readFileSync(join(directory, name, "migration.sql"), "utf8"));
     expect(db.prepare("SELECT reorderLevel FROM item WHERE id = 'sample'").get()).toEqual({ reorderLevel: "0.125" });
     expect(db.prepare("SELECT * FROM inventory_ledger_movement").all()).toEqual(history);
   } finally { db.close(); }

@@ -10,8 +10,8 @@ test.beforeAll(() => {
     INSERT INTO activity_design (id,activityDesignNo,fiscalYear,title,createdAt,updatedAt) VALUES ('fifo-design','AD-FIFO',2026,'FIFO training',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('fifo-activity','fifo-design','FIFO preparation','Kitchen',CURRENT_TIMESTAMP,10,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('fifo-meal','fifo-activity','Lunch','12:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES ('fifo-rice','FIFO Rice','fifo rice','default-category-staples-dry-goods','default-unit-kilogram',1,'allow-decimals',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES ('fifo-salt','FIFO Salt','fifo salt','default-category-staples-dry-goods','default-unit-kilogram',1,'allow-decimals',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (10, 'fifo-rice','FIFO Rice','fifo rice','default-category-staples-dry-goods','default-unit-kilogram',1,'allow-decimals',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (10, 'fifo-salt','FIFO Salt','fifo salt','default-category-staples-dry-goods','default-unit-kilogram',1,'allow-decimals',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO vendor (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES ('fifo-vendor','FIFO Supplier','fifo supplier',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
   `);
   for (const [id, date, quantity] of [["older", "2026-10-01", "10"], ["newer", "2026-10-02", "20"]]) {
