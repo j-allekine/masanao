@@ -3,3 +3,4 @@ export { default as PurchaseOrdersContent } from "./components/purchase-orders-c
 export { default as PurchaseOrderDetailContent } from "./components/purchase-order-detail-content";
 export { default as DeliveryReceiptForm } from "./components/delivery-receipt-form";
 export { default as DeliveryReceiptDialog } from "./components/delivery-receipt-dialog";
+export { default as InventoryContent } from "./components/inventory-content";

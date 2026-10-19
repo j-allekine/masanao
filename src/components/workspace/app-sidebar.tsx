@@ -54,6 +54,7 @@ const iconBySection: Record<WorkspaceSectionId, LucideIcon> = {
   "activity-designs": CalendarDays,
   "master-data": Database,
   items: Package,
+  inventory: Package,
   recipes: CookingPot,
   "purchase-orders": ClipboardList,
 }
