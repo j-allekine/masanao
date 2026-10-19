@@ -32,6 +32,7 @@ export type ItemListItem = {
   name: string;
   category: ItemLookupCategory;
   baseUnit: ItemLookupUnit;
+  reorderLevel: string;
   issuanceQuantityPolicy: ItemIssuanceQuantityPolicy;
   note: string | null;
   isActive: boolean;
@@ -75,6 +76,7 @@ export type ItemField =
   | "name"
   | "categoryId"
   | "baseUnitId"
+  | "reorderLevel"
   | "issuanceQuantityPolicy"
   | "note";
 export type ItemFieldErrors = Partial<Record<ItemField | "form", string[]>>;

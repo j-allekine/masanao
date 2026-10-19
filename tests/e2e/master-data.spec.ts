@@ -69,8 +69,8 @@ function createReferencedCategoryFixture(): ItemReferenceFixture {
     database
       .prepare(
         `INSERT INTO "item"
-         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES ('10', ?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
   });
@@ -104,8 +104,8 @@ function createReferencedUnitFixture(): ItemReferenceFixture {
     database
       .prepare(
         `INSERT INTO "item"
-         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES ('10', ?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
   });

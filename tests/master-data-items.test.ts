@@ -75,7 +75,7 @@ describe("Master Data Items read path", () => {
 
     await prisma.item.createMany({
       data: [
-        {
+        { reorderLevel: "10",
           id: "items-zulu",
           name: "Zulu Rice",
           normalizedName: "zulu rice",
@@ -83,7 +83,7 @@ describe("Master Data Items read path", () => {
           baseUnitId: baseUnit.id,
           note: "Long-grain stock",
         },
-        {
+        { reorderLevel: "10",
           id: "items-alpha",
           name: "alpha beans",
           normalizedName: "alpha beans",
@@ -136,7 +136,7 @@ describe("Master Data Items read path", () => {
     const { category, baseUnit } = await createLookupRecords();
 
     await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-unique-first",
         name: "Rice",
         normalizedName: "rice",
@@ -147,7 +147,7 @@ describe("Master Data Items read path", () => {
 
     await expect(
       prisma.item.create({
-        data: {
+        data: { reorderLevel: "10",
           id: "items-unique-second",
           name: " rice ",
           normalizedName: "rice",
@@ -170,7 +170,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(adminActor, "admin");
     const { category, baseUnit } = await createLookupRecords();
 
-    const result = await createItem(adminActor, {
+    const result = await createItem(adminActor, { reorderLevel: "10",
       name: "  Rice\n   Flour  ",
       categoryId: category.id,
       baseUnitId: baseUnit.id,
@@ -196,7 +196,7 @@ describe("Master Data Items read path", () => {
     const { category, baseUnit } = await createLookupRecords();
 
     await expect(
-      createItem(adminActor, {
+      createItem(adminActor, { reorderLevel: "10",
         name: "Rice Flour",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -204,7 +204,7 @@ describe("Master Data Items read path", () => {
     ).resolves.toMatchObject({ ok: true });
 
     await expect(
-      createItem(adminActor, {
+      createItem(adminActor, { reorderLevel: "10",
         name: " rice   flour ",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -223,7 +223,7 @@ describe("Master Data Items read path", () => {
         isActive: false,
       },
     });
-    const invalidLookupResult = await createItem(adminActor, {
+    const invalidLookupResult = await createItem(adminActor, { reorderLevel: "10",
       name: "New Item",
       categoryId: inactiveCategory.id,
       baseUnitId: baseUnit.id,
@@ -241,7 +241,7 @@ describe("Master Data Items read path", () => {
     const { category, baseUnit } = await createLookupRecords();
 
     await expect(
-      createItem(staffActor, {
+      createItem(staffActor, { reorderLevel: "10",
         name: "Staff Attempt",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -273,7 +273,7 @@ describe("Master Data Items read path", () => {
       },
     });
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-update-target",
         name: "Brown Rice",
         normalizedName: "brown rice",
@@ -282,7 +282,7 @@ describe("Master Data Items read path", () => {
       },
     });
     await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-update-conflict",
         name: "Canned Beans",
         normalizedName: "canned beans",
@@ -291,10 +291,10 @@ describe("Master Data Items read path", () => {
       },
     });
 
-    const result = await updateItem(adminActor, item.id, {
+    const result = await updateItem(adminActor, item.id, { reorderLevel: "10",
       name: "  Rice   Flour ",
       categoryId: replacementCategory.id,
-      baseUnitId: replacementUnit.id,
+      baseUnitId: replacementUnit.id, reorderLevelBaseUnitId: replacementUnit.id,
       note: "  Revised note  ",
     });
 
@@ -316,10 +316,10 @@ describe("Master Data Items read path", () => {
     });
 
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: " Canned   Beans ",
         categoryId: replacementCategory.id,
-        baseUnitId: replacementUnit.id,
+        baseUnitId: replacementUnit.id, reorderLevelBaseUnitId: replacementUnit.id,
       }),
     ).resolves.toMatchObject({
       ok: false,
@@ -332,7 +332,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(adminActor, "admin");
     const { category, baseUnit } = await createLookupRecords();
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-policy-target",
         name: "Individually tracked eggs",
         normalizedName: "individually tracked eggs",
@@ -371,7 +371,7 @@ describe("Master Data Items read path", () => {
     ]);
 
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: item.name,
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -383,7 +383,7 @@ describe("Master Data Items read path", () => {
     });
 
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: item.name,
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -415,7 +415,7 @@ describe("Master Data Items read path", () => {
     const { category, baseUnit } = await createLookupRecords();
 
     await expect(
-      createItem(adminActor, {
+      createItem(adminActor, { reorderLevel: "10",
         name: "Tampered Item",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -467,7 +467,7 @@ describe("Master Data Items read path", () => {
       },
     });
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-update-inactive-target",
         name: "Retired Rice",
         normalizedName: "retired rice",
@@ -477,7 +477,7 @@ describe("Master Data Items read path", () => {
     });
 
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: "Retired Rice",
         categoryId: inactiveCategory.id,
         baseUnitId: inactiveUnit.id,
@@ -492,10 +492,10 @@ describe("Master Data Items read path", () => {
     });
 
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: "Retired Rice",
         categoryId: otherInactiveCategory.id,
-        baseUnitId: otherInactiveUnit.id,
+        baseUnitId: otherInactiveUnit.id, reorderLevelBaseUnitId: otherInactiveUnit.id,
       }),
     ).resolves.toMatchObject({
       ok: false,
@@ -511,7 +511,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(staffActor);
     const { category, baseUnit } = await createLookupRecords();
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-staff-update-target",
         name: "Staff Item",
         normalizedName: "staff item",
@@ -521,7 +521,7 @@ describe("Master Data Items read path", () => {
     });
 
     await expect(
-      updateItem(staffActor, item.id, {
+      updateItem(staffActor, item.id, { reorderLevel: "10",
         name: "Changed Item",
         categoryId: category.id,
         baseUnitId: baseUnit.id,
@@ -537,7 +537,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(adminActor, "admin");
     const { category, baseUnit } = await createLookupRecords();
     await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-lifecycle-target",
         name: "Lifecycle Item",
         normalizedName: "lifecycle item",
@@ -574,7 +574,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(staffActor);
     const { category, baseUnit } = await createLookupRecords();
     await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-staff-lifecycle-target",
         name: "Staff Lifecycle Item",
         normalizedName: "staff lifecycle item",
@@ -603,7 +603,7 @@ describe("Master Data Items read path", () => {
     await createActorUser(adminActor, "admin");
     const { category, baseUnit } = await createLookupRecords();
     const sack = await prisma.unit.create({ data: { id: "items-unit-sack", name: "Sack", abbreviation: "sack", normalizedName: "sack", normalizedAbbreviation: "sack" } });
-    const item = await prisma.item.create({ data: { id: "items-conversion-rice", name: "Rice", normalizedName: "rice", categoryId: category.id, baseUnitId: baseUnit.id } });
+    const item = await prisma.item.create({ data: { reorderLevel: "10", id: "items-conversion-rice", name: "Rice", normalizedName: "rice", categoryId: category.id, baseUnitId: baseUnit.id } });
 
     await expect(createItemUnitConversion(staffActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25" })).resolves.toMatchObject({ ok: false, kind: "forbidden" });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "25.00" })).resolves.toMatchObject({ ok: true, conversion: { baseUnitQuantity: "25", label: "Sack (25 kg)" } });
@@ -612,7 +612,7 @@ describe("Master Data Items read path", () => {
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "10" })).resolves.toMatchObject({ ok: true });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: sack.id, baseUnitQuantity: "50" })).resolves.toMatchObject({ ok: true, conversion: { label: "Sack (50 kg)" } });
     await expect(createItemUnitConversion(adminActor, item.id, { alternateUnitId: baseUnit.id, baseUnitQuantity: "1" })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { alternateUnitId: ["The Base Unit cannot be an alternate Unit."] } });
-    await expect(updateItem(adminActor, item.id, { name: item.name, categoryId: category.id, baseUnitId: sack.id })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] } });
+    await expect(updateItem(adminActor, item.id, { reorderLevel: "10", name: item.name, categoryId: category.id, baseUnitId: sack.id })).resolves.toMatchObject({ ok: false, kind: "validation", fields: { baseUnitId: ["Base Unit cannot change after alternate Units are configured."] } });
     await expect(deleteItem(adminActor, item.id)).resolves.toMatchObject({
       ok: false,
       kind: "referenced",
@@ -643,7 +643,7 @@ describe("Master Data Items read path", () => {
       },
     });
     const item = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "items-conversion-validation",
         name: "Validation Rice",
         normalizedName: "validation rice",
@@ -688,4 +688,37 @@ describe("Master Data Items read path", () => {
       error: "Alternate Units cannot be added to an Inactive Item.",
     });
   });
+  it("validates exact Reorder levels and enforces administrator writes without moving stock", async () => {
+    const { category, baseUnit } = await createLookupRecords();
+    await createActorUser(adminActor, "admin");
+    await createActorUser(staffActor);
+    const input = { name: "Reorder test", categoryId: category.id, baseUnitId: baseUnit.id, reorderLevel: "0.000000000000000001", issuanceQuantityPolicy: "whole-numbers-only" };
+    for (const reorderLevel of [undefined, "", "0", "0.000", "-1", "1e3", "NaN", "1.2.3"]) {
+      const result = await createItem(adminActor, { ...input, reorderLevel });
+      expect(result).toMatchObject({ ok: false, kind: "validation", fields: { reorderLevel: expect.any(Array) } });
+    }
+    await expect(createItem(staffActor, input)).resolves.toMatchObject({ ok: false, kind: "forbidden" });
+    const result = await createItem(adminActor, input);
+    expect(result).toMatchObject({ ok: true, item: { reorderLevel: input.reorderLevel } });
+    if (!result.ok) return;
+    const before = await prisma.inventoryLedgerMovement.count();
+    await expect(updateItem(staffActor, result.item.id, { ...input, reorderLevel: "3" })).resolves.toMatchObject({ ok: false, kind: "forbidden" });
+    await expect(updateItem(adminActor, result.item.id, { ...input, reorderLevel: "12.500" })).resolves.toMatchObject({ ok: true, item: { reorderLevel: "12.5" } });
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(before);
+    expect((await listItems()).find((item) => item.id === result.item.id)?.reorderLevel).toBe("12.5");
+    await prisma.user.update({ where: { id: adminActor.id }, data: { disabled: true } });
+    await expect(updateItem(adminActor, result.item.id, { ...input, reorderLevel: "4" })).resolves.toMatchObject({ ok: false, kind: "forbidden" });
+  });
+
+  it("requires deliberate level entry when changing an otherwise unlocked Base Unit", async () => {
+    const { category, baseUnit } = await createLookupRecords();
+    await createActorUser(adminActor, "admin");
+    const otherUnit = await prisma.unit.create({ data: { id: "reorder-other-unit", name: "Piece", abbreviation: "pc", normalizedName: "piece", normalizedAbbreviation: "pc" } });
+    const input = { name: "Unlocked", categoryId: category.id, baseUnitId: baseUnit.id, reorderLevel: "2" };
+    const created = await createItem(adminActor, input);
+    if (!created.ok) throw new Error("Fixture failed");
+    await expect(updateItem(adminActor, created.item.id, { ...input, baseUnitId: otherUnit.id })).resolves.toMatchObject({ ok: false, fields: { reorderLevel: expect.any(Array) } });
+    await expect(updateItem(adminActor, created.item.id, { ...input, baseUnitId: otherUnit.id, reorderLevelBaseUnitId: otherUnit.id, reorderLevel: "0.5" })).resolves.toMatchObject({ ok: true, item: { baseUnit: { id: otherUnit.id }, reorderLevel: "0.5" } });
+  });
+
 });

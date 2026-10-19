@@ -25,6 +25,7 @@ const itemListSelect = {
       active: true,
     },
   },
+  reorderLevel: true,
   issuanceQuantityPolicy: true,
   note: true,
   isActive: true,
@@ -61,6 +62,7 @@ export type ItemUpdateWriteResult =
   | { kind: "updated"; item: ItemListItem }
   | { kind: "duplicate" }
   | { kind: "not-found" }
+  | { kind: "reorder-level-unit-required" }
   | {
       kind: "base-unit-locked";
       reason: "alternate-units" | "stock-activity" | "recipe-ingredients" | "issuance";
@@ -73,6 +75,7 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
     name: item.name,
     category: item.category,
     baseUnit: item.baseUnit,
+    reorderLevel: item.reorderLevel,
     issuanceQuantityPolicy: item.issuanceQuantityPolicy as ItemListItem["issuanceQuantityPolicy"],
     note: item.note,
     isActive: item.isActive,
@@ -235,6 +238,7 @@ async function createItemRecord(database: ItemDatabase, input: ItemInput) {
       normalizedName: input.normalizedName,
       categoryId: input.categoryId,
       baseUnitId: input.baseUnitId,
+      reorderLevel: input.reorderLevel,
       note: input.note,
       issuanceQuantityPolicy: input.issuanceQuantityPolicy ?? "allow-decimals",
       isActive: true,
@@ -257,6 +261,7 @@ async function updateItemRecord(
       normalizedName: input.normalizedName,
       categoryId: input.categoryId,
       baseUnitId: input.baseUnitId,
+      reorderLevel: input.reorderLevel,
       note: input.note,
       ...(input.issuanceQuantityPolicy === undefined
         ? {}
@@ -316,6 +321,10 @@ export async function updateItemWithActiveLookups(
         if (existing._count.recipeIngredients > 0) {
           return { kind: "base-unit-locked" as const, reason: "recipe-ingredients" as const };
         }
+      }
+
+      if (existing.baseUnitId !== input.baseUnitId && input.reorderLevelBaseUnitId !== input.baseUnitId) {
+        return { kind: "reorder-level-unit-required" };
       }
 
       const [conflict, { category, baseUnit }] = await Promise.all([

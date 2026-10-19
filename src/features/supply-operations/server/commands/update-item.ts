@@ -49,6 +49,9 @@ export async function updateItemCommand(
     const result = await updateItemWithActiveLookups(id, parsedInput.data);
 
     if (result.kind === "not-found") return notFoundResult();
+    if (result.kind === "reorder-level-unit-required") {
+      return validationResult({ reorderLevel: ["Re-enter the Reorder level for the new Base Unit."] });
+    }
     if (result.kind === "base-unit-locked") {
       const message = result.reason === "issuance"
         ? "Base Unit cannot change while saved issuance references this Item."

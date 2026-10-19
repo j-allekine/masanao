@@ -49,6 +49,7 @@ const emptyFormValues: ItemFormValues = {
   name: "",
   categoryId: "",
   baseUnitId: "",
+  reorderLevel: "",
   issuanceQuantityPolicy: "allow-decimals",
   note: "",
 };
@@ -65,6 +66,7 @@ function initialValues(item?: ItemListItem): ItemFormValues {
     name: item.name,
     categoryId: item.category.id,
     baseUnitId: item.baseUnit.id,
+    reorderLevel: item.reorderLevel,
     issuanceQuantityPolicy: item.issuanceQuantityPolicy,
     note: item.note ?? "",
   };
@@ -204,7 +206,7 @@ export default function ItemForm({
 
   useEffect(() => {
     const firstInvalidField = (
-      ["name", "categoryId", "baseUnitId", "issuanceQuantityPolicy", "note"] as ItemField[]
+      ["name", "categoryId", "baseUnitId", "reorderLevel", "issuanceQuantityPolicy", "note"] as ItemField[]
     ).find((field) => fieldErrors[field]?.length);
 
     if (!firstInvalidField) return;
@@ -221,7 +223,11 @@ export default function ItemForm({
   }, [fieldErrors, mode]);
 
   function updateField(field: ItemField, value: string) {
-    setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [field]: value,
+      ...(field === "baseUnitId" && value !== currentValues.baseUnitId ? { reorderLevel: "" } : {}),
+    }));
     setFieldErrors((currentErrors) => {
       if (!currentErrors[field]) return currentErrors;
 
@@ -259,6 +265,8 @@ export default function ItemForm({
         formData.set(field, formValues[field]);
       }
     }
+
+    formData.set("reorderLevelBaseUnitId", formValues.baseUnitId);
 
     startTransition(async () => {
       try {
@@ -357,6 +365,27 @@ export default function ItemForm({
                 : "Base Unit is locked while alternate Units are configured."}
             </p>
           ) : null}
+
+          <Field data-invalid={Boolean(fieldErrors.reorderLevel?.length)}>
+            <FieldLabel htmlFor={`${mode}-item-reorderLevel`}>
+              Reorder level{formValues.baseUnitId ? ` (${units.find((unit) => unit.id === formValues.baseUnitId)?.abbreviation ?? "Base Unit"})` : " (Base Unit)"}
+              <span className="text-destructive" aria-hidden="true">*</span>
+            </FieldLabel>
+            <Input
+              id={`${mode}-item-reorderLevel`}
+              name="reorderLevel"
+              inputMode="decimal"
+              value={formValues.reorderLevel}
+              onChange={(event) => updateField("reorderLevel", event.target.value)}
+              required
+              aria-invalid={Boolean(fieldErrors.reorderLevel?.length)}
+              aria-describedby={`${mode}-item-reorderLevel-description${fieldErrors.reorderLevel?.length ? ` ${mode}-item-reorderLevel-error` : ""}`}
+            />
+            <p id={`${mode}-item-reorderLevel-description`} className="text-body-sm text-muted-foreground">
+              Enter a positive quantity in the Base Unit. Decimals are allowed, including for Items issued in whole numbers. Changing the Base Unit requires re-entry.
+            </p>
+            <ItemFieldError id={`${mode}-item-reorderLevel`} errors={fieldErrors.reorderLevel} />
+          </Field>
 
           <Field
             data-invalid={Boolean(

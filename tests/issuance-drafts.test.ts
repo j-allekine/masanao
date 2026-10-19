@@ -17,7 +17,7 @@ async function fixture() {
   await prisma.user.createMany({ data: [staff, admin].map((actor) => ({ ...actor, email: `${actor.id}@test.local`, role: actor === admin ? "admin" : "staff" })) });
   await prisma.category.create({ data: { id: "issuance-category", name: "Food", normalizedName: "food" } });
   await prisma.unit.createMany({ data: [{ id: "issuance-kg", name: "Kilogram", abbreviation: "kg", normalizedName: "kilogram", normalizedAbbreviation: "kg" }, { id: "issuance-g", name: "Gram", abbreviation: "g", normalizedName: "gram", normalizedAbbreviation: "g" }] });
-  await prisma.item.create({ data: { id: "issuance-rice", name: "Rice", normalizedName: "rice", categoryId: "issuance-category", baseUnitId: "issuance-kg" } });
+  await prisma.item.create({ data: { reorderLevel: "10", id: "issuance-rice", name: "Rice", normalizedName: "rice", categoryId: "issuance-category", baseUnitId: "issuance-kg" } });
   await prisma.itemUnitConversion.create({ data: { id: "issuance-conversion", itemId: "issuance-rice", alternateUnitId: "issuance-g", baseUnitQuantity: "0.001" } });
   await prisma.recipe.create({ data: { id: "issuance-recipe", name: "Rice meal", normalizedName: "rice meal", baselinePax: 100, ingredients: { create: { id: "issuance-ingredient", itemId: "issuance-rice", enteredQuantity: "1250.123456789", itemUnitConversionId: "issuance-conversion" } } } });
   await prisma.activityDesign.create({ data: { id: context.activityDesignId, activityDesignNo: "AD-ISS", fiscalYear: 2026, title: "Kitchen event" } });
@@ -85,7 +85,7 @@ describe("Issuance Recipe drafts through public gateways", () => {
     for (const stockItems of [[{ lineId: "foreign-line" }], [retained, retained], [{ ...retained, conversionFactor: "2" }]]) expect(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems })).toMatchObject({ ok: false, kind: "validation" });
     await prisma.recipeIngredient.deleteMany(); await prisma.itemUnitConversion.deleteMany();
     expect(await deleteItem(admin, "issuance-rice")).toMatchObject({ ok: false });
-    expect(await updateItem(admin, "issuance-rice", { name: "Rice", categoryId: "issuance-category", baseUnitId: "issuance-g", note: "", issuanceQuantityPolicy: "allow-decimals" })).toMatchObject({ ok: false, fields: { baseUnitId: ["Base Unit cannot change while saved issuance references this Item."] } });
+    expect(await updateItem(admin, "issuance-rice", { reorderLevel: "10", name: "Rice", categoryId: "issuance-category", baseUnitId: "issuance-g", note: "", issuanceQuantityPolicy: "allow-decimals" })).toMatchObject({ ok: false, fields: { baseUnitId: ["Base Unit cannot change while saved issuance references this Item."] } });
     const empty = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: null, recipes: [], stockItems: [] }));
     expect(empty.draft).toMatchObject({ id: saved.draft.id, revision: 2, stockItems: [] });
     expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
@@ -198,7 +198,7 @@ describe("Issuance Recipe drafts through public gateways", () => {
     await firstSave(); await prisma.recipeIngredient.deleteMany(); await prisma.itemUnitConversion.deleteMany();
     expect(await deleteRecipe(admin, "issuance-recipe")).toMatchObject({ ok: false, kind: "referenced" });
     expect(await deleteItem(admin, "issuance-rice")).toMatchObject({ ok: false });
-    expect(await updateItem(admin, "issuance-rice", { name: "Rice", categoryId: "issuance-category", baseUnitId: "issuance-g", note: "", issuanceQuantityPolicy: "allow-decimals" })).toMatchObject({ ok: false, fields: { baseUnitId: ["Base Unit cannot change while saved issuance references this Item."] } });
+    expect(await updateItem(admin, "issuance-rice", { reorderLevel: "10", name: "Rice", categoryId: "issuance-category", baseUnitId: "issuance-g", note: "", issuanceQuantityPolicy: "allow-decimals" })).toMatchObject({ ok: false, fields: { baseUnitId: ["Base Unit cannot change while saved issuance references this Item."] } });
     expect(await deleteMealSchedule(context.activityDesignId, context.activityId, context.mealScheduleId)).toMatchObject({ ok: false, kind: "has-issuance-record" });
   });
   it("rejects unauthenticated, missing, disabled, and unsupported-role actors for every public read/write", async () => {
@@ -237,7 +237,7 @@ describe("Issuance Recipe drafts through public gateways", () => {
     expect(await saveIssuanceDraft(staff, context, { ...changed, quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "1.250123" }] })).toMatchObject({ ok: false, kind: "validation" });
     expect(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: null, recipes: [] })).toMatchObject({ ok: false, kind: "validation" });
     expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: adjusted });
-    await prisma.item.create({ data: { id: "issuance-water", name: "Water", normalizedName: "water", categoryId: "issuance-category", baseUnitId: "issuance-kg" } });
+    await prisma.item.create({ data: { reorderLevel: "10", id: "issuance-water", name: "Water", normalizedName: "water", categoryId: "issuance-category", baseUnitId: "issuance-kg" } });
     const unrelated = workspace(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: 200, recipes: adjusted.draft.recipes.map((recipe) => retained(recipe, 200)), stockItems: [{ itemId: "issuance-water", conversionId: null, enteredQuantity: "1" }] }));
     expect(unrelated.review.find((item) => item.itemId === "issuance-rice")).toMatchObject({ finalQuantity: "3", adjusted: true });
     const reset = workspace(await saveIssuanceDraft(staff, context, { ...changed, revision: 3, stockItems: unrelated.draft.stockItems.map((line) => ({ lineId: line.id })), resetItemIds: ["issuance-rice"] }));
