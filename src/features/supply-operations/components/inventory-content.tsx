@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { PackageOpen } from "lucide-react";
+import { useEffect, useSyncExternalStore, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -66,6 +66,8 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+  const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
   const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   const pathname = usePathname();
   const currentQuery = useSearchParams().toString();
@@ -73,6 +75,32 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
   const matchingItems = filterInventory(items, state);
   const pagination = paginateInventory(matchingItems, state.page);
   const hasFilters = Boolean(state.search.trim() || state.categoryId || state.stockStatus);
+
+  useEffect(() => {
+    // Back/forward may restore a cached route tree. Refresh on entry as well as
+    // same-route history traversal; URL-owned filters and pagination survive.
+    function refreshInventory() {
+      if (window.location.pathname === "/inventory") router.refresh();
+    }
+    let restoreFrame: number | undefined;
+    function refreshAfterRestore() {
+      if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
+      restoreFrame = window.requestAnimationFrame(refreshInventory);
+    }
+    function restorePage(event: PageTransitionEvent) {
+      // Next restores its cached tree on this same event. Refresh after that
+      // restoration so it cannot overwrite the newly requested stock snapshot.
+      if (event.persisted) refreshAfterRestore();
+    }
+    refreshInventory();
+    window.addEventListener("popstate", refreshAfterRestore);
+    window.addEventListener("pageshow", restorePage);
+    return () => {
+      if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
+      window.removeEventListener("popstate", refreshAfterRestore);
+      window.removeEventListener("pageshow", restorePage);
+    };
+  }, [router]);
 
   function navigate(updates: Partial<InventoryListState>, replace = false) {
     // Read the live URL so consecutive controls never overwrite another filter.
@@ -93,7 +121,14 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
   return <div className="flex min-h-svh flex-col bg-card" data-inventory-ready={hydrated ? "true" : "false"}>
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
+      </header>
       <div className="flex min-w-0 flex-col gap-4">
         <InventorySearch search={state.search} onSearchChange={(search) => navigate({ search, page: 1 }, true)} />
         <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">

@@ -36,6 +36,7 @@ export async function executeCreateItem(
     }
 
     revalidatePath("/items");
+    revalidatePath("/inventory");
     return { status: "success", item: result.item };
   } catch {
     return {
