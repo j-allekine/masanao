@@ -11,8 +11,8 @@ export function InventoryCategoryFilter({ categories, value, onValueChange }: {
   onValueChange: (value: string) => void;
 }) {
   const options = [{ value: "", label: "All Categories" }, ...categories.map((category) => ({ value: category.id, label: category.name }))];
-  return <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
-    <FieldGroup className="min-w-0 sm:max-w-72">
+  return <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end lg:flex-1">
+    <FieldGroup className="min-w-0 sm:max-w-72 sm:flex-1">
       <Field>
         <FieldLabel htmlFor="inventory-category">Category</FieldLabel>
         <Select items={options} value={value} onValueChange={(next) => onValueChange(next ?? "")}>

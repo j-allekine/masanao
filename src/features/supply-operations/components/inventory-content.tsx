@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PackageOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,12 +9,17 @@ import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/compon
 import ListEmptyState from "@/components/workspace/list-empty-state";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
+import CatalogPagination from "@/components/workspace/catalog-pagination";
+import { Button } from "@/components/ui/button";
 import type { InventoryListItem } from "../types";
 import { stockStatusLabels } from "../domain/inventory";
 import InventorySearch from "./inventory-search";
-import { filterInventoryCategory, inventoryCategories } from "../domain/inventory-category-filter";
+import { inventoryCategories } from "../domain/inventory-category-filter";
 import { InventoryCategoryFilter } from "./inventory-category-filter";
-import { InventoryStatusFilter, type InventoryStatusFilterValue } from "./inventory-status-filter";
+import { InventoryStatusFilter } from "./inventory-status-filter";
+import { filterInventory, getInventoryListQuery, getInventoryListState, paginateInventory, type InventoryListState } from "../domain/inventory-list-state";
+
+const subscribeHydration = () => () => {};
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
@@ -60,19 +66,44 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
-  const [search, setSearch] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [stockStatus, setStockStatus] = useState<InventoryStatusFilterValue>("");
-  const normalizedSearch = search.trim().toLowerCase();
-  const matchingItems = filterInventoryCategory(items, categoryId).filter((item) => item.name.toLowerCase().includes(normalizedSearch) && (!stockStatus || item.stockStatus === stockStatus));
-  return <div className="flex min-h-svh flex-col bg-card">
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
+  const pathname = usePathname();
+  const currentQuery = useSearchParams().toString();
+  const state = getInventoryListState(new URLSearchParams(currentQuery));
+  const matchingItems = filterInventory(items, state);
+  const pagination = paginateInventory(matchingItems, state.page);
+  const hasFilters = Boolean(state.search.trim() || state.categoryId || state.stockStatus);
+
+  function navigate(updates: Partial<InventoryListState>, replace = false) {
+    // Read the live URL so consecutive controls never overwrite another filter.
+    const query = getInventoryListQuery(window.location.search, updates);
+    window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(currentQuery);
+    const canonical = getInventoryListQuery(currentQuery, { page: pagination.page });
+    if (params.has("page") && canonical !== currentQuery && window.location.search.slice(1) === currentQuery) {
+      window.history.replaceState(null, "", `${pathname}${canonical ? `?${canonical}` : ""}`);
+    }
+  }, [currentQuery, pagination.page, pathname]);
+
+  function clearFilters() { navigate({ search: "", categoryId: "", stockStatus: "", page: 1 }); }
+
+  return <div className="flex min-h-svh flex-col bg-card" data-inventory-ready={hydrated ? "true" : "false"}>
     <WorkspaceHeader title="Supply Operations" />
     <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="flex flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></header>
-      <InventorySearch search={search} onSearchChange={setSearch} />
-      <InventoryCategoryFilter categories={inventoryCategories(items)} value={categoryId} onValueChange={setCategoryId} />
-      <InventoryStatusFilter value={stockStatus} onChange={setStockStatus} />
-      <InventoryTable items={matchingItems} hasFilters={Boolean(normalizedSearch || categoryId || stockStatus)} onClearFilters={() => { setSearch(""); setCategoryId(""); setStockStatus(""); }} />
+      <div className="flex min-w-0 flex-col gap-4">
+        <InventorySearch search={state.search} onSearchChange={(search) => navigate({ search, page: 1 }, true)} />
+        <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <InventoryCategoryFilter categories={inventoryCategories(items)} value={state.categoryId} onValueChange={(categoryId) => navigate({ categoryId, page: 1 })} />
+          <InventoryStatusFilter value={state.stockStatus} onChange={(stockStatus) => navigate({ stockStatus, page: 1 })} />
+          {hasFilters ? <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>Clear all filters</Button> : null}
+        </div>
+      </div>
+      <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
+      <CatalogPagination {...pagination} onPageChange={(page) => navigate({ page })} />
     </div>
   </div>;
 }

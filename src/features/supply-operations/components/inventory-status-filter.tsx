@@ -2,9 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { stockStatusLabels, type StockStatus } from "../domain/inventory";
+import { stockStatusLabels } from "../domain/inventory";
+import type { InventoryStatusFilterValue } from "../domain/inventory-list-state";
 
-export type InventoryStatusFilterValue = Exclude<StockStatus, "review-required"> | "";
+export type { InventoryStatusFilterValue } from "../domain/inventory-list-state";
 
 const statuses = ["good", "reorder-now", "out-of-stock"] as const;
 
