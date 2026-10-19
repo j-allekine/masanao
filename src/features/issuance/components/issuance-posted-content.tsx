@@ -114,7 +114,7 @@ export default function IssuancePostedContent({
                   <p className="text-body-sm text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>
                   {allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}
                 </div>
-                <p className="max-w-1/3 shrink-0 break-all text-body-sm tabular-nums">{allocation.quantity} <span className="whitespace-nowrap">{receiptRow.baseUnitAbbreviation}</span></p>
+                <p className="max-w-1/3 shrink-0 break-all text-body-sm tabular-nums">{allocation.quantity} <span className="inline-block max-w-full break-all">{receiptRow.baseUnitAbbreviation}</span></p>
               </li>)}
             </ul>
             <div className="hidden sm:block"><Table>
