@@ -1,7 +1,14 @@
 import { mkdirSync } from "node:fs";
+import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 
 const evidence = process.env.MASANAO_E2E_EVIDENCE_PATH ?? "test-results/item-reorder-level";
+test.afterEach(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.prepare("DELETE FROM item WHERE normalizedName = ?").run("reorder browser test");
+  } finally { db.close(); }
+});
 test("administrator configures exact levels and staff view the catalog on desktop and mobile", async ({ page }) => {
   test.setTimeout(90_000);
   mkdirSync(evidence, { recursive: true });
