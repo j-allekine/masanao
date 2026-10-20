@@ -112,6 +112,7 @@ test("authenticated Item creation, alternate receiving, unchanged draft, posted 
   await page.getByRole("link", { name: "Purchase Orders", exact: true }).click();
   await page.getByRole("link", { name: "CSV256-PO", exact: true }).click();
   await page.getByRole("link", { name: "Record delivery", exact: true }).click();
+  await expect(page).toHaveURL(/\/purchase-orders\/csv256-po\/record-delivery$/, { timeout: 30_000 });
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Receipt number", { exact: true }).fill("CSV256-DR");
   await page.getByRole("combobox", { name: "Item", exact: true }).fill(itemName);
