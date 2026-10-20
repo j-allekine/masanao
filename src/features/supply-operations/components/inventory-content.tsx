@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useSyncExternalStore, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,25 +65,54 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
   </>;
 }
 
-export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+export default function InventoryContent({ items, initialQuery = "" }: { items: InventoryListItem[]; initialQuery?: string }) {
   const router = useRouter();
-  const [refreshing, startRefresh] = useTransition();
+  const [refreshing, setRefreshing] = useState(false);
+  const pendingRefresh = useRef(false);
   const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
-  const pathname = usePathname();
-  const currentQuery = useSearchParams().toString();
+  const pathname = "/inventory";
+  const [currentQuery, setCurrentQuery] = useState(initialQuery);
+  const latestQuery = useRef(initialQuery);
+  const pendingHistory = useRef<{ query: string; replace: boolean }[]>([]);
+  useEffect(() => {
+    if (!pendingHistory.current.length) {
+      latestQuery.current = window.location.search.slice(1);
+      setCurrentQuery(latestQuery.current);
+    }
+  }, [initialQuery]);
   const state = getInventoryListState(new URLSearchParams(currentQuery));
   const matchingItems = filterInventory(items, state);
   const pagination = paginateInventory(matchingItems, state.page);
   const hasFilters = Boolean(state.search.trim() || state.categoryId || state.stockStatus);
 
+  const requestRefresh = useCallback(() => {
+    pendingRefresh.current = true;
+    setRefreshing(true);
+    router.refresh();
+  }, [router]);
+
+  useEffect(() => {
+    // A router transition may settle before its RSC snapshot is committed.
+    // Wait for the new server-owned data before applying queued history edits.
+    if (!pendingRefresh.current) return;
+    pendingRefresh.current = false;
+    setRefreshing(false);
+    for (const { query, replace } of pendingHistory.current.splice(0)) {
+      window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
+    }
+  }, [items, pathname]);
+
   useEffect(() => {
     // Back/forward may restore a cached route tree. Refresh on entry as well as
     // same-route history traversal; URL-owned filters and pagination survive.
     function refreshInventory() {
-      if (window.location.pathname === "/inventory") router.refresh();
+      if (window.location.pathname === "/inventory") requestRefresh();
     }
     let restoreFrame: number | undefined;
     function refreshAfterRestore() {
+      pendingHistory.current = [];
+      latestQuery.current = window.location.search.slice(1);
+      setCurrentQuery(latestQuery.current);
       if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
       restoreFrame = window.requestAnimationFrame(refreshInventory);
     }
@@ -100,21 +129,28 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
       window.removeEventListener("popstate", refreshAfterRestore);
       window.removeEventListener("pageshow", restorePage);
     };
-  }, [router]);
+  }, [requestRefresh]);
 
   function navigate(updates: Partial<InventoryListState>, replace = false) {
-    // Read the live URL so consecutive controls never overwrite another filter.
-    const query = getInventoryListQuery(window.location.search, updates);
-    window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
+    const query = getInventoryListQuery(latestQuery.current, updates);
+    latestQuery.current = query;
+    setCurrentQuery(query);
+    // A history transition during an RSC refresh can suspend urgent input
+    // commits. Keep controls immediate and apply their URL edits after refresh.
+    if (pendingRefresh.current) pendingHistory.current.push({ query, replace });
+    else window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
   }
 
   useEffect(() => {
     const params = new URLSearchParams(currentQuery);
     const canonical = getInventoryListQuery(currentQuery, { page: pagination.page });
-    if (params.has("page") && canonical !== currentQuery && window.location.search.slice(1) === currentQuery) {
-      window.history.replaceState(null, "", `${pathname}${canonical ? `?${canonical}` : ""}`);
+    if (params.has("page") && canonical !== currentQuery && latestQuery.current === currentQuery) {
+      latestQuery.current = canonical;
+      setCurrentQuery(canonical);
+      if (pendingRefresh.current) pendingHistory.current.push({ query: canonical, replace: true });
+      else window.history.replaceState(null, "", `${pathname}${canonical ? `?${canonical}` : ""}`);
     }
-  }, [currentQuery, pagination.page, pathname]);
+  }, [currentQuery, pagination.page, pathname, refreshing]);
 
   function clearFilters() { navigate({ search: "", categoryId: "", stockStatus: "", page: 1 }); }
 
@@ -124,7 +160,7 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+          <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={requestRefresh}>
             <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
           </Button>
           <Button variant="outline" nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
