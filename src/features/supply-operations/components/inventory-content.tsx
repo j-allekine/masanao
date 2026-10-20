@@ -11,6 +11,7 @@ import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { Button } from "@/components/ui/button";
+import { FieldLegend, FieldSet } from "@/components/ui/field";
 import type { InventoryListItem } from "../types";
 import { stockStatusLabels } from "../domain/inventory";
 import InventorySearch from "./inventory-search";
@@ -161,14 +162,15 @@ function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[
 
   return <div className="flex min-h-svh flex-col bg-card" data-inventory-ready={hydrated ? "true" : "false"}>
     <WorkspaceHeader title="Supply Operations" />
-    <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+    <FieldSet disabled={!hydrated} className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <FieldLegend className="sr-only">Inventory controls and results</FieldLegend>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={requestRefresh}>
             <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
           </Button>
-          <Button variant="outline" nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
+          <Button variant="outline" disabled={!hydrated} nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
             <Download data-icon="inline-start" aria-hidden="true" />Export CSV
           </Button>
         </div>
@@ -183,7 +185,7 @@ function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[
       </div>
       <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
       <CatalogPagination {...pagination} onPageChange={(page) => navigate({ page })} />
-    </div>
+    </FieldSet>
   </div>;
 }
 
