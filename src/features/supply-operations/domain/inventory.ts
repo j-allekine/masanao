@@ -5,6 +5,8 @@ export type StockBalance =
   | { kind: "valid"; quantity: string }
   | { kind: "invalid"; error: string };
 
+export class InvalidStockEvidenceError extends Error {}
+
 export const stockStatusLabels: Record<StockStatus, string> = {
   "out-of-stock": "Out of stock",
   "reorder-now": "Reorder now",

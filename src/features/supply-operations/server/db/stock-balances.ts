@@ -15,10 +15,11 @@ export async function readStockBalances(
   if (ids.length) {
     const movements = await database.inventoryLedgerMovement.findMany({
       where: { itemId: { in: ids } },
-      select: { itemId: true, quantity: true, movementType: true },
+      select: { itemId: true, baseUnitId: true, quantity: true, movementType: true, item: { select: { baseUnitId: true } } },
     });
     for (const movement of movements) {
       try {
+        if (movement.baseUnitId !== movement.item.baseUnitId) throw new Error("Invalid movement Base Unit");
         const quantity = decimalRational(movement.quantity);
         if (movement.movementType !== "stock-in" && movement.movementType !== "stock-out") throw new Error("Invalid movement direction");
         const signed = movement.movementType === "stock-out" ? rational(-quantity.numerator, quantity.denominator) : quantity;
