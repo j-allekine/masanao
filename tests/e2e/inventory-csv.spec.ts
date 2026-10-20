@@ -34,6 +34,18 @@ async function evidence(page: Page, info: TestInfo, name: string) {
         expect(control.left, `${control.name} left edge`).toBeGreaterThanOrEqual(bounds.dialog.left);
         expect(control.right, `${control.name} right edge`).toBeLessThanOrEqual(bounds.dialog.right);
       }
+      const close = page.getByRole("dialog", { name: "Record delivery", exact: true }).getByRole("button", { name: "Close", exact: true });
+      await close.focus();
+      await expect(close).toBeFocused();
+      const closeState = await close.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        const header = button.parentElement?.querySelector('[data-slot="dialog-header"]');
+        return { receivesPointer: hit === button || button.contains(hit), hit: hit?.outerHTML, buttonZ: getComputedStyle(button).zIndex, headerZ: header ? getComputedStyle(header).zIndex : undefined };
+      });
+      await info.attach(`receiving-close-${width}`, { body: JSON.stringify(closeState, null, 2), contentType: "application/json" });
+      expect(closeState.receivesPointer, JSON.stringify(closeState)).toBe(true);
+      await close.click({ trial: true });
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: dir ? join(dir, `${name}-${width}.png`) : info.outputPath(`${name}-${width}.png`), fullPage: true, style: "nextjs-portal { display: none !important; }" });
