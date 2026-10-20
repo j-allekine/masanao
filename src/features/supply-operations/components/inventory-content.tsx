@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,12 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
   </>;
 }
 
-export default function InventoryContent({ items, initialQuery = "" }: { items: InventoryListItem[]; initialQuery?: string }) {
+export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+  const currentQuery = useSearchParams().toString();
+  return <InventoryWorkspace items={items} initialQuery={currentQuery} />;
+}
+
+function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[]; initialQuery: string }) {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const pendingRefresh = useRef(false);
@@ -79,7 +84,7 @@ export default function InventoryContent({ items, initialQuery = "" }: { items: 
       latestQuery.current = window.location.search.slice(1);
       setCurrentQuery(latestQuery.current);
     }
-  }, [initialQuery]);
+  }, [initialQuery, items]);
   const state = getInventoryListState(new URLSearchParams(currentQuery));
   const matchingItems = filterInventory(items, state);
   const pagination = paginateInventory(matchingItems, state.page);

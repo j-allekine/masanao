@@ -39,6 +39,29 @@ test.afterAll(() => {
 });
 
 for (const width of [1280, 320]) {
+  test(`sidebar Inventory entry clears the previous query at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    expect((await page.request.post("/api/auth/sign-in/username", {
+      data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+      headers: { origin: process.env.BETTER_AUTH_URL! },
+    })).status()).toBe(200);
+    await page.goto("/inventory");
+    await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled();
+    const search = page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true });
+    await search.pressSequentially("Brown");
+    await expect(search).toHaveValue("Brown");
+    await expect(page.getByText("White Rice", { exact: true })).toHaveCount(0);
+    await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe("Brown");
+    if (width === 320) await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).first().click();
+    await page.getByRole("link", { name: "Inventory", exact: true }).click();
+    await expect(page).toHaveURL(/\/inventory$/);
+    if (width === 320) await page.keyboard.press("Escape");
+    await expect(search).toHaveValue("");
+    const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+    await expect(list.getByText("White Rice", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Export CSV", exact: true })).toHaveAttribute("href", "/inventory/export");
+  });
+
   test(`typing remains intact while entry refresh is pending at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
     expect((await page.request.post("/api/auth/sign-in/username", {
