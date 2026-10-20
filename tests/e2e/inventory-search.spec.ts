@@ -39,6 +39,57 @@ test.afterAll(() => {
 });
 
 for (const width of [1280, 320]) {
+  test(`typing remains intact while entry refresh is pending at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    expect((await page.request.post("/api/auth/sign-in/username", {
+      data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+      headers: { origin: process.env.BETTER_AUTH_URL! },
+    })).status()).toBe(200);
+    let releaseRefresh!: () => void;
+    const refreshGate = new Promise<void>((resolve) => { releaseRefresh = resolve; });
+    let markRequested!: () => void;
+    const refreshRequested = new Promise<void>((resolve) => { markRequested = resolve; });
+    let held = false;
+    const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+    await page.route("**/inventory?**", async (route) => {
+      if (route.request().headers()["rsc"] === "1") {
+        if (!held) { held = true; markRequested(); }
+        await refreshGate;
+      }
+      await route.continue();
+    });
+    try {
+      await page.goto("/inventory");
+      await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
+      await refreshRequested;
+      const search = page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true });
+      await search.focus();
+      await search.pressSequentially("  bRoWn  ");
+      await expect(search).toBeFocused();
+      await expect(search).toHaveValue("  bRoWn  ");
+      await search.pressSequentially("x");
+      await expect(search).toHaveValue("  bRoWn  x");
+      await search.press("Backspace");
+      await expect(search).toHaveValue("  bRoWn  ");
+      db.prepare("UPDATE item SET reorderLevel='3' WHERE id='search-251-brown'").run();
+      const refreshed = page.waitForResponse((response) => response.request().headers()["rsc"] === "1" && new URL(response.url()).pathname === "/inventory");
+      releaseRefresh();
+      await (await refreshed).finished();
+      const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+      await expect(list.locator('[data-item-id="search-251-brown"]')).toContainText("Reorder now");
+      await expect(search).toHaveValue("  bRoWn  ");
+      await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe("  bRoWn  ");
+      const exportHref = await page.getByRole("button", { name: "Export CSV", exact: true }).getAttribute("href");
+      expect(new URL(exportHref!, page.url()).searchParams.get("q")).toBe("  bRoWn  ");
+      await expect(page.getByText("White Rice", { exact: true })).toHaveCount(0);
+      await expect(list.getByText("Brown Rice", { exact: true })).toBeVisible();
+    } finally {
+      releaseRefresh();
+      db.prepare("UPDATE item SET reorderLevel='2.5' WHERE id='search-251-brown'").run();
+      db.close();
+    }
+  });
+
   test(`name search preserves stock and offers keyboard clearing at ${width}px`, async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 800 });
