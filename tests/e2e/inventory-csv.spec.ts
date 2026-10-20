@@ -15,6 +15,26 @@ async function evidence(page: Page, info: TestInfo, name: string) {
   if (dir) mkdirSync(dir, { recursive: true });
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
+    if (name === "receiving") {
+      const bounds = await page.getByRole("dialog", { name: "Record delivery", exact: true }).evaluate((dialog) => {
+        const rect = dialog.getBoundingClientRect();
+        return {
+          dialog: { left: rect.left, right: rect.right, clientWidth: dialog.clientWidth, scrollWidth: dialog.scrollWidth },
+          controls: [...dialog.querySelectorAll('#receiptNo, #receiptDate, #note, [data-slot="dialog-footer"] button')].map((control) => {
+            const box = control.getBoundingClientRect();
+            return { name: control.id || control.textContent, left: box.left, right: box.right };
+          }),
+        };
+      });
+      await info.attach(`receiving-bounds-${width}`, { body: JSON.stringify(bounds, null, 2), contentType: "application/json" });
+      expect(bounds.dialog.left).toBeGreaterThanOrEqual(0);
+      expect(bounds.dialog.right).toBeLessThanOrEqual(width);
+      expect(bounds.dialog.scrollWidth).toBeLessThanOrEqual(bounds.dialog.clientWidth);
+      for (const control of bounds.controls) {
+        expect(control.left, `${control.name} left edge`).toBeGreaterThanOrEqual(bounds.dialog.left);
+        expect(control.right, `${control.name} right edge`).toBeLessThanOrEqual(bounds.dialog.right);
+      }
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: dir ? join(dir, `${name}-${width}.png`) : info.outputPath(`${name}-${width}.png`), fullPage: true, style: "nextjs-portal { display: none !important; }" });
   }
@@ -90,8 +110,29 @@ test("authenticated Item creation, alternate receiving, unchanged draft, posted 
   await page.getByLabel("Unit price", { exact: true }).fill("1");
   await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveText("20 pc");
   await evidence(page, info, "receiving");
-  await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+  await page.setViewportSize({ width: 320, height: 800 });
+  const receiving = page.getByRole("dialog", { name: "Record delivery", exact: true });
+  const tableScroll = receiving.locator('[data-slot="table-container"]');
+  await page.getByLabel("Quantity", { exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Unit price", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Unit price", { exact: true })).toBeInViewport();
+  expect(await tableScroll.evaluate((table) => table.scrollLeft)).toBeGreaterThan(0);
+  expect(await receiving.evaluate((dialog) => dialog.scrollLeft)).toBe(0);
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Remove delivery line 1", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Receipt note", { exact: true })).toBeFocused();
+  await page.getByLabel("Receipt note", { exact: true }).fill("Keyboard receipt at 320px");
+  await page.keyboard.press("Tab");
+  await expect(receiving.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
+  await expect(receiving.getByRole("button", { name: "Cancel", exact: true })).toBeInViewport();
+  await page.keyboard.press("Tab");
+  await expect(receiving.getByRole("button", { name: "Post delivery", exact: true })).toBeFocused();
+  await expect(receiving.getByRole("button", { name: "Post delivery", exact: true })).toBeInViewport();
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/purchase-orders\/csv256-po#delivery-receipt-/, { timeout: 30_000 });
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/inventory?q=CSV+Journey");
   await expect(eggs).toContainText("20 pc");
   await expect(eggs).toContainText("Good");

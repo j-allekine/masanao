@@ -234,7 +234,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     return addExactPositiveDecimals(total, multiplyExactPositiveDecimals(value.quantity, value.unitPrice));
   }, "0");
 
-  return <form aria-label="Record delivery" aria-busy={posting} className={presentation === "dialog" ? "flex flex-col gap-6 px-6 py-5" : "flex flex-col gap-6"} data-client-ready={isHydrated ? "true" : undefined} noValidate onSubmit={submit}>
+  return <form aria-label="Record delivery" aria-busy={posting} className={presentation === "dialog" ? "flex min-w-0 flex-col gap-6 px-6 py-5" : "flex min-w-0 flex-col gap-6"} data-client-ready={isHydrated ? "true" : undefined} noValidate onSubmit={submit}>
     {formError ? <Alert variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
     <FieldGroup className="grid gap-4 sm:grid-cols-2">
       <Field data-invalid={Boolean(errors.receiptNo?.length)}>
@@ -245,10 +245,10 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
       <LocalDatePicker id="receiptDate" name="receiptDate" label="Receipt date" emptyLabel="Select receipt date" value={date} error={errors.receiptDate} required onChange={(value) => { setDateOverride(value); clearError("receiptDate"); }} />
     </FieldGroup>
 
-    <section aria-labelledby="delivery-lines-heading" className="flex flex-col gap-4">
+    <section aria-labelledby="delivery-lines-heading" className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <div className="flex items-baseline gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
             <h2 id="delivery-lines-heading" className="text-heading-3 font-semibold">Delivery Receipt lines</h2>
             <p aria-live="polite" className="text-body-sm text-muted-foreground">{lines.length} {lines.length === 1 ? "line" : "lines"}</p>
           </div>
