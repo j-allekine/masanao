@@ -23,7 +23,12 @@ import { filterInventory, getInventoryListQuery, getInventoryListState, paginate
 const subscribeHydration = () => () => {};
 
 function StockBadge({ item }: { item: InventoryListItem }) {
-  return <Badge variant={item.stockStatus === "review-required" ? "destructive" : item.stockStatus === "good" ? "secondary" : "outline"}>{stockStatusLabels[item.stockStatus]}</Badge>;
+  const tone = item.stockStatus === "good"
+    ? "border-success/30 bg-success-muted text-success-foreground"
+    : item.stockStatus === "reorder-now"
+      ? "border-warning/30 bg-warning-muted text-warning-foreground"
+      : "border-destructive/30 bg-destructive/10 text-destructive";
+  return <Badge variant="outline" className={tone}>{stockStatusLabels[item.stockStatus]}</Badge>;
 }
 
 function onHand(item: InventoryListItem) {
