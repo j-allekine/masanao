@@ -22,6 +22,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/inventory");
+  await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
 });
 
 test("Category keeps exact balances for active Items in an inactive Category and clears on desktop and mobile", async ({ page }, testInfo) => {
@@ -35,12 +36,14 @@ test("Category keeps exact balances for active Items in an inactive Category and
     expect(originalCount).toBeGreaterThan(1);
     const filter = page.getByRole("combobox", { name: "Category", exact: true });
     await expect(filter).toContainText("All Categories");
+    await expect(filter).toBeEnabled();
     await filter.focus();
     await expect(filter).toBeFocused();
     await filter.press("Enter");
     await expect(page.getByRole("option", { name: "Archived pantry", exact: true })).toBeVisible();
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
+    await expect(page.locator('[data-slot="select-content"]')).toBeHidden();
     await expect(scope.locator("[data-item-id]")).toHaveCount(1);
     const rice = scope.locator('[data-item-id="invcat-rice"]');
     await expect(rice).toContainText("0.123456789 kg");
@@ -62,14 +65,14 @@ test("empty catalog remains clear and Category control stays usable on mobile", 
     db.exec("UPDATE item SET isActive=0 WHERE isActive=1");
     await page.setViewportSize({ width: 320, height: 800 });
     await page.reload();
+    await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await expect(page.getByText("No active Items.", { exact: true })).toBeVisible();
     const filter = page.getByRole("combobox", { name: "Category", exact: true });
+    await expect(filter).toBeEnabled();
     await filter.focus();
-    // The empty Server Component can stream before the Select hydrates.
-    await expect(async () => {
-      if (await filter.getAttribute("aria-expanded") !== "true") await filter.press("Enter");
-      await expect(page.getByRole("option", { name: "All Categories", exact: true })).toBeVisible({ timeout: 1_000 });
-    }).toPass({ timeout: 10_000 });
+    await expect(filter).toBeFocused();
+    await filter.press("Enter");
+    await expect(page.getByRole("option", { name: "All Categories", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator('[data-slot="select-content"]')).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
