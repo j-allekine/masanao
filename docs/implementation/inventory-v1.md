@@ -37,21 +37,28 @@ and clear filters when Inventory is opened again from the sidebar.
 
 ## Verification
 
-Verified on 2026-10-20 at implementation commit `ec720574`:
+Reverified on 2026-10-22 at application commit `1a2a760`:
 
-- All 454 unit/integration tests passed across 66 files in the final run.
-- All 30 selected Playwright tests passed together in 3.3 minutes. Coverage
-  includes Inventory, Item Reorder levels, receiving, issuance, CSV, hydration
-  and workspace navigation at desktop and narrow-mobile widths.
+- All 456 unit/integration tests passed across 66 files in one run.
+- All 127 Playwright tests passed together in one complete 11-minute run.
+  Coverage includes Inventory, Item Reorder levels, receiving, issuance, CSV,
+  hydration, all catalogs and workspace navigation at desktop and mobile widths.
 - ESLint, TypeScript and the production build passed. Both architecture tests
   passed; Prisma validation, client generation and all 28 migrations were
   verified against an isolated database, including repeat deployment.
 - Standards and Spec reviews have zero outstanding findings.
 
-Earlier runs exposed the repaired search and sidebar regressions and a
-receiving-route readiness wait. An initial unit run timed out under concurrent
-checks; the final standalone unit and browser results above are complete runs,
-not combined totals from separate reruns.
+Review repairs reject stock movements recorded in a different Base Unit before
+calculating balances or posting issuance. Browser repairs guard controls until
+hydration, clean up owned test Items and align workspace navigation snapshots.
+The Category control now remains visible after desktop-to-mobile resizing.
+Stock badges and selected status filters use semantic green, amber and red
+colors while retaining their text labels. The production preview was rebuilt
+and checked with its existing isolated sample data preserved.
+
+Earlier broad browser runs failed or were interrupted during diagnosis. The
+counts above describe complete successful runs, not totals combined from
+separate reruns. Focused status and Category checks also passed independently.
 
 Fresh screenshots, red/green regression evidence and verification logs are
 retained outside the repository in the task's `scratch/inventory-248` folder.
