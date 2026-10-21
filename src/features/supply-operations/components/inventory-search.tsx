@@ -7,13 +7,13 @@ export default function InventorySearch({
   search,
   onSearchChange,
   filterContent,
-  hasFilters,
+  activeFilterCount,
   onClearFilters,
 }: {
   search: string;
   onSearchChange: (search: string) => void;
   filterContent: ReactNode;
-  hasFilters: boolean;
+  activeFilterCount: number;
   onClearFilters: () => void;
 }) {
   return (
@@ -25,7 +25,7 @@ export default function InventorySearch({
       search={search}
       onSearchChange={onSearchChange}
       filterContent={filterContent}
-      hasFilters={hasFilters}
+      activeFilterCount={activeFilterCount}
       onClearFilters={onClearFilters}
     />
   );

@@ -183,7 +183,7 @@ function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[
       <InventorySearch
         search={state.search}
         onSearchChange={(search) => navigate({ search, page: 1 }, true)}
-        hasFilters={Boolean(state.categoryId || state.stockStatus)}
+        activeFilterCount={Number(Boolean(state.categoryId)) + Number(Boolean(state.stockStatus))}
         onClearFilters={clearFilters}
         filterContent={<>
           <InventoryCategoryFilter categories={inventoryCategories(items)} value={state.categoryId} onValueChange={(categoryId) => navigate({ categoryId, page: 1 })} />

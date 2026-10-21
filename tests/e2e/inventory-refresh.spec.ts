@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { closeCatalogFilters, openCatalogFilters } from "./catalog-filter-helpers";
 
 test.use({ actionTimeout: 30_000 });
 
@@ -162,8 +163,10 @@ for (const width of [1280, 320]) {
       await expect(last).toContainText("7 pc");
       await expect(page).toHaveURL(new RegExp(url.replaceAll("?", "\\?" ).replaceAll("+", "\\+")));
       await expect(page.getByRole("searchbox", { name: "Search Inventory by Item name" })).toHaveValue(`Refresh Pantry ${width}`);
+      await openCatalogFilters(page);
       await expect(page.getByRole("combobox", { name: "Category", exact: true })).toContainText("Staples");
-      await expect(page.getByRole("button", { name: "Good", exact: true })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("combobox", { name: "Stock status", exact: true })).toContainText("Good");
+      await closeCatalogFilters(page);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const evidence = process.env.MASANAO_INVENTORY_REFRESH_EVIDENCE_DIR;
       if (evidence) mkdirSync(evidence, { recursive: true });
@@ -186,7 +189,9 @@ for (const width of [1280, 320]) {
       await expect(page).toHaveURL(/page=2/);
       await expect(page.getByText("Showing 11 to 20 of 20 results", { exact: true })).toBeVisible();
       await expect(page.getByRole("searchbox", { name: "Search Inventory by Item name" })).toHaveValue(`Refresh Pantry ${width}`);
-      await expect(page.getByRole("button", { name: "Good", exact: true })).toHaveAttribute("aria-pressed", "true");
+      await openCatalogFilters(page);
+      await expect(page.getByRole("combobox", { name: "Stock status", exact: true })).toContainText("Good");
+      await closeCatalogFilters(page);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: evidence ? join(evidence, `refresh-clamped-${width}.png`) : testInfo.outputPath(`refresh-clamped-${width}.png`), fullPage: true, style: "nextjs-portal { display: none !important; }" });
     } finally { db.close(); }

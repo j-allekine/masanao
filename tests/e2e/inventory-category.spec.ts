@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -34,6 +35,7 @@ test("Category keeps exact balances for active Items in an inactive Category and
     const scope = width === 320 ? page.locator("[data-inventory-mobile]") : page.locator("[data-inventory-desktop]");
     const originalCount = await scope.locator("[data-item-id]").count();
     expect(originalCount).toBeGreaterThan(1);
+    await openCatalogFilters(page);
     const filter = page.getByRole("combobox", { name: "Category", exact: true });
     await expect(filter).toContainText("All Categories");
     await expect(filter).toBeEnabled();
@@ -44,6 +46,7 @@ test("Category keeps exact balances for active Items in an inactive Category and
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
     await expect(page.locator('[data-slot="select-content"]')).toBeHidden();
+    await closeCatalogFilters(page);
     await expect(scope.locator("[data-item-id]")).toHaveCount(1);
     const rice = scope.locator('[data-item-id="invcat-rice"]');
     await expect(rice).toContainText("0.123456789 kg");
@@ -52,8 +55,10 @@ test("Category keeps exact balances for active Items in an inactive Category and
     await expect(page.getByText("Category Hidden", { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: evidence ? join(evidence, `category-${width}.png`) : testInfo.outputPath(`category-${width}.png`), fullPage: true });
-    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
+    await resetCatalogFilters(page);
+    await openCatalogFilters(page);
     await expect(filter).toContainText("All Categories");
+    await closeCatalogFilters(page);
     await expect(scope.locator("[data-item-id]")).toHaveCount(originalCount);
   }
 });
@@ -67,6 +72,7 @@ test("empty catalog remains clear and Category control stays usable on mobile", 
     await page.reload();
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await expect(page.getByText("No active Items.", { exact: true })).toBeVisible();
+    await openCatalogFilters(page);
     const filter = page.getByRole("combobox", { name: "Category", exact: true });
     await expect(filter).toBeEnabled();
     await filter.focus();
@@ -75,6 +81,7 @@ test("empty catalog remains clear and Category control stays usable on mobile", 
     await expect(page.getByRole("option", { name: "All Categories", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator('[data-slot="select-content"]')).toBeHidden();
+    await closeCatalogFilters(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const evidence = process.env.MASANAO_INVENTORY_CATEGORY_EVIDENCE_DIR;
     if (evidence) mkdirSync(evidence, { recursive: true });

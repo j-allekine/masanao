@@ -315,7 +315,6 @@ function ItemsWorkspaceContent({
         <ItemToolbar
           filters={filters}
           categories={categories}
-          hasFilters={filtersAreActive}
           onSearchChange={updateSearch}
           onCategoryChange={updateCategory}
           onStatusChange={updateStatus}

@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -51,28 +52,34 @@ for (const width of [1280, 320]) {
     await page.getByRole("button", { name: "Next page", exact: true }).click();
     await expect(page).toHaveURL(/page=2/);
     await expect(list.locator('[data-item-id="page254-11"]')).toBeVisible();
+    await openCatalogFilters(page);
     await category.focus();
     await category.press("Enter");
     await page.getByRole("option", { name: "Archived pantry", exact: true }).click();
+    await closeCatalogFilters(page);
     await expect(page).not.toHaveURL(/page=/);
     await expect(page.getByText("Showing 1 to 10 of 23 results", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Out of stock", exact: true }).click();
+    await chooseCatalogFilter(page, "Stock status", "Out of stock");
     await expect(page).toHaveURL(/status=out-of-stock/);
     await expect(search).toHaveValue("Pagination");
     await expect(page.getByText("Showing 1 to 10 of 23 results", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Page 3 of 3", exact: true }).click();
     await expect(list.locator("[data-item-id]")).toHaveCount(3);
     await expect(page.getByText("Showing 21 to 23 of 23 results", { exact: true })).toBeVisible();
+    await openCatalogFilters(page);
     const categoryBox = await category.boundingBox();
     expect(categoryBox!.width).toBeGreaterThan(150);
     if (width === 1280) {
-      const clearBox = await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).boundingBox();
+      const clearBox = await page.getByRole("search").getByRole("button", { name: "Reset", exact: true }).boundingBox();
       expect(clearBox!.x).toBeGreaterThanOrEqual(categoryBox!.x + categoryBox!.width);
     }
+    await closeCatalogFilters(page);
     await capture(page, testInfo, `combined-page3-${width}.png`);
     if (width === 1280) {
       await page.setViewportSize({ width: 1024, height: 800 });
+      await openCatalogFilters(page);
       expect((await category.boundingBox())!.width).toBeGreaterThan(150);
+      await closeCatalogFilters(page);
       await capture(page, testInfo, "combined-page3-1024.png");
       await page.setViewportSize({ width, height: 800 });
     }
@@ -83,7 +90,9 @@ for (const width of [1280, 320]) {
     await page.reload();
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await expect(search).toHaveValue("Pagination");
+    await openCatalogFilters(page);
     await expect(category).toContainText("Archived pantry");
+    await closeCatalogFilters(page);
     await expect(page.getByText("Showing 21 to 23 of 23 results", { exact: true })).toBeVisible();
     await search.fill("Pagination Rice 01");
     await expect(page).not.toHaveURL(/page=/);
@@ -93,24 +102,26 @@ for (const width of [1280, 320]) {
     await expect(page.getByRole("button", { name: "Clear search", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(search).toHaveValue("");
+    await openCatalogFilters(page);
     await expect(category).toContainText("Archived pantry");
+    await closeCatalogFilters(page);
     await expect(page).toHaveURL(/status=out-of-stock/);
-    await category.click();
-    await page.getByRole("option", { name: "All Categories", exact: true }).click();
+    await chooseCatalogFilter(page, "Category", "All Categories");
     await expect(page).toHaveURL(/status=out-of-stock/);
     await search.fill("Pagination");
     await expect(page.getByText("Showing 1 to 10 of 27 results", { exact: true })).toBeVisible();
-    await category.click();
-    await page.getByRole("option", { name: "Archived pantry", exact: true }).click();
+    await chooseCatalogFilter(page, "Category", "Archived pantry");
     await expect(page.getByText("Showing 1 to 10 of 23 results", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Out of stock", exact: true }).click();
+    await chooseCatalogFilter(page, "Stock status", "All stock statuses");
+    await openCatalogFilters(page);
     await expect(category).toContainText("Archived pantry");
+    await closeCatalogFilters(page);
     await expect(search).toHaveValue("Pagination");
     await search.fill("No such item");
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("No results", { exact: true })).toBeVisible();
     await capture(page, testInfo, `no-match-${width}.png`);
-    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
+    await resetCatalogFilters(page);
     await expect(page).toHaveURL(/\/inventory$/);
     await expect(search).toHaveValue("");
     await expect(list.locator("[data-item-id]")).toHaveCount(10);
@@ -139,11 +150,13 @@ test("empty catalog keeps keyboard controls accessible at 320px", async ({ page 
     await expect(page.getByText("No active Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("No results", { exact: true })).toBeVisible();
     const category = page.getByRole("combobox", { name: "Category", exact: true });
+    await openCatalogFilters(page);
     await category.focus();
     await category.press("Enter");
     await expect(page.getByRole("option", { name: "All Categories", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.locator('[data-slot="select-content"]')).toBeHidden();
+    await closeCatalogFilters(page);
     await capture(page, testInfo, "empty-320.png");
   } finally {
     const restore = db.prepare("UPDATE item SET isActive=1 WHERE id=?");

@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -37,19 +38,19 @@ for (const width of [1280, 320]) {
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
     await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
-    const filter = page.getByRole("group", { name: "Stock status", exact: true });
-    await expect(filter.getByRole("button")).toHaveCount(3);
+    await openCatalogFilters(page);
+    const filter = page.getByRole("combobox", { name: "Stock status", exact: true });
+    await expect(filter).toContainText("All stock statuses");
     if (width === 1280) {
       const category = await page.getByRole("combobox", { name: "Category", exact: true }).boundingBox();
-      const status = await filter.getByRole("button", { name: "Good", exact: true }).boundingBox();
+      const status = await filter.boundingBox();
       expect(category).not.toBeNull();
       expect(status).not.toBeNull();
       expect(Math.abs(category!.y + category!.height - status!.y - status!.height)).toBeLessThanOrEqual(1);
     }
+    await closeCatalogFilters(page);
     for (const [label, itemId] of [["Good", "status-good"], ["Reorder now", "status-reorder"], ["Out of stock", "status-out"]]) {
-      await filter.getByRole("button", { name: label, exact: true }).click();
-      await expect(filter.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
-      await expect(page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true })).toHaveCount(1);
+      await chooseCatalogFilter(page, "Stock status", label);
       await expect(list.locator(`[data-item-id="${itemId}"]`)).toBeVisible();
       await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -57,11 +58,11 @@ for (const width of [1280, 320]) {
       if (evidence) mkdirSync(evidence, { recursive: true });
       await page.screenshot({ path: evidence ? join(evidence, `status-${itemId}-${width}.png`) : testInfo.outputPath(`status-${itemId}-${width}.png`), fullPage: true });
     }
-    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
+    await resetCatalogFilters(page);
     await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(4);
-    // Toggling the selected choice off also restores the full list.
-    await filter.getByRole("button", { name: "Good", exact: true }).click();
-    await filter.getByRole("button", { name: "Good", exact: true }).click();
+    // Choosing all statuses also restores the full list.
+    await chooseCatalogFilter(page, "Stock status", "Good");
+    await chooseCatalogFilter(page, "Stock status", "All stock statuses");
     await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(4);
   });
 }
@@ -75,11 +76,10 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     db.prepare("UPDATE item SET reorderLevel='20' WHERE id='status-good'").run();
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
-    await page.getByRole("button", { name: "Good", exact: true }).click();
+    await chooseCatalogFilter(page, "Stock status", "Good");
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
-    await expect(page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
-    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
+    await resetCatalogFilters(page);
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-good"]')).toContainText("Reorder now");
     await page.goto("/purchase-orders/status-po/record-delivery");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -92,9 +92,9 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await expect(page).toHaveURL(/\/purchase-orders\/status-po#delivery-receipt-/, { timeout: 30_000 });
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
-    await page.getByRole("button", { name: "Good", exact: true }).click();
+    await chooseCatalogFilter(page, "Stock status", "Good");
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-out"]')).toContainText("20 pc");
-    await page.getByRole("button", { name: "Out of stock", exact: true }).click();
+    await chooseCatalogFilter(page, "Stock status", "Out of stock");
     await expect(page.locator('[data-item-id="status-out"]')).toHaveCount(0);
   } finally { db.close(); }
 });

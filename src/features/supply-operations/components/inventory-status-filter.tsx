@@ -1,23 +1,16 @@
 "use client";
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { WorkspaceFilterField } from "@/components/workspace/catalog-controls";
 import { stockStatusLabels } from "../domain/inventory";
 import type { InventoryStatusFilterValue } from "../domain/inventory-list-state";
 
 export type { InventoryStatusFilterValue } from "../domain/inventory-list-state";
 
-const statuses = ["good", "reorder-now", "out-of-stock"] as const;
-const statusTones = {
-  good: "aria-pressed:border-success aria-pressed:bg-success-muted aria-pressed:text-success-foreground",
-  "reorder-now": "aria-pressed:border-warning aria-pressed:bg-warning-muted aria-pressed:text-warning-foreground",
-  "out-of-stock": "aria-pressed:border-destructive aria-pressed:bg-destructive/10 aria-pressed:text-destructive",
-};
-const statusDots = {
-  good: "bg-success",
-  "reorder-now": "bg-warning",
-  "out-of-stock": "bg-destructive",
-};
+const options = [
+  { value: "", label: "All stock statuses" },
+  ...(["good", "reorder-now", "out-of-stock"] as const).map((value) => ({ value, label: stockStatusLabels[value] })),
+];
 
 export function InventoryStatusFilter({
   value,
@@ -27,25 +20,15 @@ export function InventoryStatusFilter({
   onChange: (value: InventoryStatusFilterValue) => void;
 }) {
   return (
-    <div data-catalog-filter className="flex w-full min-w-0 flex-col gap-2 sm:w-auto">
-      <span id="inventory-stock-status-label" className="text-body-sm font-medium">Stock status</span>
-      <div className="flex flex-wrap items-center gap-2">
-        <ToggleGroup
-          aria-labelledby="inventory-stock-status-label"
-          value={value ? [value] : []}
-          onValueChange={(values) => onChange((values[0] ?? "") as InventoryStatusFilterValue)}
-          variant="outline"
-          size="default"
-          className="max-w-full flex-wrap"
-        >
-          {statuses.map((status) => (
-            <ToggleGroupItem key={status} value={status} className={statusTones[status]}>
-              <span aria-hidden="true" className={cn("size-2 rounded-full", statusDots[status])} />
-              {stockStatusLabels[status]}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-    </div>
+    <WorkspaceFilterField id="inventory-stock-status" label="Stock status">
+      <Select items={options} value={value} onValueChange={(next) => onChange((next ?? "") as InventoryStatusFilterValue)}>
+        <SelectTrigger id="inventory-stock-status" className="w-full"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </WorkspaceFilterField>
   );
 }

@@ -10,8 +10,7 @@ test("Item filters wait for hydration before accepting an interaction", async ({
   await page.route("**/_next/**/*.js", async (route) => { await scripts; await route.continue(); });
   try {
     await page.goto("/items?itemsStatus=inactive", { waitUntil: "commit" });
-    await expect(page.getByRole("combobox", { name: "Status filter", exact: true })).toBeDisabled();
-    await expect(page.getByRole("combobox", { name: "Category filter", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /^Filters/ })).toBeDisabled();
     await expect(page.getByLabel("Search Items", { exact: true })).toBeDisabled();
   } finally { release(); }
   await expect(page.locator('[data-items-ready="true"]')).toBeVisible();

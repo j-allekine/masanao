@@ -18,7 +18,6 @@ import type { ItemListStatus } from "./item-list-state";
 export default function ItemToolbar({
   filters,
   categories,
-  hasFilters,
   onSearchChange,
   onCategoryChange,
   onStatusChange,
@@ -26,7 +25,6 @@ export default function ItemToolbar({
 }: {
   filters: ItemListFilters;
   categories: CategoryListItem[];
-  hasFilters: boolean;
   onSearchChange: (search: string) => void;
   onCategoryChange: (categoryId: string) => void;
   onStatusChange: (status: ItemListStatus) => void;
@@ -53,7 +51,7 @@ export default function ItemToolbar({
       searchPlaceholder="Search items by name..."
       search={filters.search}
       onSearchChange={onSearchChange}
-      hasFilters={hasFilters && Boolean(filters.categoryId || filters.status !== "all")}
+      activeFilterCount={Number(Boolean(filters.categoryId)) + Number(filters.status !== "all")}
       onClearFilters={onClearFilters}
       filterContent={
         <>
