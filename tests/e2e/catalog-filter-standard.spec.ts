@@ -37,14 +37,14 @@ for (const width of [1280, 1024, 320]) {
         expect(Math.abs(selectBox!.height - searchBox!.height)).toBeLessThanOrEqual(1);
       }
       await search.fill("__no_matching_catalog_record__");
-      await search.press("Tab");
       const clear = toolbar.getByRole("button", { name: "Clear search", exact: true });
-      await expect(clear).toBeFocused();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({
         path: evidence ? join(evidence, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`),
         fullPage: true,
       });
+      await search.press("Tab");
+      await expect(clear).toBeFocused();
       await clear.press("Enter");
       await expect(search).toHaveValue("");
       await expect(search).toBeFocused();

@@ -46,7 +46,7 @@ export function WorkspaceSearchField({
           ref={inputRef}
           disabled={!hydrated}
           id={id}
-          className="text-body-sm"
+          className="text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
           type="search"
           placeholder={placeholder}
           value={value}
