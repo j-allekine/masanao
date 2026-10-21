@@ -1,15 +1,20 @@
 "use client";
 
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
 import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls";
 
 export default function InventorySearch({
   search,
   onSearchChange,
+  filterContent,
+  hasFilters,
+  onClearFilters,
 }: {
   search: string;
   onSearchChange: (search: string) => void;
+  filterContent: ReactNode;
+  hasFilters: boolean;
+  onClearFilters: () => void;
 }) {
   return (
     <WorkspaceCatalogToolbar
@@ -19,12 +24,9 @@ export default function InventorySearch({
       searchPlaceholder="Search Items by name..."
       search={search}
       onSearchChange={onSearchChange}
-      filterContent={search ? (
-        <Button type="button" variant="ghost" size="sm" onClick={() => onSearchChange("")}>
-          <X data-icon="inline-start" />
-          Clear search
-        </Button>
-      ) : undefined}
+      filterContent={filterContent}
+      hasFilters={hasFilters}
+      onClearFilters={onClearFilters}
     />
   );
 }

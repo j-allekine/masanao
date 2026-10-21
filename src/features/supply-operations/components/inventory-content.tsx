@@ -180,14 +180,16 @@ function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[
           </Button>
         </div>
       </header>
-      <div className="flex min-w-0 flex-col gap-4">
-        <InventorySearch search={state.search} onSearchChange={(search) => navigate({ search, page: 1 }, true)} />
-        <div className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-4">
+      <InventorySearch
+        search={state.search}
+        onSearchChange={(search) => navigate({ search, page: 1 }, true)}
+        hasFilters={Boolean(state.categoryId || state.stockStatus)}
+        onClearFilters={clearFilters}
+        filterContent={<>
           <InventoryCategoryFilter categories={inventoryCategories(items)} value={state.categoryId} onValueChange={(categoryId) => navigate({ categoryId, page: 1 })} />
           <InventoryStatusFilter value={state.stockStatus} onChange={(stockStatus) => navigate({ stockStatus, page: 1 })} />
-          {[state.search.trim(), state.categoryId, state.stockStatus].filter(Boolean).length > 1 ? <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={clearFilters}>Clear all filters</Button> : null}
-        </div>
-      </div>
+        </>}
+      />
       <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
       <CatalogPagination {...pagination} onPageChange={(page) => navigate({ page })} />
     </FieldSet>

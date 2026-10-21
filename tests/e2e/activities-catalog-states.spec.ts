@@ -59,7 +59,7 @@ test("Activities catalog keeps empty, no-match, pagination and active-role actio
       await expect(page.getByText("No Activities match your current search.", { exact: true })).toBeVisible();
       await expect(page.getByText("No results", { exact: true })).toBeVisible();
       await page.screenshot({ path: info.outputPath(`catalog-no-match-${width}.png`), fullPage: true });
-      await page.getByRole("button", { name: "Clear search", exact: true }).click();
+      await page.getByRole("search").getByRole("button", { name: "Clear search", exact: true }).click();
       await expect(search).toBeEmpty();
       await expect(page.getByText("Showing 1 to 10 of 12 results", { exact: true })).toBeVisible();
     }

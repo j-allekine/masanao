@@ -1213,7 +1213,7 @@ test.describe("Items catalog journey", () => {
 
     await page
       .getByRole("search", { name: "Item catalog search and filters" })
-      .getByRole("button", { name: "Clear filters", exact: true })
+      .getByRole("button", { name: "Clear search", exact: true })
       .click();
     await expect(page).toHaveURL(/\/items$/);
     await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
@@ -1238,7 +1238,7 @@ test.describe("Items catalog journey", () => {
     expect(await page.evaluate(() => window.history.length)).toBe(searchHistoryLength);
     await page
       .getByRole("search", { name: "Item catalog search and filters" })
-      .getByRole("button", { name: "Clear filters", exact: true })
+      .getByRole("button", { name: "Clear search", exact: true })
       .click();
     await expect(page).toHaveURL(/\/items$/);
 

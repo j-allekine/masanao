@@ -1,17 +1,20 @@
 "use client";
 
-import { forwardRef, type ComponentProps, type ComponentRef, type ReactNode } from "react";
+import { forwardRef, useRef, useSyncExternalStore, type ComponentProps, type ComponentRef, type ReactNode } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
+
+const subscribeHydration = () => () => {};
 
 export function WorkspaceSearchField({
   id,
@@ -28,16 +31,20 @@ export function WorkspaceSearchField({
   onValueChange: (value: string) => void;
   className?: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   return (
     <Field className={cn("min-w-0 flex-1", className)}>
-      <FieldLabel className="sr-only" htmlFor={id}>
+      <FieldLabel htmlFor={id}>
         {label}
       </FieldLabel>
-      <InputGroup className="h-9 bg-card">
+      <InputGroup>
         <InputGroupAddon>
           <Search aria-hidden="true" />
         </InputGroupAddon>
         <InputGroupInput
+          ref={inputRef}
+          disabled={!hydrated}
           id={id}
           className="text-body-sm"
           type="search"
@@ -45,7 +52,36 @@ export function WorkspaceSearchField({
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
         />
+        {value ? (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              size="icon-xs"
+              disabled={!hydrated}
+              aria-label="Clear search"
+              onClick={() => {
+                onValueChange("");
+                inputRef.current?.focus();
+              }}
+            >
+              <X aria-hidden="true" />
+            </InputGroupButton>
+          </InputGroupAddon>
+        ) : null}
       </InputGroup>
+    </Field>
+  );
+}
+
+export function WorkspaceFilterField({ id, label, children, className }: {
+  id: string;
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Field data-catalog-filter className={cn("w-full min-w-0 sm:w-56", className)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {children}
     </Field>
   );
 }
@@ -107,6 +143,8 @@ export function WorkspaceCatalogToolbar({
   search,
   onSearchChange,
   filterContent,
+  hasFilters = false,
+  onClearFilters,
   action,
 }: {
   ariaLabel: string;
@@ -116,6 +154,8 @@ export function WorkspaceCatalogToolbar({
   search: string;
   onSearchChange: (search: string) => void;
   filterContent?: ReactNode;
+  hasFilters?: boolean;
+  onClearFilters?: () => void;
   action?: {
     id: string;
     label: string;
@@ -126,37 +166,47 @@ export function WorkspaceCatalogToolbar({
   return (
     <div
       aria-label={ariaLabel}
-      className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between"
+      data-catalog-toolbar
+      className="flex min-w-0 flex-col gap-4 border-b pb-5"
       role="search"
     >
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col gap-3",
-          filterContent
-            ? "lg:flex-row lg:items-end"
-            : "sm:flex-row sm:items-end",
-        )}
-      >
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <WorkspaceSearchField
           id={searchId}
           label={searchLabel}
           placeholder={searchPlaceholder}
           value={search}
           onValueChange={onSearchChange}
-          className={cn(
-            filterContent ? "lg:max-w-[28rem]" : "sm:max-w-[27rem]",
-          )}
+          className="w-full sm:max-w-[27rem]"
         />
-        {filterContent}
+        {action ? (
+          <WorkspacePrimaryAction
+            id={action.id}
+            className={action.className}
+            onClick={action.onClick}
+          >
+            {action.label}
+          </WorkspacePrimaryAction>
+        ) : null}
       </div>
-      {action ? (
-        <WorkspacePrimaryAction
-          id={action.id}
-          className={action.className}
-          onClick={action.onClick}
-        >
-          {action.label}
-        </WorkspacePrimaryAction>
+      {filterContent ? (
+        <div data-catalog-filters className="flex min-w-0 flex-wrap items-end gap-3">
+          {filterContent}
+          {hasFilters && onClearFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="shrink-0"
+              onClick={() => {
+                onClearFilters();
+                document.getElementById(searchId)?.focus();
+              }}
+            >
+              <X data-icon="inline-start" aria-hidden="true" />
+              Clear filters
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { stockStatusLabels } from "../domain/inventory";
@@ -28,7 +27,7 @@ export function InventoryStatusFilter({
   onChange: (value: InventoryStatusFilterValue) => void;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div data-catalog-filter className="flex w-full min-w-0 flex-col gap-2 sm:w-auto">
       <span id="inventory-stock-status-label" className="text-body-sm font-medium">Stock status</span>
       <div className="flex flex-wrap items-center gap-2">
         <ToggleGroup
@@ -46,7 +45,6 @@ export function InventoryStatusFilter({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        {value ? <Button type="button" variant="ghost" size="sm" aria-label="Clear Stock status" onClick={() => onChange("")}>Clear</Button> : null}
       </div>
     </div>
   );

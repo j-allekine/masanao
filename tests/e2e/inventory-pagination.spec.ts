@@ -66,7 +66,7 @@ for (const width of [1280, 320]) {
     const categoryBox = await category.boundingBox();
     expect(categoryBox!.width).toBeGreaterThan(150);
     if (width === 1280) {
-      const clearBox = await page.getByRole("button", { name: "Clear Category", exact: true }).boundingBox();
+      const clearBox = await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).boundingBox();
       expect(clearBox!.x).toBeGreaterThanOrEqual(categoryBox!.x + categoryBox!.width);
     }
     await capture(page, testInfo, `combined-page3-${width}.png`);
@@ -95,21 +95,22 @@ for (const width of [1280, 320]) {
     await expect(search).toHaveValue("");
     await expect(category).toContainText("Archived pantry");
     await expect(page).toHaveURL(/status=out-of-stock/);
-    await page.getByRole("button", { name: "Clear Category", exact: true }).click();
+    await category.click();
+    await page.getByRole("option", { name: "All Categories", exact: true }).click();
     await expect(page).toHaveURL(/status=out-of-stock/);
     await search.fill("Pagination");
     await expect(page.getByText("Showing 1 to 10 of 27 results", { exact: true })).toBeVisible();
     await category.click();
     await page.getByRole("option", { name: "Archived pantry", exact: true }).click();
     await expect(page.getByText("Showing 1 to 10 of 23 results", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Clear Stock status", exact: true }).click();
+    await page.getByRole("button", { name: "Out of stock", exact: true }).click();
     await expect(category).toContainText("Archived pantry");
     await expect(search).toHaveValue("Pagination");
     await search.fill("No such item");
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("No results", { exact: true })).toBeVisible();
     await capture(page, testInfo, `no-match-${width}.png`);
-    await page.getByRole("button", { name: "Clear all filters", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
     await expect(page).toHaveURL(/\/inventory$/);
     await expect(search).toHaveValue("");
     await expect(list.locator("[data-item-id]")).toHaveCount(10);

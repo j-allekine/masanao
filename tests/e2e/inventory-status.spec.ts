@@ -49,7 +49,7 @@ for (const width of [1280, 320]) {
     for (const [label, itemId] of [["Good", "status-good"], ["Reorder now", "status-reorder"], ["Out of stock", "status-out"]]) {
       await filter.getByRole("button", { name: label, exact: true }).click();
       await expect(filter.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
-      await expect(page.getByRole("button", { name: "Clear all filters", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true })).toHaveCount(1);
       await expect(list.locator(`[data-item-id="${itemId}"]`)).toBeVisible();
       await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -57,7 +57,7 @@ for (const width of [1280, 320]) {
       if (evidence) mkdirSync(evidence, { recursive: true });
       await page.screenshot({ path: evidence ? join(evidence, `status-${itemId}-${width}.png`) : testInfo.outputPath(`status-${itemId}-${width}.png`), fullPage: true });
     }
-    await page.getByRole("button", { name: "Clear Stock status", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
     await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(4);
     // Toggling the selected choice off also restores the full list.
     await filter.getByRole("button", { name: "Good", exact: true }).click();
@@ -78,8 +78,8 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await page.getByRole("button", { name: "Good", exact: true }).click();
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Clear Stock status", exact: true }).last().click();
+    await expect(page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true })).toBeVisible();
+    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-good"]')).toContainText("Reorder now");
     await page.goto("/purchase-orders/status-po/record-delivery");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();

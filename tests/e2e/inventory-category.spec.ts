@@ -52,7 +52,7 @@ test("Category keeps exact balances for active Items in an inactive Category and
     await expect(page.getByText("Category Hidden", { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: evidence ? join(evidence, `category-${width}.png`) : testInfo.outputPath(`category-${width}.png`), fullPage: true });
-    await page.getByRole("button", { name: "Clear Category", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear filters", exact: true }).click();
     await expect(filter).toContainText("All Categories");
     await expect(scope.locator("[data-item-id]")).toHaveCount(originalCount);
   }
