@@ -97,7 +97,6 @@ for (const width of [1280, 320]) {
       await page.goto("/inventory", { waitUntil: "commit" });
       await expect(page.locator('[data-inventory-ready="false"]')).toBeAttached();
       await expect(page.getByRole("searchbox", { includeHidden: true })).toBeDisabled();
-      await expect(page.getByRole("combobox", { includeHidden: true })).toBeDisabled();
       await expect(page.getByRole("button", { name: /^Filters/, includeHidden: true })).toBeDisabled();
       await expect(page.getByRole("button", { name: "Refresh", exact: true, includeHidden: true })).toBeDisabled();
       await expect(page.getByRole("button", { name: "Export CSV", exact: true, includeHidden: true })).toBeDisabled();

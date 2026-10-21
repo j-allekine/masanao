@@ -2,7 +2,8 @@ import { expect, type Page } from "@playwright/test";
 
 export async function openCatalogFilters(page: Page) {
   const toolbar = page.getByRole("search");
-  await expect(toolbar).toHaveAttribute("data-filter-layout", /^(inline|panel)$/);
+  const expectedLayout = await toolbar.evaluate((element) => element.getBoundingClientRect().width >= 760 ? "inline" : "panel");
+  await expect(toolbar).toHaveAttribute("data-filter-layout", expectedLayout);
   const trigger = toolbar.getByRole("button", { name: /^Filters/ });
   if (await trigger.isVisible()) {
     await trigger.click();

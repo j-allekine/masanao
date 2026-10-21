@@ -56,7 +56,9 @@ for (const width of [1280, 1024, 320]) {
   });
 }
 
-test("compact filters preserve selections, reset and focus while the available width changes", async ({ page }) => {
+test("compact filters preserve selections, reset and focus while the available width changes", async ({ page }, testInfo) => {
+  const evidence = process.env.MASANAO_FILTER_EVIDENCE_DIR;
+  if (evidence) mkdirSync(evidence, { recursive: true });
   expect((await page.request.post("/api/auth/sign-in/username", {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
@@ -70,6 +72,8 @@ test("compact filters preserve selections, reset and focus while the available w
   const trigger = toolbar.getByRole("button", { name: "Filters (2 active)", exact: true });
   await expect(trigger).toBeFocused();
   await openCatalogFilters(page);
+  await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: evidence ? join(evidence, "items-mobile-panel.png") : testInfo.outputPath("items-mobile-panel.png"), fullPage: true, animations: "disabled" });
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
   await openCatalogFilters(page);
@@ -86,5 +90,11 @@ test("compact filters preserve selections, reset and focus while the available w
   await openCatalogFilters(page);
   await expect(page.getByRole("combobox", { name: "Category filter", exact: true })).toContainText("All Categories");
   await expect(page.getByRole("combobox", { name: "Status filter", exact: true })).toContainText("All Statuses");
+  await closeCatalogFilters(page);
+  await page.goto("/inventory?status=reorder-now");
+  await openCatalogFilters(page);
+  await expect(page.getByRole("combobox", { name: "Stock status", exact: true })).toContainText("Reorder now");
+  await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: evidence ? join(evidence, "inventory-mobile-panel.png") : testInfo.outputPath("inventory-mobile-panel.png"), fullPage: true, animations: "disabled" });
   await closeCatalogFilters(page);
 });

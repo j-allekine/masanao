@@ -83,10 +83,16 @@ for (const width of [1280, 320]) {
       await capture(page, testInfo, "combined-page3-1024.png");
       await page.setViewportSize({ width, height: 800 });
     }
+    const backRefresh = page.waitForResponse((response) => response.url().includes("/inventory?") && response.request().headers()["rsc"] === "1");
     await page.goBack();
+    await (await backRefresh).finished();
     await expect(page.getByText("Showing 1 to 10 of 23 results", { exact: true })).toBeVisible();
+    const forwardRefresh = page.waitForResponse((response) => response.url().includes("/inventory?") && response.request().headers()["rsc"] === "1");
     await page.goForward();
+    await (await forwardRefresh).finished();
+    await expect(page).toHaveURL(/page=3/);
     await expect(page.getByText("Showing 21 to 23 of 23 results", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Refresh", exact: true })).toHaveAttribute("aria-busy", "false");
     await page.reload();
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await expect(search).toHaveValue("Pagination");
