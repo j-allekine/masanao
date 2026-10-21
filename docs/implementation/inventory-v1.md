@@ -62,3 +62,8 @@ separate reruns. Focused status and Category checks also passed independently.
 
 Fresh screenshots, red/green regression evidence and verification logs are
 retained outside the repository in the task's `scratch/inventory-248` folder.
+
+The subsequent filter-toolbar layout repair passed all eight focused Category,
+status and pagination browser tests together, including a desktop alignment
+assertion and mobile wrapping. Lint and a fresh production build passed. This
+focused follow-up is separate from the earlier complete 127-test run above.

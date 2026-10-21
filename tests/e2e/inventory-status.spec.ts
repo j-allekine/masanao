@@ -39,9 +39,17 @@ for (const width of [1280, 320]) {
     await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
     const filter = page.getByRole("group", { name: "Stock status", exact: true });
     await expect(filter.getByRole("button")).toHaveCount(3);
+    if (width === 1280) {
+      const category = await page.getByRole("combobox", { name: "Category", exact: true }).boundingBox();
+      const status = await filter.getByRole("button", { name: "Good", exact: true }).boundingBox();
+      expect(category).not.toBeNull();
+      expect(status).not.toBeNull();
+      expect(Math.abs(category!.y + category!.height - status!.y - status!.height)).toBeLessThanOrEqual(1);
+    }
     for (const [label, itemId] of [["Good", "status-good"], ["Reorder now", "status-reorder"], ["Out of stock", "status-out"]]) {
       await filter.getByRole("button", { name: label, exact: true }).click();
       await expect(filter.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("button", { name: "Clear all filters", exact: true })).toHaveCount(0);
       await expect(list.locator(`[data-item-id="${itemId}"]`)).toBeVisible();
       await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

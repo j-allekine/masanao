@@ -36,7 +36,7 @@ export function InventoryStatusFilter({
           value={value ? [value] : []}
           onValueChange={(values) => onChange((values[0] ?? "") as InventoryStatusFilterValue)}
           variant="outline"
-          size="sm"
+          size="default"
           className="max-w-full flex-wrap"
         >
           {statuses.map((status) => (
@@ -46,7 +46,7 @@ export function InventoryStatusFilter({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        {value ? <Button type="button" variant="ghost" size="sm" onClick={() => onChange("")}>Clear Stock status</Button> : null}
+        {value ? <Button type="button" variant="ghost" size="sm" aria-label="Clear Stock status" onClick={() => onChange("")}>Clear</Button> : null}
       </div>
     </div>
   );

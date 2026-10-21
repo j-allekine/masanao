@@ -11,8 +11,8 @@ export function InventoryCategoryFilter({ categories, value, onValueChange }: {
   onValueChange: (value: string) => void;
 }) {
   const options = [{ value: "", label: "All Categories" }, ...categories.map((category) => ({ value: category.id, label: category.name }))];
-  return <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end lg:flex-1">
-    <Field className="min-w-0 sm:max-w-72 sm:flex-1">
+  return <div className="flex w-full min-w-0 items-end gap-2 sm:w-auto">
+    <Field className="min-w-0 flex-1 sm:w-56 sm:flex-none">
       <FieldLabel htmlFor="inventory-category">Category</FieldLabel>
       <Select items={options} value={value} onValueChange={(next) => onValueChange(next ?? "")}>
         <SelectTrigger id="inventory-category" className="w-full min-w-0"><SelectValue /></SelectTrigger>
@@ -21,6 +21,6 @@ export function InventoryCategoryFilter({ categories, value, onValueChange }: {
         </SelectContent>
       </Select>
     </Field>
-    {value ? <Button type="button" variant="outline" onClick={() => onValueChange("")}>Clear Category</Button> : null}
+    {value ? <Button type="button" variant="ghost" size="sm" aria-label="Clear Category" className="shrink-0" onClick={() => onValueChange("")}>Clear</Button> : null}
   </div>;
 }
