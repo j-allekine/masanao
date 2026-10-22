@@ -8,6 +8,7 @@ import { allocatePostedItemReceipts, FifoAllocationError } from "./fifo";
 import { getIssuanceWorkspaceRecord } from "./drafts";
 import { isValidIssuanceFinalQuantity } from "../../domain/quantities";
 import { compareRational, decimalRational, displayRational, recipeContribution } from "../../domain/rational";
+import { InvalidStockEvidenceError } from "@/features/supply-operations/domain/inventory";
 
 class PostingRejected extends Error {
   readonly result: IssuanceFailure;
@@ -72,6 +73,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       return { ok: true, value: result };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 15000 });
   } catch (error) {
+    if (error instanceof InvalidStockEvidenceError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof FifoAllocationError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof PostingRejected) return error.result;
     if (error instanceof Error && /SQLITE_BUSY|database is locked|SocketTimeout/i.test(error.message)) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try posting again shortly; no stock was deducted by this attempt." };

@@ -34,6 +34,9 @@ Optional free-form information recorded with an Item.
 **Base Unit**:
 The default and authoritative unit in which an Item's inventory balance and ledger movements are recorded. It cannot change after stock activity begins.
 
+**Reorder level**:
+An administrator-managed positive quantity in an Item's Base Unit that marks its replenishment threshold. It is separate from the Item's issuance quantity policy and does not move or reserve stock.
+
 **Inactive Item**:
 An Item unavailable for future selection that remains identifiable in historical
 records. An Item with posted delivery history cannot become inactive.
@@ -130,6 +133,9 @@ The accountable record of stock-in from Delivery Receipt Lines and stock-out fro
 
 **Available stock**:
 An Item's posted stock-in less its posted stock-out, expressed in its Base Unit. Draft demand does not reserve or deduct this stock.
+
+**Stock status**:
+An Item's quantity alert: zero available stock is Out of stock, positive stock at or below its Reorder level is Reorder now, and stock above that level is Good. It is separate from Active/Inactive status and does not establish freshness or suitability for use.
 
 **Receipt allocation**:
 The Base Unit quantity of an issued Item total attributed to one Delivery Receipt Line, tracing that quantity to its receipt and Purchase Order. Allocations explain stock-out sources without deducting stock a second time.

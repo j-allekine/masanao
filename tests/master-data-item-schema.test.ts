@@ -18,7 +18,7 @@ describe("Master Data Item normalization", () => {
   });
 
   it("preserves multiline Item Notes and maps blank notes to null", () => {
-    const result = itemSchema.safeParse({
+    const result = itemSchema.safeParse({ reorderLevel: "10",
       name: "  Rice   &   Grains  ",
       categoryId: " category-1 ",
       baseUnitId: " unit-1 ",
@@ -28,7 +28,7 @@ describe("Master Data Item normalization", () => {
     expect(result.success).toBe(true);
     if (!result.success) return;
 
-    expect(result.data).toEqual({
+    expect(result.data).toEqual({ reorderLevel: "10",
       name: "Rice & Grains",
       categoryId: "category-1",
       baseUnitId: "unit-1",
@@ -36,7 +36,7 @@ describe("Master Data Item normalization", () => {
       normalizedName: "rice & grains",
     });
 
-    const blankNote = itemSchema.safeParse({
+    const blankNote = itemSchema.safeParse({ reorderLevel: "10",
       name: "Rice",
       categoryId: "category-1",
       baseUnitId: "unit-1",
@@ -49,7 +49,7 @@ describe("Master Data Item normalization", () => {
   });
 
   it("reports required fields and the Item Note length limit", () => {
-    const result = itemSchema.safeParse({
+    const result = itemSchema.safeParse({ reorderLevel: "10",
       name: "   ",
       categoryId: "   ",
       baseUnitId: "",
@@ -68,7 +68,7 @@ describe("Master Data Item normalization", () => {
   });
 
   it("accepts only the two issuance quantity policies and leaves omitted updates unset", () => {
-    const baseInput = {
+    const baseInput = { reorderLevel: "10",
       name: "Eggs",
       categoryId: "category-1",
       baseUnitId: "unit-1",

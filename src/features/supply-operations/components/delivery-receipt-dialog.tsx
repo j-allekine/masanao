@@ -35,7 +35,7 @@ export default function DeliveryReceiptDialog({
     if (!nextOpen) returnToOrder();
   }}>
     <DialogContent
-      className="max-h-[calc(100svh-2rem)] max-w-[calc(100%-2rem)] overflow-y-auto p-0 sm:max-w-6xl"
+      className="min-w-0 max-h-[calc(100svh-2rem)] max-w-[calc(100%-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto p-0 sm:max-w-6xl [&>[data-slot=dialog-close]]:z-20"
       showCloseButton
     >
       <DialogHeader className="sticky top-0 z-10 border-b bg-popover px-6 py-5 pr-14">

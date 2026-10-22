@@ -137,3 +137,7 @@ export async function createItemUnitConversion(actor: CurrentActor, itemId: stri
     ? { ...authorizationFailure, fields: {} }
     : createItemUnitConversionCommand(itemId, input);
 }
+
+export { listInventory } from "./server/queries/list-inventory";
+export { exportInventory } from "./server/queries/export-inventory";
+export type { InventoryListItem, InventoryResult } from "./types";

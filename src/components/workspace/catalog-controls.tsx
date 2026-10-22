@@ -1,17 +1,22 @@
 "use client";
 
-import { forwardRef, type ComponentProps, type ComponentRef, type ReactNode } from "react";
+import { forwardRef, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type ReactNode } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { ListFilter, Plus, Search, X } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
+
+const subscribeHydration = () => () => {};
+const INLINE_FILTERS_MIN_WIDTH = 760;
 
 export function WorkspaceSearchField({
   id,
@@ -28,24 +33,58 @@ export function WorkspaceSearchField({
   onValueChange: (value: string) => void;
   className?: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   return (
     <Field className={cn("min-w-0 flex-1", className)}>
-      <FieldLabel className="sr-only" htmlFor={id}>
-        {label}
+      <FieldLabel htmlFor={id}>
+        Search
       </FieldLabel>
-      <InputGroup className="h-9 bg-card">
+      <InputGroup>
         <InputGroupAddon>
           <Search aria-hidden="true" />
         </InputGroupAddon>
         <InputGroupInput
+          ref={inputRef}
+          disabled={!hydrated}
           id={id}
-          className="text-body-sm"
+          aria-label={label}
+          className="text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
           type="search"
           placeholder={placeholder}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
         />
+        {value ? (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              size="icon-xs"
+              disabled={!hydrated}
+              aria-label="Clear search"
+              onClick={() => {
+                onValueChange("");
+                inputRef.current?.focus();
+              }}
+            >
+              <X aria-hidden="true" />
+            </InputGroupButton>
+          </InputGroupAddon>
+        ) : null}
       </InputGroup>
+    </Field>
+  );
+}
+
+export function WorkspaceFilterField({ id, label, children, className }: {
+  id: string;
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Field data-catalog-filter className={cn("w-full min-w-0 sm:w-44", className)}>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {children}
     </Field>
   );
 }
@@ -107,6 +146,8 @@ export function WorkspaceCatalogToolbar({
   search,
   onSearchChange,
   filterContent,
+  activeFilterCount = 0,
+  onClearFilters,
   action,
 }: {
   ariaLabel: string;
@@ -116,6 +157,8 @@ export function WorkspaceCatalogToolbar({
   search: string;
   onSearchChange: (search: string) => void;
   filterContent?: ReactNode;
+  activeFilterCount?: number;
+  onClearFilters?: () => void;
   action?: {
     id: string;
     label: string;
@@ -123,41 +166,84 @@ export function WorkspaceCatalogToolbar({
     className?: string;
   };
 }) {
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [filtersInline, setFiltersInline] = useState<boolean | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const hasAdditionalFilters = Boolean(filterContent);
+
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar || !hasAdditionalFilters) return;
+    // Leave room for search, two selectors and Reset beside the workspace sidebar.
+    const observer = new ResizeObserver(([entry]) => {
+      const inline = entry.contentRect.width >= INLINE_FILTERS_MIN_WIDTH;
+      setFiltersInline(inline);
+      if (inline) setFiltersOpen(false);
+    });
+    observer.observe(toolbar);
+    return () => observer.disconnect();
+  }, [hasAdditionalFilters]);
+
   return (
     <div
+      ref={toolbarRef}
       aria-label={ariaLabel}
-      className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between"
+      data-catalog-toolbar
+      data-filter-layout={filterContent ? (filtersInline === null ? "pending" : filtersInline ? "inline" : "panel") : "search"}
+      className="flex min-w-0 flex-wrap items-end gap-3 border-b pb-5"
       role="search"
     >
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col gap-3",
-          filterContent
-            ? "lg:flex-row lg:items-end"
-            : "sm:flex-row sm:items-end",
-        )}
-      >
         <WorkspaceSearchField
           id={searchId}
           label={searchLabel}
           placeholder={searchPlaceholder}
           value={search}
           onValueChange={onSearchChange}
-          className={cn(
-            filterContent ? "lg:max-w-[28rem]" : "sm:max-w-[27rem]",
-          )}
+          className={filterContent ? "w-0 flex-1 sm:max-w-[24rem]" : "w-full sm:max-w-[27rem]"}
         />
-        {filterContent}
-      </div>
-      {action ? (
-        <WorkspacePrimaryAction
-          id={action.id}
-          className={action.className}
-          onClick={action.onClick}
-        >
-          {action.label}
-        </WorkspacePrimaryAction>
-      ) : null}
+        {filterContent && filtersInline ? <>
+          {filterContent}
+          {activeFilterCount > 0 && onClearFilters ? (
+            <Button type="button" variant="ghost" onClick={() => {
+              onClearFilters();
+              document.getElementById(searchId)?.focus();
+            }}>
+              <X data-icon="inline-start" aria-hidden="true" />Reset
+            </Button>
+          ) : null}
+        </> : filterContent ? (
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger render={<Button type="button" variant="outline" disabled={filtersInline === null} aria-label={activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filters"} />}>
+              <ListFilter data-icon="inline-start" aria-hidden="true" />
+              Filters{activeFilterCount ? ` · ${activeFilterCount}` : ""}
+            </SheetTrigger>
+            <SheetContent className="data-[side=right]:w-full [&_[data-catalog-filter]]:w-full">
+              <SheetHeader>
+                <SheetTitle>Filters</SheetTitle>
+                <SheetDescription>Narrow the list. Changes apply immediately.</SheetDescription>
+              </SheetHeader>
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4">
+                {filterContent}
+              </div>
+              <SheetFooter>
+                {activeFilterCount > 0 && onClearFilters ? <Button type="button" variant="outline" onClick={() => {
+                  onClearFilters();
+                  setFiltersOpen(false);
+                }}>Reset filters</Button> : null}
+                <SheetClose render={<Button type="button" />}>Show results</SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        ) : null}
+        {action ? (
+          <WorkspacePrimaryAction
+            id={action.id}
+            className={cn("sm:ml-auto", action.className)}
+            onClick={action.onClick}
+          >
+            {action.label}
+          </WorkspacePrimaryAction>
+        ) : null}
     </div>
   );
 }

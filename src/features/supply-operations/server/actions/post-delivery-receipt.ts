@@ -14,6 +14,7 @@ export async function executePostDeliveryReceipt(formData: FormData): Promise<De
     const result = await postDeliveryReceipt(actor, input);
     if (!result.ok) return { status: "error", kind: result.kind, error: result.error, fields: result.fields };
     revalidatePath(`/purchase-orders/${formData.get("purchaseOrderId")}`);
+    revalidatePath("/inventory");
     return { status: "success", receipt: result.receipt };
   } catch {
     return { status: "error", kind: "server", error: "The Delivery Receipt could not be posted. Check your connection and try again.", fields: {} };

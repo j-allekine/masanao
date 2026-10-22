@@ -193,6 +193,14 @@ export default function RecipesContent({
           ) : null}
         </div>
 
+        <WorkspaceCatalogToolbar
+          ariaLabel="Recipe catalog search"
+          searchId="recipe-search"
+          searchLabel="Search Recipes"
+          searchPlaceholder="Search recipes by name..."
+          search={searchInput}
+          onSearchChange={updateSearch}
+        />
         {recipes.length === 0 ? (
           <ListEmptyState
             icon={<BookOpen aria-hidden="true" />}
@@ -205,14 +213,6 @@ export default function RecipesContent({
             }}
           />
         ) : <>
-          <WorkspaceCatalogToolbar
-            ariaLabel="Recipe catalog search"
-            searchId="recipe-search"
-            searchLabel="Search Recipes"
-            searchPlaceholder="Search recipes by name..."
-            search={searchInput}
-            onSearchChange={updateSearch}
-          />
           {paginatedRecipes.length === 0 ? (
             <ListEmptyState
               icon={<BookOpen aria-hidden="true" />}

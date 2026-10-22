@@ -1,0 +1,62 @@
+import { mkdirSync } from "node:fs";
+import Database from "better-sqlite3";
+import { expect, test } from "@playwright/test";
+
+const evidence = process.env.MASANAO_E2E_EVIDENCE_PATH ?? "test-results/item-reorder-level";
+test.afterEach(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.prepare("DELETE FROM item WHERE normalizedName = ?").run("reorder browser test");
+  } finally { db.close(); }
+});
+test("administrator configures exact levels and staff view the catalog on desktop and mobile", async ({ page }) => {
+  test.setTimeout(90_000);
+  mkdirSync(evidence, { recursive: true });
+  const response = await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
+  expect(response.status()).toBe(200);
+  await page.goto("/items");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByRole("button", { name: "Create Item", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Reorder Browser Test");
+  await dialog.getByRole("combobox", { name: "Category", exact: true }).click();
+  await page.getByRole("option", { name: "Staples & Dry Goods", exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Base Unit", exact: true }).click();
+  await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+  const level = dialog.getByLabel(/Reorder level/);
+  for (const invalid of ["", "0", "-1", "1e3", "nope"]) {
+    await level.fill(invalid);
+    await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
+    await expect(level).toHaveAttribute("aria-invalid", "true");
+  }
+  await level.fill("0.000000000000000001");
+  await dialog.getByRole("button", { name: "Whole numbers only", exact: true }).click();
+  await page.screenshot({ path: `${evidence}/item-create-desktop.png` });
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.screenshot({ path: `${evidence}/item-create-mobile.png` });
+  await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByLabel("Search Items").fill("Reorder Browser Test");
+  const mobile = page.locator("[data-items-mobile]");
+  await expect(mobile).toContainText("0.000000000000000001 kg");
+  await page.screenshot({ path: `${evidence}/items-mobile.png` });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await mobile.getByRole("button", { name: "Actions for Reorder Browser Test", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+  await expect(level).toHaveValue("0.000000000000000001");
+  await dialog.getByRole("combobox", { name: "Base Unit", exact: true }).click();
+  await page.getByRole("option", { name: "Piece (pc)", exact: true }).click();
+  await expect(level).toHaveValue("");
+  await level.fill("2.5");
+  await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(mobile).toContainText("2.5 pc");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.screenshot({ path: `${evidence}/items-desktop.png` });
+  await page.request.post("/api/auth/sign-out", { headers: { origin: process.env.BETTER_AUTH_URL! } });
+  await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
+  await page.goto("/items");
+  await page.getByLabel("Search Items").fill("Reorder Browser Test");
+  await expect(page.locator("[data-items-table-desktop]")).toContainText("2.5 pc");
+  await expect(page.getByRole("button", { name: "Create Item", exact: true })).toHaveCount(0);
+});

@@ -460,7 +460,7 @@ describe("Purchase Order mutation gateway", () => {
     });
     await prisma.unit.create({ data: { id: "po-receipt-unit", name: "Kilogram", abbreviation: "kg", normalizedName: "po-receipt-unit", normalizedAbbreviation: "po-receipt-kg" } });
     await prisma.category.create({ data: { id: "po-receipt-category", name: "Staples", normalizedName: "po-receipt-category" } });
-    await prisma.item.create({ data: { id: "po-receipt-item", name: "Rice", normalizedName: "po-receipt-item", categoryId: "po-receipt-category", baseUnitId: "po-receipt-unit" } });
+    await prisma.item.create({ data: { reorderLevel: "10", id: "po-receipt-item", name: "Rice", normalizedName: "po-receipt-item", categoryId: "po-receipt-category", baseUnitId: "po-receipt-unit" } });
 
     await expect(postDeliveryReceipt(staffActor, {
       purchaseOrderId: purchaseOrder.id,

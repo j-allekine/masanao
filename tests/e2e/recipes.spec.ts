@@ -165,7 +165,7 @@ test("searches, paginates, and clamps the active Recipes catalog", async ({ page
 
   await page.getByLabel("Search Recipes").fill("not a recipe");
   await expect(page.getByText("No Recipes match your search.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Clear search" }).click();
+  await page.getByRole("search").getByRole("button", { name: "Clear search", exact: true }).click();
   await expect(page).toHaveURL("/recipes");
   await expect(page.getByText("Chicken Tinola", { exact: true })).toBeVisible();
 

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getIssuanceWorkspace, postIssuance, previewIssuanceRecipe, saveIssuanceDraft } from "@/features/issuance/server";
+import { getIssuanceReviewReferences, getIssuanceWorkspace, postIssuance, previewIssuanceRecipe, saveIssuanceDraft } from "@/features/issuance/server";
 import { postIssuanceRecord } from "@/features/issuance/server/db/post";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 import type { IssuanceResult, IssuanceWorkspace } from "@/features/issuance/types";
 import { deleteMealSchedule } from "@/features/activity-planning/server";
 import { deleteRecipe } from "@/features/recipes/server";
-import { deleteItem, postDeliveryReceipt } from "@/features/supply-operations/server";
+import { deleteItem, listInventory, postDeliveryReceipt } from "@/features/supply-operations/server";
 
 const staff: CurrentActor = { id: "post-staff", name: "Kitchen staff", username: "poststaff" };
 const admin: CurrentActor = { id: "post-admin", name: "Administrator", username: "postadmin" };
@@ -16,7 +16,7 @@ async function fixture() {
   await prisma.user.createMany({ data: [staff, admin].map((actor) => ({ ...actor, email: `${actor.id}@test.local`, role: actor === admin ? "admin" : "staff" })) });
   await prisma.category.create({ data: { id: "post-category", name: "Post food", normalizedName: "post food" } });
   await prisma.unit.createMany({ data: [{ id: "post-pc", name: "Piece", abbreviation: "pc", normalizedName: "piece", normalizedAbbreviation: "pc" }, { id: "post-tray", name: "Tray", abbreviation: "tray", normalizedName: "tray", normalizedAbbreviation: "tray" }] });
-  await prisma.item.createMany({ data: [{ id: "post-eggs", name: "Eggs", normalizedName: "eggs", categoryId: "post-category", baseUnitId: "post-pc", issuanceQuantityPolicy: "whole-only" }, { id: "post-water", name: "Water", normalizedName: "water", categoryId: "post-category", baseUnitId: "post-pc", issuanceQuantityPolicy: "allow-decimals" }] });
+  await prisma.item.createMany({ data: [{ reorderLevel: "10", id: "post-eggs", name: "Eggs", normalizedName: "eggs", categoryId: "post-category", baseUnitId: "post-pc", issuanceQuantityPolicy: "whole-only" }, { reorderLevel: "10", id: "post-water", name: "Water", normalizedName: "water", categoryId: "post-category", baseUnitId: "post-pc", issuanceQuantityPolicy: "allow-decimals" }] });
   await prisma.itemUnitConversion.create({ data: { id: "post-conversion", itemId: "post-eggs", alternateUnitId: "post-tray", baseUnitQuantity: "10" } });
   await prisma.recipe.create({ data: { id: "post-recipe", name: "Egg meal", normalizedName: "egg meal", baselinePax: 2, ingredients: { create: { id: "post-ingredient", itemId: "post-eggs", enteredQuantity: "37" } } } });
   await prisma.activityDesign.create({ data: { id: context.activityDesignId, activityDesignNo: "AD-POST", fiscalYear: 2026, title: "Kitchen event" } });
@@ -47,6 +47,26 @@ describe("Atomic issuance posting through public gateways", () => {
     await prisma.inventoryLedgerMovement.deleteMany(); await prisma.issuanceItemTotal.deleteMany(); await prisma.issuanceStockItem.deleteMany(); await prisma.issuanceRecipeIngredient.deleteMany(); await prisma.issuanceRecipeSnapshot.deleteMany(); await prisma.issuanceRecord.deleteMany();
     await prisma.recipeIngredient.deleteMany(); await prisma.recipe.deleteMany(); await prisma.itemUnitConversion.deleteMany(); await prisma.deliveryReceiptLine.deleteMany(); await prisma.deliveryReceipt.deleteMany(); await prisma.purchaseOrder.deleteMany(); await prisma.vendor.deleteMany(); await prisma.item.deleteMany(); await prisma.category.deleteMany(); await prisma.unit.deleteMany();
     await prisma.mealSchedule.deleteMany(); await prisma.activity.deleteMany(); await prisma.activityDesign.deleteMany(); await prisma.session.deleteMany(); await prisma.account.deleteMany(); await prisma.user.deleteMany(); await fixture();
+  });
+  it.each(["stock-in", "stock-out"])("rejects %s evidence recorded in a different Base Unit", async (movementType) => {
+    const draft = await stockDraft("1", "post-eggs");
+    if (movementType === "stock-out") {
+      expect(await postIssuance(staff, context, { revision: draft.draft.revision })).toMatchObject({ ok: true });
+    }
+    const movement = await prisma.inventoryLedgerMovement.findFirstOrThrow({ where: { itemId: "post-eggs", movementType } });
+    // Both Units exist, so foreign keys cannot detect this imported/damaged row.
+    await prisma.inventoryLedgerMovement.update({ where: { id: movement.id }, data: { baseUnitId: "post-tray" } });
+    const inventory = await listInventory(staff);
+    expect(inventory).toMatchObject({ ok: true });
+    if (!inventory.ok) throw new Error(inventory.error);
+    expect(inventory.rows.find((row) => row.id === "post-eggs")).toMatchObject({ balance: { kind: "invalid" }, stockStatus: "review-required" });
+    expect(inventory.rows.find((row) => row.id === "post-water")).toMatchObject({ balance: { kind: "valid", quantity: "20" }, stockStatus: "good" });
+    await expect(getIssuanceReviewReferences(staff, ["post-eggs"])).rejects.toThrow("Invalid stock evidence");
+    if (movementType === "stock-in") {
+      expect(await postIssuance(staff, context, { revision: draft.draft.revision })).toMatchObject({ ok: false, kind: "reference", error: expect.stringContaining("Invalid stock evidence") });
+      expect(await prisma.inventoryLedgerMovement.count({ where: { movementType: "stock-out" } })).toBe(0);
+      expect(await prisma.issuanceRecord.findUnique({ where: { id: draft.draft.id! } })).toMatchObject({ status: "draft", revision: draft.draft.revision });
+    }
   });
   it("blocks exact 18.5, then posts confirmed 19 once and returns immutable retry evidence", async () => {
     const draft = await recipeDraft();

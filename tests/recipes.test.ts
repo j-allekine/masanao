@@ -50,7 +50,7 @@ async function createRecipeReferences() {
     },
   });
   const item = await prisma.item.create({
-    data: {
+    data: { reorderLevel: "10",
       id: "recipes-item-rice",
       name: "Rice",
       normalizedName: "rice",
@@ -256,7 +256,7 @@ describe("Recipes catalog and persistence foundation", () => {
   it("stores either an Item Base Unit selection or its exact Item Unit Conversion", async () => {
     const { category, kilogram, item, conversion } = await createRecipeReferences();
     const secondItem = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "recipes-item-onion",
         name: "Onion",
         normalizedName: "onion",
@@ -358,7 +358,7 @@ describe("Recipes catalog and persistence foundation", () => {
       kind: "referenced",
     });
     await expect(
-      updateItem(adminActor, item.id, {
+      updateItem(adminActor, item.id, { reorderLevel: "10",
         name: item.name,
         categoryId: category.id,
         baseUnitId: gram.id,
@@ -420,7 +420,7 @@ describe("Recipes catalog and persistence foundation", () => {
     });
     const { category, kilogram, item, conversion } = await createRecipeReferences();
     const onion = await prisma.item.create({
-      data: {
+      data: { reorderLevel: "10",
         id: "recipes-conversion-onion-item",
         name: "Onion",
         normalizedName: "onion",

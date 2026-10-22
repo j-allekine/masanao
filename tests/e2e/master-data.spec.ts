@@ -69,8 +69,8 @@ function createReferencedCategoryFixture(): ItemReferenceFixture {
     database
       .prepare(
         `INSERT INTO "item"
-         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES ('10', ?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
   });
@@ -104,8 +104,8 @@ function createReferencedUnitFixture(): ItemReferenceFixture {
     database
       .prepare(
         `INSERT INTO "item"
-         ("id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
-         VALUES (?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+         ("reorderLevel", "id", "name", "normalizedName", "categoryId", "baseUnitId", "note", "isActive", "createdAt", "updatedAt")
+         VALUES ('10', ?, ?, ?, ?, ?, NULL, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       )
       .run(itemId, itemName, itemName.toLowerCase(), categoryId, unitId);
   });
@@ -613,7 +613,7 @@ test.describe("Master Data Units journey", () => {
 
     await page.getByRole("searchbox", { name: "Search Units", exact: true }).fill("no-such-unit");
     await expect(page.getByText("No Units match your search.", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Clear search", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear search", exact: true }).click();
     await expect(page.getByRole("searchbox", { name: "Search Units", exact: true })).toBeEmpty();
 
     const gramRow = await unitRow(page, "Gram");
@@ -752,7 +752,7 @@ test.describe("Master Data Units journey", () => {
       page.getByText("No Categories match your search.", { exact: true }),
     ).toBeVisible();
     await expect(categorySearch).toBeFocused();
-    await page.getByRole("button", { name: "Clear search", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear search", exact: true }).click();
     await expect(categorySearch).toHaveValue("");
     await expect(page).toHaveURL(/tab=categories$/);
 
@@ -1218,7 +1218,7 @@ test.describe("Master Data Offices journey", () => {
     await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
     await searchbox.fill("no-such-office");
     await expect(page.getByText("No Offices match your search.", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Clear search", exact: true }).click();
+    await page.getByRole("search").getByRole("button", { name: "Clear search", exact: true }).click();
     await expect(searchbox).toBeEmpty();
     await expect(page).toHaveURL(/master-data\?tab=offices$/);
     await page.reload();
@@ -1560,6 +1560,7 @@ test.describe("Master Data Vendors journey", () => {
         page.getByText("No Vendors match your search.", { exact: true }),
       ).toBeVisible();
       await page
+        .getByRole("search")
         .getByRole("button", { name: "Clear search", exact: true })
         .click();
       await expect(search).toBeEmpty();

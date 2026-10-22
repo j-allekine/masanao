@@ -1,10 +1,6 @@
 "use client";
 
-import { ListFilter, X } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { WorkspaceCatalogToolbar } from "@/components/workspace/catalog-controls";
+import { WorkspaceCatalogToolbar, WorkspaceFilterField } from "@/components/workspace/catalog-controls";
 import {
   Select,
   SelectContent,
@@ -22,7 +18,6 @@ import type { ItemListStatus } from "./item-list-state";
 export default function ItemToolbar({
   filters,
   categories,
-  hasFilters,
   onSearchChange,
   onCategoryChange,
   onStatusChange,
@@ -30,7 +25,6 @@ export default function ItemToolbar({
 }: {
   filters: ItemListFilters;
   categories: CategoryListItem[];
-  hasFilters: boolean;
   onSearchChange: (search: string) => void;
   onCategoryChange: (categoryId: string) => void;
   onStatusChange: (status: ItemListStatus) => void;
@@ -57,12 +51,11 @@ export default function ItemToolbar({
       searchPlaceholder="Search items by name..."
       search={filters.search}
       onSearchChange={onSearchChange}
+      activeFilterCount={Number(Boolean(filters.categoryId)) + Number(filters.status !== "all")}
+      onClearFilters={onClearFilters}
       filterContent={
         <>
-          <Field className="min-w-0 lg:w-56">
-            <FieldLabel className="sr-only" htmlFor="item-category-filter">
-              Category filter
-            </FieldLabel>
+          <WorkspaceFilterField id="item-category-filter" label="Category">
             <Select
               items={categoryItems}
               value={filters.categoryId || "all"}
@@ -72,9 +65,9 @@ export default function ItemToolbar({
             >
               <SelectTrigger
                 id="item-category-filter"
-                className="w-full bg-card"
+                aria-label="Category filter"
+                className="w-full"
               >
-                <ListFilter aria-hidden="true" />
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -89,12 +82,9 @@ export default function ItemToolbar({
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </Field>
+          </WorkspaceFilterField>
 
-          <Field className="min-w-0 lg:w-48">
-            <FieldLabel className="sr-only" htmlFor="item-status-filter">
-              Status filter
-            </FieldLabel>
+          <WorkspaceFilterField id="item-status-filter" label="Status">
             <Select
               items={statusItems}
               value={filters.status}
@@ -104,7 +94,8 @@ export default function ItemToolbar({
             >
               <SelectTrigger
                 id="item-status-filter"
-                className="w-full bg-card"
+                aria-label="Status filter"
+                className="w-full"
               >
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
@@ -117,20 +108,7 @@ export default function ItemToolbar({
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </Field>
-
-          {hasFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9 shrink-0 justify-start lg:justify-center"
-              onClick={onClearFilters}
-            >
-              <X data-icon="inline-start" />
-              Clear filters
-            </Button>
-          ) : null}
+          </WorkspaceFilterField>
         </>
       }
     />
