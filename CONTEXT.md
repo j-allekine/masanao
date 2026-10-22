@@ -63,13 +63,26 @@ An LGU department or office associated with an Activity, never with the containi
 ### Food and issuance
 
 **Recipe**:
-A reusable reference for one food and its ingredient lines.
+A reusable template for one food and one or more Recipe Ingredients. An active
+Recipe is available for future Meal Schedule use; all Recipes remain
+identifiable in historical Recipe Snapshots. A Recipe does not create an
+inventory movement and is saved only when complete.
+
+**Inactive Recipe**:
+A Recipe no longer available for future Meal Schedule use that remains
+identifiable in historical Recipe Snapshots.
+
+**Recipe Ingredient**:
+An existing Item and its usual required quantity in either the Item's Base
+Unit or one exact Item Unit Conversion. It is a template quantity, not issued
+stock; an inactive Item keeps its historical reference but makes the Recipe
+unusable for a new Meal Schedule until the ingredient is updated.
 
 **Recipe Baseline Pax**:
 The number of people served by the ingredient quantities recorded on a Recipe. It describes the reusable recipe batch, not the pax requested for a particular issuance.
 
 **Recipe Snapshot**:
-An independent Meal Schedule-specific copy of a Recipe's identity, baseline pax, ingredient quantities and Item Unit Conversions. Later master edits do not rewrite it.
+An independent Meal Schedule-specific copy of a Recipe's identity, baseline pax, ingredient quantities and Item Unit Conversions. It is editable while the issuance is a draft. Later master edits do not rewrite it.
 
 **Food Supply**:
 The Recipe-based food contribution within an Issuance Record, represented by a Recipe Snapshot and its ingredient lines.
