@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +16,7 @@ import InventorySearch from "./inventory-search";
 import { inventoryCategories } from "../domain/inventory-category-filter";
 import { InventoryCategoryFilter } from "./inventory-category-filter";
 import { InventoryStatusFilter } from "./inventory-status-filter";
-import { filterInventory, getInventoryListQuery, getInventoryListState, paginateInventory, type InventoryListState } from "../domain/inventory-list-state";
-
-const subscribeHydration = () => () => {};
+import { useInventoryNavigation } from "./use-inventory-navigation";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   const tone = item.stockStatus === "good"
@@ -72,96 +68,7 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
-  const currentQuery = useSearchParams().toString();
-  return <InventoryWorkspace items={items} initialQuery={currentQuery} />;
-}
-
-function InventoryWorkspace({ items, initialQuery }: { items: InventoryListItem[]; initialQuery: string }) {
-  const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
-  const pendingRefresh = useRef(false);
-  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
-  const pathname = "/inventory";
-  const [currentQuery, setCurrentQuery] = useState(initialQuery);
-  const latestQuery = useRef(initialQuery);
-  const pendingHistory = useRef<{ query: string; replace: boolean }[]>([]);
-  useEffect(() => {
-    if (!pendingHistory.current.length) {
-      latestQuery.current = window.location.search.slice(1);
-      setCurrentQuery(latestQuery.current);
-    }
-  }, [initialQuery, items]);
-  const state = getInventoryListState(new URLSearchParams(currentQuery));
-  const matchingItems = filterInventory(items, state);
-  const pagination = paginateInventory(matchingItems, state.page);
-  const hasFilters = Boolean(state.search.trim() || state.categoryId || state.stockStatus);
-
-  const requestRefresh = useCallback(() => {
-    pendingRefresh.current = true;
-    setRefreshing(true);
-    router.refresh();
-  }, [router]);
-
-  useEffect(() => {
-    // A router transition may settle before its RSC snapshot is committed.
-    // Wait for the new server-owned data before applying queued history edits.
-    if (!pendingRefresh.current) return;
-    pendingRefresh.current = false;
-    setRefreshing(false);
-    for (const { query, replace } of pendingHistory.current.splice(0)) {
-      window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
-    }
-  }, [items, pathname]);
-
-  useEffect(() => {
-    // Back/forward may restore a cached route tree. Refresh on entry as well as
-    // same-route history traversal; URL-owned filters and pagination survive.
-    function refreshInventory() {
-      if (window.location.pathname === "/inventory") requestRefresh();
-    }
-    let restoreFrame: number | undefined;
-    function refreshAfterRestore() {
-      pendingHistory.current = [];
-      latestQuery.current = window.location.search.slice(1);
-      setCurrentQuery(latestQuery.current);
-      if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
-      restoreFrame = window.requestAnimationFrame(refreshInventory);
-    }
-    function restorePage(event: PageTransitionEvent) {
-      // Next restores its cached tree on this same event. Refresh after that
-      // restoration so it cannot overwrite the newly requested stock snapshot.
-      if (event.persisted) refreshAfterRestore();
-    }
-    refreshInventory();
-    window.addEventListener("popstate", refreshAfterRestore);
-    window.addEventListener("pageshow", restorePage);
-    return () => {
-      if (restoreFrame !== undefined) window.cancelAnimationFrame(restoreFrame);
-      window.removeEventListener("popstate", refreshAfterRestore);
-      window.removeEventListener("pageshow", restorePage);
-    };
-  }, [requestRefresh]);
-
-  function navigate(updates: Partial<InventoryListState>, replace = false) {
-    const query = getInventoryListQuery(latestQuery.current, updates);
-    latestQuery.current = query;
-    setCurrentQuery(query);
-    // A history transition during an RSC refresh can suspend urgent input
-    // commits. Keep controls immediate and apply their URL edits after refresh.
-    if (pendingRefresh.current) pendingHistory.current.push({ query, replace });
-    else window.history[replace ? "replaceState" : "pushState"](null, "", `${pathname}${query ? `?${query}` : ""}`);
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams(currentQuery);
-    const canonical = getInventoryListQuery(currentQuery, { page: pagination.page });
-    if (params.has("page") && canonical !== currentQuery && latestQuery.current === currentQuery) {
-      latestQuery.current = canonical;
-      setCurrentQuery(canonical);
-      if (pendingRefresh.current) pendingHistory.current.push({ query: canonical, replace: true });
-      else window.history.replaceState(null, "", `${pathname}${canonical ? `?${canonical}` : ""}`);
-    }
-  }, [currentQuery, pagination.page, pathname, refreshing]);
+  const { currentQuery, state, pagination, hasFilters, refreshing, hydrated, navigate, requestRefresh } = useInventoryNavigation(items);
 
   function clearFilters() { navigate({ search: "", categoryId: "", stockStatus: "", page: 1 }); }
 

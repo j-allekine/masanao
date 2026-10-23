@@ -145,6 +145,33 @@ for (const width of [1280, 320]) {
   });
 }
 
+test("initial page correction waits for stock refresh and preserves an open Filters dialog", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  let releaseRefresh!: () => void;
+  const gate = new Promise<void>((resolve) => { releaseRefresh = resolve; });
+  await page.route("**/inventory?**", async (route) => {
+    if (route.request().headers()["rsc"] === "1") await gate;
+    await route.continue();
+  });
+  const requested = page.waitForRequest((request) => request.headers()["rsc"] === "1" && new URL(request.url()).pathname === "/inventory");
+  try {
+    await ready(page, "/inventory?q=Pagination&page=42");
+    await requested;
+    await expect(page.getByRole("button", { name: "Refreshing…", exact: true })).toBeVisible();
+    // URL writes must wait even when the initial page needs correction.
+    await expect(page).toHaveURL(/page=42/);
+    await openCatalogFilters(page);
+    releaseRefresh();
+    await expect(page).toHaveURL(/page=3/);
+    await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toBeVisible();
+    await closeCatalogFilters(page);
+    await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled();
+    await expect(page.getByText("Showing 21 to 27 of 27 results", { exact: true })).toBeVisible();
+  } finally {
+    releaseRefresh();
+  }
+});
+
 test("empty catalog keeps keyboard controls accessible at 320px", async ({ page }, testInfo) => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   const ids = db.prepare("SELECT id FROM item WHERE isActive=1").all() as { id: string }[];
