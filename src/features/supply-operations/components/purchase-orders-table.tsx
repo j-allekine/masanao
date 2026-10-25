@@ -39,12 +39,14 @@ function PurchaseOrderMobileCard({
   purchaseOrder,
   canManage,
   actionDisabled,
+  amountsUnavailable,
   onEdit,
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
   canManage: boolean;
   actionDisabled: boolean;
+  amountsUnavailable?: boolean;
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -86,7 +88,7 @@ function PurchaseOrderMobileCard({
             Total delivered
           </span>
           <span className="min-w-0 break-words text-right">
-            <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} />
+            <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} unavailable={amountsUnavailable} />
           </span>
         </div>
         <div className="flex items-start justify-between gap-3">
@@ -116,12 +118,14 @@ function PurchaseOrderRow({
   purchaseOrder,
   canManage,
   actionDisabled,
+  amountsUnavailable,
   onEdit,
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
   canManage: boolean;
   actionDisabled: boolean;
+  amountsUnavailable?: boolean;
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -149,7 +153,7 @@ function PurchaseOrderRow({
           <span className="block break-words">{purchaseOrder.vendor.name}</span>
         </TableCell>
         <TableCell className="max-w-[18rem] px-6 whitespace-normal text-right align-top">
-          <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} />
+          <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} unavailable={amountsUnavailable} />
         </TableCell>
         <TableCell className="pl-6 whitespace-nowrap align-top">
           {formatUpdatedAt(purchaseOrder.updatedAt)}
@@ -187,6 +191,7 @@ export default function PurchaseOrdersTable({
   onClearFilters,
   canManage,
   actionDisabled,
+  amountsUnavailable,
   onEdit,
   onDeleted,
 }: {
@@ -195,6 +200,7 @@ export default function PurchaseOrdersTable({
   onClearFilters: () => void;
   canManage: boolean;
   actionDisabled: boolean;
+  amountsUnavailable?: boolean;
   onEdit: (purchaseOrder: PurchaseOrderListItem) => void;
   onDeleted: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
@@ -230,6 +236,7 @@ export default function PurchaseOrdersTable({
             purchaseOrder={purchaseOrder}
             canManage={canManage}
             actionDisabled={actionDisabled}
+            amountsUnavailable={amountsUnavailable}
             onEdit={() => onEdit(purchaseOrder)}
             onDeleted={() => onDeleted(purchaseOrder)}
           />
@@ -265,6 +272,7 @@ export default function PurchaseOrdersTable({
                 purchaseOrder={purchaseOrder}
                 canManage={canManage}
                 actionDisabled={actionDisabled}
+            amountsUnavailable={amountsUnavailable}
                 onEdit={() => onEdit(purchaseOrder)}
                 onDeleted={() => onDeleted(purchaseOrder)}
               />

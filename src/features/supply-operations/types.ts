@@ -127,7 +127,7 @@ export type PurchaseOrderListItem = {
   createdAt: string;
   updatedAt: string;
   hasPostedReceipts: boolean;
-  deliverySummary: import("./domain/purchase-order-delivery-summary").PurchaseOrderDeliverySummary;
+  deliverySummary: import("./domain/purchase-order-delivery-summary").PurchaseOrderDeliverySummary | null;
 };
 
 export type PurchaseOrderField =
@@ -228,7 +228,10 @@ export type DeliveryReceiptHistoryItem = {
   note: string | null;
   lines: DeliveryReceiptLineDetail[];
 };
-export type PurchaseOrderDetailItem = PurchaseOrderListItem & { deliveryReceipts: DeliveryReceiptHistoryItem[] };
+export type PurchaseOrderDetailItem = PurchaseOrderListItem & {
+  deliverySummary: import("./domain/purchase-order-delivery-summary").PurchaseOrderDeliverySummary;
+  deliveryReceipts: DeliveryReceiptHistoryItem[];
+};
 
 export type InventoryListItem = {
   id: string;

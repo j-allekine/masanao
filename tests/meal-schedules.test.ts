@@ -178,6 +178,8 @@ describe("Meal Schedule Server Action adapters", () => {
         plannedServings: null,
       },
     });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/activity-designs/${activity.activityDesignId}`);
     await expect(
       createMealScheduleAction(
         toFormData({

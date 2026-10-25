@@ -26,6 +26,8 @@ import {
 } from "@/features/supply-operations/components/purchase-order-list-state";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
+import { readPurchaseOrderDeliverySummaries } from "@/features/supply-operations/server/queries/purchase-order-delivery-summaries";
+import { purchaseOrderListSelect } from "@/features/supply-operations/server/db/purchase-orders";
 
 const adminActor: CurrentActor = {
   id: "purchase-orders-admin",
@@ -530,7 +532,12 @@ describe("Purchase Order mutation gateway", () => {
       }],
     });
     const summaryFromList = (await listPurchaseOrders()).find((order) => order.id === purchaseOrder.id)?.deliverySummary;
-    expect(summaryFromList).toEqual({ receiptCount: 1, amount: "50", amountStatus: "complete" });
+    expect(summaryFromList).toBeNull();
+    expect(purchaseOrderListSelect).not.toHaveProperty("deliveryReceipts");
+    await expect(readPurchaseOrderDeliverySummaries([purchaseOrder.id])).resolves.toEqual([
+      { id: purchaseOrder.id, deliverySummary: { receiptCount: 1, amount: "50", amountStatus: "complete" } },
+    ]);
+    await expect(readPurchaseOrderDeliverySummaries([])).resolves.toEqual([]);
     await expect(deletePurchaseOrder(adminActor, purchaseOrder.id)).resolves.toEqual({
       ok: false,
       kind: "referenced",

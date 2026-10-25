@@ -35,6 +35,7 @@ import {
   getPurchaseOrderListUrl,
 } from "./purchase-order-list-state";
 import PurchaseOrdersTable from "./purchase-orders-table";
+import { usePurchaseOrderDeliverySummaries } from "./use-purchase-order-delivery-summaries";
 
 const PAGE_SIZE = 10;
 const SEARCH_NAVIGATION_DELAY_MS = 250;
@@ -92,6 +93,7 @@ export default function PurchaseOrdersWorkspace({
     firstPurchaseOrderIndex,
     firstPurchaseOrderIndex + PAGE_SIZE,
   );
+  const visibleAmounts = usePurchaseOrderDeliverySummaries(paginatedPurchaseOrders, serverPurchaseOrders);
   const resultStart =
     paginatedPurchaseOrders.length === 0 ? 0 : firstPurchaseOrderIndex + 1;
   const resultEnd = firstPurchaseOrderIndex + paginatedPurchaseOrders.length;
@@ -250,7 +252,8 @@ export default function PurchaseOrdersWorkspace({
         />
       </FieldSet>
       <PurchaseOrdersTable
-        purchaseOrders={paginatedPurchaseOrders}
+        purchaseOrders={visibleAmounts.records}
+        amountsUnavailable={visibleAmounts.amountsUnavailable}
         hasFilters={filtersAreActive}
         onClearFilters={clearSearch}
         canManage={canManagePurchaseOrders}

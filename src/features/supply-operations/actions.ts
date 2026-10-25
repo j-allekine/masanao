@@ -9,6 +9,7 @@ import { executeCreatePurchaseOrder } from "./server/actions/create-purchase-ord
 import { executeDeletePurchaseOrder } from "./server/actions/delete-purchase-order";
 import { executeUpdatePurchaseOrder } from "./server/actions/update-purchase-order";
 import { executePostDeliveryReceipt } from "./server/actions/post-delivery-receipt";
+import { executeReadPurchaseOrderDeliverySummaries } from "./server/actions/purchase-order-delivery-summaries";
 import type {
   ItemDeleteActionState,
   ItemFormActionState,
@@ -59,4 +60,8 @@ export async function deletePurchaseOrderAction(
 
 export async function postDeliveryReceiptAction(formData: FormData): Promise<DeliveryReceiptPostActionState> {
   return executePostDeliveryReceipt(formData);
+}
+
+export async function readPurchaseOrderDeliverySummariesAction(ids: string[]) {
+  return executeReadPurchaseOrderDeliverySummaries(ids);
 }

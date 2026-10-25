@@ -1,6 +1,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/server/auth";
 
@@ -56,6 +57,9 @@ export async function executeCreateMealSchedule(
       };
     }
 
+    revalidatePath(`/activity-designs/${activityDesignId}/activities/${activityId}`);
+    revalidatePath(`/activity-designs/${activityDesignId}`);
+    revalidatePath("/activities");
     return { status: "success", mealSchedule: result.mealSchedule };
   } catch {
     return {

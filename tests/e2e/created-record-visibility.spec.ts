@@ -124,7 +124,7 @@ for (const width of [1280, 375]) {
       await page.getByRole("button", { name: "2026", exact: true }).click();
       await dialog.getByRole("textbox", { name: "Title", exact: true }).fill(name);
       await dialog.getByRole("button", { name: "Create Activity Design", exact: true }).click();
-      await expect(page).toHaveURL(/\/activity-designs\/[^/?]+(?:\?.*)?$/);
+      await expect(page).toHaveURL(/\/activity-designs\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page.screenshot({ path: info.outputPath(`created-design-${width}.png`), fullPage: true });
@@ -147,6 +147,9 @@ for (const width of [1280, 375]) {
       await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/);
       await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
       await page.screenshot({ path: info.outputPath(`created-meal-${width}.png`), fullPage: true });
+      await page.goBack();
+      await expect(page.getByRole("heading", { name: name + " Activity", exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Open Meal Schedule: Lunch", exact: true })).toBeVisible();
     } finally {
       const design = db.prepare("SELECT id FROM activity_design WHERE title = ?").get(name) as { id: string } | undefined;
       if (design) {

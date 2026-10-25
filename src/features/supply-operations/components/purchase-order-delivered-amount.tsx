@@ -3,9 +3,12 @@ import type { PurchaseOrderDeliverySummary } from "../domain/purchase-order-deli
 
 export default function PurchaseOrderDeliveredAmount({
   summary,
+  unavailable = false,
 }: {
-  summary: PurchaseOrderDeliverySummary;
+  summary: PurchaseOrderDeliverySummary | null;
+  unavailable?: boolean;
 }) {
+  if (summary === null) return <span className="text-muted-foreground">{unavailable ? "Unavailable" : "Loading…"}</span>;
   if (summary.amountStatus === "complete" || summary.amountStatus === "no-deliveries") {
     return <span className="break-all tabular-nums">₱ {formatDeliveryReceiptAmount(summary.amount ?? "0")}</span>;
   }
