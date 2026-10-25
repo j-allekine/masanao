@@ -130,11 +130,9 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     .getByRole("button", { name: "Confirm and post issuance" })
     .click();
   await expect(page.getByRole("status")).toContainText("Issuance posted");
-  await expect(
-    page.getByRole("heading", { name: "Issued quantities" }),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Issued quantities" })).toBeFocused();
-  await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
+  const totalsButton = page.getByRole("button", { name: "View issued totals", exact: true });
+  await expect(totalsButton).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Posting Eggs", exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Post issuance", exact: true }),
   ).toHaveCount(0);
@@ -157,33 +155,29 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await expect(
     page.getByRole("heading", { name: "Lunch · 12:00" }),
   ).toBeVisible();
-  const additionalDetails = page.getByRole("button", { name: "Additional details", exact: true });
-  await expect(additionalDetails).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByText("Current distribution hall", { exact: true })).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Additional details", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Current kitchen office", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Current distribution hall", { exact: true })).toHaveCount(0);
   for (const width of [320, 1280]) {
     await page.setViewportSize({ width, height: 800 });
-    await additionalDetails.focus();
+    const postingDetails = page.getByRole("button", { name: "Posting details", exact: true });
+    await postingDetails.focus();
     await page.keyboard.press("Enter");
-    await expect(additionalDetails).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByText("Current kitchen office", { exact: true })).toBeVisible();
-    await expect(page.getByText("Current distribution hall", { exact: true })).toBeVisible();
-    await expect(page.getByText("Current planning meal", { exact: true })).toBeVisible();
-    await expect(page.getByText("Renamed meal · 13:00", { exact: true })).toBeVisible();
+    const posting = page.getByRole("dialog", { name: "Posting details", exact: true });
+    await expect(posting.getByText("Current planning meal", { exact: true })).toBeVisible();
+    await expect(posting.getByText("Renamed meal · 13:00", { exact: true })).toBeVisible();
+    await expect(posting.getByText("Kitchen Staff (kitchen.staff)", { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`posting-details-${width}.png`), fullPage: true });
+    await page.keyboard.press("Escape");
+    await expect(postingDetails).toBeFocused();
     await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Renamed activity", exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`posted-planning-details-${width}.png`), fullPage: true });
-    await page.keyboard.press("Enter");
-    await expect(additionalDetails).toHaveAttribute("aria-expanded", "false");
-    await expect(additionalDetails).toBeFocused();
   }
   await page.setViewportSize({ width: 320, height: 720 });
-  await expect(
-    page.getByRole("heading", { name: "Posting Eggs", exact: true }),
-  ).toBeVisible();
-  const recipesToggle = page.getByRole("button", { name: "Recipes (1)", exact: true });
-  await expect(recipesToggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByRole("button", { name: "View ingredients for Posting Omelet" })).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: "Posting Eggs", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Recipes (1)", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "View ingredients for Posting Omelet" })).toBeVisible();
   await expect(page.getByText("Whole quantities only", { exact: true })).not.toBeVisible();
   await expect(page.getByText("No direct Stock items.")).toHaveCount(0);
   await expect
@@ -197,7 +191,9 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     path: testInfo.outputPath("mobile-posted-history.png"),
     fullPage: true,
   });
-  const itemDetails = page.getByRole("button", { name: "Details for Posting Eggs", exact: true });
+  await totalsButton.click();
+  await expect(page.getByRole("dialog", { name: "Issued item totals", exact: true })).toBeVisible();
+  const itemDetails = page.getByRole("button", { name: "View breakdown for Posting Eggs", exact: true });
   await itemDetails.click();
   const detail = page.getByRole("dialog", { name: "Details for Posting Eggs" });
   await expect(detail.getByText("Whole quantities only", { exact: true })).not.toBeVisible();
@@ -208,15 +204,17 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await page.screenshot({ path: testInfo.outputPath("mobile-item-details.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(itemDetails).toBeFocused();
-  const recordDetails = page.getByRole("button", { name: "Record details", exact: true });
-  await recordDetails.click();
-  await expect(page.getByText(/This record is read-only/)).toBeVisible();
-  await expect(page.getByText("AD-POST · Posting training", { exact: true })).toBeVisible();
-  await expect(page.getByText("Supply preparation", { exact: true })).toBeVisible();
-  await expect(page.getByText("Kitchen Staff (kitchen.staff)", { exact: true })).toBeVisible();
-  await expect(page.getByText("Posted at", { exact: true })).toBeVisible();
-  await recordDetails.click();
-  await recipesToggle.click();
+  await page.getByRole("dialog", { name: "Issued item totals", exact: true }).getByRole("button", { name: "Close", exact: true }).click();
+  await expect(totalsButton).toBeFocused();
+  const postingDetails = page.getByRole("button", { name: "Posting details", exact: true });
+  await postingDetails.click();
+  const posting = page.getByRole("dialog", { name: "Posting details", exact: true });
+  await expect(posting.getByText("Posted issuance is read-only.")).toBeVisible();
+  await expect(posting.getByText("AD-POST · Posting training", { exact: true })).toBeVisible();
+  await expect(posting.getByText("Supply preparation", { exact: true })).toBeVisible();
+  await expect(posting.getByText("Posted at", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(postingDetails).toBeFocused();
   await expect(
     page.getByRole("dialog", { name: "Posting Omelet", exact: true }),
   ).toHaveCount(0);
@@ -230,10 +228,10 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     exact: true,
   });
   await expect(
-    ingredients.getByRole("columnheader", { name: "Baseline (2 pax)" }),
+    ingredients.getByRole("columnheader", { name: "Baseline", exact: true }),
   ).toBeVisible();
   await expect(
-    ingredients.getByRole("columnheader", { name: "To issue (1 pax)" }),
+    ingredients.getByRole("columnheader", { name: "Calculated", exact: true }),
   ).toBeVisible();
   await expect(
     ingredients.getByRole("cell", { name: "37 pc", exact: true }),
@@ -267,12 +265,10 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await page.keyboard.press("Escape");
   await expect(ingredientsButton).toBeFocused();
   await page.setViewportSize({ width: 1280, height: 900 });
-  await recipesToggle.click();
   await page.screenshot({
     path: testInfo.outputPath("desktop-posted-history.png"),
     fullPage: true,
   });
-  await recipesToggle.click();
   await ingredientsButton.click();
   await expect(
     ingredients.getByRole("cell", { name: "18.5 pc", exact: true }),
@@ -289,12 +285,11 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     fullPage: true,
   });
   await ingredients
-    .getByRole("link", { name: "View issued quantities" })
+    .getByRole("link", { name: "View issued totals" })
     .click();
   await expect(ingredients).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Issued quantities" }),
-  ).toBeFocused();
+  await expect(page.getByRole("dialog", { name: "Issued item totals", exact: true })).toBeVisible();
+  await expect(itemDetails).toBeFocused();
   await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
   await itemDetails.click();
   await expect(detail.locator("dd")).toHaveText(["19 pc", "18.5 pc"]);
@@ -304,6 +299,8 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   await page.screenshot({ path: testInfo.outputPath("desktop-item-details.png"), fullPage: true });
   await page.keyboard.press("Escape");
   await expect(itemDetails).toBeFocused();
+  await page.getByRole("dialog", { name: "Issued item totals", exact: true }).getByRole("button", { name: "Close", exact: true }).click();
+  await expect(totalsButton).toBeFocused();
   db.close();
 });
 

@@ -9,12 +9,14 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import type { MealScheduleDetailItem } from "../types";
 
 /** Planning details remain live; a posted heading may use its saved evidence. */
-export default function MealScheduleHeader({ mealSchedule, title, status, ready, disabled = false }: {
+export default function MealScheduleHeader({ mealSchedule, title, status, ready, disabled = false, showDetails = true, summary }: {
   mealSchedule: MealScheduleDetailItem;
   title?: string;
   status?: ReactNode;
   ready?: boolean;
   disabled?: boolean;
+  showDetails?: boolean;
+  summary?: ReactNode;
 }) {
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const isReady = ready ?? hydrated;
@@ -42,14 +44,17 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="min-w-0 break-words text-heading-2 font-semibold">{title ?? `${mealSchedule.label} · ${mealSchedule.mealTime}`}</h1>
+      <div className={summary ? "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" : "flex flex-wrap items-start justify-between gap-3"}>
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-heading-2 font-semibold">{title ?? `${mealSchedule.label} · ${mealSchedule.mealTime}`}</h1>
+          {summary ? <p className="mt-2 text-body-sm text-muted-foreground">{summary}</p> : null}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {status}
 
         </div>
       </div>
-      <RecordDetails fields={fields} disabled={!isReady || disabled} />
+      {showDetails ? <RecordDetails fields={fields} disabled={!isReady || disabled} /> : null}
     </div>
   );
 }
