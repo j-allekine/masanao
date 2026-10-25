@@ -48,9 +48,10 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
   await expect(confirm).toContainText("oldest receipt stock first (FIFO)");
   await confirm.getByRole("button", { name: "Confirm and post issuance" }).click();
   await expect(page.getByRole("status")).toContainText("Issuance posted");
-  await expect(page.getByRole("button", { name: "Direct Stock (2)", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("heading", { name: "Items added separately (2)", exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("quiet-posted-two-items-desktop.png"), fullPage: true });
-  const opener = page.getByRole("button", { name: "Details for FIFO Rice", exact: true });
+  await page.getByRole("button", { name: "View issued totals", exact: true }).click();
+  const opener = page.getByRole("button", { name: "View breakdown for FIFO Rice", exact: true });
   await opener.focus();
   await page.keyboard.press("Enter");
   const sources = page.getByRole("dialog", { name: "Details for FIFO Rice" });
@@ -79,7 +80,8 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
   db.close();
   await page.reload();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
-  await page.getByRole("button", { name: "Details for FIFO Rice", exact: true }).click();
+  await page.getByRole("button", { name: "View issued totals", exact: true }).click();
+  await page.getByRole("button", { name: "View breakdown for FIFO Rice", exact: true }).click();
   await expect(sources.getByRole("list", { name: "Receipt allocations" }).getByText("FIFO-PO-older", { exact: true })).toBeVisible();
   await expect(sources.locator("dd")).toHaveText(["15.25 kg", "15.25 kg"]);
   await sources.getByRole("button", { name: "Calculation details", exact: true }).click();
@@ -99,6 +101,7 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
     await page.setViewportSize(viewport);
     await page.reload();
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+    await page.getByRole("button", { name: "View issued totals", exact: true }).click();
     await opener.click();
     await expect(sources.getByText(/they do not prove which receipts were picked/)).toBeVisible();
     await expect(sources.getByText("Historical source reconstructed", { exact: true }).filter({ visible: true })).toHaveCount(2);
@@ -117,7 +120,7 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
     await page.screenshot({ path: testInfo.outputPath(`reconstructed-item-${viewport.width}.png`), fullPage: true });
     await page.keyboard.press("Escape");
     await expect(opener).toBeFocused();
-    const saltOpener = page.getByRole("button", { name: "Details for FIFO Salt", exact: true });
+    const saltOpener = page.getByRole("button", { name: "View breakdown for FIFO Salt", exact: true });
     await saltOpener.click();
     const missing = page.getByRole("dialog", { name: "Details for FIFO Salt" });
     await expect(missing.getByText("Receipt sources were not recorded for this older issuance.", { exact: true })).toBeVisible();
@@ -138,6 +141,7 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
     await page.setViewportSize(viewport);
     await page.reload();
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+    await page.getByRole("button", { name: "View issued totals", exact: true }).click();
     await opener.click();
     await expect(sources.locator("dd")).toHaveText([`15.25 ${longUnit}`, `15.25 ${longUnit}`]);
     await page.screenshot({ path: testInfo.outputPath(`maximum-unit-${viewport.width}.png`), fullPage: true });
@@ -169,9 +173,10 @@ test("posted repeating calculation keeps approximation separate from exact issue
   await page.getByRole("button", { name: "Post issuance", exact: true }).click();
   await page.getByRole("dialog", { name: "Post issuance?", exact: true }).getByRole("button", { name: "Confirm and post issuance" }).click();
   await expect(page.getByRole("status")).toContainText("Issuance posted");
+  await page.getByRole("button", { name: "View issued totals", exact: true }).click();
   for (const viewport of [{ width: 1280, height: 900 }, { width: 320, height: 720 }]) {
     await page.setViewportSize(viewport);
-    const opener = page.getByRole("button", { name: "Details for FIFO Salt", exact: true });
+    const opener = page.getByRole("button", { name: "View breakdown for FIFO Salt", exact: true });
     await opener.click();
     const details = page.getByRole("dialog", { name: "Details for FIFO Salt" });
     await expect(details.locator("dd")).toHaveText(["0.333333 kg", "≈ 0.333333 kg"]);
