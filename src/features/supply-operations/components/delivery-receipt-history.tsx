@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { addExactPositiveDecimals, formatDeliveryReceiptAmount } from "../domain/delivery-receipt";
+import { formatDeliveryReceiptAmount } from "../domain/delivery-receipt";
+import { summarizePurchaseOrderDeliveries } from "../domain/purchase-order-delivery-summary";
 import type { DeliveryReceiptHistoryItem } from "../types";
+import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
@@ -24,11 +26,6 @@ function formatPostedAt(value: string) {
   return new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-function receiptTotal(receipt: DeliveryReceiptHistoryItem) {
-  const amounts = receipt.lines.flatMap((line) => line.lineAmount ? [line.lineAmount] : []);
-  return amounts.length === 0 ? null : amounts.reduce(addExactPositiveDecimals, "0");
-}
-
 export default function DeliveryReceiptHistory({
   deliveryReceipts,
 }: {
@@ -36,31 +33,44 @@ export default function DeliveryReceiptHistory({
 }) {
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const selectedReceipt = deliveryReceipts.find((receipt) => receipt.id === selectedReceiptId) ?? null;
-  const total = selectedReceipt ? receiptTotal(selectedReceipt) : null;
+  const total = summarizePurchaseOrderDeliveries(deliveryReceipts);
 
   return <>
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="min-w-0 overflow-x-auto rounded-lg border">
       <Table>
+        <caption className="sr-only">Delivery Receipt history and delivered amounts</caption>
         <TableHeader>
           <TableRow>
             <TableHead>Receipt number</TableHead>
-            <TableHead>Receipt date</TableHead>
-            <TableHead>Lines</TableHead>
-            <TableHead>Posted</TableHead>
+            <TableHead className="hidden sm:table-cell">Receipt date</TableHead>
+            <TableHead className="hidden sm:table-cell">Lines</TableHead>
+            <TableHead className="min-w-32 px-3 text-right sm:px-6">Amount</TableHead>
+            <TableHead className="hidden sm:table-cell">Posted</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {deliveryReceipts.map((receipt) => <TableRow key={receipt.id} id={`delivery-receipt-${receipt.id}`}>
-            <TableCell className="font-medium">
-              <Button variant="link" className="h-auto p-0 font-medium" onClick={() => setSelectedReceiptId(receipt.id)}>
+            <TableCell className="max-w-[20rem] whitespace-normal font-medium">
+              <Button variant="link" className="h-auto whitespace-normal break-all p-0 text-left font-medium" onClick={() => setSelectedReceiptId(receipt.id)}>
                 {receipt.receiptNo}
               </Button>
             </TableCell>
-            <TableCell>{formatDate(receipt.receiptDate)}</TableCell>
-            <TableCell>{receipt.lines.length}</TableCell>
-            <TableCell>{formatPostedAt(receipt.postedAt)}</TableCell>
+            <TableCell className="hidden sm:table-cell">{formatDate(receipt.receiptDate)}</TableCell>
+            <TableCell className="hidden sm:table-cell">{receipt.lines.length}</TableCell>
+            <TableCell className="min-w-32 px-3 whitespace-normal text-right sm:px-6" data-receipt-amount>
+              <PurchaseOrderDeliveredAmount summary={summarizePurchaseOrderDeliveries([receipt])} />
+            </TableCell>
+            <TableCell className="hidden sm:table-cell">{formatPostedAt(receipt.postedAt)}</TableCell>
           </TableRow>)}
         </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={3} className="hidden sm:table-cell">Total delivered</TableCell>
+            <TableCell className="sm:hidden">Total delivered</TableCell>
+            <TableCell className="min-w-32 px-3 whitespace-normal text-right sm:px-6" data-delivery-history-total><PurchaseOrderDeliveredAmount summary={total} /></TableCell>
+            <TableCell className="hidden sm:table-cell" />
+          </TableRow>
+        </TableFooter>
       </Table>
     </div>
 
@@ -88,7 +98,7 @@ export default function DeliveryReceiptHistory({
                 <TableCell className="text-right">{line.unitPrice ? `₱ ${formatDeliveryReceiptAmount(line.unitPrice)}` : "Not recorded"}</TableCell>
                 <TableCell className="text-right">{line.lineAmount ? `₱ ${formatDeliveryReceiptAmount(line.lineAmount)}` : "Not recorded"}</TableCell>
               </TableRow>)}</TableBody>
-              {total ? <TableFooter><TableRow><TableCell colSpan={5} className="text-right font-medium">Total</TableCell><TableCell className="text-right font-medium">₱ {formatDeliveryReceiptAmount(total)}</TableCell></TableRow></TableFooter> : null}
+              <TableFooter><TableRow><TableCell colSpan={5} className="text-right font-medium">Total</TableCell><TableCell className="text-right font-medium"><PurchaseOrderDeliveredAmount summary={summarizePurchaseOrderDeliveries([selectedReceipt])} /></TableCell></TableRow></TableFooter>
             </Table>
           </div>
           <div className="flex flex-col gap-1"><p className="text-label font-medium text-muted-foreground">Receipt note</p><p className="whitespace-pre-wrap">{selectedReceipt.note ?? "Not recorded"}</p></div>

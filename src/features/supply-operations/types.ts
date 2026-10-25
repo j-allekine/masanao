@@ -127,6 +127,7 @@ export type PurchaseOrderListItem = {
   createdAt: string;
   updatedAt: string;
   hasPostedReceipts: boolean;
+  deliverySummary: import("./domain/purchase-order-delivery-summary").PurchaseOrderDeliverySummary;
 };
 
 export type PurchaseOrderField =

@@ -32,6 +32,10 @@ async function createDesign(page: Page, title: string) {
   await dialog.getByRole("textbox", { name: "Title", exact: true }).fill(title);
   await dialog.getByRole("button", { name: "Create Activity Design", exact: true }).click();
   await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/activity-designs\/[^/?]+(?:\?.*)?$/);
+  await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
+  await page.goto("/activity-designs");
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
 }
 
 type ActivityDesignFixture = {
@@ -385,7 +389,11 @@ test.describe("Activity planning journey", () => {
         name: "Search Activities",
         exact: true,
       });
-      await expect(activitySearch).toBeEmpty();
+      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+      await expect(page.getByRole("heading", { name: activityName, exact: true })).toBeVisible();
+      await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(activitySearch).toHaveValue(activityName);
       const createdRow = page.getByRole("row").filter({ hasText: activityName });
       await expect(createdRow).toBeVisible();
 
@@ -579,6 +587,10 @@ test.describe("Activity planning journey", () => {
 
     await expect(sheet).toHaveCount(0);
     await expect(page.getByText(`Activity added to “${title}”`, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+    await expect(page.getByRole("heading", { name: "E2E Community Feeding", exact: true })).toBeVisible();
+    await page.goto("/activity-designs");
+    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await expect(designRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
 
     await page.reload();
@@ -957,8 +969,8 @@ test.describe("Activity planning journey", () => {
         .getByRole("button", { name: "Add Meal Schedule", exact: true })
         .click();
       await expect(createDialog).toHaveCount(0);
-      await expect(page.getByText("Afternoon Snack", { exact: true })).toBeVisible();
-      await expect(page.getByText("15:30", { exact: true })).toBeVisible();
+      await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/);
+      await expect(page.getByRole("heading", { name: "Afternoon Snack · 15:30", exact: true })).toBeVisible();
       await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
 
       await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);

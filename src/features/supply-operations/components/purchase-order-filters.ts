@@ -27,6 +27,7 @@ export function filterPurchaseOrders(
     })
     .sort(
       (left, right) =>
+        Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
         normalizePurchaseOrderNoKey(left.purchaseOrderNo).localeCompare(
           normalizePurchaseOrderNoKey(right.purchaseOrderNo),
           undefined,

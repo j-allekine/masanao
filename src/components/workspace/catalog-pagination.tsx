@@ -12,6 +12,16 @@ import {
 } from "@/components/ui/pagination";
 
 const countFormatter = new Intl.NumberFormat("en-US");
+
+/** The caller owns filtering and sorting before locating a newly created row. */
+export function getCatalogPageContainingItem(
+  records: readonly { id: string }[],
+  id: string,
+  pageSize: number,
+) {
+  const index = records.findIndex((record) => record.id === id);
+  return index < 0 ? 1 : Math.floor(index / pageSize) + 1;
+}
 type CatalogPageItem = number | "ellipsis-start" | "ellipsis-end";
 
 export function getCatalogResultsSummary({

@@ -96,7 +96,10 @@ async function createActivityDesign(cookie: string) {
   setActionCookie(cookie);
   await expect(
     createActivityDesignAction(toFormData(validActivityDesign)),
-  ).resolves.toEqual({ status: "success" });
+  ).resolves.toEqual({
+    status: "success",
+    activityDesign: expect.objectContaining({ id: expect.any(String) }),
+  });
 
   const activityDesign = (await listActivityDesigns()).find(
     (design) => design.activityDesignNo === "ad-2026-001",

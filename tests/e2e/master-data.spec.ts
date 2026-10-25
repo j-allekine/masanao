@@ -569,9 +569,8 @@ test.describe("Master Data Units journey", () => {
       await createUnit(page, name, abbreviation);
     }
 
-    await expect(page.getByRole("button", { name: "Page 1 of 2", exact: true })).toBeVisible();
-    await expect(page.getByText("Showing 1 to 10 of 11 results", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await expect(await unitRow(page, "Sack")).toBeVisible();
+    await expect(page.getByText("Showing 11 to 11 of 11 results", { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/page=2$/);
     await expect(page.getByRole("button", { name: "Page 2 of 2", exact: true })).toBeVisible();
 
@@ -1198,9 +1197,8 @@ test.describe("Master Data Offices journey", () => {
       );
     }
 
-    await expect(page.getByRole("button", { name: "Page 1 of 2", exact: true })).toBeVisible();
-    await expect(page.getByText("Showing 1 to 10 of 11 results", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Next page", exact: true }).click();
+    await expect(await officeRow(page, "Office 10")).toBeVisible();
+    await expect(page.getByText("Showing 11 to 11 of 11 results", { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/tab=offices&page=2$/);
     await expect(page.getByRole("button", { name: "Page 2 of 2", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Previous page", exact: true }).click();
@@ -1430,6 +1428,8 @@ test.describe("Master Data Vendors journey", () => {
     await duplicateName.fill("Second Vendor");
     await dialog.getByRole("button", { name: "Create Vendor", exact: true }).click();
     await expect(dialog).toHaveCount(0);
+    await expect(await vendorRow(page, "Second Vendor")).toBeVisible();
+    await page.getByRole("button", { name: "Previous page", exact: true }).click();
 
     const deltaRow = await vendorRow(page, "Delta Grocers");
     await deltaRow
@@ -1603,7 +1603,6 @@ test.describe("Master Data Vendors journey", () => {
     await dialog.getByRole("button", { name: "Create Vendor", exact: true }).click();
     await expect(dialog).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Next page", exact: true }).click();
     await expect(page).toHaveURL(/tab=vendors&page=2$/);
 
     const pageRows = page

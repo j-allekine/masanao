@@ -1,14 +1,8 @@
 import Link from "next/link";
-import { ClipboardList, FilePlus2, FileText, Inbox } from "lucide-react";
+import { ClipboardList, FilePlus2, Inbox } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
 import {
   Empty,
   EmptyDescription,
@@ -22,10 +16,7 @@ import { cn } from "@/lib/utils";
 
 import type { PurchaseOrderDetailItem } from "../types";
 import DeliveryReceiptHistory from "./delivery-receipt-history";
-
-function displayValue(value: string | null) {
-  return value ?? "Not recorded";
-}
+import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 
 export default function PurchaseOrderDetailContent({
   purchaseOrder,
@@ -33,10 +24,10 @@ export default function PurchaseOrderDetailContent({
   purchaseOrder: PurchaseOrderDetailItem;
 }) {
   return (
-    <div className="flex min-h-svh flex-col bg-card">
+    <div className="flex min-h-svh min-w-0 flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
@@ -46,7 +37,7 @@ export default function PurchaseOrderDetailContent({
               {purchaseOrder.purchaseOrderNo}
             </h1>
             <p className="text-body text-muted-foreground">
-              Review its vendor context and recorded Delivery Receipts.
+              Review deliveries recorded for this Purchase Order.
             </p>
           </div>
           <Link
@@ -58,33 +49,19 @@ export default function PurchaseOrderDetailContent({
           </Link>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText aria-hidden="true" />
-              Document context
-            </CardTitle>
-            <CardDescription>
-              The reference details recorded for this Purchase Order.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <div className="min-w-0">
-              <p className="text-label font-medium text-muted-foreground">Vendor</p>
-              <p className="break-words text-body font-medium">{purchaseOrder.vendor.name}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-label font-medium text-muted-foreground">Reference number</p>
-              <p className="break-words text-body">{displayValue(purchaseOrder.referenceNumber)}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-label font-medium text-muted-foreground">Note</p>
-              <p className="break-words text-body">{displayValue(purchaseOrder.note)}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex min-w-0 flex-col gap-2">
+          <RecordFacts fields={[
+            { label: "Vendor", value: purchaseOrder.vendor.name },
+            { label: "Total delivered", value: <span data-po-total-delivered><PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} /></span> },
+            { label: "Delivery receipts", value: <span className="tabular-nums" data-po-receipt-count>{purchaseOrder.deliverySummary.receiptCount}</span> },
+          ]} />
+          <RecordDetails label="Purchase Order details" fields={[
+            ...(purchaseOrder.referenceNumber ? [{ label: "Reference number", value: purchaseOrder.referenceNumber }] : []),
+            ...(purchaseOrder.note ? [{ label: "Note", value: <span className="whitespace-pre-wrap">{purchaseOrder.note}</span> }] : []),
+          ]} />
+        </div>
 
-        <section aria-labelledby="delivery-receipt-history-title" className="flex flex-col gap-3">
+        <section aria-labelledby="delivery-receipt-history-title" className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
             <h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">

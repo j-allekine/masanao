@@ -24,6 +24,7 @@ import { ListEmptyState } from "@/components/workspace/list-empty-state";
 import type { PurchaseOrderListItem } from "../types";
 import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
 import PurchaseOrderActionsMenu from "./purchase-order-actions-menu";
+import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   dateStyle: "medium",
@@ -32,10 +33,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
 
 function formatUpdatedAt(value: string) {
   return dateFormatter.format(new Date(value));
-}
-
-function displayReference(referenceNumber: string | null) {
-  return referenceNumber ?? "Not recorded";
 }
 
 function PurchaseOrderMobileCard({
@@ -86,10 +83,10 @@ function PurchaseOrderMobileCard({
         </div>
         <div className="flex items-start justify-between gap-3">
           <span className="text-label font-semibold text-muted-foreground">
-            Reference
+            Total delivered
           </span>
           <span className="min-w-0 break-words text-right">
-            {displayReference(purchaseOrder.referenceNumber)}
+            <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} />
           </span>
         </div>
         <div className="flex items-start justify-between gap-3">
@@ -151,12 +148,10 @@ function PurchaseOrderRow({
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
           <span className="block break-words">{purchaseOrder.vendor.name}</span>
         </TableCell>
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
-          <span className="block break-words">
-            {displayReference(purchaseOrder.referenceNumber)}
-          </span>
+        <TableCell className="max-w-[18rem] px-6 whitespace-normal text-right align-top">
+          <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} />
         </TableCell>
-        <TableCell className="whitespace-nowrap align-top">
+        <TableCell className="pl-6 whitespace-nowrap align-top">
           {formatUpdatedAt(purchaseOrder.updatedAt)}
         </TableCell>
         {canManage ? (
@@ -250,10 +245,10 @@ export default function PurchaseOrdersTable({
               <TableHead scope="col" className="text-left">
                 Vendor
               </TableHead>
-              <TableHead scope="col" className="text-left">
-                Reference
+              <TableHead scope="col" className="px-6 text-right">
+                Total delivered
               </TableHead>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="pl-6 text-left">
                 Last updated
               </TableHead>
               {canManage ? (

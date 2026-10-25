@@ -199,7 +199,7 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
-        router.push(recipe ? `/recipes/${recipe.id}` : "/recipes");
+        router.push(`/recipes/${result.recipe.id}`);
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
       }

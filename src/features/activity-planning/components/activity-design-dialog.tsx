@@ -34,7 +34,7 @@ export default function ActivityDesignDialog({
 }: {
   dialogState: ActivityDesignDialogState | null;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (activityDesign: ActivityDesignListItem) => void;
 }) {
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
@@ -90,9 +90,9 @@ export default function ActivityDesignDialog({
                   : undefined
               }
               onCancel={requestClose}
-              onSuccess={() => {
+              onSuccess={(activityDesign) => {
                 closeDialog();
-                onSuccess();
+                onSuccess(activityDesign);
               }}
               onDirtyChange={setIsDirty}
             />

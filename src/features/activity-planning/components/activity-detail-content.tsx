@@ -273,9 +273,9 @@ export default function ActivityDetailContent({
         activity={activity}
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onSuccess={() => {
+        onSuccess={(mealSchedule) => {
           setIsCreateDialogOpen(false);
-          router.refresh();
+          router.push(withPlanningReturn(`/activity-designs/${activity.activityDesign.id}/activities/${activity.id}/meal-schedules/${mealSchedule.id}`, returnUrl));
           toast.success("Meal Schedule added");
         }}
       />

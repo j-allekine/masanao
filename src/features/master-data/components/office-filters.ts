@@ -1,3 +1,4 @@
+import { compareCatalogName } from "./catalog-name-order";
 import type { OfficeListItem } from "../types";
 
 export type OfficeFilters = {
@@ -16,7 +17,7 @@ export function filterOffices(
       office.name.toLowerCase().includes(search) ||
       (office.abbreviation?.toLowerCase().includes(search) ?? false)
     );
-  });
+  }).sort((left, right) => compareCatalogName(left, right, String));
 }
 
 export function hasOfficeFilters(filters: OfficeFilters) {

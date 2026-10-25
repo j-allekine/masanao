@@ -5,6 +5,7 @@ import { prisma } from "@/prisma/client";
 
 import type { PurchaseOrderInput } from "../../schemas/purchase-order";
 import type { PurchaseOrderDetailItem, PurchaseOrderListItem } from "../../types";
+import { summarizePurchaseOrderDeliveries } from "../../domain/purchase-order-delivery-summary";
 
 export const purchaseOrderListSelect = {
   id: true,
@@ -13,9 +14,9 @@ export const purchaseOrderListSelect = {
   note: true,
   createdAt: true,
   updatedAt: true,
-  _count: {
+  deliveryReceipts: {
     select: {
-      deliveryReceipts: true,
+      lines: { select: { lineAmount: true } },
     },
   },
   vendor: {
@@ -93,7 +94,8 @@ export function toPurchaseOrderListItem(
     note: purchaseOrder.note,
     createdAt: purchaseOrder.createdAt.toISOString(),
     updatedAt: purchaseOrder.updatedAt.toISOString(),
-    hasPostedReceipts: purchaseOrder._count.deliveryReceipts > 0,
+    hasPostedReceipts: purchaseOrder.deliveryReceipts.length > 0,
+    deliverySummary: summarizePurchaseOrderDeliveries(purchaseOrder.deliveryReceipts),
   };
 }
 
@@ -101,6 +103,7 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
   const purchaseOrders = await prisma.purchaseOrder.findMany({
     select: purchaseOrderListSelect,
     orderBy: [
+      { createdAt: "desc" },
       { normalizedPurchaseOrderNo: "asc" },
       { id: "asc" },
     ],

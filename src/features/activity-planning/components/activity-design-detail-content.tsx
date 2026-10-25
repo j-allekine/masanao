@@ -257,9 +257,9 @@ export default function ActivityDesignDetailContent({
         activityDesign={createParent}
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onSuccess={() => {
+        onSuccess={(activity) => {
           setIsCreateDialogOpen(false);
-          router.refresh();
+          router.push(withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, returnUrl));
           toast.success("Activity added");
         }}
       />

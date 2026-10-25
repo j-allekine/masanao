@@ -10,6 +10,8 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useCreatedRecord } from "@/hooks/use-created-record";
+import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
 
 import { setUnitActiveAction, setVendorActiveAction } from "../actions";
 import type {
@@ -21,6 +23,7 @@ import type {
 import CategoriesWorkspace from "./categories-workspace";
 import CatalogPagination, {
   getCatalogPageAfterDeletion,
+  getCatalogPageContainingItem,
 } from "@/components/workspace/catalog-pagination";
 import { filterCategories } from "./category-filters";
 import UnitDialog, { type UnitDialogState } from "./unit-dialog";
@@ -73,10 +76,10 @@ type CatalogListState = {
 const emptyCatalogListState: CatalogListState = { search: "", page: 1 };
 
 export default function MasterDataWorkspace({
-  units,
-  categories,
-  offices,
-  vendors,
+  units: serverUnits,
+  categories: serverCategories,
+  offices: serverOffices,
+  vendors: serverVendors,
   initialQuery = "",
   canManageUnits,
   canManageOffices,
@@ -93,7 +96,12 @@ export default function MasterDataWorkspace({
   canManageCategories: boolean;
   canManageVendors: boolean;
 }) {
+  const { records: units, setCreatedRecord: setCreatedUnit } = useCreatedRecord(serverUnits);
+  const { records: categories, setCreatedRecord: setCreatedCategory } = useCreatedRecord(serverCategories);
+  const { records: offices, setCreatedRecord: setCreatedOffice } = useCreatedRecord(serverOffices);
+  const { records: vendors, setCreatedRecord: setCreatedVendor } = useCreatedRecord(serverVendors);
   const router = useRouter();
+  const [historyReady, setHistoryReady] = useState(false);
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -160,33 +168,51 @@ export default function MasterDataWorkspace({
   }, [pendingVendorFocusRequest, vendors]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setActiveTab(initialState.tab);
-      if (initialState.tab === "units") {
+    // Server query props bootstrap the view. Later data refreshes must not
+    // replay an old page over newer local navigation or a successful creation.
+    function applyHistoryView(historyState: ReturnType<typeof getMasterDataListState>) {
+      clearPendingSearchUrlSync();
+      setActiveTab(historyState.tab);
+      if (historyState.tab === "units") {
         setUnitListState({
-          search: initialState.search,
-          page: initialState.page,
+          search: historyState.search,
+          page: historyState.page,
         });
-      } else if (initialState.tab === "vendors") {
+      } else if (historyState.tab === "vendors") {
         setVendorListState({
-          search: initialState.search,
-          page: initialState.page,
+          search: historyState.search,
+          page: historyState.page,
         });
-      } else if (initialState.tab === "offices") {
+      } else if (historyState.tab === "offices") {
         setOfficeListState({
-          search: initialState.search,
-          page: initialState.page,
+          search: historyState.search,
+          page: historyState.page,
         });
-      } else if (initialState.tab === "categories") {
+      } else if (historyState.tab === "categories") {
         setCategoryListState({
-          search: initialState.search,
-          page: initialState.page,
+          search: historyState.search,
+          page: historyState.page,
         });
       }
+    }
+
+    function restoreHistoryView() {
+      applyHistoryView(getMasterDataListState(window.location.search));
+    }
+
+    // A cached route payload can carry an older query when returning with Back.
+    const historyState = getMasterDataListState(window.location.search);
+    const timeoutId = window.setTimeout(() => {
+      applyHistoryView(historyState);
+      setHistoryReady(true);
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [initialState]);
+    window.addEventListener("popstate", restoreHistoryView);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("popstate", restoreHistoryView);
+    };
+  }, []);
 
   const unitSearch = unitListState.search;
   const vendorSearch = vendorListState.search;
@@ -292,6 +318,13 @@ export default function MasterDataWorkspace({
   const categoryResultStart =
     paginatedCategories.length === 0 ? 0 : firstCategoryItemIndex + 1;
   const categoryResultEnd = firstCategoryItemIndex + paginatedCategories.length;
+  const visibleRecords = activeTab === "units" ? paginatedUnits
+    : activeTab === "categories" ? paginatedCategories
+    : activeTab === "offices" ? paginatedOffices : paginatedVendors;
+  const focusCreatedRecord = useCreatedRecordFocus(
+    visibleRecords,
+    (id) => `[data-master-data-record-id="${CSS.escape(id)}"]`,
+  );
   const currentQuery = getMasterDataQuery(initialQuery, {
     tab: activeTab,
     search: currentSearch,
@@ -299,7 +332,7 @@ export default function MasterDataWorkspace({
   });
 
   useEffect(() => {
-    if (searchUrlSyncTimeoutRef.current !== null) return;
+    if (!historyReady || searchUrlSyncTimeoutRef.current !== null) return;
 
     const actualQuery = new URLSearchParams(window.location.search);
     const expectedQuery = new URLSearchParams(currentQuery);
@@ -321,7 +354,7 @@ export default function MasterDataWorkspace({
     if (actualUrl !== expectedUrl) {
       window.history.replaceState(window.history.state, "", expectedUrl);
     }
-  }, [activeTab, categories, currentQuery, offices, units, vendors]);
+  }, [activeTab, categories, currentQuery, historyReady, offices, units, vendors]);
 
   function replaceListUrl(
     updates: Parameters<typeof getMasterDataUrl>[2],
@@ -356,6 +389,21 @@ export default function MasterDataWorkspace({
       replaceListUrl({ tab: activeTab, search: nextSearch, page: 1 });
       searchUrlSyncTimeoutRef.current = null;
     }, SEARCH_URL_SYNC_DELAY_MS);
+  }
+
+  function revealCreatedRecord(tab: MasterDataTab, records: { id: string }[], id: string, search: string) {
+    focusCreatedRecord(id);
+    clearPendingSearchUrlSync();
+    const page = getCatalogPageContainingItem(records, id, PAGE_SIZE);
+    const state = { search, page };
+    if (tab === "units") setUnitListState(state);
+    if (tab === "vendors") setVendorListState(state);
+    if (tab === "categories") setCategoryListState(state);
+    if (tab === "offices") setOfficeListState(state);
+    replaceListUrl({ tab, search, page });
+    if (search !== currentSearch) {
+      toast.info("Search cleared to show the new record.");
+    }
   }
 
   function clearFilters() {
@@ -580,7 +628,7 @@ export default function MasterDataWorkspace({
   return (
     <div
       className="flex flex-col gap-0"
-      data-client-ready={isHydrated ? "true" : undefined}
+      data-client-ready={isHydrated && historyReady ? "true" : undefined}
     >
       <MasterDataTabs activeTab={activeTab} onTabChange={changeTab}>
         <MasterDataTabContent value="units">
@@ -625,6 +673,11 @@ export default function MasterDataWorkspace({
             onClearFilters={clearFilters}
             onPageChange={changePage}
             onDeleted={handleCategoryDeleted}
+            onCreated={(category) => {
+              const search = filterCategories([category], { search: categorySearch }).length ? categorySearch : "";
+              setCreatedCategory(category);
+              revealCreatedRecord("categories", filterCategories([...categories.filter((row) => row.id !== category.id), category], { search }), category.id, search);
+            }}
             canManage={canManageCategories}
           />
         </MasterDataTabContent>
@@ -641,6 +694,11 @@ export default function MasterDataWorkspace({
             onClearFilters={clearFilters}
             onPageChange={changePage}
             canManage={canManageOffices}
+            onCreated={(office) => {
+              const search = filterOffices([office], { search: officeSearch }).length ? officeSearch : "";
+              setCreatedOffice(office);
+              revealCreatedRecord("offices", filterOffices([...offices.filter((row) => row.id !== office.id), office], { search }), office.id, search);
+            }}
           />
         </MasterDataTabContent>
         <MasterDataTabContent value="vendors">
@@ -671,8 +729,13 @@ export default function MasterDataWorkspace({
         onClose={closeDialog}
         onSuccess={(unit) => {
           const mode = dialogState?.mode;
+          if (mode === "create") {
+            const search = filterUnits([unit], { search: unitSearch }).length ? unitSearch : "";
+            setCreatedUnit(unit);
+            revealCreatedRecord("units", filterUnits([...units.filter((row) => row.id !== unit.id), unit], { search }), unit.id, search);
+          }
           closeDialog();
-          router.refresh();
+          if (mode === "edit") router.refresh();
           toast.success(
             mode === "edit"
               ? `Unit “${unit.name}” updated`
@@ -685,8 +748,13 @@ export default function MasterDataWorkspace({
         onClose={closeVendorDialog}
         onSuccess={(vendor) => {
           const mode = vendorDialogState?.mode;
+          if (mode === "create") {
+            const search = filterVendors([vendor], { search: vendorSearch }).length ? vendorSearch : "";
+            setCreatedVendor(vendor);
+            revealCreatedRecord("vendors", filterVendors([...vendors.filter((row) => row.id !== vendor.id), vendor], { search }), vendor.id, search);
+          }
           closeVendorDialog();
-          router.refresh();
+          if (mode === "edit") router.refresh();
           toast.success(
             mode === "edit"
               ? `Vendor “${vendor.name}” updated`

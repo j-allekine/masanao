@@ -102,7 +102,10 @@ async function createActivityDesign(
   setActionCookie(cookie);
   await expect(
     createActivityDesignAction(toFormData(values)),
-  ).resolves.toEqual({ status: "success" });
+  ).resolves.toEqual({
+    status: "success",
+    activityDesign: expect.objectContaining({ id: expect.any(String) }),
+  });
 
   const activityDesignNo = String(values.activityDesignNo).trim().toLowerCase();
   const activityDesign = (await listActivityDesigns()).find(

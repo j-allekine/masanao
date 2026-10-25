@@ -38,7 +38,7 @@ export async function executeCreateActivityDesign(
 
     revalidatePath("/activity-designs");
 
-    return { status: "success" };
+    return { status: "success", activityDesign: result.activityDesign };
   } catch {
     return {
       status: "error",

@@ -41,6 +41,7 @@ export default function CategoriesWorkspace({
   onClearFilters,
   onPageChange,
   onDeleted,
+  onCreated,
   canManage,
 }: {
   categories: CategoryListItem[];
@@ -54,6 +55,7 @@ export default function CategoriesWorkspace({
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
   onDeleted: () => void;
+  onCreated: (category: CategoryListItem) => void;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -175,6 +177,7 @@ export default function CategoriesWorkspace({
         onSuccess={(category) => {
           const mode = dialogState?.mode;
           closeDialogAfterSuccess();
+          if (mode === "create") onCreated(category);
           toast.success(
             mode === "edit"
               ? `Category “${category.name}” updated`

@@ -120,7 +120,7 @@ test.describe("Purchase Orders read journey", () => {
         populatedRow.getByText("Acme Foods", { exact: true }),
       ).toBeVisible();
       await expect(
-        populatedRow.getByText("ORS-E2E-001", { exact: true }),
+        populatedRow.getByText("₱ 0.00", { exact: true }),
       ).toBeVisible();
       const purchaseOrderLink = populatedRow.getByRole("link", {
         name: "PO-E2E-001",
@@ -139,6 +139,9 @@ test.describe("Purchase Orders read journey", () => {
         page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
       ).toBeVisible();
       await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      const details = page.getByRole("button", { name: "Purchase Order details", exact: true });
+      await expect(details).toBeEnabled();
+      await details.click();
       await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
       await expect(page.getByText("Kitchen delivery", { exact: true })).toBeVisible();
       await expect(
@@ -179,6 +182,8 @@ test.describe("Purchase Orders read journey", () => {
         page.getByRole("heading", { name: "PO-E2E-001", exact: true }),
       ).toBeVisible();
       await expect(page.getByText("Acme Foods", { exact: true })).toBeVisible();
+      await expect(details).toBeEnabled();
+      await details.click();
       await expect(page.getByText("ORS-E2E-001", { exact: true })).toBeVisible();
       await page.setViewportSize({ width: 390, height: 844 });
       expect(
@@ -404,7 +409,7 @@ test.describe("Purchase Orders administration journey", () => {
       ).filter({ hasText: "PO-E2E-CRUD-001" });
       await expect(desktopRow).toBeVisible();
       await expect(desktopRow).toContainText("Acme Foods");
-      await expect(desktopRow).toContainText("ORS-E2E-CRUD-001");
+      await expect(desktopRow).toContainText("₱ 0.00");
 
       await desktopRow
         .getByRole("button", {
@@ -493,7 +498,9 @@ test.describe("Purchase Orders administration journey", () => {
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await expect(editDialog).toBeHidden();
-      await expect(desktopRow).toContainText("ORS-E2E-CRUD-UPDATED");
+      await expect(desktopRow).toContainText("₱ 0.00");
+      expect(withE2eDatabase((database) => database.prepare('SELECT referenceNumber FROM purchase_order WHERE purchaseOrderNo = ?').get("PO-E2E-CRUD-001")))
+        .toEqual({ referenceNumber: "ORS-E2E-CRUD-UPDATED" });
       await expect(
         desktopRow.getByRole("button", {
           name: "Actions for PO-E2E-CRUD-001",
@@ -505,7 +512,7 @@ test.describe("Purchase Orders administration journey", () => {
       await expect(
         page.locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
           .filter({ hasText: "PO-E2E-CRUD-001" }),
-      ).toContainText("ORS-E2E-CRUD-UPDATED");
+      ).toContainText("₱ 0.00");
       await expect(
         page.locator('[data-client-ready="true"]'),
       ).toBeVisible();
@@ -669,6 +676,8 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
+      await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,000.00");
+      await expect(page.locator('[data-po-receipt-count]')).toHaveText("1");
       await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "DR-E2E-ALT", exact: true }).click();
@@ -682,6 +691,9 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(receiptDialog.getByText("Not recorded", { exact: true })).toBeVisible();
       await receiptDialog.locator('[data-slot="dialog-footer"]').getByRole("button", { name: "Close", exact: true }).click();
       await expect(receiptDialog).toBeHidden();
+      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      const receiptOrderRow = page.locator(`[data-purchase-orders-table-desktop] [data-purchase-order-id="${purchaseOrderId}"]`);
+      await expect(receiptOrderRow).toContainText("₱ 2,000.00");
       const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
       ).get(purchaseOrderId, "DR-E2E-ALT") as { receiptDate: string });
@@ -735,6 +747,10 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
+      await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,350.00");
+      await expect(page.locator('[data-po-receipt-count]')).toHaveText("2");
+      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await expect(receiptOrderRow).toContainText("₱ 2,350.00");
 
       withE2eDatabase((database) => {
         const lines = database.prepare('SELECT "selectedUnitId", "enteredQuantity", "conversionFactor", "calculatedBaseUnitQuantity", "unitPrice", "lineAmount" FROM "delivery_receipt_line" WHERE "itemId" = ? ORDER BY rowid').all(itemId);

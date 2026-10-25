@@ -10,6 +10,8 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useCreatedRecord } from "@/hooks/use-created-record";
+import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
 
 import { FieldSet, FieldLegend } from "@/components/ui/field";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
@@ -42,7 +44,7 @@ type PurchaseOrderDialogState =
   | { mode: "edit"; purchaseOrder: PurchaseOrderListItem };
 
 export default function PurchaseOrdersWorkspace({
-  purchaseOrders,
+  purchaseOrders: serverPurchaseOrders,
   vendors,
   canManagePurchaseOrders,
 }: {
@@ -50,6 +52,7 @@ export default function PurchaseOrdersWorkspace({
   vendors: PurchaseOrderVendorOption[];
   canManagePurchaseOrders: boolean;
 }) {
+  const { records: purchaseOrders, setCreatedRecord } = useCreatedRecord(serverPurchaseOrders);
   const pathname = usePathname();
   const router = useRouter();
   const isHydrated = useSyncExternalStore(
@@ -93,6 +96,10 @@ export default function PurchaseOrdersWorkspace({
     paginatedPurchaseOrders.length === 0 ? 0 : firstPurchaseOrderIndex + 1;
   const resultEnd = firstPurchaseOrderIndex + paginatedPurchaseOrders.length;
   const filtersAreActive = hasPurchaseOrderListFilters(filters);
+  const focusCreatedRecord = useCreatedRecordFocus(
+    paginatedPurchaseOrders,
+    (id) => `[data-purchase-order-action-id="${CSS.escape(id)}"]`,
+  );
 
   const replaceListUrl = useCallback((
     updates: Parameters<typeof getPurchaseOrderListQuery>[1],
@@ -273,10 +280,25 @@ export default function PurchaseOrdersWorkspace({
           onClose={closePurchaseOrderDialog}
           onSuccess={(purchaseOrder) => {
             const mode = purchaseOrderDialogState?.mode;
+            let searchCleared = false;
+            if (mode === "create") {
+              clearPendingSearchUrlSync();
+              searchCleared = filterPurchaseOrders([purchaseOrder], filters).length === 0;
+              const search = searchCleared ? "" : searchInput;
+              setCreatedRecord(purchaseOrder);
+              focusCreatedRecord(purchaseOrder.id);
+              setSearchInput(search);
+              const nextUrl = getPurchaseOrderListUrl(pathname, latestQueryRef.current, { search, page: 1 });
+              const nextQuery = nextUrl.split("?", 2)[1] ?? "";
+              latestQueryRef.current = nextQuery;
+              setClientQuery(nextQuery);
+              router.replace(nextUrl, { scroll: false });
+            }
             closePurchaseOrderDialog();
-            router.refresh();
+            if (mode === "edit") router.refresh();
             toast.success(
               `Purchase Order “${purchaseOrder.purchaseOrderNo}” ${mode === "edit" ? "updated" : "created"}`,
+              { description: searchCleared ? "Search cleared to show the new Purchase Order." : undefined },
             );
           }}
         />
