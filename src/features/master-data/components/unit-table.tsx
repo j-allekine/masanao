@@ -39,7 +39,7 @@ function UnitRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[28rem]">
-          <span className="block truncate">{unit.name}</span>
+          <span tabIndex={-1} data-master-data-record-id={unit.id} className="block truncate">{unit.name}</span>
         </TableCell>
         <TableCell className="font-mono text-mono tracking-mono text-primary">
           {unit.abbreviation}

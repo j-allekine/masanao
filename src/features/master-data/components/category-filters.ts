@@ -1,3 +1,5 @@
+import { normalizeCategoryKey } from "../domain/category";
+import { compareCatalogName } from "./catalog-name-order";
 import type { CategoryListItem } from "../types";
 
 export type CategoryFilters = {
@@ -16,7 +18,7 @@ export function filterCategories(
       category.name.toLowerCase().includes(search) ||
       (category.description?.toLowerCase().includes(search) ?? false)
     );
-  });
+  }).sort((left, right) => compareCatalogName(left, right, normalizeCategoryKey));
 }
 
 export function hasCategoryFilters(filters: CategoryFilters) {

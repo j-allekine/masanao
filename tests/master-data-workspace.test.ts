@@ -7,6 +7,7 @@ import {
 } from "@/features/master-data/components/master-data-list-state";
 import {
   getCatalogPageAfterDeletion,
+  getCatalogPageContainingItem,
   getCatalogPageItems,
   getCatalogResultsSummary,
   getMobileCatalogPageItems,
@@ -41,6 +42,24 @@ const categories: CategoryListItem[] = [
 ];
 
 describe("Master Data Units workspace", () => {
+  it("reveals a late alphabetical creation on its actual result page", () => {
+    const existing = Array.from({ length: 21 }, (_, index) => ({
+      id: `unit-${index}`, name: `A Unit ${String(index).padStart(2, "0")}`,
+      abbreviation: `a${index}`, active: true,
+    }));
+    const created = { id: "new-unit", name: "Zulu Unit", abbreviation: "zu", active: true };
+    const ordered = filterUnits([...existing, created], { search: "" });
+    expect(getCatalogPageContainingItem(ordered, created.id, 10)).toBe(3);
+    expect(ordered.slice(20, 30)).toContainEqual(created);
+    const matches = filterUnits([...existing, created], { search: "Zulu" });
+    expect(getCatalogPageContainingItem(matches, created.id, 10)).toBe(1);
+  });
+
+  it("inserts an early alphabetical creation in the same order as the refreshed catalog", () => {
+    const created = { id: "alpha", name: "Alpha Unit", abbreviation: "au", active: true };
+    expect(filterUnits([...units, created], { search: "" }).map((unit) => unit.id))
+      .toEqual(["alpha", "gram", "liter", "piece"]);
+  });
   it("matches trimmed, case-insensitive name and abbreviation searches", () => {
     expect(filterUnits(units, { search: "  GRAM  " })).toEqual([units[0]]);
     expect(filterUnits(units, { search: "PC" })).toEqual([units[2]]);

@@ -66,7 +66,7 @@ function VendorRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[20rem] whitespace-normal align-top">
-          <span className="block break-words">{vendor.name}</span>
+          <span tabIndex={-1} data-master-data-record-id={vendor.id} className="block break-words">{vendor.name}</span>
         </TableCell>
         <TableCell className="max-w-[16rem] whitespace-normal align-top">
           <span className="block break-words">
@@ -126,7 +126,7 @@ function VendorMobileCard({
       <Card size="sm">
         <CardHeader className="grid-cols-[1fr_auto]">
           <div className="min-w-0">
-            <CardTitle className="break-words">{vendor.name}</CardTitle>
+            <CardTitle tabIndex={-1} data-master-data-record-id={vendor.id} className="break-words">{vendor.name}</CardTitle>
             <p className="break-words text-body-sm text-muted-foreground">
               {vendor.contactPerson ?? "No contact person"}
             </p>

@@ -102,7 +102,10 @@ async function createActivityDesign(
   setActionCookie(cookie);
   await expect(
     createActivityDesignAction(toFormData(values)),
-  ).resolves.toEqual({ status: "success" });
+  ).resolves.toEqual({
+    status: "success",
+    activityDesign: expect.objectContaining({ id: expect.any(String) }),
+  });
 
   const activityDesignNo = String(values.activityDesignNo).trim().toLowerCase();
   const activityDesign = (await listActivityDesigns()).find(
@@ -175,6 +178,8 @@ describe("Meal Schedule Server Action adapters", () => {
         plannedServings: null,
       },
     });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/activity-designs/${activity.activityDesignId}`);
     await expect(
       createMealScheduleAction(
         toFormData({

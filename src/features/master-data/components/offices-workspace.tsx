@@ -26,6 +26,7 @@ export default function OfficesWorkspace({
   onClearFilters,
   onPageChange,
   canManage,
+  onCreated,
 }: {
   offices: OfficeListItem[];
   total: number;
@@ -38,6 +39,7 @@ export default function OfficesWorkspace({
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
   canManage: boolean;
+  onCreated: (office: OfficeListItem) => void;
 }) {
   const router = useRouter();
   const [dialogState, setDialogState] = useState<OfficeDialogState | null>(
@@ -154,8 +156,9 @@ export default function OfficesWorkspace({
         onClose={closeDialog}
         onSuccess={(office) => {
           const mode = dialogState?.mode;
+          if (mode === "create") onCreated(office);
           closeDialog();
-          router.refresh();
+          if (mode === "edit") router.refresh();
           toast.success(
             mode === "edit"
               ? `Office “${office.name}” updated`

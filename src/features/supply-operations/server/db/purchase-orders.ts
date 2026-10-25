@@ -5,6 +5,7 @@ import { prisma } from "@/prisma/client";
 
 import type { PurchaseOrderInput } from "../../schemas/purchase-order";
 import type { PurchaseOrderDetailItem, PurchaseOrderListItem } from "../../types";
+import { summarizePurchaseOrderDeliveries } from "../../domain/purchase-order-delivery-summary";
 
 export const purchaseOrderListSelect = {
   id: true,
@@ -13,11 +14,7 @@ export const purchaseOrderListSelect = {
   note: true,
   createdAt: true,
   updatedAt: true,
-  _count: {
-    select: {
-      deliveryReceipts: true,
-    },
-  },
+  _count: { select: { deliveryReceipts: true } },
   vendor: {
     select: {
       id: true,
@@ -94,6 +91,7 @@ export function toPurchaseOrderListItem(
     createdAt: purchaseOrder.createdAt.toISOString(),
     updatedAt: purchaseOrder.updatedAt.toISOString(),
     hasPostedReceipts: purchaseOrder._count.deliveryReceipts > 0,
+    deliverySummary: purchaseOrder._count.deliveryReceipts > 0 ? null : summarizePurchaseOrderDeliveries([]),
   };
 }
 
@@ -101,6 +99,7 @@ export async function listPurchaseOrderRecords(): Promise<PurchaseOrderListItem[
   const purchaseOrders = await prisma.purchaseOrder.findMany({
     select: purchaseOrderListSelect,
     orderBy: [
+      { createdAt: "desc" },
       { normalizedPurchaseOrderNo: "asc" },
       { id: "asc" },
     ],
@@ -119,6 +118,7 @@ export async function getPurchaseOrderRecord(
 
   return purchaseOrder ? {
     ...toPurchaseOrderListItem(purchaseOrder),
+    deliverySummary: summarizePurchaseOrderDeliveries(purchaseOrder.deliveryReceipts),
     deliveryReceipts: purchaseOrder.deliveryReceipts.map((receipt) => ({
       id: receipt.id,
       receiptNo: receipt.receiptNo,
@@ -130,6 +130,15 @@ export async function getPurchaseOrderRecord(
       lines: receipt.lines,
     })),
   } : null;
+}
+
+/** Only a catalog's visible page needs its receipt lines loaded. */
+export async function getPurchaseOrderDeliverySummaries(ids: readonly string[]) {
+  const orders = await prisma.purchaseOrder.findMany({
+    where: { id: { in: [...ids] } },
+    select: { id: true, deliveryReceipts: { select: { lines: { select: { lineAmount: true } } } } },
+  });
+  return orders.map((order) => ({ id: order.id, deliverySummary: summarizePurchaseOrderDeliveries(order.deliveryReceipts) }));
 }
 
 type PurchaseOrderDatabase = Pick<

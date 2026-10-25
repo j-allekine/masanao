@@ -110,7 +110,7 @@ export default function ActivityDesignForm({
   mode: "create" | "edit";
   activityDesign?: ActivityDesignListItem;
   onCancel: () => void;
-  onSuccess: () => void;
+  onSuccess: (activityDesign: ActivityDesignListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const initialFormValues = initialValues(activityDesign);
@@ -184,7 +184,7 @@ export default function ActivityDesignForm({
           return;
         }
 
-        onSuccess();
+        if (result.status === "success") onSuccess(result.activityDesign);
       } catch {
         setFormError(
           "The Activity Design could not be saved. Check your connection and try again.",

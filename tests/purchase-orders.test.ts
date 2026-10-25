@@ -26,6 +26,8 @@ import {
 } from "@/features/supply-operations/components/purchase-order-list-state";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
+import { readPurchaseOrderDeliverySummaries } from "@/features/supply-operations/server/queries/purchase-order-delivery-summaries";
+import { purchaseOrderListSelect } from "@/features/supply-operations/server/db/purchase-orders";
 
 const adminActor: CurrentActor = {
   id: "purchase-orders-admin",
@@ -136,6 +138,7 @@ describe("Purchase Order list state", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-02T00:00:00.000Z",
       hasPostedReceipts: false,
+      deliverySummary: { receiptCount: 0, amount: null, amountStatus: "no-deliveries" as const },
     },
     {
       id: "po-alpha",
@@ -146,6 +149,7 @@ describe("Purchase Order list state", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-03T00:00:00.000Z",
       hasPostedReceipts: false,
+      deliverySummary: { receiptCount: 0, amount: null, amountStatus: "no-deliveries" as const },
     },
   ];
 
@@ -182,7 +186,7 @@ describe("Purchase Order list state", () => {
 });
 
 describe("Purchase Orders read and persistence contract", () => {
-  it("lists safe Vendor context in normalized order and preserves timestamps", async () => {
+  it("lists safe Vendor context newest first and preserves timestamps", async () => {
     await prisma.purchaseOrder.deleteMany();
     await prisma.vendor.deleteMany();
     await createVendor("po-vendor-zulu", "Zulu Foods");
@@ -193,6 +197,7 @@ describe("Purchase Orders read and persistence contract", () => {
         id: "po-zulu",
         purchaseOrderNo: "PO-2",
         normalizedPurchaseOrderNo: "po-2",
+        createdAt: new Date("2026-10-25T00:00:00.000Z"),
         vendorId: "po-vendor-zulu",
         referenceNumber: null,
         note: null,
@@ -203,6 +208,7 @@ describe("Purchase Orders read and persistence contract", () => {
         id: "po-alpha",
         purchaseOrderNo: "po-1",
         normalizedPurchaseOrderNo: "po-1",
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
         vendorId: "po-vendor-alpha",
         referenceNumber: "ORS-1",
         note: "Historical vendor remains visible",
@@ -211,20 +217,20 @@ describe("Purchase Orders read and persistence contract", () => {
 
     await expect(listPurchaseOrders()).resolves.toEqual([
       expect.objectContaining({
-        id: "po-alpha",
-        purchaseOrderNo: "po-1",
-        vendor: { id: "po-vendor-alpha", name: "Alpha Foods", isActive: false },
-        referenceNumber: "ORS-1",
-        note: "Historical vendor remains visible",
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-      }),
-      expect.objectContaining({
         id: "po-zulu",
         purchaseOrderNo: "PO-2",
         vendor: { id: "po-vendor-zulu", name: "Zulu Foods", isActive: true },
         referenceNumber: null,
         note: null,
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      }),
+      expect.objectContaining({
+        id: "po-alpha",
+        purchaseOrderNo: "po-1",
+        vendor: { id: "po-vendor-alpha", name: "Alpha Foods", isActive: false },
+        referenceNumber: "ORS-1",
+        note: "Historical vendor remains visible",
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       }),
@@ -508,6 +514,7 @@ describe("Purchase Order mutation gateway", () => {
     });
     await expect(getPurchaseOrder(purchaseOrder.id)).resolves.toMatchObject({
       hasPostedReceipts: true,
+      deliverySummary: { receiptCount: 1, amount: "50", amountStatus: "complete" },
       deliveryReceipts: [{
         receiptNo: "DR-LOCKED-1",
         vendorName: "Original Foods",
@@ -524,6 +531,13 @@ describe("Purchase Order mutation gateway", () => {
         }],
       }],
     });
+    const summaryFromList = (await listPurchaseOrders()).find((order) => order.id === purchaseOrder.id)?.deliverySummary;
+    expect(summaryFromList).toBeNull();
+    expect(purchaseOrderListSelect).not.toHaveProperty("deliveryReceipts");
+    await expect(readPurchaseOrderDeliverySummaries([purchaseOrder.id])).resolves.toEqual([
+      { id: purchaseOrder.id, deliverySummary: { receiptCount: 1, amount: "50", amountStatus: "complete" } },
+    ]);
+    await expect(readPurchaseOrderDeliverySummaries([])).resolves.toEqual([]);
     await expect(deletePurchaseOrder(adminActor, purchaseOrder.id)).resolves.toEqual({
       ok: false,
       kind: "referenced",

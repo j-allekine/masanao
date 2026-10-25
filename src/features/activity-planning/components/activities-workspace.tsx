@@ -12,7 +12,7 @@ import type {
   ActivityWorkspaceListItem,
 } from "../types";
 import ActivitiesTable from "./activities-table";
-import { getPlanningReturnUrl } from "./planning-return-state";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivitiesToolbar from "./activities-toolbar";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
@@ -127,20 +127,11 @@ export default function ActivitiesWorkspace({
   }
 
   function handleCreateSuccess(activity: {
+    id: string;
     activityDesignId: string;
   }) {
     closeCreateDialog();
-    setListState({ search: "", page: 1 });
-    router.replace(
-      getPlanningListUrl(
-        pathname,
-        currentQuery,
-        "activities",
-        { search: "", page: 1 },
-      ),
-      { scroll: false },
-    );
-    router.refresh();
+    router.push(withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, `${pathname}?${currentQuery}`));
     const activityDesign = activityDesigns.find(
       (design) => design.id === activity.activityDesignId,
     );

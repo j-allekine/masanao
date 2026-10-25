@@ -1,3 +1,5 @@
+import { normalizeVendorKey } from "../domain/vendor";
+import { compareCatalogName } from "./catalog-name-order";
 import type { VendorListItem } from "../types";
 
 export type VendorFilters = {
@@ -16,7 +18,7 @@ export function filterVendors(
       vendor.name.toLowerCase().includes(search) ||
       (vendor.contactPerson?.toLowerCase().includes(search) ?? false)
     );
-  });
+  }).sort((left, right) => compareCatalogName(left, right, normalizeVendorKey));
 }
 
 export function hasVendorFilters(filters: VendorFilters) {

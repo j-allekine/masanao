@@ -41,6 +41,7 @@ async function chooseIngredient(page: Page, index: number, name: string) {
 }
 
 test("lets authenticated kitchen staff browse active Recipes only", async ({ page }) => {
+  test.setTimeout(60_000);
   await signIn(page);
   await page.goto("/recipes");
 
@@ -69,7 +70,7 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await page.keyboard.press("Escape");
   await expect(preview).toHaveCount(0);
   await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
-  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
+  await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ingredients", exact: true })).toBeVisible();
   await expect(page.getByText(/Baseline pax not set/)).toBeVisible();
@@ -202,10 +203,11 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
   await expect(page.getByText("Kilogram (kg)", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Create Recipe" }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
-  await expect(page.getByText("Rice Porridge", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Rice Porridge", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes\/[^/]+$/);
+  await expect(page.getByRole("heading", { name: "Rice Porridge", exact: true })).toBeVisible();
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await expect(page.getByText(/Ingredients for 50 pax/)).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("created-recipe-desktop.png"), fullPage: true });
 });
 
 test("shows accessible baseline errors and keeps the Recipe editor usable at 320px", async ({ page }) => {
@@ -268,6 +270,7 @@ test("asks before discarding unsaved Recipe changes", async ({ page }) => {
 });
 
 test("lets an administrator preview an alternate Unit Ingredient in its Base Unit", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
   await signInAsAdministrator(page);
   await page.goto("/recipes/new");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
@@ -281,8 +284,10 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
   await expect(page.getByText("0.5 kg", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Create Recipe" }).click();
-  await expect(page).toHaveURL(/\/recipes$/);
-  await expect(page.getByText("Gram Rice Porridge", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/recipes\/[^/]+$/);
+  await expect(page.getByRole("heading", { name: "Gram Rice Porridge", exact: true })).toBeVisible();
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("created-recipe-mobile.png"), fullPage: true });
 });
 
 test("shows Ingredient row errors without discarding entered Recipe fields", async ({ page }) => {

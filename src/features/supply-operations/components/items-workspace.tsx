@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState, useTransition, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useCreatedRecord } from "@/hooks/use-created-record";
+import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import { FieldSet, FieldLegend } from "@/components/ui/field";
-import CatalogPagination from "@/components/workspace/catalog-pagination";
+import CatalogPagination, { getCatalogPageContainingItem } from "@/components/workspace/catalog-pagination";
 
 import { setItemActiveAction } from "../actions";
 import { sortItemUnitConversions } from "../domain/item-unit-conversion";
@@ -58,12 +60,13 @@ export default function ItemsWorkspace(props: ItemsWorkspaceProps) {
 }
 
 function ItemsWorkspaceContent({
-  items,
+  items: serverItems,
   categories,
   units,
   canManageItems,
   currentQuery,
 }: ItemsWorkspaceProps & { currentQuery: string }) {
+  const { records: items, setCreatedRecord } = useCreatedRecord(serverItems);
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const pathname = usePathname();
   const router = useRouter();
@@ -105,6 +108,10 @@ function ItemsWorkspaceContent({
     paginatedItems.length === 0 ? 0 : firstItemIndex + 1;
   const resultEnd = firstItemIndex + paginatedItems.length;
   const filtersAreActive = hasItemListFilters(filters);
+  const focusCreatedRecord = useCreatedRecordFocus(
+    paginatedItems,
+    (id) => `[data-item-action-id="${CSS.escape(id)}"]`,
+  );
 
   useEffect(() => {
     if (lastObservedQueryRef.current === currentQuery) return;
@@ -361,12 +368,32 @@ function ItemsWorkspaceContent({
           onClose={closeCreateDialog}
           onSuccess={(item) => {
             const mode = itemDialogState?.mode;
+            let filtersChanged = false;
+            if (mode === "create") {
+              if (searchNavigationTimeoutRef.current !== null) {
+                window.clearTimeout(searchNavigationTimeoutRef.current);
+                searchNavigationTimeoutRef.current = null;
+              }
+              const nextFilters = {
+                search: filterItems([item], { ...filters, categoryId: "", status: "all" }).length ? searchInput : "",
+                categoryId: !filters.categoryId || filters.categoryId === item.category.id ? filters.categoryId : "",
+                status: filters.status === "inactive" ? "all" as const : filters.status,
+              };
+              filtersChanged = nextFilters.search !== filters.search || nextFilters.categoryId !== filters.categoryId || nextFilters.status !== filters.status;
+              const records = [...items.filter((record) => record.id !== item.id), item];
+              const page = getCatalogPageContainingItem(filterItems(records, nextFilters), item.id, PAGE_SIZE);
+              setCreatedRecord(item);
+              focusCreatedRecord(item.id);
+              setSearchInput(nextFilters.search);
+              navigateList({ ...nextFilters, page }, "replace");
+            }
             closeCreateDialog();
-            router.refresh();
+            if (mode === "edit") router.refresh();
             toast.success(
               mode === "edit"
                 ? `Item “${item.name}” updated`
                 : `Item “${item.name}” created`,
+              { description: filtersChanged ? "Filters adjusted to show the new Item." : undefined },
             );
           }}
         />

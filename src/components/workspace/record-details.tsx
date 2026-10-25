@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -13,8 +13,9 @@ export function RecordFacts({ fields }: { fields: RecordFact[] }) {
 
 /** Callers choose useful fields; empty groups have no disclosure or container. */
 export function RecordDetails({ fields, label = "Additional details", disabled = false }: { fields: RecordFact[]; label?: string; disabled?: boolean }) {
+  const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   if (!fields.length) return null;
-  return <Collapsible className="min-w-0"><CollapsibleTrigger disabled={disabled} render={<Button variant="ghost" className="px-0" />}>
+  return <Collapsible className="min-w-0"><CollapsibleTrigger disabled={disabled || !hydrated} render={<Button variant="ghost" className="px-0" />}>
     {label}<ChevronDown data-icon="inline-end" aria-hidden="true" />
   </CollapsibleTrigger><CollapsibleContent className="pt-2 pb-3"><RecordFacts fields={fields} /></CollapsibleContent></Collapsible>;
 }

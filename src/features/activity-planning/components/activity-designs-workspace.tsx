@@ -18,7 +18,7 @@ import {
   type ActivityDesignFilters,
 } from "./activity-design-filters";
 import ActivityDesignTable from "./activity-design-table";
-import { getPlanningReturnUrl } from "./planning-return-state";
+import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivityDesignToolbar from "./activity-design-toolbar";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
@@ -181,7 +181,14 @@ export default function ActivityDesignsWorkspace({
       <ActivityDesignDialog
         dialogState={dialogState}
         onClose={closeDialog}
-        onSuccess={() => router.refresh()}
+        onSuccess={(activityDesign) => {
+          if (dialogState?.mode === "create") {
+            router.push(withPlanningReturn(`/activity-designs/${activityDesign.id}`, `${pathname}?${currentQuery}`));
+            toast.success(`Activity Design “${activityDesign.title}” created`);
+          } else {
+            router.refresh();
+          }
+        }}
       />
       <ActivityCreateDialog
         activityDesign={activityDesignForCreate}
@@ -190,7 +197,7 @@ export default function ActivityDesignsWorkspace({
         onClose={closeActivityCreateDialog}
         onSuccess={(activity) => {
           closeActivityCreateDialog();
-          router.refresh();
+          router.push(withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, `${pathname}?${currentQuery}`));
           const activityDesign = activityDesigns.find(
             (design) => design.id === activity.activityDesignId,
           );

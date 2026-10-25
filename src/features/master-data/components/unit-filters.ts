@@ -1,3 +1,5 @@
+import { normalizeUnitKey } from "../domain/unit";
+import { compareCatalogName } from "./catalog-name-order";
 import type { UnitListItem } from "../types";
 
 export type UnitFilters = {
@@ -13,7 +15,7 @@ export function filterUnits(units: UnitListItem[], filters: UnitFilters) {
       unit.name.toLowerCase().includes(search) ||
       unit.abbreviation.toLowerCase().includes(search)
     );
-  });
+  }).sort((left, right) => compareCatalogName(left, right, normalizeUnitKey));
 }
 
 export function hasUnitFilters(filters: UnitFilters) {

@@ -223,7 +223,7 @@ export type ActivityDesignDeleteActionState =
 
 export type ActivityDesignActionState =
   | { status: "idle" }
-  | { status: "success" }
+  | { status: "success"; activityDesign: ActivityDesignListItem }
   | {
       status: "error";
       error: string;

@@ -77,7 +77,7 @@ function OfficeRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[20rem]">
-          <span className="block whitespace-normal break-words">
+          <span tabIndex={-1} data-master-data-record-id={office.id} className="block whitespace-normal break-words">
             {office.name}
           </span>
         </TableCell>

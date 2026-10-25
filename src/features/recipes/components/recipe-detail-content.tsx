@@ -1,14 +1,8 @@
 import Link from "next/link";
-import { BookOpen, ClipboardList } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { RecordDetails } from "@/components/workspace/record-details";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   Table,
@@ -59,22 +53,9 @@ export default function RecipeDetailContent({
           {canManageRecipes && recipe.isActive ? <Link href={`/recipes/${recipe.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}>Edit Recipe</Link> : null}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen aria-hidden="true" />
-              Preparation note
-            </CardTitle>
-            <CardDescription>
-              Practical context recorded with this reusable Recipe.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap break-words text-body">
-              {recipe.preparationNote ?? "No preparation note recorded."}
-            </p>
-          </CardContent>
-        </Card>
+        <RecordDetails label="Preparation note" fields={recipe.preparationNote ? [
+          { label: "Note", value: <span className="whitespace-pre-wrap">{recipe.preparationNote}</span> },
+        ] : []} />
 
         <section aria-labelledby="recipe-ingredients-title" className="flex flex-col gap-3">
           <div>
