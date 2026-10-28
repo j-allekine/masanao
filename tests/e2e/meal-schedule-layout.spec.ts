@@ -16,6 +16,29 @@ test.beforeAll(() => {
 });
 test.afterAll(cleanupIssuanceFixtures);
 
+test("long Meal Schedule breadcrumbs wrap without hiding controls at narrow widths", async ({ page }) => {
+  test.setTimeout(120_000);
+  const designNo = `AD-${"2026".repeat(20)}`;
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  db.prepare("UPDATE activity_design SET activityDesignNo=? WHERE id='e2e-issuance-layout-design'").run(designNo);
+  db.close();
+  try {
+    expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+    await page.goto(meal);
+    await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+    for (const width of [320, 406, 768, 1024]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(page.getByRole("link", { name: designNo, exact: true })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(page.getByRole("button", { name: "Post issuance", exact: true })).toBeInViewport();
+    }
+  } finally {
+    const restore = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+    restore.prepare("UPDATE activity_design SET activityDesignNo='AD-LAYOUT' WHERE id='e2e-issuance-layout-design'").run();
+    restore.close();
+  }
+});
+
 test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links and guarded navigation", async ({ page }, info) => {
   test.setTimeout(120_000);
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);

@@ -1,30 +1,10 @@
-import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/server/auth";
-import OverviewPage from "@/components/workspace/overview-page";
-
-export const metadata: Metadata = {
-  title: "Overview | Masanao",
-  description: "A clear starting point for Masanao municipal operations.",
-};
-
-export default async function OverviewRoute() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    redirect("/");
+/** Preserve dated bookmarks while Dashboard becomes the canonical destination. */
+export default async function LegacyOverviewRoute({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const entry of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, entry);
   }
-
-  return (
-    <OverviewPage
-      user={{
-        name: session.user.name ?? session.user.username ?? "Municipal staff",
-        username: session.user.username ?? "staff account",
-      }}
-    />
-  );
+  redirect(`/dashboard${query.size ? `?${query}` : ""}`);
 }

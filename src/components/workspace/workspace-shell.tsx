@@ -33,7 +33,7 @@ export default function WorkspaceShell({
         } as CSSProperties}
       >
         <AppSidebar user={user} activeSection={activeSection} />
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset className="min-w-0">{children}</SidebarInset>
       </SidebarProvider>
       <Toaster />
     </TooltipProvider>

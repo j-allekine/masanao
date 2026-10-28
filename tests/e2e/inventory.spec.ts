@@ -84,8 +84,10 @@ test("staff reads exact stock from converted receiving through draft and posted 
   try {
     db.prepare("UPDATE user SET disabled=1 WHERE username='kitchen.staff'").run();
     await page.goto("/inventory");
-    await expect(page).toHaveURL(/\/overview$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
     await expect(page.getByRole("table", { name: "Inventory", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("alert").filter({ hasText: "Report unavailable" })).toContainText("Staff access required.");
+    await expect(page.getByRole("table", { name: "Stock reconciliation", exact: true })).toHaveCount(0);
     db.prepare("UPDATE user SET disabled=0 WHERE username='kitchen.staff'").run();
   } finally { db.close(); }
 });

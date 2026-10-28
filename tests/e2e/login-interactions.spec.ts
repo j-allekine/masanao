@@ -12,7 +12,7 @@ function loginForm(page: Page) {
 }
 
 async function openLogin(page: Page) {
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(loginMain(page)).toBeVisible();
   await expect(loginForm(page)).toBeVisible();
   await expect(loginForm(page)).toHaveAttribute("data-client-ready", "true");
@@ -70,7 +70,7 @@ test.describe("production login interactions", () => {
         new URL(response.url()).pathname === "/api/auth/sign-in/username",
     );
     const overviewRequestPromise = page.waitForRequest(
-      (request) => new URL(request.url()).pathname === "/overview",
+      (request) => new URL(request.url()).pathname === "/dashboard",
     );
 
     await username.fill("  kitchen.staff  ");
@@ -87,7 +87,7 @@ test.describe("production login interactions", () => {
       username: "kitchen.staff",
       password: "correct-horse-battery-staple",
     });
-    expect(new URL(overviewRequest.url()).pathname).toBe("/overview");
+    expect(new URL(overviewRequest.url()).pathname).toBe("/dashboard");
   });
 
   test("shows a generic alert for an unauthorized sign-in", async ({ page }) => {

@@ -24,7 +24,7 @@ test("every workspace family retains one shared header and usable mobile navigat
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
   const routes = [
-    ["/overview", "Overview"], ["/activity-designs", "Planning"], ["/activities", "Planning"],
+    ["/dashboard", "Dashboard"], ["/activity-designs", "Planning"], ["/activities", "Planning"],
     ["/activity-designs/e2e-issuance-header-design", "Planning"], [activity, "Planning"],
     [`${activity}/meal-schedules/e2e-issuance-header-meal`, "Planning"],
     ["/inventory", "Supply Operations"], ["/items", "Supply Operations"], ["/recipes", "Supply Operations"],
@@ -54,7 +54,7 @@ test("every workspace family retains one shared header and usable mobile navigat
 test("shared header restores keyboard focus after mobile sidebar dismissal", async ({ page }) => {
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 320, height: 800 });
-  await page.goto("/overview");
+  await page.goto("/dashboard");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   const toggle = page.locator('[data-slot="workspace-header"]').getByRole("button", { name: "Toggle Sidebar", exact: true });
   await toggle.focus();
@@ -63,7 +63,7 @@ test("shared header restores keyboard focus after mobile sidebar dismissal", asy
   await expect(sidebar).toBeVisible();
   await expect.poll(() => sidebar.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(sidebar).not.toHaveAttribute("data-starting-style");
-  await sidebar.getByRole("link", { name: "Overview", exact: true }).focus();
+  await sidebar.getByRole("link", { name: "Dashboard", exact: true }).focus();
   await page.keyboard.press("Escape");
   await expect(sidebar).toBeHidden();
   await expect(toggle).toBeFocused();
@@ -71,11 +71,11 @@ test("shared header restores keyboard focus after mobile sidebar dismissal", asy
 
 test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => {
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
-  await page.goto("/overview");
+  await page.goto("/dashboard");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.locator('[data-slot="workspace-header"]').getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
   await expect(page.locator('[data-state="collapsed"][data-slot="sidebar"]')).toBeVisible();
-  await page.getByRole("link", { name: "Overview", exact: true }).focus();
+  await page.getByRole("link", { name: "Dashboard", exact: true }).focus();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Planning", exact: true })).toBeFocused();
   await expect(page.getByRole("tooltip").getByText("Planning", { exact: true })).toBeVisible();
