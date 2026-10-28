@@ -40,10 +40,13 @@ modules continue to own those workflows.
   Receipt amount / received Base Unit quantity determines cost per issued unit.
   Differences of rounded cumulative amounts assign centavos deterministically
   in posting-time/ID order and exhaust a fully consumed receipt exactly.
-- Shared receipt allocation histories are read once. Missing prices, missing
+- Shared receipt allocation histories are streamed once per Activity batch. Missing prices, missing
   allocations, Unit/Item mismatches and overallocated receipt quantities suppress
   the affected cost, variance and budget-used percentage.
 - Reconstructed sources are marked as estimates in rows and summary.
+  They may reference receipts entered after the original issue, as allowed by
+  ADR-0008, provided the receipt is known by report generation time. Recorded
+  sources retain strict receipt-before-issuance chronology.
 - Variance = planned budget minus issued supply cost. Zero budgets have no
   budget-used percentage. Figures are to date, not final savings or profit.
 - Summary totals use the same comparable Activities for all three figures:
@@ -56,6 +59,14 @@ modules continue to own those workflows.
 All reads use one transaction after checking the persisted staff/admin actor.
 The report creates no stock movements, payments or financial ledger records.
 No schema migration is introduced.
+
+Report growth: Activities are read in batches of 50; receipt metadata in groups
+of 100; shared allocation histories in pages of 250 with the posted/cutoff
+filter applied in the database. Only costs needed by the current Activity batch
+and the five visible rows are retained. A full-period summary still requires a
+scan of the complete filtered cohort, and a shared receipt may be rescanned
+across Activity batches. This bounds the broad report working set without
+replacing exact decimal calculations with SQLite floating-point sums.
 
 ## Isolated sample preview
 
@@ -156,10 +167,16 @@ workspace destinations and long Meal Schedule breadcrumbs at 320, 406, 768 and
 1024px. The posted sample Meal Schedule and its nested issued-total/source
 dialogs were also checked manually.
 
-Final PR verification: all 154 browser tests passed in a clean full run, along
-with all 485 unit tests in 73 files, two architecture checks, the production
+Final PR verification: all 154 browser tests passed again after review repairs, along
+with all 487 unit tests in 73 files, two architecture checks, the production
 build and native production SQLite smoke test. Unit creation and mobile Item
 policy editing also passed five isolated repeats each. The creation tests now
 wait for the canonical filtered URL before reload and allow cold Meal Schedule
 navigation to finish before asserting on the destination. No production timing
 or mutation behavior was changed for those test readiness repairs.
+
+The review repairs were reproduced by failing regressions before implementation.
+They cover late-entered reconstructed receipts, future receipts, 125 Activities
+spanning three batches, 475 shared allocations, all-period totals on page 25,
+database cutoff filtering and an over-allocation discovered in a later history
+page. The complete browser suite was rerun after these data-read changes.

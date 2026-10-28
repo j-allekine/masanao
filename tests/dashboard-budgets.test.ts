@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/prisma/client";
 import { getKitchenDashboard } from "@/features/supply-operations/server";
 import { allocatedSupplyCost, budgetComparison, formatBudgetMoney } from "@/features/supply-operations/domain/budget-variance";
+import { readDashboardBudgets } from "@/features/supply-operations/server/db/dashboard-budgets";
 
 const actor = { id: "budget-staff", name: "Staff", username: "budgetstaff" };
 const now = new Date("2030-11-02T00:00:00Z");
@@ -101,4 +102,68 @@ describe("Activity budget comparison", () => {
     expect((await report({ activitySearch: "Kitchen" })).total).toBe(6);
     expect(await report({ activitySearch: "absent" })).toMatchObject({ total: 0, summary: { comparable: 0, budget: "0", cost: "0" } });
   });
+
+  it("keeps late-entered reconstructed receipt costs as estimates, while rejecting recorded chronology errors", async () => {
+    const original = await prisma.issuanceReceiptAllocation.findUniqueOrThrow({ where: { id: "over-meal-allocation" }, select: { basis: true } });
+    await prisma.issuanceReceiptAllocation.update({ where: { id: "over-meal-allocation" }, data: { basis: "reconstructed" } });
+    await prisma.deliveryReceipt.update({ where: { id: "budget-priced" }, data: { postedAt: new Date("2030-11-01") } });
+    try {
+      const data = await report();
+      expect(data.rows.find((row) => row.id === "over")).toMatchObject({ cost: "33", variance: "-3", reconstructed: true });
+      expect((await report({ activitySearch: "under" })).rows[0].cost).toBeNull();
+      expect(data.summary.reconstructed).toBe(true);
+      await prisma.deliveryReceipt.update({ where: { id: "budget-priced" }, data: { postedAt: new Date("2030-11-03") } });
+      expect((await report()).rows.find((row) => row.id === "over")?.cost).toBeNull();
+    } finally {
+      await prisma.deliveryReceipt.update({ where: { id: "budget-priced" }, data: { postedAt: new Date("2030-09-01") } });
+      await prisma.issuanceReceiptAllocation.update({ where: { id: "over-meal-allocation" }, data: { basis: original.basis } });
+    }
+  });
+
+  it("batches a larger cohort and shared receipt history while preserving all-period totals", async () => {
+    await prisma.deliveryReceipt.create({ data: { id: "bulk-receipt", receiptNo: "bulk", normalizedReceiptNo: "bulk", purchaseOrderId: "budget-po", purchaseOrderNo: "BUDGET-PO", vendorId: "budget-vendor", vendorName: "Vendor", receiptDate: new Date("2030-09-01"), postedAt: new Date("2030-09-01"),
+      lines: { create: { id: "bulk-line", itemId: "budget-item", itemName: "Budget item", selectedUnitId: unit, baseUnitId: unit, selectedUnitName: "Piece", baseUnitName: "Piece", enteredQuantity: "2000", conversionFactor: "1", calculatedBaseUnitQuantity: "2000", lineAmount: "20" } },
+    } });
+    const activities = Array.from({ length: 125 }, (_, index) => ({ id: `bulk-${String(index).padStart(3, "0")}`, name: `bulk-${String(index).padStart(3, "0")}`, officeName: "Bulk Office", activityDesignId: "budget-design", scheduledDate: new Date("2030-10-15"), plannedBudgetCentavos: BigInt(100) }));
+    await prisma.activity.createMany({ data: activities });
+    const issues = Array.from({ length: 475 }, (_, index) => ({ id: `bulk-issue-${String(index).padStart(3, "0")}`, index }));
+    await prisma.mealSchedule.createMany({ data: issues.map(({ id, index }) => ({ id: `${id}-meal`, activityId: index < 300 || index >= 425 ? "prior" : activities[index - 300].id, label: id, mealTime: "12:00" })) });
+    await prisma.issuanceRecord.createMany({ data: issues.map(({ id, index }) => ({ id, mealScheduleId: `${id}-meal`, status: "posted", postedAt: new Date(index < 300 ? "2030-09-15" : index < 425 ? "2030-10-15" : "2030-11-03") })) });
+    await prisma.issuanceItemTotal.createMany({ data: issues.map(({ id }) => ({ id: `${id}-total`, issuanceRecordId: id, itemId: "budget-item", finalQuantity: "1", calculatedNumerator: "1", calculatedDenominator: "1" })) });
+    await prisma.issuanceReceiptAllocation.createMany({ data: issues.map(({ id, index }) => ({ id: `${id}-allocation`, issuanceItemTotalId: `${id}-total`, deliveryReceiptLineId: "bulk-line", quantity: index >= 425 ? "9999" : "1", receiptNo: "bulk", purchaseOrderNo: "BUDGET-PO", receiptDate: new Date("2030-09-01") })) });
+    let activityReads = 0;
+    let historyReads = 0;
+    const data = await prisma.$transaction((tx) => {
+      const bounded = new Proxy(tx, { get(target, property, receiver) {
+        if (property !== "activity" && property !== "issuanceReceiptAllocation") return Reflect.get(target, property, receiver);
+        const delegate = target[property];
+        return new Proxy(delegate, { get(model, method, modelReceiver) {
+          if (method !== "findMany") return Reflect.get(model, method, modelReceiver);
+          return async (args: { take?: number; where?: unknown }) => {
+            expect(args.take).toBeGreaterThan(0);
+            expect(args.take).toBeLessThanOrEqual(250);
+            if (property === "activity") activityReads++;
+            else {
+              historyReads++;
+              expect(args.where).toMatchObject({ issuanceItemTotal: { issuanceRecord: { status: "posted", postedAt: { lte: new Date("2030-10-31T15:59:59.999Z") } } } });
+            }
+            return Reflect.apply(Reflect.get(model, method, modelReceiver), model, [args]);
+          };
+        } });
+      } });
+      return readDashboardBudgets(bounded, period, { activitySearch: "bulk", budgetPage: "25" }, now);
+    }, { timeout: 15_000 });
+    expect(activityReads).toBeGreaterThan(1);
+    expect(historyReads).toBeGreaterThan(1);
+    expect(data).toMatchObject({ total: 125, page: 25, rows: expect.any(Array), summary: { budget: "12500", cost: "125", variance: "12375", comparable: 125, excluded: 0 } });
+    expect(data.rows.map((row) => row.id)).toEqual(activities.slice(120).map((row) => row.id));
+    expect((await report({ activitySearch: "bulk" })).summary).toEqual(data.summary);
+    await prisma.deliveryReceiptLine.update({ where: { id: "bulk-line" }, data: { calculatedBaseUnitQuantity: "424" } });
+    try {
+      // The over-allocation is in a later history chunk, after earlier row costs.
+      expect((await report({ activitySearch: "bulk" })).summary).toMatchObject({ comparable: 0, excluded: 125, cost: "0" });
+    } finally {
+      await prisma.deliveryReceiptLine.update({ where: { id: "bulk-line" }, data: { calculatedBaseUnitQuantity: "2000" } });
+    }
+  }, 20_000);
 });
