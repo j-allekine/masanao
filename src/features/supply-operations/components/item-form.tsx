@@ -168,6 +168,7 @@ export default function ItemForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   mode: "create" | "edit";
   item?: ItemListItem;
@@ -176,6 +177,7 @@ export default function ItemForm({
   onCancel: () => void;
   onSuccess: (item: ItemListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }) {
   const initialFormValues = initialValues(item);
   const [formValues, setFormValues] = useState<ItemFormValues>(
@@ -203,6 +205,10 @@ export default function ItemForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     const firstInvalidField = (
@@ -250,6 +256,7 @@ export default function ItemForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -300,7 +307,7 @@ export default function ItemForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <div className="px-1 py-2">
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Item</AlertTitle>

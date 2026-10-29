@@ -40,6 +40,7 @@ export default function ItemCreateDialog({
 }) {
   const mode = item ? "edit" : "create";
   const [isDirty, setIsDirty] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
   const closeDialog = useCallback(() => {
@@ -49,6 +50,7 @@ export default function ItemCreateDialog({
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -66,7 +68,7 @@ export default function ItemCreateDialog({
         }}
       >
         {open ? (
-          <DialogContent className="max-h-[calc(100svh-2rem)] max-w-lg grid-rows-[auto_minmax(0,1fr)]">
+          <DialogContent size="entry">
             <DialogHeader>
               <DialogTitle>{mode === "edit" ? "Edit Item" : "Create Item"}</DialogTitle>
               <DialogDescription>
@@ -84,6 +86,7 @@ export default function ItemCreateDialog({
               onCancel={requestClose}
               onSuccess={onSuccess}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
             />
           </DialogContent>
         ) : null}

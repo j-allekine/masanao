@@ -106,12 +106,14 @@ export default function ActivityDesignForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   mode: "create" | "edit";
   activityDesign?: ActivityDesignListItem;
   onCancel: () => void;
   onSuccess: (activityDesign: ActivityDesignListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }) {
   const initialFormValues = initialValues(activityDesign);
   const [formValues, setFormValues] = useState(initialFormValues);
@@ -125,6 +127,10 @@ export default function ActivityDesignForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     const firstInvalidField = (
@@ -163,6 +169,7 @@ export default function ActivityDesignForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -202,7 +209,7 @@ export default function ActivityDesignForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="max-h-[min(62vh,34rem)] overflow-y-auto px-1 py-2">
+      <div className="px-1 py-2">
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Activity Design</AlertTitle>

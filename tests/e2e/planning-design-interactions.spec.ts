@@ -89,6 +89,11 @@ test("Design edit retains fields through pending and failed save, then saves and
     await expect(dialog.getByRole("form", { name: "Edit Activity Design", exact: true })).toHaveAttribute("aria-busy", "true");
     await expect(dialog.getByRole("button", { name: "Loading Saving…", exact: true })).toBeDisabled();
     await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(dialog).toBeVisible();
   } finally {
     release();
   }

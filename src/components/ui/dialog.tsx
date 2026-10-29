@@ -43,17 +43,42 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  size,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  /** Content widths; existing custom layouts remain unchanged when omitted. */
+  size?: "entry" | "inspection" | "wide"
 }) {
+  const popupRef = React.useRef<HTMLDivElement>(null)
+
+  function focusEntry() {
+    const popup = popupRef.current
+    const firstField = popup?.querySelector<HTMLElement>(
+      'form input:not([type="hidden"]):not([readonly]):not([disabled]), form textarea:not([disabled]), form [role="combobox"]:not([disabled]), form button[aria-haspopup]:not([disabled])'
+    )
+    if (!popup || !firstField) return popup
+
+    // A maximum-length context can fill a short screen. Start at its task
+    // identity in that case; Tab still reaches the first editable control.
+    return firstField.getBoundingClientRect().bottom <= popup.getBoundingClientRect().bottom - 16
+      ? firstField
+      : popup
+  }
+
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
+        ref={popupRef}
+        initialFocus={size === "entry" ? focusEntry : undefined}
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-body-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          size && "max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain [overflow-wrap:anywhere] [&_[data-slot=dialog-header]]:pr-10",
+          size === "entry" && "sm:max-w-[30rem]",
+          size === "inspection" && "sm:max-w-[40rem]",
+          size === "wide" && "sm:max-w-6xl",
           className
         )}
         {...props}
