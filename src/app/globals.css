@@ -231,3 +231,15 @@
     @apply font-sans;
   }
 }
+
+/* Match the unsaved tablet default before hydration; saved choices render on the server. */
+@custom-variant sidebar-compact {
+  &:is(.group[data-collapsible="icon"] *) {
+    @slot;
+  }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    &:is(.group[data-collapsible="auto"] *) {
+      @slot;
+    }
+  }
+}
