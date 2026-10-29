@@ -46,10 +46,54 @@ test("every workspace family retains one shared header and usable mobile navigat
       await expect(header.getByRole("button", { name: "Toggle Sidebar", exact: true })).toHaveCount(1);
       await expect(header).toBeInViewport();
       expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      for (const position of [0.5, 1]) {
+        await page.evaluate((fraction) => {
+          const body = document.querySelector('[data-workspace-scroll="body"]');
+          if (body) body.scrollTop = (body.scrollHeight - body.clientHeight) * fraction;
+          else window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * fraction);
+        }, position);
+        await expect(header).toBeInViewport({ ratio: 1 });
+        expect(await header.evaluate((element) => Math.abs(element.getBoundingClientRect().top))).toBeLessThan(1);
+        await page.screenshot({ path: info.outputPath(`${width}-${index}-scroll-${position}.png`), animations: "disabled" });
+      }
       await page.screenshot({ path: info.outputPath(`${width}-${index}.png`), fullPage: true, animations: "disabled" });
     }
   }
  });
+
+test("Dashboard report controls scroll while the measured compact header clears keyboard focus", async ({ page }, info) => {
+  expect((await page.request.post("/api/auth/sign-in/username", {
+    data: { username: "municipal.admin", password: "administrator-password" },
+    headers: { origin: process.env.BETTER_AUTH_URL! },
+  })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto("/dashboard");
+  await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
+  const header = page.locator('[data-slot="workspace-header"]');
+  const reportHeading = page.getByRole("heading", { name: "Budget accounting", exact: true });
+  const headingTop = await reportHeading.evaluate((element) => element.getBoundingClientRect().top);
+  const refresh = page.getByRole("button", { name: "Refresh", exact: true });
+  const refreshTop = await refresh.evaluate((element) => element.getBoundingClientRect().top);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(header).toBeInViewport({ ratio: 1 });
+  expect(await reportHeading.evaluate((element) => element.getBoundingClientRect().top)).toBeLessThan(headingTop);
+  expect(await refresh.evaluate((element) => element.getBoundingClientRect().top)).toBeLessThan(refreshTop);
+  await page.screenshot({ path: info.outputPath("dashboard-short-scrolled.png"), animations: "disabled" });
+
+  // Text enlargement must change clearance with the rendered header, rather
+  // than leave keyboard focus under a fixed 64px offset.
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect.poll(() => header.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThan(64);
+  await expect.poll(() => page.evaluate(() => {
+    const headerHeight = document.querySelector('[data-slot="workspace-header"]')!.getBoundingClientRect().height;
+    return parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) - headerHeight;
+  })).toBeGreaterThanOrEqual(31);
+  const search = page.getByRole("searchbox", { name: "Search Activities by name or Office", exact: true });
+  await search.focus();
+  await search.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  expect(await search.evaluate((element) => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(await header.evaluate((element) => element.getBoundingClientRect().bottom));
+  await page.screenshot({ path: info.outputPath("dashboard-enlarged-header-focus.png"), animations: "disabled" });
+});
 
 test("shared header restores keyboard focus after mobile sidebar dismissal", async ({ page }) => {
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
