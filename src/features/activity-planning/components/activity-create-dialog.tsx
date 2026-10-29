@@ -46,6 +46,7 @@ export default function ActivityCreateDialog({
   onSuccess: (activity: ActivityListItem) => void;
 }) {
   const [isDirty, setIsDirty] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const hasActivityDesigns =
     mode === "edit"
@@ -60,6 +61,7 @@ export default function ActivityCreateDialog({
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -77,7 +79,7 @@ export default function ActivityCreateDialog({
         }}
       >
         {open && hasActivityDesigns ? (
-          <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-4 overflow-hidden sm:max-w-lg">
+          <DialogContent size="entry">
             <DialogHeader>
               <DialogTitle>
                 {mode === "edit"
@@ -120,6 +122,7 @@ export default function ActivityCreateDialog({
               layout="dialog"
               onCancel={requestClose}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
               onSuccess={(activity) => {
                 setIsDirty(false);
                 onSuccess(activity);
