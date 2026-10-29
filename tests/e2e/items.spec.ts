@@ -932,7 +932,7 @@ test.describe("Items catalog journey", () => {
     );
     await expect(mobileSidebar).toBeVisible();
     await expect(
-      mobileSidebar.getByText("Supply Operations", { exact: true }),
+      mobileSidebar.getByText("Setup", { exact: true }),
     ).toBeVisible();
     await expect(
       mobileSidebar.getByRole("link", { name: "Items", exact: true }),
