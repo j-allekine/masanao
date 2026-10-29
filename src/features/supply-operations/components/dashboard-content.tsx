@@ -42,8 +42,8 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
 
   return <WorkspaceShell user={user} activeSection="overview">
     <div className="flex min-h-svh min-w-0 flex-col bg-card" data-dashboard-surface>
-      <div className="sticky top-0 z-10 border-b bg-card" data-dashboard-header>
-        <WorkspaceHeader title="Dashboard" />
+      <WorkspaceHeader title="Dashboard" />
+      <div className="border-b bg-card" data-dashboard-header>
         <header className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <h1 className="text-heading-1 font-semibold">Budget accounting</h1>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">

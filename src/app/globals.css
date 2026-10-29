@@ -66,6 +66,29 @@
   --space-nav-group-gap: 20px;
 }
 
+/* The document owns ordinary-page scrolling; bounded editors own their body.
+ * Base UI's scroll lock detects stable gutters and retains them for overlays. */
+html:has([data-slot="workspace-header"]) {
+  scrollbar-gutter: stable;
+  scroll-padding-block-start: calc(var(--workspace-header-height, 4rem) + 1rem);
+  scroll-padding-block-end: 1rem;
+}
+
+html:has([data-workspace-scroll="bounded"]) {
+  scrollbar-gutter: auto;
+}
+
+[data-workspace-scroll="body"] {
+  scrollbar-gutter: stable;
+  scroll-padding-block: 1rem;
+}
+
+[data-slot="dialog-content"],
+[data-slot="sheet-content"] {
+  scrollbar-gutter: stable;
+  scroll-padding-block: 1rem;
+}
+
 .dark {
   --background: #10231f;
   --foreground: #f2f4ef;

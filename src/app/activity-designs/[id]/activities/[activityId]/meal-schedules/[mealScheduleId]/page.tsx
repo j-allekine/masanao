@@ -43,7 +43,7 @@ export default async function MealScheduleDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      <div className="flex h-svh min-h-0 flex-col bg-card">
+      <div className={issuance.ok ? "flex h-dvh min-h-0 flex-col bg-card" : "flex min-h-svh flex-col bg-card"} data-workspace-scroll={issuance.ok ? "bounded" : undefined}>
         <WorkspaceHeader title="Planning" />
       {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
         <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">

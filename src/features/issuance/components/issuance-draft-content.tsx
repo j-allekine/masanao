@@ -586,7 +586,7 @@ export default function IssuanceDraftContent({
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <main className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto" data-workspace-scroll="body">
         <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
           <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
             status={<Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>} />
