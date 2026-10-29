@@ -8,9 +8,8 @@ export type WorkspaceSectionId =
   | "purchase-orders"
 
 export type WorkspaceSectionGroupId =
-  | "workspace"
-  | "supply-operations"
-  | "master-data"
+  | "operations"
+  | "setup"
 
 export type WorkspaceSection = {
   id: WorkspaceSectionId
@@ -27,38 +26,32 @@ export type WorkspaceSectionGroup = {
 
 export const workspaceSectionGroups: WorkspaceSectionGroup[] = [
   {
-    id: "workspace",
-    label: "Workspace",
+    id: "operations",
+    label: "Operations",
     sections: [
-      { id: "overview", label: "Dashboard", href: "/dashboard", groupId: "workspace" },
+      { id: "overview", label: "Dashboard", href: "/dashboard", groupId: "operations" },
       {
         id: "activity-designs",
         label: "Activity Designs",
         href: "/activity-designs",
-        groupId: "workspace",
+        groupId: "operations",
       },
-    ],
-  },
-  {
-    id: "supply-operations",
-    label: "Supply Operations",
-    sections: [
-      { id: "inventory", label: "Inventory", href: "/inventory", groupId: "supply-operations" },
-      { id: "items", label: "Items", href: "/items", groupId: "supply-operations" },
-      { id: "recipes", label: "Recipes", href: "/recipes", groupId: "supply-operations" },
+      { id: "inventory", label: "Inventory", href: "/inventory", groupId: "operations" },
       {
         id: "purchase-orders",
         label: "Purchase Orders",
         href: "/purchase-orders",
-        groupId: "supply-operations",
+        groupId: "operations",
       },
     ],
   },
   {
-    id: "master-data",
-    label: "Master Data",
+    id: "setup",
+    label: "Setup",
     sections: [
-      { id: "master-data", label: "Master Data", href: "/master-data", groupId: "master-data" },
+      { id: "items", label: "Items", href: "/items", groupId: "setup" },
+      { id: "recipes", label: "Recipes", href: "/recipes", groupId: "setup" },
+      { id: "master-data", label: "Master Data", href: "/master-data", groupId: "setup" },
     ],
   },
 ]
@@ -79,5 +72,7 @@ export function getWorkspaceSectionDetails(id: WorkspaceSectionId) {
 export function getWorkspaceHeaderTitle(id: WorkspaceSectionId) {
   if (id === "activity-designs") return "Planning"
   const section = getWorkspaceSectionDetails(id)
-  return section.groupId === "supply-operations" ? "Supply Operations" : section.label
+  return id === "inventory" || id === "items" || id === "recipes" || id === "purchase-orders"
+    ? "Supply Operations"
+    : section.label
 }

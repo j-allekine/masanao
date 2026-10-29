@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SproutIcon } from "lucide-react";
 
+import BrandMark from "@/components/brand-mark";
 import { LoginForm } from "@/components/login-form";
 import { auth } from "@/server/auth";
 import { cn } from "@/lib/utils";
@@ -10,9 +10,7 @@ import { cn } from "@/lib/utils";
 function BrandLockup({ inverse = false }: { inverse?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        <SproutIcon aria-hidden="true" strokeWidth={1.75} />
-      </span>
+      <BrandMark />
       <span className={cn(inverse ? "text-primary-foreground" : "text-foreground")}>
         <span className="block text-body-sm font-semibold">Masanao</span>
         <span
