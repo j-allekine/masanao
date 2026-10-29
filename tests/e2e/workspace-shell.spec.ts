@@ -29,7 +29,7 @@ test.describe("workspace shell", () => {
         await page.locator('[data-slot="sidebar-trigger"]').click();
       }
       await expect(sidebar).toHaveAttribute("data-state", "collapsed");
-      const brand = page.getByRole("link", { name: /MASANAO Operations Desk/i });
+      const brand = page.getByRole("link", { name: "Masanao Municipal kitchen", exact: true });
       await expect(brand).toBeVisible();
       await expect.poll(() => brand.evaluate((element) => {
         const button = element.getBoundingClientRect();
