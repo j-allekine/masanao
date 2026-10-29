@@ -74,17 +74,18 @@ function getInitials(name: string) {
 }
 
 function WorkspaceLink() {
+  const { setOpenMobile } = useSidebar()
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" />}
+          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={() => setOpenMobile(false)} />}
           tooltip="Masanao Municipal kitchen"
           className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent hover:text-sidebar-foreground"
         >
-          <BrandMark className="size-10 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:size-8" />
-          <span className="grid min-w-0 flex-1 gap-0.5 text-left group-data-[collapsible=icon]:hidden">
+          <BrandMark className="size-10 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground sidebar-compact:size-8" />
+          <span className="grid min-w-0 flex-1 gap-0.5 text-left sidebar-compact:hidden">
             <span className="truncate text-body-sm font-semibold">Masanao</span>
             <span className="truncate text-label text-sidebar-foreground/70">Municipal kitchen</span>
           </span>
@@ -132,18 +133,18 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
               <SidebarMenuButton
                 size="lg"
                 aria-label={`${user.name} account menu`}
-                className="group-data-[collapsible=icon]:justify-center"
+                className="sidebar-compact:justify-center"
               />
             }
           >
-            <span className="hidden shrink-0 text-label font-semibold group-data-[collapsible=icon]:block">
+            <span className="hidden shrink-0 text-label font-semibold sidebar-compact:block">
               {getInitials(user.name)}
             </span>
-            <span className="grid min-w-0 flex-1 text-left text-body-sm group-data-[collapsible=icon]:hidden">
+            <span className="grid min-w-0 flex-1 text-left text-body-sm sidebar-compact:hidden">
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate text-label text-sidebar-foreground/70 group-hover/menu-button:text-sidebar-accent-foreground group-focus-visible/menu-button:text-sidebar-accent-foreground group-data-active/menu-button:text-sidebar-accent-foreground">{user.username}</span>
             </span>
-            <ChevronDown className="ml-auto group-data-[collapsible=icon]:hidden" aria-hidden="true" />
+            <ChevronDown className="ml-auto sidebar-compact:hidden" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-56"
@@ -178,14 +179,15 @@ export function AppSidebar({
   user: AppSidebarUser
   activeSection?: WorkspaceSectionId
 }) {
+  const { setOpenMobile } = useSidebar()
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader className="p-4 pt-6 pb-7 group-data-[collapsible=icon]:px-2">
+      <SidebarHeader className="p-4 pt-6 pb-7 sidebar-compact:px-2">
         <WorkspaceLink />
       </SidebarHeader>
-      <SidebarContent className="gap-5 group-data-[collapsible=icon]:gap-3">
+      <SidebarContent className="gap-5 sidebar-compact:gap-3">
         {workspaceSectionGroups.map((group) => (
-          <SidebarGroup key={group.id} className="px-3 py-1 group-data-[collapsible=icon]:px-2">
+          <SidebarGroup key={group.id} className="px-3 py-1 sidebar-compact:px-2">
             <SidebarGroupLabel className="h-7 px-3 text-label text-sidebar-foreground/70">
               {group.label}
             </SidebarGroupLabel>
@@ -201,6 +203,9 @@ export function AppSidebar({
                         render={
                           <Link
                             href={item.href}
+                            onNavigate={() => {
+                              setOpenMobile(false)
+                            }}
                             aria-label={visibleLabel}
                             aria-current={
                               activeSection === item.id ? "page" : undefined
@@ -223,7 +228,7 @@ export function AppSidebar({
         ))}
       </SidebarContent>
       <SidebarSeparator className="bg-sidebar-foreground/15" />
-      <SidebarFooter className="p-4 pt-3 pb-7 group-data-[collapsible=icon]:px-2">
+      <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
         <AccountMenu user={user} />
       </SidebarFooter>
       <SidebarRail />
