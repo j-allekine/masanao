@@ -34,7 +34,7 @@ export default async function Home() {
     headers: await headers(),
   });
 
-  if (session) redirect("/overview");
+  if (session) redirect("/dashboard");
 
   return (
     <main className="grid min-h-svh lg:grid-cols-2" aria-label="Masanao staff sign-in">

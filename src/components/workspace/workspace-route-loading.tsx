@@ -34,9 +34,9 @@ export default function WorkspaceRouteLoading({
 
   return (
     <WorkspaceShell user={loadingUser} activeSection={activeSection}>
-      <div className="flex min-h-svh flex-col bg-background">
+      <div className="flex min-h-svh flex-col bg-card">
         <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
-        <div className="mx-auto flex w-full max-w-content flex-1 flex-col gap-8 px-6 py-8 sm:py-10">
+        <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
           {children ?? <DefaultLoadingLayout />}
         </div>
       </div>

@@ -77,11 +77,11 @@ function WorkspaceLink() {
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          render={<Link href="/overview" />}
+          render={<Link href="/dashboard" />}
           tooltip="Masanao municipal operations"
           className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs group-data-[collapsible=icon]:size-8">
             <Leaf aria-hidden="true" className="-rotate-12" />
           </span>
           <span className="grid min-w-0 flex-1 text-left">
@@ -132,6 +132,7 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
               <SidebarMenuButton
                 size="lg"
                 aria-label={`${user.name} account menu`}
+                className="group-data-[collapsible=icon]:justify-center"
               />
             }
           >
@@ -179,12 +180,12 @@ export function AppSidebar({
 }) {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader className="p-4 pt-6 pb-7">
+      <SidebarHeader className="p-4 pt-6 pb-7 group-data-[collapsible=icon]:px-2">
         <WorkspaceLink />
       </SidebarHeader>
       <SidebarContent>
         {workspaceSectionGroups.map((group) => (
-          <SidebarGroup key={group.id} className="px-3 py-1">
+          <SidebarGroup key={group.id} className="px-3 py-1 group-data-[collapsible=icon]:px-2">
             <SidebarGroupLabel className="h-8 px-3 text-label uppercase tracking-label text-sidebar-foreground/70">
               {group.label}
             </SidebarGroupLabel>
@@ -221,7 +222,7 @@ export function AppSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className="p-4 pt-3 pb-7">
+      <SidebarFooter className="p-4 pt-3 pb-7 group-data-[collapsible=icon]:px-2">
         <AccountMenu user={user} />
       </SidebarFooter>
       <SidebarRail />

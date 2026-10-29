@@ -115,7 +115,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
         return;
       }
 
-      router.replace("/overview");
+      router.replace("/dashboard");
     } catch {
       setFormError(
         "We couldn't reach the sign-in service. Check your connection and try again.",

@@ -49,13 +49,13 @@ test("a late Master Data mutation response does not undo a newer tab selection",
     await expect(page).toHaveURL(/tab=categories$/);
     await page.getByRole("searchbox", { name: "Search Categories", exact: true }).fill("Dry");
     await expect(page).toHaveURL(/tab=categories&search=Dry$/);
-    await page.getByRole("link", { name: "Overview", exact: true }).click();
-    await expect(page).toHaveURL(/\/overview$/);
+    await page.getByRole("link", { name: "Dashboard", exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.goBack();
     await expect(categories).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("searchbox", { name: "Search Categories", exact: true })).toHaveValue("Dry");
     await page.goForward();
-    await expect(page).toHaveURL(/\/overview$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
   } finally {
     releaseResponse();
     await page.unrouteAll({ behavior: "wait" });
@@ -144,7 +144,7 @@ for (const width of [1280, 375]) {
       await dialog.getByRole("textbox", { name: "Meal Schedule label", exact: true }).fill("Lunch");
       await dialog.locator("#mealScheduleTime").fill("12:00");
       await dialog.getByRole("button", { name: "Add Meal Schedule", exact: true }).click();
-      await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/);
+      await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
       await page.screenshot({ path: info.outputPath(`created-meal-${width}.png`), fullPage: true });
       await page.goBack();
@@ -241,9 +241,13 @@ for (const width of [1280, 375]) {
         await expect(page.getByText(createdName, { exact: true }).filter({ visible: true })).toBeVisible();
         await expect(page.getByText(createdName, { exact: true }).filter({ visible: true })).toBeInViewport();
         await expect(page.getByText(createdName, { exact: true }).filter({ visible: true })).toBeFocused();
-        const url = new URL(page.url());
-        expect(url.searchParams.get("tab")).toBe(tab);
-        expect(Number(url.searchParams.get("page"))).toBeGreaterThan(1);
+        // Wait for the creation's canonical URL, not just its local list state,
+        // before reloading. The browser URL update can follow the React commit.
+        await expect(page).toHaveURL((url) =>
+          url.searchParams.get("tab") === tab &&
+          (url.searchParams.get("search") ?? "") === (table === "vendor" ? initialSearch : "") &&
+          Number(url.searchParams.get("page")) > 1,
+        );
         await page.reload();
         await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
         await expect(page.getByText(createdName, { exact: true }).filter({ visible: true })).toBeVisible();

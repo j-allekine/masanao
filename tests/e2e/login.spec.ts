@@ -14,7 +14,7 @@ test("renders a production login without prototype controls", async ({ page }) =
 });
 
 test("redirects an unauthenticated overview visit to login", async ({ page }) => {
-  await page.goto("/overview");
+  await page.goto("/dashboard");
 
   await expect(page).toHaveURL(/\/$/);
   await expect(

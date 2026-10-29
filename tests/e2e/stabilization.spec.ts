@@ -90,7 +90,7 @@ function deleteDesigns(designs: ActivityDesign[]) {
 }
 
 test.describe("frontend stabilization regression seam", () => {
-  test("keeps Overview truthful and mobile navigation stateful", async ({
+  test("keeps Dashboard truthful and mobile navigation stateful", async ({
     page,
   }) => {
     const title = `E2E Mobile Navigation ${Date.now()}`;
@@ -98,15 +98,15 @@ test.describe("frontend stabilization regression seam", () => {
 
     await authenticate(page);
     try {
-      await page.goto("/overview");
+      await page.goto("/dashboard");
       await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
       await expect(
-        page.getByRole("heading", { name: "Welcome, Kitchen Staff", exact: true }),
+        page.getByRole("heading", { name: "Budget accounting", exact: true }),
       ).toBeVisible();
       await expect(page.getByText("Workspace placeholder", { exact: true })).toHaveCount(0);
       await expect(page.getByText("Summary value", { exact: true })).toHaveCount(0);
       await expect(
-        page.getByRole("link", { name: "Open Activity Planning", exact: true }),
+        page.getByRole("heading", { name: "Activities", exact: true }),
       ).toBeVisible();
 
       design = createDesign(
@@ -338,7 +338,7 @@ test.describe("frontend stabilization regression seam", () => {
     }
   });
 
-  test("captures the Overview workspace sentinel at desktop and mobile widths", async ({
+  test("captures the Dashboard workspace sentinel at desktop and mobile widths", async ({
     page,
   }) => {
     await authenticate(page);
@@ -348,14 +348,16 @@ test.describe("frontend stabilization regression seam", () => {
       { width: 390, height: 844, name: "mobile" },
     ]) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto("/overview");
+      await page.goto("/dashboard?start=2020-01-01&end=2020-01-31");
+      await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
       await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
       await page.addStyleTag({
         content: "nextjs-portal { display: none !important; }",
       });
-      await expect(page).toHaveScreenshot(`overview-${viewport.name}.png`, {
+      await expect(page).toHaveScreenshot(`dashboard-${viewport.name}.png`, {
         animations: "disabled",
         fullPage: true,
+        mask: [page.locator("[data-dashboard-updated]")],
       });
     }
   });
@@ -512,15 +514,9 @@ test.describe("frontend stabilization regression seam", () => {
 
       resolveRequestStarted();
       await responseReleased;
-      await route.fulfill({
-        status: 200,
-        json: {
-          redirect: false,
-          token: "test-session-token",
-          url: null,
-          user: { id: "test-user", username: "kitchen.staff" },
-        },
-      });
+      // Complete a real sign-in so the protected destination receives a session.
+      const response = await route.fetch();
+      await route.fulfill({ response });
     });
 
     try {
@@ -541,7 +537,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(form).toHaveAttribute("aria-busy", "true");
       await expect(form.getByRole("button", { name: /Signing in…/ })).toBeDisabled();
       releaseResponse();
-      await expect(page).toHaveURL(/\/overview$/);
+      await expect(page).toHaveURL(/\/dashboard$/);
     } finally {
       releaseResponse();
     }

@@ -141,3 +141,4 @@ export async function createItemUnitConversion(actor: CurrentActor, itemId: stri
 export { listInventory } from "./server/queries/list-inventory";
 export { exportInventory } from "./server/queries/export-inventory";
 export type { InventoryListItem, InventoryResult } from "./types";
+export { getKitchenDashboard } from "./server/queries/dashboard";

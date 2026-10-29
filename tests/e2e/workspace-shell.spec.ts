@@ -17,14 +17,45 @@ async function signIn(page: Page) {
 }
 
 test.describe("workspace shell", () => {
+  test("keeps the full brand badge and account control inside the collapsed sidebar across modules", async ({ page }) => {
+    test.setTimeout(120_000);
+    await signIn(page);
+    await page.setViewportSize({ width: 1024, height: 800 });
+    for (const path of ["/dashboard", "/activity-designs", "/activities", "/inventory", "/items", "/recipes", "/purchase-orders", "/master-data"]) {
+      await page.goto(path);
+      await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+      const sidebar = page.locator('[data-slot="sidebar"][data-state]');
+      if (await sidebar.getAttribute("data-state") !== "collapsed") {
+        await page.locator('[data-slot="sidebar-trigger"]').click();
+      }
+      await expect(sidebar).toHaveAttribute("data-state", "collapsed");
+      const brand = page.getByRole("link", { name: /MASANAO Operations Desk/i });
+      await expect(brand).toBeVisible();
+      await expect.poll(() => brand.evaluate((element) => {
+        const button = element.getBoundingClientRect();
+        const badge = element.firstElementChild!.getBoundingClientRect();
+        const rail = element.closest('[data-slot="sidebar-container"]')!.getBoundingClientRect();
+        return badge.left >= button.left && badge.right <= button.right + 1 &&
+          badge.top >= button.top && badge.bottom <= button.bottom + 1 &&
+          button.left >= rail.left && button.right <= rail.right + 1 &&
+          Math.abs((badge.left + badge.right) / 2 - (rail.left + rail.right) / 2) <= 1;
+      }), { message: `The complete brand must fit and center in the collapsed sidebar on ${path}` }).toBe(true);
+      const account = page.getByRole("button", { name: "Kitchen Staff account menu", exact: true });
+      await account.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("menuitem", { name: "Log out", exact: true })).toBeVisible();
+      await page.keyboard.press("Escape");
+    }
+  });
+
   test("shows only the current global destinations and retains the account menu", async ({
     page,
   }) => {
     await signIn(page);
-    await page.goto("/overview");
+    await page.goto("/dashboard");
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
-    await expect(page.getByRole("link", { name: "Overview", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Planning", exact: true }),
     ).toBeVisible();

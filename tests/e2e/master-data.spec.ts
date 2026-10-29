@@ -654,7 +654,7 @@ test.describe("Master Data Units journey", () => {
 
     await captureViewportEvidence(page, testInfo);
 
-    await page.goto("/overview");
+    await page.goto("/dashboard");
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("sentinel-overview.png"),
@@ -1265,7 +1265,7 @@ test.describe("Master Data Offices journey", () => {
 
     await captureOfficeViewportEvidence(page, testInfo);
 
-    await page.goto("/overview");
+    await page.goto("/dashboard");
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath("sentinel-overview.png"),

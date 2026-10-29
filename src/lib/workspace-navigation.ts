@@ -30,7 +30,7 @@ export const workspaceSectionGroups: WorkspaceSectionGroup[] = [
     id: "workspace",
     label: "Workspace",
     sections: [
-      { id: "overview", label: "Overview", href: "/overview", groupId: "workspace" },
+      { id: "overview", label: "Dashboard", href: "/dashboard", groupId: "workspace" },
       {
         id: "activity-designs",
         label: "Activity Designs",

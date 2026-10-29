@@ -33,10 +33,10 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
     <div className="flex min-w-0 flex-col gap-4" data-client-ready={isReady ? "true" : undefined}>
       <div className="flex min-w-0 items-start gap-3">
         <Breadcrumb className="min-w-0 pt-1">
-          <BreadcrumbList className="break-words">
-            <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbList className="wrap-anywhere">
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink render={<Link href={withPlanningReturn(`/activity-designs/${design.id}`, returnUrl)} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={withPlanningReturn(`/activity-designs/${design.id}`, returnUrl)} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0"><BreadcrumbLink className="break-words" render={<Link href={withPlanningReturn(`/activity-designs/${design.id}/activities/${activity.id}`, returnUrl)} />}>{activity.name}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
