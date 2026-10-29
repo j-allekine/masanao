@@ -48,9 +48,29 @@ after integrated changes. Browser databases, ports, build directories, and
 teardown ownership must be isolated. Existing domain safeguards remain required.
 
 Real-phone software-keyboard, orientation, and touch verification for Recipe and
-delivery entry is outstanding. Desktop emulation cannot close this gate.
+delivery entry is outstanding. On 30 October 2026 the user confirmed that a phone
+is unavailable and requested that this gate remain recorded as outstanding.
+Desktop emulation cannot close this gate; required unresolved gates keep the PR
+in draft.
 
 ## Verification entries
 
 Implementation and verification are in progress. No ticket or parent completion
 is claimed by this initial tracking document.
+
+### Baseline, before application changes
+
+Revision: `fe71929` (application code still matches `5f00857`).
+
+- `pnpm test:architecture`: 2 passed.
+- `pnpm test:run`: 73 files, 487 tests passed.
+- `MASANAO_E2E_PORT=3030 pnpm exec playwright test
+  tests/e2e/workspace-shell.spec.ts tests/e2e/workspace-header.spec.ts
+  --output test-results/baseline-shell --reporter=list`: 7 passed.
+- Browser coverage: existing desktop/320px header route matrix, mobile drawer
+  Escape/focus, collapsed tooltips/brand/account, seven destinations and legacy
+  Activities. Existing matrix captures are in `test-results/baseline-shell` in
+  the integration checkout; these are baseline artifacts, not acceptance of
+  the later implementation.
+- Dependency setup regenerated the ignored Prisma client from the unchanged
+  schema. No application database or schema was changed.
