@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WorkspaceContent, WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   WorkspaceCatalogToolbar,
@@ -173,15 +174,9 @@ export default function RecipesContent({
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-heading-1 font-semibold">Recipes</h1>
-            <p className="text-body text-muted-foreground">
-              Reusable food templates and their usual ingredients.
-            </p>
-          </div>
-          {canManageRecipes ? (
+      <WorkspaceContent>
+        <WorkspaceCatalogHeader title="Recipes" description="Reusable food templates and their usual ingredients." action={
+          canManageRecipes ? (
             <WorkspacePrimaryLink
               id="new-recipe"
               href="/recipes/new"
@@ -190,8 +185,7 @@ export default function RecipesContent({
             >
               Create Recipe
             </WorkspacePrimaryLink>
-          ) : null}
-        </div>
+          ) : null}/> 
 
         <WorkspaceCatalogToolbar
           ariaLabel="Recipe catalog search"
@@ -233,7 +227,7 @@ export default function RecipesContent({
               }}
             />
           ) : (
-            <WorkspaceTableFrame caption={canManageRecipes ? "Recipes" : "Active Recipes"} className="min-w-[32rem]">
+            <WorkspaceTableFrame caption={canManageRecipes ? "Recipes" : "Active Recipes"} responsive>
               <TableHeader className="bg-muted/60">
                 <TableRow>
                   <TableHead scope="col">Recipe</TableHead>
@@ -245,21 +239,21 @@ export default function RecipesContent({
               <TableBody>
                 {paginatedRecipes.map((recipe) => (
                   <TableRow key={recipe.id} data-recipe-id={recipe.id}>
-                    <TableCell className="max-w-[40rem] whitespace-normal">
+                    <TableCell data-primary>
                       <Link
                         href={`/recipes/${recipe.id}`}
-                        className="block break-words font-medium underline-offset-4 hover:underline focus-visible:underline"
+                        className="workspace-record-link"
                       >
                         {recipe.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell data-label="Ingredients" className="text-right tabular-nums">
                       {recipe.ingredientCount}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell data-label="Status" className="text-center">
                       <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-actions className="text-right">
                       <RecipeCatalogActions
                         recipe={recipe}
                         canManageRecipes={canManageRecipes}
@@ -281,7 +275,8 @@ export default function RecipesContent({
           />
         </>}
         <RecipePreviewDialog preview={recipePreview} onClose={closeRecipePreview} />
-      </div>
+      </WorkspaceContent>
     </div>
   );
 }
+

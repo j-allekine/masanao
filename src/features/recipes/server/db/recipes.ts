@@ -57,12 +57,13 @@ export async function getRecipeRecord(
           item: {
             select: {
               name: true,
-              baseUnit: { select: { name: true, abbreviation: true } },
+              isActive: true,
+              baseUnit: { select: { name: true, abbreviation: true, active: true } },
             },
           },
           itemUnitConversion: {
             select: {
-              alternateUnit: { select: { name: true, abbreviation: true } },
+              alternateUnit: { select: { name: true, abbreviation: true, active: true } },
             },
           },
         },
@@ -70,7 +71,7 @@ export async function getRecipeRecord(
       },
     },
   });
-  return recipe ? { ...recipe, canScale: recipe.baselinePax !== null } : null;
+  return recipe ? { ...recipe, canScale: recipe.baselinePax !== null, needsAttention: recipe.ingredients.some(ingredient => !ingredient.item.isActive || !ingredient.item.baseUnit.active || (ingredient.itemUnitConversion !== null && !ingredient.itemUnitConversion.alternateUnit.active)) } : null;
 }
 
 function toRecipeCatalogItem(recipe: {

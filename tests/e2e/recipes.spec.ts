@@ -66,7 +66,7 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(preview.getByText("Chicken Tinola", { exact: true })).toBeVisible();
   await expect(preview.getByText(/Baseline pax not set/)).toBeVisible();
   await expect(preview.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
-  await expect(preview.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(preview.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(preview).toHaveCount(0);
   await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
@@ -321,3 +321,31 @@ test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) =
   }));
   expect(bodyWidths.scrollWidth).toBeLessThanOrEqual(bodyWidths.clientWidth);
 });
+
+test("keeps Recipe facts and preview associated without panning across layouts", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAsAdministrator(page);
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByLabel("Search Recipes").fill("Chicken");
+  for (const width of [1280, 900, 320]) {
+    await page.setViewportSize({ width, height: 600 });
+    const row = page.locator('[data-recipe-id="e2e-recipe-active"]');
+    await expect(row.getByRole("link", { name: "Chicken Tinola" })).toBeVisible();
+    await expect(row.getByText("Active", { exact: true })).toBeVisible();
+    expect(await row.locator('[data-label="Ingredients"]').textContent()).toBe("1");
+    expect(await row.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await row.getByLabel("Actions for Chicken Tinola").focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
+    expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`recipe-preview-${width}.png`), fullPage: true });
+    await page.keyboard.press("Escape");
+    await expect(row.getByLabel("Actions for Chicken Tinola")).toBeFocused();
+    await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
+    await page.screenshot({ path: test.info().outputPath(`recipe-catalog-${width}.png`), fullPage: true });
+  }
+});
+
