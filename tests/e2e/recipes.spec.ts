@@ -75,7 +75,7 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(page.getByRole("heading", { name: "Ingredients", exact: true })).toBeVisible();
   await expect(page.getByText(/Baseline pax not set/)).toBeVisible();
   await expect(page.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Edit Recipe" })).toHaveCount(0);
   await page.goto("/recipes/e2e-recipe-active/edit");
@@ -117,7 +117,7 @@ test("completes a legacy Recipe baseline without changing its ingredients", asyn
   await page.getByRole("button", { name: "Save Recipe" }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
   await expect(page.getByText(/Ingredients for 50 pax/)).toBeVisible();
-  await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await page.goto("/recipes");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Actions for Chicken Tinola").click();
@@ -142,11 +142,13 @@ test("gives administrators lifecycle actions for inactive Recipes in the catalog
 test("lets an administrator manage an inactive Recipe from its detail page", async ({ page }) => {
   await signInAsAdministrator(page);
   await page.goto("/recipes/e2e-recipe-inactive");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-inactive$/);
   await expect(page.getByRole("heading", { name: "Retired Soup", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reactivate", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Delete Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Recipe actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Reactivate", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Delete Recipe", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Edit Recipe", exact: true })).toHaveCount(0);
 });
 
@@ -349,3 +351,27 @@ test("keeps Recipe facts and preview associated without panning across layouts",
   }
 });
 
+
+test("carries the latest typed query through Recipe record edit cancel and new cancel", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAsAdministrator(page);
+  await page.setViewportSize({ width: 320, height: 600 });
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByLabel("Search Recipes").fill("Chicken");
+  const recordLink = page.getByRole("link", { name: "Chicken Tinola", exact: true });
+  await expect(recordLink).toHaveAttribute("href", /returnTo=.*Chicken/);
+  await recordLink.click();
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("recipe-record-320.png"), fullPage: true });
+  await page.getByRole("link", { name: "Edit Recipe", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Recipes", exact: true }).last().click();
+  await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
+  await page.getByRole("link", { name: "Create Recipe", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "New Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
+});

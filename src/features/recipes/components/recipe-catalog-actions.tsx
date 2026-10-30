@@ -13,10 +13,14 @@ import type { RecipeCatalogItem } from "../types";
 
 export default function RecipeCatalogActions({
   recipe,
+  editHref,
+  onNavigate,
   onView,
   canManageRecipes,
 }: {
   recipe: RecipeCatalogItem;
+  editHref: string;
+  onNavigate: () => void;
   onView: () => void;
   canManageRecipes: boolean;
 }) {
@@ -68,7 +72,8 @@ export default function RecipeCatalogActions({
                     {
                       label: "Edit",
                       icon: <FilePenLine />,
-                      onSelect: () => router.push(`/recipes/${recipe.id}/edit`),
+                      href: editHref,
+                      onNavigate,
                     },
                   ]
                 : []),
