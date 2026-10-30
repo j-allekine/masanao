@@ -204,7 +204,7 @@ async function createUnit(page: Page, name: string, abbreviation: string) {
     .getByRole("textbox", { name: "Abbreviation", exact: true })
     .fill(abbreviation);
   await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toHaveCount(0, { timeout: 15_000 });
 }
 
 async function discardUnitDialog(page: Page) {

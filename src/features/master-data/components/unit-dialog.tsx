@@ -36,16 +36,19 @@ export default function UnitDialog({
   onClose: () => void;
   onSuccess: (unit: UnitListItem) => void;
 }) {
+  const [isPending, setIsPending] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
   const closeDialog = useCallback(() => {
     setIsDiscardDialogOpen(false);
     setIsDirty(false);
+    setIsPending(false);
     onClose();
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -66,7 +69,7 @@ export default function UnitDialog({
         }}
       >
         {dialogState ? (
-          <DialogContent className="max-w-lg">
+          <DialogContent size="entry" className="[&_[data-slot=dialog-close]]:size-10">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription>
@@ -86,6 +89,7 @@ export default function UnitDialog({
               onCancel={requestClose}
               onSuccess={onSuccess}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
             />
           </DialogContent>
         ) : null}
@@ -102,7 +106,7 @@ export default function UnitDialog({
               Your unsaved Unit changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="[&_button]:min-h-10">
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={closeDialog}>
               Discard changes

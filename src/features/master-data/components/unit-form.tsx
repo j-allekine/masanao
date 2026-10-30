@@ -96,12 +96,14 @@ export default function UnitForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   mode: "create" | "edit";
   unit?: UnitListItem;
   onCancel: () => void;
   onSuccess: (unit: UnitListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const initialFormValues = initialValues(unit);
   const [formValues, setFormValues] = useState(initialFormValues);
@@ -111,6 +113,10 @@ export default function UnitForm({
   const isDirty = (Object.keys(initialFormValues) as UnitField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
   );
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -130,6 +136,12 @@ export default function UnitForm({
 
     return () => window.clearTimeout(timeoutId);
   }, [fieldErrors, mode]);
+
+  useEffect(() => {
+    if (formError && !Object.values(fieldErrors).some((errors) => errors?.length)) {
+      document.getElementById(`${mode}-unit-save-error`)?.focus();
+    }
+  }, [formError, fieldErrors, mode]);
 
   function updateField(field: UnitField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
@@ -155,6 +167,7 @@ export default function UnitForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -188,9 +201,9 @@ export default function UnitForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="max-h-[min(62vh,34rem)] overflow-y-auto px-1 py-2">
+      <div className="pb-6">
         {formError ? (
-          <Alert variant="destructive" className="mb-6">
+          <Alert id={`${mode}-unit-save-error`} tabIndex={-1} variant="destructive" className="mb-6">
             <AlertTitle>Could not save Unit</AlertTitle>
             <AlertDescription>{formError}</AlertDescription>
           </Alert>
@@ -217,7 +230,7 @@ export default function UnitForm({
           />
         </FieldGroup>
       </div>
-      <DialogFooter>
+      <DialogFooter className="[&_[data-slot=button]]:min-h-10">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
           isPending={isSubmitting}

@@ -39,19 +39,19 @@ function CategoryRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem]">
-          <span tabIndex={-1} data-master-data-record-id={category.id} className="block truncate">{category.name}</span>
+        <TableCell data-primary>
+          <span tabIndex={-1} data-master-data-record-id={category.id} className="block [overflow-wrap:anywhere]">{category.name}</span>
         </TableCell>
-        <TableCell className="max-w-[36rem]">
-          <span className="block truncate text-muted-foreground">
+        <TableCell data-label="Description">
+          <span className="block text-muted-foreground [overflow-wrap:anywhere]">
             {category.description ?? "—"}
           </span>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-label="Status" className="text-center">
           <WorkspaceLifecycleBadge isActive={category.isActive} />
         </TableCell>
         {canManage ? (
-          <TableCell className="text-center">
+          <TableCell data-actions className="text-center">
             <MasterDataActionsMenu
               recordName={category.name}
               isActive={category.isActive}
@@ -120,7 +120,7 @@ export default function CategoryTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Categories" className="min-w-[38rem]">
+    <WorkspaceTableFrame caption="Categories" responsive>
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
@@ -129,11 +129,11 @@ export default function CategoryTable({
           <TableHead scope="col" className="text-left">
             Description
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-24 text-center">
             Status
           </TableHead>
           {canManage ? (
-            <TableHead scope="col" className="text-center">
+            <TableHead scope="col" className="w-20 text-center">
               Actions
             </TableHead>
           ) : null}

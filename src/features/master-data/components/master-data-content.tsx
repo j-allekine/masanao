@@ -1,3 +1,4 @@
+import { WorkspaceContent, WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 
 import type {
@@ -33,8 +34,8 @@ export default function MasterDataContent({
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Master Data" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <h1 className="mb-6 break-words text-heading-1 font-semibold">Master Data</h1>
+      <WorkspaceContent>
+        <WorkspaceCatalogHeader title="Master Data" />
         <MasterDataWorkspace
           units={units}
           categories={categories}
@@ -46,7 +47,7 @@ export default function MasterDataContent({
           canManageCategories={canManageCategories}
           canManageVendors={canManageVendors}
         />
-      </div>
+      </WorkspaceContent>
     </div>
   );
 }
