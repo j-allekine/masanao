@@ -46,6 +46,7 @@ for (const role of ["admin", "staff"]) {
       await expect(row.getByRole("button")).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Create Purchase Order", exact: true })).toHaveCount(0);
       await row.getByRole("link", { name: number, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${id}$`), { timeout: 30_000 });
       await expect(page.getByRole("link", { name: "Record delivery", exact: true })).toBeVisible();
       return;
     }
