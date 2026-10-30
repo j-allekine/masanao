@@ -50,7 +50,8 @@ test("Design disclosure supports touch and Space and rejects unsafe return desti
   await expect(disclosure).toHaveAttribute("aria-expanded", "false");
   await expect(disclosure).toBeFocused();
   await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
-  await expect(page.getByText("Fiscal year: 2026", { exact: true })).toBeVisible();
+  await expect(page.getByText("Fiscal year", { exact: true })).toBeVisible();
+  await expect(page.getByText("2026", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Activities (0)", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create Activity", exact: true })).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -37,7 +37,7 @@ export default function ActivityCreateDialog({
   onClose,
   onSuccess,
 }: {
-  activityDesign: ActivityDesignListItem | null;
+  activityDesign: (Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo"> & Partial<Pick<ActivityDesignListItem, "fiscalYear">>) | null;
   activityDesigns?: ActivityDesignListItem[];
   activity?: ActivityEditableListItem;
   mode?: ActivityFormMode;

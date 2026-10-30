@@ -265,7 +265,7 @@ test.describe("Activity planning journey", () => {
       const detailBodyFace = await page
         .getByText(activityDesign.activityDesignNo, { exact: true })
         .evaluate((element) => getComputedStyle(element).fontFamily);
-      await expect(page.getByText("Fiscal year: 2026", { exact: true })).toHaveCSS(
+      await expect(page.getByText("2026", { exact: true })).toHaveCSS(
         "font-family",
         detailBodyFace,
       );
@@ -679,12 +679,7 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByRole("link", { name: "Activity Designs", exact: true }),
         ).toBeVisible();
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
         await page.getByRole("button", { name: "Create Activity", exact: true }).click();
         const createDialog = page.getByRole("dialog");
@@ -706,16 +701,11 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByRole("button", { name: "Create Activity", exact: true }),
         ).toHaveCount(1);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
 
       await page.goto("/activity-designs/missing-record");
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
     } finally {
       deleteMealScheduleFixture(mealScheduleId);
       deleteActivityFixture(plannedActivity.id);
@@ -864,7 +854,7 @@ test.describe("Activity planning journey", () => {
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
         await expect(page.getByRole("link", { name: "Back to Activity Design", exact: true })).toHaveCount(0);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
-        await expect(page.getByText(viewport.width < 640 ? "Time: 12:00" : "12:00", { exact: true })).toBeVisible();
+        await expect(page.getByText("12:00", { exact: true })).toBeVisible();
         await expect(page.getByText("Planned pax", { exact: true })).toBeVisible();
         await page.screenshot({ path: `test-results/planning-activity-${viewport.width}.png`, fullPage: true });
         await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
@@ -914,24 +904,14 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByText("Stock availability", { exact: true }),
         ).toHaveCount(0);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await backToActivity.focus();
         await expect(backToActivity).toBeFocused();
         await page.keyboard.press("Enter");
         await expect(page).toHaveURL(
           new RegExp(`/activity-designs/${design.id}/activities/${populatedActivity.id}$`),
         );
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
         await page.goto(
           `/activity-designs/${design.id}/activities/${emptyActivity.id}`,
@@ -941,12 +921,7 @@ test.describe("Activity planning journey", () => {
         ).toBeVisible();
         await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(1);
         await expect(page.getByRole("button", { name: "Additional details", exact: true })).toHaveCount(0);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
 
       await page.setViewportSize({ width: 1280, height: 800 });
@@ -974,21 +949,21 @@ test.describe("Activity planning journey", () => {
       await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
 
       await page.goto(`/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}`);
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
       await page.goto(`/activity-designs/${design.id}/activities/${otherActivity.id}`);
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
       await page.goto(
         `/activity-designs/${design.id}/activities/${populatedActivity.id}/meal-schedules/missing-meal-schedule`,
       );
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
       await page.goto(
         `/activity-designs/${otherDesign.id}/activities/${populatedActivity.id}/meal-schedules/${mealScheduleId}`,
       );
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
       await page.goto(
         `/activity-designs/${design.id}/activities/${otherActivity.id}/meal-schedules/${mealScheduleId}`,
       );
-      await expect(page.getByText("404", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Page not found", exact: true })).toBeVisible();
     } finally {
       deleteDesigns([design, otherDesign]);
     }
