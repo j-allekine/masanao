@@ -251,6 +251,7 @@ export default function PurchaseOrdersWorkspace({
       <PurchaseOrdersTable
         purchaseOrders={visibleAmounts.records}
         amountsUnavailable={visibleAmounts.amountsUnavailable}
+        catalogUrl={getPurchaseOrderListUrl("/purchase-orders", "", { search: searchInput, page: currentPage })}
         hasFilters={filtersAreActive}
         onClearFilters={clearSearch}
         canManage={canManagePurchaseOrders}

@@ -19,6 +19,7 @@ import type { PurchaseOrderListItem } from "../types";
 import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
 import PurchaseOrderActionsMenu from "./purchase-order-actions-menu";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
+import { withPurchaseOrderReturn } from "./purchase-order-return-state";
 
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
   dateStyle: "medium",
@@ -34,6 +35,7 @@ function PurchaseOrderRow({
   canManage,
   actionDisabled,
   amountsUnavailable,
+  catalogUrl,
   onEdit,
   onDeleted,
 }: {
@@ -41,6 +43,7 @@ function PurchaseOrderRow({
   canManage: boolean;
   actionDisabled: boolean;
   amountsUnavailable?: boolean;
+  catalogUrl: string;
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -54,7 +57,7 @@ function PurchaseOrderRow({
       >
         <TableCell data-primary data-label="Purchase Order No." className="w-[27%]">
           <Link
-            href={`/purchase-orders/${purchaseOrder.id}`}
+            href={withPurchaseOrderReturn(`/purchase-orders/${purchaseOrder.id}`, catalogUrl)}
             className="block break-words rounded-sm underline underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <FileText
@@ -112,6 +115,7 @@ export default function PurchaseOrdersTable({
   canManage,
   actionDisabled,
   amountsUnavailable,
+  catalogUrl,
   onEdit,
   onDeleted,
 }: {
@@ -121,6 +125,7 @@ export default function PurchaseOrdersTable({
   canManage: boolean;
   actionDisabled: boolean;
   amountsUnavailable?: boolean;
+  catalogUrl: string;
   onEdit: (purchaseOrder: PurchaseOrderListItem) => void;
   onDeleted: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
@@ -179,6 +184,7 @@ export default function PurchaseOrdersTable({
                 canManage={canManage}
                 actionDisabled={actionDisabled}
                 amountsUnavailable={amountsUnavailable}
+                catalogUrl={catalogUrl}
                 onEdit={() => onEdit(purchaseOrder)}
                 onDeleted={() => onDeleted(purchaseOrder)}
               />

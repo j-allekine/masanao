@@ -191,7 +191,7 @@ test.describe("Purchase Orders read journey", () => {
           () => document.body.scrollWidth <= document.documentElement.clientWidth,
         ),
       ).toBe(true);
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
       await expect(page).toHaveURL(/\/purchase-orders$/);
       await page.setViewportSize({ width: 1280, height: 720 });
       await expect(
@@ -678,20 +678,20 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,000.00");
       await expect(page.locator('[data-po-receipt-count]')).toHaveText("1");
-      await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "DR-E2E-ALT", exact: true }).click();
       const receiptDialog = page.getByRole("dialog");
       await expect(receiptDialog.getByRole("heading", { name: "Delivery receipt DR-E2E-ALT", exact: true })).toBeVisible();
       expect(await receiptDialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      await expect(receiptDialog.getByText("Lines", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("E2E Rice", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("62.5 Kilogram", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("₱ 800.00", { exact: true })).toBeVisible();
-      await expect(receiptDialog.locator("tfoot").getByText("₱ 2,000.00", { exact: true })).toBeVisible();
+      await expect(receiptDialog.locator("[data-receipt-inspection-total]")).toHaveText("₱ 2,000.00");
       await expect(receiptDialog.getByText("Not recorded", { exact: true })).toBeVisible();
       await receiptDialog.locator('[data-slot="dialog-footer"]').getByRole("button", { name: "Close", exact: true }).click();
       await expect(receiptDialog).toBeHidden();
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
       const receiptOrderRow = page.locator(`[data-purchase-orders-catalog] [data-purchase-order-id="${purchaseOrderId}"]`);
       await expect(receiptOrderRow).toContainText("₱ 2,000.00");
       const storedReceipt = withE2eDatabase((database) => database.prepare(
@@ -749,7 +749,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,350.00");
       await expect(page.locator('[data-po-receipt-count]')).toHaveText("2");
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
       await expect(receiptOrderRow).toContainText("₱ 2,350.00");
 
       withE2eDatabase((database) => {
