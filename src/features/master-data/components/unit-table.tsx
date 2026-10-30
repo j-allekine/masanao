@@ -38,17 +38,17 @@ function UnitRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[28rem]">
-          <span tabIndex={-1} data-master-data-record-id={unit.id} className="block truncate">{unit.name}</span>
+        <TableCell data-primary>
+          <span tabIndex={-1} data-master-data-record-id={unit.id} className="block [overflow-wrap:anywhere]">{unit.name}</span>
         </TableCell>
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell data-label="Abbreviation" className="font-mono text-mono tracking-mono">
           {unit.abbreviation}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-label="Status" className="text-center">
           <WorkspaceLifecycleBadge isActive={unit.active} />
         </TableCell>
         {canManage ? (
-          <TableCell className="text-center">
+          <TableCell data-actions className="text-center">
             <MasterDataActionsMenu
               recordName={unit.name}
               isActive={unit.active}
@@ -117,7 +117,7 @@ export default function UnitTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Units" className="min-w-[36rem]">
+    <WorkspaceTableFrame caption="Units" responsive>
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
@@ -126,11 +126,11 @@ export default function UnitTable({
           <TableHead scope="col" className="text-left">
             Abbreviation
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-24 text-center">
             Status
           </TableHead>
           {canManage ? (
-            <TableHead scope="col" className="text-center">
+            <TableHead scope="col" className="w-20 text-center">
               Actions
             </TableHead>
           ) : null}

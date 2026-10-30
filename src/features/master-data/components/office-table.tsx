@@ -24,12 +24,12 @@ function OfficeHeadContext({ office }: { office: OfficeListItem }) {
   }
 
   return (
-    <div className="flex max-w-[18rem] flex-col gap-1 whitespace-normal">
+    <div className="flex flex-col gap-1 whitespace-normal">
       {office.headName ? (
-        <span className="break-words">{office.headName}</span>
+        <span className="[overflow-wrap:anywhere]">{office.headName}</span>
       ) : null}
       {office.headDesignation ? (
-        <span className="break-words text-muted-foreground">
+        <span className="[overflow-wrap:anywhere] text-muted-foreground">
           {office.headDesignation}
         </span>
       ) : null}
@@ -43,12 +43,12 @@ function OfficeContactContext({ office }: { office: OfficeListItem }) {
   }
 
   return (
-    <div className="flex max-w-[20rem] flex-col gap-1 whitespace-normal">
+    <div className="flex flex-col gap-1 whitespace-normal">
       {office.officialEmail ? (
-        <span className="break-words">{office.officialEmail}</span>
+        <span className="[overflow-wrap:anywhere]">{office.officialEmail}</span>
       ) : null}
       {office.contactNumber ? (
-        <span className="break-words text-muted-foreground">
+        <span className="[overflow-wrap:anywhere] text-muted-foreground">
           {office.contactNumber}
         </span>
       ) : null}
@@ -76,25 +76,25 @@ function OfficeRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[20rem]">
-          <span tabIndex={-1} data-master-data-record-id={office.id} className="block whitespace-normal break-words">
+        <TableCell data-primary>
+          <span tabIndex={-1} data-master-data-record-id={office.id} className="block whitespace-normal [overflow-wrap:anywhere]">
             {office.name}
           </span>
         </TableCell>
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell data-label="Abbreviation" className="font-mono text-mono tracking-mono">
           {office.abbreviation ?? "—"}
         </TableCell>
-        <TableCell>
+        <TableCell data-label="Head">
           <OfficeHeadContext office={office} />
         </TableCell>
-        <TableCell>
+        <TableCell data-label="Contact">
           <OfficeContactContext office={office} />
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-label="Status" className="text-center">
           <WorkspaceLifecycleBadge isActive={office.isActive} />
         </TableCell>
         {canManage ? (
-          <TableCell className="text-center">
+          <TableCell data-actions className="text-center">
             <MasterDataActionsMenu
               recordName={office.name}
               isActive={office.isActive}
@@ -163,13 +163,13 @@ export default function OfficeTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Offices" className="min-w-[60rem]">
+    <WorkspaceTableFrame caption="Offices" responsive>
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
             Name
           </TableHead>
-          <TableHead scope="col" className="text-left">
+          <TableHead scope="col" className="w-[13%] text-left">
             Abbreviation
           </TableHead>
           <TableHead scope="col" className="text-left">
@@ -178,11 +178,11 @@ export default function OfficeTable({
           <TableHead scope="col" className="text-left">
             Contact
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-24 text-center">
             Status
           </TableHead>
           {canManage ? (
-            <TableHead scope="col" className="text-center">
+            <TableHead scope="col" className="w-20 text-center">
               Actions
             </TableHead>
           ) : null}

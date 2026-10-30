@@ -36,7 +36,7 @@ export default function MasterDataCatalogToolbar({
               id: createButtonId,
               label: createLabel ?? `Create ${resourceLabels.singular}`,
               onClick: onCreate,
-              className: "sm:min-w-[9rem]",
+              className: "min-h-10 sm:min-w-[9rem]",
             }
           : undefined
       }

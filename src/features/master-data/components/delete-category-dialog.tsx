@@ -49,6 +49,7 @@ export default function DeleteCategoryDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={`Delete “${category.name}”?`}

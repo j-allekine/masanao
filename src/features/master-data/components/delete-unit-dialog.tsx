@@ -45,6 +45,7 @@ export default function DeleteUnitDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={`Delete “${unit.name}”?`}

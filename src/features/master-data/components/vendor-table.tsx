@@ -3,13 +3,6 @@
 import { useState } from "react";
 
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   TableBody,
   TableCell,
   TableHead,
@@ -35,9 +28,9 @@ function VendorContactContext({ vendor }: { vendor: VendorListItem }) {
   }
 
   return (
-    <div className="flex max-w-[28rem] flex-col gap-1 whitespace-normal">
+    <div className="flex flex-col gap-1 whitespace-normal">
       {context.map((value) => (
-        <span key={value} className="break-words">
+        <span key={value} className="[overflow-wrap:anywhere]">
           {value}
         </span>
       ))}
@@ -65,22 +58,22 @@ function VendorRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[20rem] whitespace-normal align-top">
-          <span tabIndex={-1} data-master-data-record-id={vendor.id} className="block break-words">{vendor.name}</span>
+        <TableCell data-primary>
+          <span tabIndex={-1} data-master-data-record-id={vendor.id} className="block [overflow-wrap:anywhere]">{vendor.name}</span>
         </TableCell>
-        <TableCell className="max-w-[16rem] whitespace-normal align-top">
-          <span className="block break-words">
+        <TableCell data-label="Contact person">
+          <span className="block [overflow-wrap:anywhere]">
             {vendor.contactPerson ?? "—"}
           </span>
         </TableCell>
-        <TableCell>
+        <TableCell data-label="Contact">
           <VendorContactContext vendor={vendor} />
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-label="Status" className="text-center">
           <WorkspaceLifecycleBadge isActive={vendor.isActive} />
         </TableCell>
         {canManage ? (
-          <TableCell className="text-center">
+          <TableCell data-actions className="text-center">
             <MasterDataActionsMenu
               recordName={vendor.name}
               isActive={vendor.isActive}
@@ -93,73 +86,6 @@ function VendorRow({
           </TableCell>
         ) : null}
       </TableRow>
-      <DeleteVendorDialog
-        key={`${vendor.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
-        vendor={vendor}
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={onDeleted}
-      />
-    </>
-  );
-}
-
-function VendorMobileCard({
-  vendor,
-  canManage,
-  actionDisabled,
-  onEdit,
-  onToggle,
-  onDeleted,
-}: {
-  vendor: VendorListItem;
-  canManage: boolean;
-  actionDisabled: boolean;
-  onEdit: () => void;
-  onToggle: () => void;
-  onDeleted: () => void;
-}) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  return (
-    <>
-      <Card size="sm">
-        <CardHeader className="grid-cols-[1fr_auto]">
-          <div className="min-w-0">
-            <CardTitle tabIndex={-1} data-master-data-record-id={vendor.id} className="break-words">{vendor.name}</CardTitle>
-            <p className="break-words text-body-sm text-muted-foreground">
-              {vendor.contactPerson ?? "No contact person"}
-            </p>
-          </div>
-          {canManage ? (
-            <CardAction>
-              <MasterDataActionsMenu
-                recordName={vendor.name}
-                isActive={vendor.isActive}
-                actionButtonId={`vendor-actions-${vendor.id}-mobile`}
-                disabled={actionDisabled}
-                onEdit={onEdit}
-                onSetActive={() => onToggle()}
-                onDelete={() => setIsDeleteDialogOpen(true)}
-              />
-            </CardAction>
-          ) : null}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-label font-semibold text-muted-foreground">
-              Status
-            </span>
-            <WorkspaceLifecycleBadge isActive={vendor.isActive} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-label font-semibold text-muted-foreground">
-              Contact
-            </span>
-            <VendorContactContext vendor={vendor} />
-          </div>
-        </CardContent>
-      </Card>
       <DeleteVendorDialog
         key={`${vendor.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
         vendor={vendor}
@@ -216,10 +142,31 @@ export default function VendorTable({
   }
 
   return (
-    <>
-      <div className="flex flex-col gap-3 sm:hidden">
+    <WorkspaceTableFrame caption="Vendors" responsive>
+      <TableHeader className="bg-muted/60">
+        <TableRow>
+          <TableHead scope="col" className="text-left">
+            Name
+          </TableHead>
+          <TableHead scope="col" className="text-left">
+            Contact person
+          </TableHead>
+          <TableHead scope="col" className="text-left">
+            Contact
+          </TableHead>
+          <TableHead scope="col" className="w-24 text-center">
+            Status
+          </TableHead>
+          {canManage ? (
+            <TableHead scope="col" className="w-20 text-center">
+              Actions
+            </TableHead>
+          ) : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {vendors.map((vendor) => (
-          <VendorMobileCard
+          <VendorRow
             key={vendor.id}
             vendor={vendor}
             canManage={canManage}
@@ -229,45 +176,7 @@ export default function VendorTable({
             onDeleted={() => onDeleted(vendor)}
           />
         ))}
-      </div>
-      <div className="hidden sm:block">
-        <WorkspaceTableFrame caption="Vendors" className="min-w-[52rem]">
-          <TableHeader className="bg-muted/60">
-            <TableRow>
-              <TableHead scope="col" className="text-left">
-                Name
-              </TableHead>
-              <TableHead scope="col" className="text-left">
-                Contact person
-              </TableHead>
-              <TableHead scope="col" className="text-left">
-                Contact
-              </TableHead>
-              <TableHead scope="col" className="text-center">
-                Status
-              </TableHead>
-              {canManage ? (
-                <TableHead scope="col" className="text-center">
-                  Actions
-                </TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {vendors.map((vendor) => (
-              <VendorRow
-                key={vendor.id}
-                vendor={vendor}
-                canManage={canManage}
-                actionDisabled={actionDisabled}
-                onEdit={() => onEdit(vendor)}
-                onToggle={() => onToggle(vendor)}
-                onDeleted={() => onDeleted(vendor)}
-              />
-            ))}
-          </TableBody>
-        </WorkspaceTableFrame>
-      </div>
-    </>
+      </TableBody>
+    </WorkspaceTableFrame>
   );
 }
