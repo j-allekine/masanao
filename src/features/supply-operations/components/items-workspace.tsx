@@ -295,7 +295,7 @@ function ItemsWorkspaceContent({
   }
 
   return (
-    <main
+    <div
       className="flex min-w-0 flex-col gap-6"
       data-can-manage-items={canManageItems ? "true" : "false"}
       data-items-ready={hydrated ? "true" : undefined}
@@ -391,6 +391,6 @@ function ItemsWorkspaceContent({
           }}
         />
       ) : null}
-    </main>
+    </div>
   );
 }

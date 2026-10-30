@@ -585,7 +585,7 @@ export default function IssuanceDraftContent({
       className="flex min-h-0 flex-1 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
-      <main className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto" data-workspace-scroll="body">
         <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
           <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
@@ -781,7 +781,7 @@ export default function IssuanceDraftContent({
             <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
           </div>
         </footer>
-      </main>
+      </div>
       <Dialog
         open={Boolean(confirmation)}
         onOpenChange={(open) => {

@@ -207,7 +207,7 @@ export default function ActivityDesignDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         <Breadcrumb><BreadcrumbList className="break-words">
           <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage className="break-words">{activityDesign.activityDesignNo}</BreadcrumbPage></BreadcrumbItem>
@@ -251,7 +251,7 @@ export default function ActivityDesignDetailContent({
             />
           )}
         </section>
-      </main>
+      </div>
 
       <ActivityCreateDialog
         activityDesign={createParent}

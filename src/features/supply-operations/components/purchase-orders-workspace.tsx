@@ -219,7 +219,7 @@ export default function PurchaseOrdersWorkspace({
   }
 
   return (
-    <main
+    <div
       className="flex min-w-0 flex-col gap-6"
       data-can-manage-purchase-orders={
         canManagePurchaseOrders ? "true" : "false"
@@ -306,6 +306,6 @@ export default function PurchaseOrdersWorkspace({
           }}
         />
       ) : null}
-    </main>
+    </div>
   );
 }

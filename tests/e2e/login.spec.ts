@@ -7,6 +7,8 @@ test("renders a production login without prototype controls", async ({ page }) =
     page.getByRole("main", { name: "Masanao staff sign-in" }),
   ).toBeVisible();
   await expect(page.getByRole("form", { name: "Masanao staff sign in" })).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.getByText(/prototype/i)).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Show password" }),

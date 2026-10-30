@@ -12,7 +12,7 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | Ticket | Scope | Predecessors | Integration |
 | --- | --- | --- | --- |
 | #265 | Sidebar preference and shell ownership | — | Core `75c8723`; expanded checks pending |
-| #266 | Header and scroll ownership | #265 | Pending |
+| #266 | Header and scroll ownership | #265 | `d0ee76c`; integrated `ba6f4b8` |
 | #267 | Headings and primary landmarks | #265 | Pending |
 | #268 | Activity Design and Item catalog patterns | #266 | Pending |
 | #269 | Planning and Item entry dialogs | — | `da74302`; integrated `30e3284` |
@@ -97,3 +97,24 @@ Implementation: `da74302`, integrated by `30e3284`.
 - Remaining shared/dialog consumers, full integrated browser regression,
   production build, zoom/text-spacing, removed-opener focus, and real-phone
   verification remain explicit integration gates.
+
+### Header and scroll ownership (#266)
+
+Implementation: `d0ee76c`, integrated by `ba6f4b8`.
+
+- Lint, TypeScript, architecture (2), header-state unit tests (6), and focused
+  browser journeys (6) passed on final contents.
+- Browser command: `MASANAO_E2E_PORT=3032 pnpm exec playwright test
+  tests/e2e/workspace-header.spec.ts tests/e2e/meal-schedule-layout.spec.ts
+  --reporter=line`.
+- The 15-route matrix checks desktop/phone top, middle, and end scrolling.
+  Dashboard also covers 320×480, enlarged text, and focus clearance.
+- Captures: `C:\Users\LENOVO\.codex\spec-264\evidence-266`. Some include
+  development rendering indicators and require replacement during the final
+  accepted screenshot sweep.
+- The compact header now stays visible, measured height drives document focus
+  clearance, Dashboard report controls scroll, and bounded Meal Schedule bodies
+  own their scrolling/gutter. No manual scrollbar-width compensation.
+- Full foundation browser regression and production build wait for #265
+  follow-up and #267 integration. Tablet/overlay shifts, broad zoom/text-spacing,
+  final capture review, and real-phone evidence remain outstanding.

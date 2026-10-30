@@ -12,12 +12,15 @@ const sections: [WorkspaceSectionId, string][] = [["overview", "Dashboard"], ["a
 describe("workspace orientation during route transitions", () => {
   it.each(sections)("keeps %s loading and error identity consistent", (activeSection, label) => {
     const loading = renderToStaticMarkup(createElement(WorkspaceRouteLoading, { activeSection }));
-    const failed = renderToStaticMarkup(createElement(WorkspaceRouteError, { activeSection, error: new Error("Unavailable"), reset: () => {} }));
+    const failed = renderToStaticMarkup(createElement(WorkspaceRouteError, { activeSection, error: new Error("Unavailable"), retry: () => {} }));
     for (const markup of [loading, failed]) {
       expect(markup.match(/data-slot="workspace-header"/g)).toHaveLength(1);
       expect(markup).toContain(`>${label}</p>`);
       expect(markup.match(/aria-label="Toggle Sidebar"/g)).toHaveLength(1);
+      expect(markup.match(/<h1[ >]/g)).toHaveLength(1);
     }
     expect(failed).toContain("Retry");
+    expect(loading).toContain("Loading ");
+    expect(failed).toContain("Unable to load ");
   });
 });

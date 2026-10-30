@@ -34,6 +34,7 @@ export default function MasterDataContent({
       <WorkspaceHeader title="Master Data" />
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
+        <h1 className="mb-6 break-words text-heading-1 font-semibold">Master Data</h1>
         <MasterDataWorkspace
           units={units}
           categories={categories}
