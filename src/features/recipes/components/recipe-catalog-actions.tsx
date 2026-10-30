@@ -106,6 +106,7 @@ export default function RecipeCatalogActions({
         ]}
       />
       <DestructiveDialog
+        bounded
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title={`Delete ${recipe.name}?`}

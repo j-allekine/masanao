@@ -15,6 +15,7 @@ export type RecipeDetailItem = {
   isActive: boolean;
   baselinePax: number | null;
   canScale: boolean;
+  needsAttention?: boolean;
   ingredients: Array<{
     id: string;
     itemId: string;
@@ -22,15 +23,18 @@ export type RecipeDetailItem = {
     itemUnitConversionId: string | null;
     item: {
       name: string;
+      isActive?: boolean;
       baseUnit: {
         name: string;
         abbreviation: string;
+        active?: boolean;
       };
     };
     itemUnitConversion: {
       alternateUnit: {
         name: string;
         abbreviation: string;
+        active?: boolean;
       };
     } | null;
   }>;

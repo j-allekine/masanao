@@ -8,15 +8,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 
 import type { RecipeDetailItem } from "../types";
 
@@ -43,7 +46,7 @@ export default function RecipePreviewDialog({
 
   return (
     <Dialog open={preview.status !== "closed"} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent size="inspection" className="workspace-pane [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Read-only Recipe preview.</DialogDescription>
@@ -62,7 +65,9 @@ export default function RecipePreviewDialog({
         ) : null}
 
         {recipe ? (
-          <div className="max-h-[min(32rem,calc(100vh-13rem))] overflow-y-auto pr-1">
+          <div className="workspace-content min-w-0">
+            <WorkspaceLifecycleBadge isActive={recipe.isActive} />
+            {recipe.needsAttention ? <Alert className="my-3"><AlertTitle>Unavailable ingredients</AlertTitle><AlertDescription>Some Items or Units are inactive. Review the Recipe before using it for new work.</AlertDescription></Alert> : null}
             <section aria-labelledby="recipe-preview-ingredients" className="flex flex-col gap-3">
               <div>
                 <h2 id="recipe-preview-ingredients" className="text-heading-3 font-semibold">
@@ -72,8 +77,7 @@ export default function RecipePreviewDialog({
                   {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
                 </p>
               </div>
-              <div className="overflow-x-auto rounded-lg border">
-                <Table>
+              <WorkspaceTableFrame responsive caption="Recipe ingredients">
                   <TableHeader className="bg-muted/60">
                     <TableRow>
                       <TableHead scope="col">Item</TableHead>
@@ -84,18 +88,17 @@ export default function RecipePreviewDialog({
                   <TableBody>
                     {recipe.ingredients.map((ingredient) => (
                       <TableRow key={ingredient.id}>
-                        <TableCell className="break-words font-medium">
+                        <TableCell data-primary className="break-words font-medium">
                           {ingredient.item.name}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell data-label="Quantity" className="text-right tabular-nums">
                           {ingredient.enteredQuantity}
                         </TableCell>
-                        <TableCell className="break-words">{displayUnit(ingredient)}</TableCell>
+                        <TableCell data-label="Unit" className="break-words">{displayUnit(ingredient)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
-              </div>
+              </WorkspaceTableFrame>
             </section>
 
             {recipe.preparationNote ? (

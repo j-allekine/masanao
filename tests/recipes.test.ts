@@ -172,6 +172,7 @@ describe("Recipes catalog and persistence foundation", () => {
       name: "Staff Visible Soup",
       baselinePax: null,
       canScale: false,
+      needsAttention: false,
       preparationNote: "Use the usual kitchen pot.",
       isActive: true,
       ingredients: [
@@ -182,10 +183,11 @@ describe("Recipes catalog and persistence foundation", () => {
           itemUnitConversionId: "recipes-conversion-gram",
           item: {
             name: "Rice",
-            baseUnit: { name: "Kilogram", abbreviation: "kg" },
+            isActive: true,
+            baseUnit: { name: "Kilogram", abbreviation: "kg", active: true },
           },
           itemUnitConversion: {
-            alternateUnit: { name: "Gram", abbreviation: "g" },
+            alternateUnit: { name: "Gram", abbreviation: "g", active: true },
           },
         },
       ],
