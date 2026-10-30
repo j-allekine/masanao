@@ -14,9 +14,9 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | #265 | Sidebar preference and shell ownership | — | `75c8723` + `0cb45fd`; integrated `7ed042c` |
 | #266 | Header and scroll ownership | #265 | `d0ee76c`; integrated `ba6f4b8` |
 | #267 | Headings and primary landmarks | #265 | `5075285`; integrated `63babd6` |
-| #268 | Activity Design and Item catalog patterns | #266 | Verified `c6a634f` + `bf6be87`; integration pending |
+| #268 | Activity Design and Item catalog patterns | #266 | `c6a634f` + `bf6be87`; integrated `7f0c66d` |
 | #269 | Planning and Item entry dialogs | — | `da74302`; integrated `30e3284` |
-| #270 | Responsive filters | #268 | Pending |
+| #270 | Responsive filters | #268 | `87d4ab7` + `c418c0c`; integrated `7f0c66d` |
 | #271 | Activities catalog | #270 | Pending |
 | #272 | Recipes catalog | #269, #270 | Pending |
 | #273 | Purchase Orders catalog | #269, #270 | Pending |
@@ -147,3 +147,27 @@ Source revision: `63babd6a85f80596443509e03b76cbbc7bb687b1`.
   `foundation-checks.md`. Focused corrections and reviewed baseline changes must
   be verified before this gate can pass. Final integrated regression remains
   separately required after remaining modules land.
+
+### Catalog and filter foundation (#268, #270)
+
+Integrated revision: `20e40b4` (includes the reviewed foundation test corrections).
+
+- #268 passed lint, TypeScript, architecture, 55 focused unit tests, and 11 final
+  browser journeys. Four Designs/Items desktop/mobile snapshots were reviewed
+  individually. Covers independent pane/content widths, single responsive DOM,
+  complete facts/actions, long values, exact reorder levels, and resize focus.
+- #270 passed lint, TypeScript, architecture, 16 focused unit tests, and 31 browser
+  checks. Covers exact toolbar widths 759/760/761, all ten catalog consumers,
+  nested filter focus, tablet sidebar states, and Inventory refresh/history.
+  Four affected live-search-hint snapshots were individually reviewed again.
+- Integrated `20e40b4` passed lint, architecture, all 73 unit/domain files (487
+  tests), route type generation, TypeScript, production build, and SQLite smoke.
+- The second full browser invocation was interrupted after logged test 132. Its
+  process no longer exists; **this is a partial run, not a full passing result**.
+  Log: `C:\Users\LENOVO\.codex\spec-264\consolidated-20e40b4.log`.
+- New observed failures include a cold Activities record heading wait, a stale
+  eligibility fixture after direct database deletion, and PO hydration-flow
+  focus. The first two have scoped fixes in the pending #277 branch; the PO
+  journey remains under investigation in #273. The full final suite is required.
+- Handoffs/captures: `handoff-268.md`, `handoff-270.md`, `evidence-268`, and
+  `evidence-270` under `C:\Users\LENOVO\.codex\spec-264`.
