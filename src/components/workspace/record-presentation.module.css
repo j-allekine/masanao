@@ -1,0 +1,8 @@
+.heading { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.wide { display: none; }
+.compact { display: inline-flex; }
+@container workspace-content (min-width: 640px) {
+  .heading { flex-direction: row; align-items: start; justify-content: space-between; }
+  .wide { display: inline-flex; }
+  .compact { display: none; }
+}
