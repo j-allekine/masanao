@@ -54,7 +54,7 @@ export default function DestructiveDialog({
       <AlertDialogContent
         ref={popupRef}
         initialFocus={bounded ? () => popupRef.current : undefined}
-        className={bounded ? "max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain [overflow-wrap:anywhere]" : undefined}
+        className={bounded ? "max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain [overflow-wrap:anywhere] [&_[data-slot=button]]:min-h-10" : undefined}
       >
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
