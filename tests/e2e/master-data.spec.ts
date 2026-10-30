@@ -355,7 +355,7 @@ test.describe("Master Data shared lifecycle controls", () => {
 
       const actionButton = row.getByRole("button", { name: /Actions for/ });
       await expect(actionButton).toBeVisible();
-      await expect(actionButton).toHaveClass(/size-7/);
+      expect((await actionButton.boundingBox())!.height).toBeGreaterThanOrEqual(40);
       await actionButton.click();
 
       const menu = page.getByRole("menu");
@@ -392,7 +392,7 @@ test.describe("Master Data shared lifecycle controls", () => {
       exact: true,
     }).first();
     await expect(mobileActionButton).toBeVisible();
-    await expect(mobileActionButton).toHaveClass(/size-7/);
+    expect((await mobileActionButton.boundingBox())!.height).toBeGreaterThanOrEqual(40);
     await mobileActionButton.click();
     const mobileMenu = page.getByRole("menu");
     await expect(mobileMenu).toBeVisible();

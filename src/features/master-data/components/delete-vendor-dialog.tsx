@@ -45,6 +45,7 @@ export default function DeleteVendorDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={`Delete “${vendor.name}”?`}

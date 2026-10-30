@@ -124,12 +124,14 @@ export default function OfficeForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   mode: "create" | "edit";
   office?: OfficeListItem;
   onCancel: () => void;
   onSuccess: (office: OfficeListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const initialFormValues = initialValues(office);
   const [formValues, setFormValues] = useState(initialFormValues);
@@ -139,6 +141,10 @@ export default function OfficeForm({
   const isDirty = (Object.keys(initialFormValues) as OfficeField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
   );
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -166,6 +172,12 @@ export default function OfficeForm({
     return () => window.clearTimeout(timeoutId);
   }, [fieldErrors, mode]);
 
+  useEffect(() => {
+    if (formError && !Object.values(fieldErrors).some((errors) => errors?.length)) {
+      document.getElementById(`${mode}-office-save-error`)?.focus();
+    }
+  }, [formError, fieldErrors, mode]);
+
   function updateField(field: OfficeField, value: string) {
     setFormValues((currentValues) => ({ ...currentValues, [field]: value }));
     setFieldErrors((currentErrors) => {
@@ -190,6 +202,7 @@ export default function OfficeForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -223,9 +236,9 @@ export default function OfficeForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="max-h-[min(62vh,34rem)] overflow-y-auto px-1 py-2">
+      <div className="pb-6">
         {formError ? (
-          <Alert variant="destructive" className="mb-6">
+          <Alert id={`${mode}-office-save-error`} tabIndex={-1} variant="destructive" className="mb-6">
             <AlertTitle>Could not save Office</AlertTitle>
             <AlertDescription>{formError}</AlertDescription>
           </Alert>
@@ -304,7 +317,7 @@ export default function OfficeForm({
           </div>
         </FieldGroup>
       </div>
-      <DialogFooter>
+      <DialogFooter className="[&_[data-slot=button]]:min-h-10">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
           isPending={isSubmitting}
