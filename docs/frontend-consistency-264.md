@@ -11,10 +11,10 @@ Each ticket is integrated only after its predecessors. All changes converge on
 
 | Ticket | Scope | Predecessors | Integration |
 | --- | --- | --- | --- |
-| #265 | Sidebar preference and shell ownership | — | Core `75c8723`; expanded checks pending |
+| #265 | Sidebar preference and shell ownership | — | `75c8723` + `0cb45fd`; integrated `7ed042c` |
 | #266 | Header and scroll ownership | #265 | `d0ee76c`; integrated `ba6f4b8` |
-| #267 | Headings and primary landmarks | #265 | Pending |
-| #268 | Activity Design and Item catalog patterns | #266 | Pending |
+| #267 | Headings and primary landmarks | #265 | `5075285`; integrated `63babd6` |
+| #268 | Activity Design and Item catalog patterns | #266 | Verified `c6a634f` + `bf6be87`; integration pending |
 | #269 | Planning and Item entry dialogs | — | `da74302`; integrated `30e3284` |
 | #270 | Responsive filters | #268 | Pending |
 | #271 | Activities catalog | #270 | Pending |
@@ -118,3 +118,32 @@ Implementation: `d0ee76c`, integrated by `ba6f4b8`.
 - Full foundation browser regression and production build wait for #265
   follow-up and #267 integration. Tablet/overlay shifts, broad zoom/text-spacing,
   final capture review, and real-phone evidence remain outstanding.
+
+### Integrated foundation (#265–#267)
+
+Source revision: `63babd6a85f80596443509e03b76cbbc7bb687b1`.
+
+- Sidebar follow-up: 11 browser journeys, lint, TypeScript, and architecture
+  passed. Covers real client navigation, saved/default first paint, unavailable
+  cookie writes, temporary drawer/focus, and staff/admin account transitions.
+- Semantic slice: 11 browser journeys, lint, TypeScript, architecture, and 6
+  semantic unit tests passed. One main/H1, skip navigation, anonymous transient
+  shells, real error Retry, not-found, and sign-in behavior are covered. A final
+  permission-limited fallback tag change received lint/type checks afterward.
+- Integrated lint, architecture (2), full unit/domain suite (73 files / 487
+  tests), route type generation, TypeScript, production build, and production
+  SQLite smoke all passed on this exact source revision.
+- Full browser command: `MASANAO_E2E_PORT=3030 pnpm exec playwright test
+  --output test-results/foundation-63babd6 --reporter=list`.
+- Full browser result: **156 passed, 8 failed**, 19.7 minutes. This is an
+  executed regression gate, not a passing acceptance claim.
+- Failures: two Planning document-width equalities; Dashboard's retired pinned
+  report expectation; dialog centering against a viewport including reserved
+  gutter; Item width equality; and three stabilization cases with old geometry
+  or screenshot baselines. Each is being reviewed against the approved contract;
+  actual overflow, centering, navigation, and visual checks remain required.
+- Failure contexts/traces: `test-results/foundation-63babd6`. Full log and quality
+  reports: `C:\Users\LENOVO\.codex\spec-264\foundation-63babd6.log` and
+  `foundation-checks.md`. Focused corrections and reviewed baseline changes must
+  be verified before this gate can pass. Final integrated regression remains
+  separately required after remaining modules land.
