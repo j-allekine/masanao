@@ -238,6 +238,7 @@ test.describe("frontend stabilization regression seam", () => {
           };
         });
 
+        // Reserved scrollbar space is allowed; horizontal page overflow is not.
         expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
         expect(metrics.tableRegions).toBe(1);
         expect(metrics.tableParentOverflowX).toBe("visible");
