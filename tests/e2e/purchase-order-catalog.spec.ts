@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 const id = `po-catalog-${randomUUID()}`;
+const retryNumber = `PO-RETRY-${id}`;
 const number = `PO-${"長".repeat(97)}`;
 const vendorName = "Municipal kitchen supplier ".repeat(8).slice(0, 200);
 function db() { return new Database(process.env.MASANAO_E2E_DATABASE_PATH!); }
@@ -16,7 +17,7 @@ test.beforeAll(() => {
 test.afterAll(() => {
   const database = db();
   try {
-    database.prepare('DELETE FROM purchase_order WHERE id=?').run(id);
+    database.prepare('DELETE FROM purchase_order WHERE id=? OR purchaseOrderNo=?').run(id, retryNumber);
     database.prepare('DELETE FROM vendor WHERE id=?').run(id);
   } finally { database.close(); }
 });
@@ -76,7 +77,7 @@ for (const role of ["admin", "staff"]) {
     await expect(trigger).toBeFocused();
     await page.getByRole("button", { name: "Create Purchase Order", exact: true }).click();
     const create = page.getByRole("dialog", { name: "Create Purchase Order", exact: true });
-    await create.getByRole("textbox", { name: "Purchase Order No.", exact: true }).fill("Retained draft");
+    await create.getByRole("textbox", { name: "Purchase Order No.", exact: true }).fill(retryNumber);
     await create.getByRole("combobox", { name: "Vendor", exact: true }).click();
     await page.getByRole("option", { name: "Acme Foods", exact: true }).click();
     let release!: () => void;
@@ -95,7 +96,12 @@ for (const role of ["admin", "staff"]) {
       await expect(create).toBeVisible();
     } finally { release(); }
     await expect(create.getByText("Could not save Purchase Order", { exact: true })).toBeVisible();
-    await expect(create.getByRole("textbox", { name: "Purchase Order No.", exact: true })).toHaveValue("Retained draft");
+    await expect(create.getByRole("textbox", { name: "Purchase Order No.", exact: true })).toHaveValue(retryNumber);
     await page.screenshot({ path: info.outputPath("po-create-failed-short.png") });
+    await page.unroute("**/purchase-orders*");
+    await create.getByRole("button", { name: "Create Purchase Order", exact: true }).click();
+    await expect(create).toHaveCount(0);
+    await expect(page.getByRole("button", { name: `Actions for ${retryNumber}`, exact: true })).toBeFocused();
+
   });
 }
