@@ -193,11 +193,13 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       const desktopDialog = await openActivityDialog(page, title);
       const desktopBox = await desktopDialog.boundingBox();
+      const desktopOverlay = await page.locator('[data-slot="dialog-overlay"]').boundingBox();
       expect(desktopBox).not.toBeNull();
+      expect(desktopOverlay).not.toBeNull();
       expect(desktopBox!.x).toBeGreaterThan(0);
       expect(desktopBox!.y).toBeGreaterThan(0);
-      expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(1458);
-      expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - 1458 / 2)).toBeLessThanOrEqual(1);
+      expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(desktopOverlay!.x + desktopOverlay!.width);
+      expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - (desktopOverlay!.x + desktopOverlay!.width / 2))).toBeLessThanOrEqual(1);
       expect(Math.abs(desktopBox!.y + desktopBox!.height / 2 - 986 / 2)).toBeLessThanOrEqual(1);
       const desktopOrigin = page.getByRole("button", {
         name: `Actions for ${title}`,
@@ -232,11 +234,14 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       ).toBeFocused();
 
       const box = await dialog.boundingBox();
+      // Center within the overlay area, which excludes the reserved scrollbar gutter.
+      const overlay = await page.locator('[data-slot="dialog-overlay"]').boundingBox();
       expect(box).not.toBeNull();
+      expect(overlay).not.toBeNull();
       expect(box!.x).toBeGreaterThan(0);
       expect(box!.y).toBeGreaterThan(0);
-      expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-      expect(Math.abs(box!.x + box!.width / 2 - 390 / 2)).toBeLessThanOrEqual(1);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(overlay!.x + overlay!.width);
+      expect(Math.abs(box!.x + box!.width / 2 - (overlay!.x + overlay!.width / 2))).toBeLessThanOrEqual(1);
       expect(Math.abs(box!.y + box!.height / 2 - 844 / 2)).toBeLessThanOrEqual(1);
       await expect(dialog.locator('[data-slot="dialog-footer"]')).toBeVisible();
       await expect(
