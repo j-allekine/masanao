@@ -69,7 +69,7 @@ function CategoryFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} className="max-w-full flex-wrap">
         {label}
         {!isDescription ? (
           <span className="text-destructive" aria-hidden="true">
@@ -250,7 +250,7 @@ export default function CategoryForm({
           />
         </FieldGroup>
       </div>
-      <DialogFooter className="[&_[data-slot=button]]:min-h-10">
+      <DialogFooter className="[&_button]:h-auto [&_button]:min-h-10 [&_button]:py-2 [&_button]:whitespace-normal [&_button]:flex-wrap [&_button]:[overflow-wrap:normal]">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
           isPending={isSubmitting}

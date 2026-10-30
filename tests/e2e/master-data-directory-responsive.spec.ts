@@ -104,12 +104,12 @@ for (const [kind, plural] of [["Office", "Offices"], ["Vendor", "Vendors"]]) {
   });
 }
 
-test("directory dialogs stay reachable with enlarged text on a short phone", async ({ page }, info) => {
+test("Master Data entry dialogs stay reachable with enlarged text on a short phone", async ({ page }, info) => {
   await open(page);
   await page.setViewportSize({ width: 320, height: 480 });
   await page.addStyleTag({ content: "html { font-size: 200% }" });
-  for (const kind of ["Office", "Vendor"]) {
-    await page.getByRole("tab", { name: kind === "Office" ? "Offices" : "Vendors", exact: true }).click();
+  for (const [kind, plural] of [["Unit", "Units"], ["Category", "Categories"], ["Office", "Offices"], ["Vendor", "Vendors"]]) {
+    await page.getByRole("tab", { name: plural, exact: true }).click();
     await page.getByRole("button", { name: `Create ${kind}`, exact: true }).click();
     const dialog = page.getByRole("dialog", { name: `Create ${kind}`, exact: true });
     await expect(dialog).toBeVisible();
@@ -123,6 +123,10 @@ test("directory dialogs stay reachable with enlarged text on a short phone", asy
     await expect(discard).toBeVisible();
     await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Unsaved directory record");
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    for (const button of await dialog.locator('[data-slot="dialog-footer"]').getByRole("button").all()) {
+      expect(await button.evaluate(element => element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight)).toBe(true);
+    }
     await page.screenshot({ path: info.outputPath(`${kind}-text200-short.png`), animations: "disabled" });
     await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Discard changes", exact: true }).click();

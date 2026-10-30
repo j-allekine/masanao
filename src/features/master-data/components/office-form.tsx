@@ -81,7 +81,7 @@ function OfficeFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} className="max-w-full flex-wrap">
         {label}
         {required ? (
           <span className="text-destructive" aria-hidden="true">
@@ -317,7 +317,7 @@ export default function OfficeForm({
           </div>
         </FieldGroup>
       </div>
-      <DialogFooter className="[&_[data-slot=button]]:min-h-10">
+      <DialogFooter className="[&_button]:h-auto [&_button]:min-h-10 [&_button]:py-2 [&_button]:whitespace-normal [&_button]:flex-wrap [&_button]:[overflow-wrap:normal]">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
           isPending={isSubmitting}

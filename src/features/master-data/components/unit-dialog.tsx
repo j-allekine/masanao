@@ -99,14 +99,14 @@ export default function UnitDialog({
         open={isDiscardDialogOpen}
         onOpenChange={setIsDiscardDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto [overflow-wrap:anywhere]">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>
               Your unsaved Unit changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="[&_button]:min-h-10">
+          <AlertDialogFooter className="[&_button]:h-auto [&_button]:min-h-10 [&_button]:py-2 [&_button]:whitespace-normal">
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={closeDialog}>
               Discard changes
