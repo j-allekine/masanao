@@ -29,6 +29,7 @@ import type { RecipeCatalogItem } from "../types";
 import { filterRecipes, hasRecipeListFilters } from "./recipe-filters";
 import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
 import RecipePreviewDialog, { type RecipePreviewState } from "./recipe-preview-dialog";
+import { recipeCatalogReturn, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
 import RecipeCatalogActions from "./recipe-catalog-actions";
 
 const PAGE_SIZE = 10;
@@ -142,6 +143,15 @@ export default function RecipesContent({
     });
   }
 
+  const catalogReturn = recipeCatalogReturn(getRecipeListUrl("/recipes", "", { search: searchInput, page: searchInput !== listState.search ? 1 : currentPage }));
+
+  function cancelSearchNavigation() {
+    if (searchNavigationTimeoutRef.current !== null) {
+      window.clearTimeout(searchNavigationTimeoutRef.current);
+      searchNavigationTimeoutRef.current = null;
+    }
+  }
+
   function closeRecipePreview() {
     previewRequestRef.current += 1;
     setRecipePreview({ status: "closed" });
@@ -179,7 +189,8 @@ export default function RecipesContent({
           canManageRecipes ? (
             <WorkspacePrimaryLink
               id="new-recipe"
-              href="/recipes/new"
+              href={recipeEditorHref(null, catalogReturn)}
+              onNavigate={cancelSearchNavigation}
               fullWidth
               icon={<Plus data-icon="inline-start" />}
             >
@@ -241,7 +252,8 @@ export default function RecipesContent({
                   <TableRow key={recipe.id} data-recipe-id={recipe.id}>
                     <TableCell data-primary>
                       <Link
-                        href={`/recipes/${recipe.id}`}
+                        href={recipeRecordHref(recipe.id, catalogReturn)}
+                        onNavigate={cancelSearchNavigation}
                         className="workspace-record-link"
                       >
                         {recipe.name}
@@ -256,6 +268,8 @@ export default function RecipesContent({
                     <TableCell data-actions className="text-right">
                       <RecipeCatalogActions
                         recipe={recipe}
+                        editHref={recipeEditorHref(recipe.id, catalogReturn)}
+                        onNavigate={cancelSearchNavigation}
                         canManageRecipes={canManageRecipes}
                         onView={() => void openRecipePreview(recipe.id)}
                       />

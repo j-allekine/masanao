@@ -1,6 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
+import { recipeEditorReturn, recipeSaveHref } from "./recipe-return-context";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -83,6 +85,8 @@ export default function RecipeCreateEditor({
   recipe?: RecipeDetailItem;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = recipeEditorReturn(searchParams.get("returnTo"), recipe?.id);
   const [name, setName] = useState(recipe?.name ?? "");
   const [preparationNote, setPreparationNote] = useState(recipe?.preparationNote ?? "");
   const [baselinePax, setBaselinePax] = useState(recipe?.baselinePax?.toString() ?? "");
@@ -199,7 +203,7 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
-        router.push(`/recipes/${result.recipe.id}`);
+        router.push(recipeSaveHref(result.recipe.id, returnTo));
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
       }
@@ -212,11 +216,12 @@ export default function RecipeCreateEditor({
       return;
     }
 
-    router.push("/recipes");
+    router.push(returnTo);
   }
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <WorkspaceRecordBreadcrumbs ancestors={[{ label: recipe?.name ?? "Recipes", href: returnTo }]} currentLabel={recipe ? "Edit Recipe" : "New Recipe"} />
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-heading-1 font-semibold">{recipe ? "Edit Recipe" : "New Recipe"}</h1>
@@ -480,7 +485,7 @@ export default function RecipeCreateEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => router.push("/recipes")}>
+            <AlertDialogAction variant="destructive" onClick={() => router.push(returnTo)}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
