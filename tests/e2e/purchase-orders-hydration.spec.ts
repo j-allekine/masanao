@@ -26,9 +26,12 @@ test("Purchase Order controls wait for hydration before accepting an interaction
     await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+    await expect(page.getByRole("button", { name: `Actions for ${name}`, exact: true })).toBeFocused();
     const create = page.getByRole("button", { name: "Create Purchase Order", exact: true });
     await expect(create).toBeEnabled();
     await create.focus();
+    await expect(create).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("dialog").getByRole("heading", { name: "Create Purchase Order", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Cancel", exact: true }).click();

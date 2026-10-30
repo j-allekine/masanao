@@ -69,8 +69,8 @@ for (const role of ["admin", "staff"]) {
     await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
     const deletion = page.getByRole("alertdialog", { name: `Delete “${number}”?`, exact: true });
     await expect(deletion).toBeFocused();
-    expect((await deletion.getByRole("button", { name: "Cancel", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(40);
-    expect(await deletion.evaluate((element) => {
+    await expect.poll(async () => (await deletion.getByRole("button", { name: "Cancel", exact: true }).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(40);
+    await expect.poll(() => deletion.evaluate((element) => {
       const box = element.getBoundingClientRect();
       return box.top >= 15 && box.bottom <= innerHeight - 15 && box.left >= 15 && box.right <= innerWidth - 15 && element.scrollWidth <= element.clientWidth;
     })).toBe(true);
