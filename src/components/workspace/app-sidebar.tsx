@@ -176,7 +176,7 @@ export function AppSidebar({
   user,
   activeSection = "overview",
 }: {
-  user: AppSidebarUser
+  user?: AppSidebarUser
   activeSection?: WorkspaceSectionId
 }) {
   const { closeMobileForNavigation } = useSidebar()
@@ -185,7 +185,8 @@ export function AppSidebar({
       <SidebarHeader className="p-4 pt-6 pb-7 sidebar-compact:px-2">
         <WorkspaceLink />
       </SidebarHeader>
-      <SidebarContent className="gap-5 sidebar-compact:gap-3">
+      <SidebarContent>
+        <nav aria-label="Workspace" className="flex flex-col gap-5 sidebar-compact:gap-3">
         {workspaceSectionGroups.map((group) => (
           <SidebarGroup key={group.id} className="px-3 py-1 sidebar-compact:px-2">
             <SidebarGroupLabel className="h-7 px-3 text-label text-sidebar-foreground/70">
@@ -224,11 +225,14 @@ export function AppSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        </nav>
       </SidebarContent>
-      <SidebarSeparator className="bg-sidebar-foreground/15" />
-      <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
-        <AccountMenu user={user} />
-      </SidebarFooter>
+      {user ? <>
+        <SidebarSeparator className="bg-sidebar-foreground/15" />
+        <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
+          <AccountMenu user={user} />
+        </SidebarFooter>
+      </> : null}
       <SidebarRail />
     </Sidebar>
   )

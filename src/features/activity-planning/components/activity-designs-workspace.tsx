@@ -140,7 +140,7 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <main
+    <div
       className="flex min-w-0 flex-col gap-6"
       data-client-ready={isHydrated ? "true" : undefined}
     >
@@ -206,6 +206,6 @@ export default function ActivityDesignsWorkspace({
           }
         }}
       />
-    </main>
+    </div>
   );
 }

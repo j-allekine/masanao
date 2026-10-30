@@ -197,7 +197,7 @@ export default function ActivityDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -267,7 +267,7 @@ export default function ActivityDetailContent({
             />
           )}
         </section>
-      </main>
+      </div>
 
       <MealScheduleCreateDialog
         activity={activity}

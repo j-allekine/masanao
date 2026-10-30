@@ -14,7 +14,7 @@ export default function WorkspaceShell({
   activeSection,
   children,
 }: {
-  user: WorkspaceUser;
+  user?: WorkspaceUser;
   activeSection: WorkspaceSectionId;
   children: React.ReactNode;
 }) {
@@ -32,8 +32,11 @@ export default function WorkspaceShell({
           "--sidebar-width": "15.5rem",
         } as CSSProperties}
       >
+        <a href="#workspace-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-3 focus:text-foreground focus:outline-2 focus:outline-ring">
+          Skip to main content
+        </a>
         <AppSidebar user={user} activeSection={activeSection} />
-        <SidebarInset className="min-w-0">{children}</SidebarInset>
+        <SidebarInset id="workspace-main" tabIndex={-1} className="min-w-0">{children}</SidebarInset>
       </SidebarProvider>
       <Toaster />
     </TooltipProvider>

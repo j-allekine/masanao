@@ -4,16 +4,16 @@ import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 
 export default function ItemsError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
     <WorkspaceRouteError
       activeSection="items"
       error={error}
-      reset={reset}
+      retry={retry}
     />
   );
 }

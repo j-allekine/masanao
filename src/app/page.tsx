@@ -59,12 +59,12 @@ export default async function Home() {
             <p className="text-label font-semibold tracking-label text-muted uppercase">
               Municipal kitchen operations
             </p>
-            <h1
+            <h2
               id="welcome-title"
               className="mt-4 max-w-[12ch] text-display font-display tracking-display text-balance"
             >
               A clear start for every service day.
-            </h1>
+            </h2>
             <p className="mt-5 max-w-[38ch] text-body text-muted text-pretty">
               Plan activities, track supplies, and keep accountable records close to the work.
             </p>
