@@ -109,6 +109,49 @@ test("Planning records retain not-found and nested ownership checks", async ({ p
   await page.screenshot({ path: info.outputPath("record-nested-not-found.png"), fullPage: true });
 });
 
+test("long Planning delete confirmations remain reachable on short phones with enlarged text", async ({ page }, info) => {
+  test.setTimeout(90_000);
+  expect((await page.request.post("/api/auth/sign-in/username", {
+    data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+    headers: { origin: process.env.BETTER_AUTH_URL! },
+  })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  for (const scale of [100, 200]) {
+    for (const record of [
+      { url: designUrl, kind: "Activity Design", cancel: "Close" },
+      { url: activityUrl, kind: "Activity", cancel: "Cancel" },
+    ]) {
+      await page.goto(record.url);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.evaluate(value => { document.documentElement.style.fontSize = `${value}%`; }, scale);
+      const actions = page.getByRole("button", { name: `More ${record.kind} actions`, exact: true });
+      await actions.click();
+      await page.getByRole("menuitem", { name: `Delete ${record.kind}`, exact: true }).click();
+      const popup = page.getByRole("alertdialog");
+      await expect(popup).toBeVisible();
+      const geometry = await popup.evaluate(el => {
+        const box = el.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom, horizontal: el.scrollWidth <= el.clientWidth, height: innerHeight };
+      });
+      expect(geometry.top).toBeGreaterThanOrEqual(0);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.height);
+      expect(geometry.horizontal).toBe(true);
+      for (const button of await popup.getByRole("button").all()) {
+        expect(await button.evaluate(el => el.scrollHeight <= el.clientHeight)).toBe(true);
+      }
+      await expect(popup).toBeFocused();
+      await page.screenshot({ path: info.outputPath(`delete-${record.kind}-${scale}-top.png`) });
+      const cancel = popup.getByRole("button", { name: record.cancel, exact: true });
+      await cancel.scrollIntoViewIfNeeded();
+      expect((await cancel.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+      await page.screenshot({ path: info.outputPath(`delete-${record.kind}-${scale}-actions.png`) });
+      await cancel.click();
+      await expect(popup).toHaveCount(0);
+      await expect(actions).toBeFocused();
+    }
+  }
+});
+
 test("current-record edits recover from a failed save and empty records delete through their real parents", async ({ page }, info) => {
   test.setTimeout(120_000);
   expect((await page.request.post("/api/auth/sign-in/username", {

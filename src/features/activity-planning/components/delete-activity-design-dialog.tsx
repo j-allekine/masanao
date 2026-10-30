@@ -58,6 +58,7 @@ export default function DeleteActivityDesignDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={
