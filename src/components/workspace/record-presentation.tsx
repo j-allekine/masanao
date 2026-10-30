@@ -34,7 +34,7 @@ export function WorkspaceRecordBreadcrumbs({ ancestors, currentLabel }: {
     {earlier.length ? <>
       <BreadcrumbItem className={styles.compact}>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Show ancestors" />}><Ellipsis aria-hidden="true" /></DropdownMenuTrigger>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="size-10" aria-label="Show ancestors" />}><Ellipsis aria-hidden="true" /></DropdownMenuTrigger>
           <DropdownMenuContent className="max-w-[min(28rem,90vw)] w-auto"><DropdownMenuGroup>
             {earlier.map(({ label, href }) => <DropdownMenuItem key={href} render={<Link href={href} />} className="whitespace-normal wrap-anywhere">{label}</DropdownMenuItem>)}
           </DropdownMenuGroup></DropdownMenuContent>

@@ -42,6 +42,9 @@ for (const username of ["kitchen.staff", "municipal.admin"]) {
       await expect(page.getByRole("main")).toHaveCount(1);
       await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
       const editDesign = page.getByRole("button", { name: "Edit Activity Design", exact: true });
+      for (const control of [editDesign, page.getByRole("button", { name: "Create Activity", exact: true }), page.getByRole("button", { name: "More Activity Design actions", exact: true })]) {
+        expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+      }
       await editDesign.click();
       await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();
       await expect(editDesign).toBeFocused();
@@ -64,6 +67,7 @@ for (const username of ["kitchen.staff", "municipal.admin"]) {
       await expect(breadcrumb.getByRole("link", { name: "RECORD-2026", exact: true })).toHaveAttribute("href", designUrl);
       const innerWidth = await page.locator(".workspace-content").evaluate(el => el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight));
       if (innerWidth < 640) {
+        expect((await breadcrumb.getByRole("button", { name: "Show ancestors", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(40);
         await breadcrumb.getByRole("button", { name: "Show ancestors", exact: true }).click();
         await expect(page.getByRole("menuitem", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
         await page.keyboard.press("Escape");
@@ -71,6 +75,9 @@ for (const username of ["kitchen.staff", "municipal.admin"]) {
         await expect(breadcrumb.getByRole("link", { name: "Activity Designs", exact: true })).toBeVisible();
       }
       const editActivity = page.getByRole("button", { name: "Edit Activity", exact: true });
+      for (const control of [editActivity, page.getByRole("button", { name: "Add Meal Schedule", exact: true }), page.getByRole("button", { name: "More Activity actions", exact: true })]) {
+        expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+      }
       await editActivity.click();
       await expect(page.getByRole("textbox", { name: "Activity Design", exact: true })).toHaveValue(`${title} · RECORD-2026`);
       await page.getByRole("dialog").getByRole("button", { name: "Cancel", exact: true }).click();

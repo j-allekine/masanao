@@ -209,7 +209,7 @@ export default function ActivityDetailContent({
         <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }, { label: activity.activityDesign.activityDesignNo, href: withPlanningReturn(parentUrl, returnUrl) }]} currentLabel={activity.name} />
         {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
         <WorkspaceRecordHeading title={activity.name} actions={<>
-          <Button id="edit-current-record" variant="outline" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
+          <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
         </>}><RecordFacts fields={[{ label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) }, { label: "Office", value: activity.officeName }, { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) }]} /></WorkspaceRecordHeading>
         <RecordDetails disabled={!isHydrated} fields={[
@@ -228,7 +228,8 @@ export default function ActivityDetailContent({
             <Button
               id="new-meal-schedule"
               onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
+              size="lg"
+              className="min-h-10 w-full sm:w-auto"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Add Meal Schedule

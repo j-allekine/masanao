@@ -222,7 +222,7 @@ export default function ActivityDesignDetailContent({
         <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }]} currentLabel={activityDesign.activityDesignNo} />
         {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
         <WorkspaceRecordHeading title={activityDesign.title} actions={<>
-          <Button id="edit-current-record" variant="outline" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity Design</Button>
+          <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity Design</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity Design actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity Design", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
         </>}><RecordFacts fields={[{ label: "Fiscal year", value: activityDesign.fiscalYear }]} /></WorkspaceRecordHeading>
         <RecordDetails disabled={!isHydrated} fields={activityDesign.aipReferenceCode ? [{ label: "AIP reference", value: activityDesign.aipReferenceCode }] : []} />
@@ -237,7 +237,8 @@ export default function ActivityDesignDetailContent({
             <Button
               id="new-activity"
               onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
+              size="lg"
+              className="min-h-10 w-full sm:w-auto"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Create Activity
