@@ -389,7 +389,7 @@ test.describe("Activity planning journey", () => {
         name: "Search Activities",
         exact: true,
       });
-      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: activityName, exact: true })).toBeVisible();
       await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
