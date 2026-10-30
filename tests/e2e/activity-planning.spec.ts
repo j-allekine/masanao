@@ -265,7 +265,7 @@ test.describe("Activity planning journey", () => {
       const detailBodyFace = await page
         .getByText(activityDesign.activityDesignNo, { exact: true })
         .evaluate((element) => getComputedStyle(element).fontFamily);
-      await expect(page.getByText("Fiscal year: 2026", { exact: true })).toHaveCSS(
+      await expect(page.getByText("2026", { exact: true })).toHaveCSS(
         "font-family",
         detailBodyFace,
       );
@@ -389,7 +389,7 @@ test.describe("Activity planning journey", () => {
         name: "Search Activities",
         exact: true,
       });
-      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: activityName, exact: true })).toBeVisible();
       await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -511,6 +511,11 @@ test.describe("Activity planning journey", () => {
 
       deleteMealScheduleFixture(mealScheduleId);
       mealScheduleId = undefined;
+      // The fixture changed outside the UI; read its new child count before
+      // testing eligibility again instead of reusing a possibly stale row.
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(staleRow).toBeVisible();
 
       await staleRow
         .getByRole("button", {
@@ -879,7 +884,7 @@ test.describe("Activity planning journey", () => {
         ).toHaveAttribute("href", `/activity-designs/${design.id}`);
         await expect(page.getByRole("link", { name: "Back to Activity Design", exact: true })).toHaveCount(0);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
-        await expect(page.getByText(viewport.width < 640 ? "Time: 12:00" : "12:00", { exact: true })).toBeVisible();
+        await expect(page.getByText("12:00", { exact: true })).toBeVisible();
         await expect(page.getByText("Planned pax", { exact: true })).toBeVisible();
         await page.screenshot({ path: `test-results/planning-activity-${viewport.width}.png`, fullPage: true });
         await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);

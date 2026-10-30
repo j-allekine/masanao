@@ -6,14 +6,7 @@ import { useState, useSyncExternalStore } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+
 import {
   Empty,
   EmptyDescription,
@@ -23,6 +16,9 @@ import {
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
+import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -36,6 +32,8 @@ import { formatCentavosAsPesos } from "@/features/activity-planning/domain/plann
 import { toast } from "sonner";
 
 import type { ActivityDetailItem, MealScheduleListItem } from "../types";
+import ActivityCreateDialog from "./activity-create-dialog";
+import DeleteActivityDialog from "./delete-activity-dialog";
 import ActivityActionsMenu from "./activity-actions-menu";
 import DeleteMealScheduleDialog from "./delete-meal-schedule-dialog";
 import MealScheduleCreateDialog from "./meal-schedule-create-dialog";
@@ -62,14 +60,14 @@ function MealScheduleRows({
   onDeleted: (schedule: MealScheduleListItem) => void;
 }) {
   return (
-    <WorkspaceTableFrame
+    <WorkspaceTableFrame responsive
       caption="Meal Schedules under this Activity"
       className="w-full"
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Meal Schedule</TableHead>
-          <TableHead scope="col" className="hidden sm:table-cell">Time</TableHead>
+          <TableHead scope="col" >Time</TableHead>
           <TableHead scope="col" className="text-center">
             Actions
           </TableHead>
@@ -110,7 +108,7 @@ function MealScheduleRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] font-medium">
+        <TableCell data-primary className="whitespace-normal font-medium">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, returnUrl)}
             aria-label={`Open Meal Schedule: ${schedule.label}`}
@@ -118,12 +116,12 @@ function MealScheduleRow({
           >
             {schedule.label}
           </Link>
-          <p className="mt-1 text-body-sm text-muted-foreground sm:hidden">Time: {schedule.mealTime}</p>
+
         </TableCell>
-        <TableCell className="hidden font-mono tabular-nums sm:table-cell">
+        <TableCell data-label="Time" className="font-mono tabular-nums">
           {schedule.mealTime}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-actions className="text-center">
           <ActivityActionsMenu
             activityName={schedule.label}
             actionButtonId={`meal-schedule-actions-${schedule.id}`}
@@ -173,6 +171,16 @@ export default function ActivityDetailContent({
     () => false,
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isRecordEditOpen, setIsRecordEditOpen] = useState(false);
+  const [isRecordDeleteOpen, setIsRecordDeleteOpen] = useState(false);
+  function closeRecordEdit() {
+    setIsRecordEditOpen(false);
+    window.setTimeout(() => document.getElementById("edit-current-record")?.focus(), 0);
+  }
+  function changeRecordDeleteOpen(open: boolean) {
+    setIsRecordDeleteOpen(open);
+    if (!open) window.setTimeout(() => document.getElementById("current-record-actions")?.focus(), 0);
+  }
   const [mealScheduleForEdit, setMealScheduleForEdit] =
     useState<MealScheduleListItem | null>(null);
   const parentUrl = `/activity-designs/${activity.activityDesign.id}`;
@@ -197,38 +205,17 @@ export default function ActivityDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={returnUrl} />}>
-                {returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink render={<Link href={withPlanningReturn(parentUrl, returnUrl)} />}>
-                {activity.activityDesign.activityDesignNo}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem className="min-w-0 max-w-full">
-              <BreadcrumbPage className="break-words">{activity.name}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        <div className="flex flex-col gap-3">
-          <h1 className="break-words text-heading-2 font-semibold">{activity.name}</h1>
-          <RecordFacts fields={[
-            { label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) },
-            { label: "Office", value: activity.officeName },
-            { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) },
-          ]} />
-        </div>
+      <WorkspaceContent>
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }, { label: activity.activityDesign.activityDesignNo, href: withPlanningReturn(parentUrl, returnUrl) }]} currentLabel={activity.name} />
+        {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
+        <WorkspaceRecordHeading title={activity.name} actions={<>
+          <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
+          <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
+        </>}><RecordFacts fields={[{ label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) }, { label: "Office", value: activity.officeName }, { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) }]} /></WorkspaceRecordHeading>
         <RecordDetails disabled={!isHydrated} fields={[
           ...(activity.venue ? [{ label: "Venue", value: activity.venue }] : []),
           ...(activity.plannedBudgetCentavos !== null ? [{ label: "Planned budget", value: formatCentavosAsPesos(activity.plannedBudgetCentavos) }] : []),
-          ...(activity.particulars ? [{ label: "Particulars", value: activity.particulars }] : []),
+          ...(activity.particulars ? [{ label: "Particulars", value: <span className="whitespace-pre-wrap">{activity.particulars}</span> }] : []),
         ]} />
 
         <section aria-labelledby="activity-meal-schedules-title" className="flex flex-col gap-3">
@@ -241,7 +228,8 @@ export default function ActivityDetailContent({
             <Button
               id="new-meal-schedule"
               onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
+              size="lg"
+              className="min-h-10 w-full sm:w-auto"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Add Meal Schedule
@@ -267,8 +255,10 @@ export default function ActivityDetailContent({
             />
           )}
         </section>
-      </div>
+      </WorkspaceContent>
 
+      <ActivityCreateDialog activityDesign={activity.activityDesign} activity={activity} mode="edit" open={isRecordEditOpen} onClose={closeRecordEdit} onSuccess={() => { closeRecordEdit(); router.refresh(); toast.success("Activity updated"); }} />
+      <DeleteActivityDialog activity={activity} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(withPlanningReturn(parentUrl, returnUrl)); toast.success("Activity deleted"); }} />
       <MealScheduleCreateDialog
         activity={activity}
         open={isCreateDialogOpen}

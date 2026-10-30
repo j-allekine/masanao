@@ -229,7 +229,7 @@ function ActivityFormFields({
   activityDesigns: ActivityDesignListItem[];
   activityDesignId?: string;
   mode: ActivityFormMode;
-  activityDesign?: ActivityDesignListItem;
+  activityDesign?: Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo">;
 }) {
   return (
     <FieldGroup>
@@ -335,7 +335,7 @@ export default function ActivityForm({
   activityDesignId?: string;
   activityDesigns?: ActivityDesignListItem[];
   activity?: ActivityEditableListItem;
-  activityDesign?: ActivityDesignListItem;
+  activityDesign?: Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo">;
   mode?: ActivityFormMode;
   layout?: "card" | "dialog";
   onCancel?: () => void;

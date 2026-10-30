@@ -38,8 +38,7 @@ test("mobile Activity facts wrap long Office names and keep row actions reachabl
   await page.goto(designUrl);
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
   const table = page.getByRole("table", { name: "Activities" });
-  const mobileFacts = table.locator("dl");
-  await expect(mobileFacts.getByText(office, { exact: true })).toBeVisible();
+  await expect(table.getByText(office, { exact: true })).toBeVisible();
   expect(await table.locator("..").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await expect(page.getByRole("button", { name: "Actions for Community kitchen preparation", exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -73,7 +72,8 @@ test("Activity record details wrap optional facts and support keyboard disclosur
       await expect(disclosure).toHaveAttribute("aria-expanded", "false");
       await expect(page.getByText(office, { exact: true })).toBeVisible();
       await expect(page.getByText("75", { exact: true })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
+      if (width < 640) await page.getByRole("button", { name: "Show ancestors", exact: true }).click();
+      await expect(page.getByRole(width < 640 ? "menuitem" : "link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
     }
   } finally {
     database.prepare("UPDATE activity SET particulars = NULL, plannedBudgetCentavos = NULL WHERE id = ?").run(activityId);
