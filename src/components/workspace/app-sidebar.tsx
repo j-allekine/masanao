@@ -74,13 +74,13 @@ function getInitials(name: string) {
 }
 
 function WorkspaceLink() {
-  const { setOpenMobile } = useSidebar()
+  const { closeMobileForNavigation } = useSidebar()
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={() => setOpenMobile(false)} />}
+          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={closeMobileForNavigation} />}
           tooltip="Masanao Municipal kitchen"
           className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent hover:text-sidebar-foreground"
         >
@@ -179,7 +179,7 @@ export function AppSidebar({
   user: AppSidebarUser
   activeSection?: WorkspaceSectionId
 }) {
-  const { setOpenMobile } = useSidebar()
+  const { closeMobileForNavigation } = useSidebar()
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4 pt-6 pb-7 sidebar-compact:px-2">
@@ -203,9 +203,7 @@ export function AppSidebar({
                         render={
                           <Link
                             href={item.href}
-                            onNavigate={() => {
-                              setOpenMobile(false)
-                            }}
+                            onNavigate={closeMobileForNavigation}
                             aria-label={visibleLabel}
                             aria-current={
                               activeSection === item.id ? "page" : undefined

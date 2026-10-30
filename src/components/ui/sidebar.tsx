@@ -41,6 +41,7 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  closeMobileForNavigation: () => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -79,6 +80,7 @@ function SidebarStateProvider({
   )
   const isHydrated = React.useSyncExternalStore(noSubscription, () => true, () => false)
   const [preference, setPreference] = React.useState(defaultOpen)
+  const focusDestination = React.useRef(false)
   const open = preference ?? isDesktop
   // A drawer belongs to its current route and viewport, never to the saved preference.
   const [mobile, setMobile] = React.useState({ open: false, pathname, isMobile })
@@ -106,9 +108,32 @@ function SidebarStateProvider({
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
 
+  const closeMobileForNavigation = React.useCallback(() => {
+    focusDestination.current = isMobile
+    setOpenMobile(false)
+  }, [isMobile, setOpenMobile])
+
+  React.useEffect(() => {
+    if (!focusDestination.current) return
+    const focus = () => {
+      const heading = [...document.querySelectorAll<HTMLElement>('[data-shell-client-ready="true"] h1')]
+        .find((element) => element.checkVisibility())
+      if (!heading) return false
+      heading.tabIndex = -1
+      heading.focus({ preventScroll: true })
+      focusDestination.current = false
+      return true
+    }
+    if (focus()) return
+    const observer = new MutationObserver(() => { if (focus()) observer.disconnect() })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-shell-client-ready"] })
+    return () => observer.disconnect()
+  }, [pathname])
+
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!document.querySelector('[data-slot="sidebar-wrapper"]')) return
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
@@ -135,8 +160,9 @@ function SidebarStateProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      closeMobileForNavigation,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, closeMobileForNavigation]
   )
 
   return <SidebarContext.Provider value={contextValue}>{children}</SidebarContext.Provider>
