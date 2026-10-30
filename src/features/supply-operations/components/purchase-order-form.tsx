@@ -128,7 +128,7 @@ function VendorField({
       >
         <SelectTrigger
           id={inputId}
-          className="w-full"
+          className="w-full min-h-10"
           aria-invalid={hasError}
           aria-describedby={hasError ? `${inputId}-error` : undefined}
         >
@@ -401,7 +401,7 @@ export default function PurchaseOrderForm({
           </Field>
         </FieldGroup>
       </div>
-      <DialogFooter className="shrink-0">
+      <DialogFooter className="shrink-0 [&_button]:min-h-10">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
           isPending={isSubmitting}

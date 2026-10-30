@@ -69,7 +69,7 @@ export default function PurchaseOrderDialog({
         }}
       >
         {open ? (
-          <DialogContent size="entry">
+          <DialogContent size="entry" className="[&_[data-slot=dialog-close]]:size-10">
             <DialogHeader>
               <DialogTitle>
                 {mode === "edit" ? "Edit Purchase Order" : "Create Purchase Order"}
@@ -106,8 +106,8 @@ export default function PurchaseOrderDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={closeDialog}>
+            <AlertDialogCancel className="min-h-10">Keep editing</AlertDialogCancel>
+            <AlertDialogAction className="min-h-10" variant="destructive" onClick={closeDialog}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
