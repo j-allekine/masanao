@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useCreatedRecord } from "@/hooks/use-created-record";
 import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
 
+import { WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import { FieldSet, FieldLegend } from "@/components/ui/field";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import CatalogPagination, {
@@ -226,14 +227,10 @@ export default function PurchaseOrdersWorkspace({
       }
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">Purchase Orders</h1>
-          <p className="text-body text-muted-foreground">
-            View the orders under which supplies are expected and received.
-          </p>
-        </div>
-        {canManagePurchaseOrders ? (
+      <WorkspaceCatalogHeader
+        title="Purchase Orders"
+        description="View order references and the supplies received under them."
+        action={canManagePurchaseOrders ? (
           <WorkspacePrimaryAction
             id="new-purchase-order"
             disabled={!isHydrated}
@@ -243,7 +240,7 @@ export default function PurchaseOrdersWorkspace({
             Create Purchase Order
           </WorkspacePrimaryAction>
         ) : null}
-      </div>
+      />
       <FieldSet disabled={!isHydrated} className="min-w-0">
         <FieldLegend className="sr-only">Purchase Order catalog controls</FieldLegend>
         <PurchaseOrderToolbar

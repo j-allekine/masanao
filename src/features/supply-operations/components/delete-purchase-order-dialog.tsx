@@ -45,6 +45,7 @@ export default function DeletePurchaseOrderDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={`Delete “${purchaseOrder.purchaseOrderNo}”?`}

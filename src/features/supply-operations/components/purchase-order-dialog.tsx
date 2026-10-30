@@ -40,6 +40,7 @@ export default function PurchaseOrderDialog({
   onSuccess: (purchaseOrder: PurchaseOrderListItem) => void;
 }) {
   const mode = purchaseOrder ? "edit" : "create";
+  const [isPending, setIsPending] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
@@ -50,6 +51,7 @@ export default function PurchaseOrderDialog({
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -67,7 +69,7 @@ export default function PurchaseOrderDialog({
         }}
       >
         {open ? (
-          <DialogContent className="max-h-[calc(100svh-2rem)] max-w-lg grid-rows-[auto_minmax(0,1fr)]">
+          <DialogContent size="entry" className="[&_[data-slot=dialog-close]]:size-10">
             <DialogHeader>
               <DialogTitle>
                 {mode === "edit" ? "Edit Purchase Order" : "Create Purchase Order"}
@@ -86,6 +88,7 @@ export default function PurchaseOrderDialog({
               onCancel={requestClose}
               onSuccess={onSuccess}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
             />
           </DialogContent>
         ) : null}
@@ -103,8 +106,8 @@ export default function PurchaseOrderDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={closeDialog}>
+            <AlertDialogCancel className="min-h-10">Keep editing</AlertDialogCancel>
+            <AlertDialogAction className="min-h-10" variant="destructive" onClick={closeDialog}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
