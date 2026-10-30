@@ -1,11 +1,11 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type ReactNode } from "react";
+import { forwardRef, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type FocusEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ListFilter, Plus, Search, X } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   InputGroup,
@@ -25,6 +25,7 @@ export function WorkspaceSearchField({
   value,
   onValueChange,
   className,
+  describedBy,
 }: {
   id: string;
   label: string;
@@ -32,6 +33,7 @@ export function WorkspaceSearchField({
   value: string;
   onValueChange: (value: string) => void;
   className?: string;
+  describedBy?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
@@ -49,6 +51,7 @@ export function WorkspaceSearchField({
           disabled={!hydrated}
           id={id}
           aria-label={label}
+          aria-describedby={describedBy}
           className="text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
           type="search"
           placeholder={placeholder}
@@ -169,7 +172,17 @@ export function WorkspaceCatalogToolbar({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [filtersInline, setFiltersInline] = useState<boolean | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterTriggerRef = useRef<HTMLButtonElement>(null);
+  const inlineRef = useRef<boolean | null>(null);
+  const focusedFilterId = useRef<string | null>(null);
+  const focusFrame = useRef<number | null>(null);
   const hasAdditionalFilters = Boolean(filterContent);
+
+  function rememberFilterFocus(event: FocusEvent<HTMLElement>) {
+    const field = (event.target as HTMLElement).closest("[data-catalog-filter]");
+    const control = field?.querySelector<HTMLElement>("button[id], input[id], [role=combobox][id]");
+    if (control?.id) focusedFilterId.current = control.id;
+  }
 
   useEffect(() => {
     const toolbar = toolbarRef.current;
@@ -177,11 +190,26 @@ export function WorkspaceCatalogToolbar({
     // Leave room for search, two selectors and Reset beside the workspace sidebar.
     const observer = new ResizeObserver(([entry]) => {
       const inline = entry.contentRect.width >= INLINE_FILTERS_MIN_WIDTH;
+      if (inlineRef.current === inline) return;
+      const active = document.activeElement;
+      const previousControl = focusedFilterId.current ? document.getElementById(focusedFilterId.current) : null;
+      const popupId = previousControl?.getAttribute("aria-controls");
+      const popup = popupId ? document.getElementById(popupId) : null;
+      const filterHadFocus = Boolean(previousControl?.contains(active) || popup?.contains(active));
+      const focusTrigger = inlineRef.current === true && !inline && filterHadFocus;
+      inlineRef.current = inline;
+      if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
       setFiltersInline(inline);
       if (inline) setFiltersOpen(false);
+      if (focusTrigger) focusFrame.current = requestAnimationFrame(() => {
+        if (!inlineRef.current) filterTriggerRef.current?.focus();
+      });
     });
     observer.observe(toolbar);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
+    };
   }, [hasAdditionalFilters]);
 
   return (
@@ -192,6 +220,7 @@ export function WorkspaceCatalogToolbar({
       data-filter-layout={filterContent ? (filtersInline === null ? "pending" : filtersInline ? "inline" : "panel") : "search"}
       className="flex min-w-0 flex-wrap items-end gap-3 border-b pb-5"
       role="search"
+      onFocusCapture={rememberFilterFocus}
     >
         <WorkspaceSearchField
           id={searchId}
@@ -199,9 +228,11 @@ export function WorkspaceCatalogToolbar({
           placeholder={searchPlaceholder}
           value={search}
           onValueChange={onSearchChange}
+          describedBy={`${searchId}-hint`}
           className={filterContent ? "w-0 flex-1 sm:max-w-[24rem]" : "w-full sm:max-w-[27rem]"}
         />
-        {filterContent && filtersInline ? <>
+        {filterContent ? <Sheet open={filtersOpen && !filtersInline} onOpenChange={setFiltersOpen}>
+          {filtersInline ? <>
           {filterContent}
           {activeFilterCount > 0 && onClearFilters ? (
             <Button type="button" variant="ghost" onClick={() => {
@@ -211,19 +242,23 @@ export function WorkspaceCatalogToolbar({
               <X data-icon="inline-start" aria-hidden="true" />Reset
             </Button>
           ) : null}
-        </> : filterContent ? (
-          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <SheetTrigger render={<Button type="button" variant="outline" disabled={filtersInline === null} aria-label={activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filters"} />}>
+        </> : <SheetTrigger render={<Button ref={filterTriggerRef} type="button" variant="outline" disabled={filtersInline === null} aria-label={activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filters"} />}>
               <ListFilter data-icon="inline-start" aria-hidden="true" />
               Filters{activeFilterCount ? ` · ${activeFilterCount}` : ""}
-            </SheetTrigger>
-            <SheetContent className="data-[side=right]:w-full [&_[data-catalog-filter]]:w-full">
+            </SheetTrigger>}
+            <SheetContent
+              onFocusCapture={rememberFilterFocus}
+              finalFocus={() => filtersInline
+                ? (focusedFilterId.current ? document.getElementById(focusedFilterId.current) : null) ?? document.getElementById(searchId)
+                : filterTriggerRef.current ?? document.getElementById(searchId)}
+              className="data-[side=right]:w-full [&_[data-catalog-filter]]:w-full"
+            >
               <SheetHeader>
                 <SheetTitle>Filters</SheetTitle>
                 <SheetDescription>Narrow the list. Changes apply immediately.</SheetDescription>
               </SheetHeader>
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4">
-                {filterContent}
+                {!filtersInline ? filterContent : null}
               </div>
               <SheetFooter>
                 {activeFilterCount > 0 && onClearFilters ? <Button type="button" variant="outline" onClick={() => {
@@ -233,8 +268,7 @@ export function WorkspaceCatalogToolbar({
                 <SheetClose render={<Button type="button" />}>Show results</SheetClose>
               </SheetFooter>
             </SheetContent>
-          </Sheet>
-        ) : null}
+          </Sheet> : null}
         {action ? (
           <WorkspacePrimaryAction
             id={action.id}
@@ -244,6 +278,7 @@ export function WorkspaceCatalogToolbar({
             {action.label}
           </WorkspacePrimaryAction>
         ) : null}
+        <FieldDescription id={`${searchId}-hint`} className="w-full">Results update as you type.</FieldDescription>
     </div>
   );
 }

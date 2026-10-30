@@ -57,8 +57,20 @@ test("catalog pane, content, title and row boundaries settle independently", asy
       const inner = width - 2 * expectedGutter;
       for (const sample of geometry) expect(sample).toEqual({ gutter: expectedGutter, inner, title: inner < 640 ? "24px" : "32px", row: inner < 640 ? "grid" : "table-row" });
       await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+      const menu = page.getByRole("table", { name, exact: true }).getByRole("button", { name: /^Actions for/ }).first();
+      await expect(menu).toBeVisible();
+      const menuBounds = (await menu.boundingBox())!;
+      const contentBounds = (await page.locator(".workspace-content").boundingBox())!;
+      expect(menuBounds.x).toBeGreaterThanOrEqual(contentBounds.x);
+      expect(menuBounds.x + menuBounds.width).toBeLessThanOrEqual(contentBounds.x + contentBounds.width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      if (width === 680 || width === 688) await capture(page, info.outputPath(`${name}-${width}-pane.png`));
+      if (width === 680 || width === 688) {
+        await menu.click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(menu).toBeFocused();
+        await capture(page, info.outputPath(`${name}-${width}-pane.png`));
+      }
     }
   }
 });
