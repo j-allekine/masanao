@@ -21,6 +21,7 @@ import ActivityDesignTable from "./activity-design-table";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivityDesignToolbar from "./activity-design-toolbar";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import { WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import {
   getPlanningListState,
   getPlanningListQuery,
@@ -144,18 +145,13 @@ export default function ActivityDesignsWorkspace({
       className="flex min-w-0 flex-col gap-6"
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-2 font-semibold">Activity Designs</h1>
-        </div>
-        <WorkspacePrimaryAction
+      <WorkspaceCatalogHeader title="Activity Designs" action={<WorkspacePrimaryAction
           id="new-activity-design"
           className="sm:min-w-[12rem]"
           onClick={openCreateDialog}
         >
           Create Activity Design
-        </WorkspacePrimaryAction>
-      </div>
+        </WorkspacePrimaryAction>} />
       <ActivityDesignToolbar
         search={filters.search}
         onSearchChange={updateSearch}

@@ -2,12 +2,6 @@ import { useState } from "react";
 import { PackageOpen } from "lucide-react";
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   TableBody,
   TableCell,
   TableHead,
@@ -21,80 +15,6 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import type { ItemListItem } from "../types";
 import ItemActionsMenu from "./item-actions-menu";
 import DeleteItemDialog from "./delete-item-dialog";
-
-function ItemMobileCard({
-  item,
-  canManage,
-  onEdit,
-  onSetActive,
-  onDeleted,
-  onUnits,
-  actionDisabled,
-}: {
-  item: ItemListItem;
-  canManage: boolean;
-  onEdit: () => void;
-  onSetActive: (isActive: boolean) => void;
-  onDeleted: () => void;
-  onUnits: () => void;
-  actionDisabled: boolean;
-}) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  return (
-    <>
-      <Card size="sm" data-item-id={item.id}>
-        <CardHeader className="flex flex-row items-start justify-between gap-3">
-          <CardTitle className="break-words">{item.name}</CardTitle>
-          <ItemActionsMenu
-              itemId={item.id}
-              itemName={item.name}
-              isActive={item.isActive}
-              actionButtonId={`item-actions-mobile-${item.id}`}
-              onEdit={onEdit}
-              onSetActive={onSetActive}
-              onDelete={() => setIsDeleteDialogOpen(true)}
-              onUnits={onUnits}
-              canManage={canManage}
-              isDeactivationLocked={item.hasPostedDeliveryReceiptLines}
-              disabled={actionDisabled}
-            />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <span className="text-label font-semibold text-muted-foreground">
-              Category
-            </span>
-            <span className="min-w-0 break-words text-right">{item.category.name}</span>
-          </div>
-          <div className="flex items-start justify-between gap-3">
-            <span className="text-label font-semibold text-muted-foreground">
-              Base Unit
-            </span>
-            <span className="min-w-0 break-words text-right">{item.baseUnit.name}</span>
-          </div>
-          <div className="flex items-start justify-between gap-3">
-            <span className="text-label font-semibold text-muted-foreground">Reorder level</span>
-            <span className="min-w-0 break-words text-right">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-label font-semibold text-muted-foreground">
-              Status
-            </span>
-            <WorkspaceLifecycleBadge isActive={item.isActive} />
-          </div>
-        </CardContent>
-      </Card>
-      {canManage ? <DeleteItemDialog
-        key={`${item.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
-        item={item}
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={onDeleted}
-      /> : null}
-    </>
-  );
-}
 
 function ItemRow({
   item,
@@ -118,28 +38,28 @@ function ItemRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35" data-item-id={item.id}>
-        <TableCell className="max-w-[22rem] whitespace-normal align-top">
+        <TableCell data-primary data-label="Name" className="w-[25%]">
           <span className="block break-words">{item.name}</span>
         </TableCell>
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+        <TableCell data-label="Category" className="w-[17%]">
           <span className="block break-words">{item.category.name}</span>
         </TableCell>
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+        <TableCell data-label="Base Unit" className="w-[15%]">
           <span className="block break-words">{item.baseUnit.name}</span>
         </TableCell>
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+        <TableCell data-label="Reorder level" className="w-[19%] text-right tabular-nums">
           <span className="block break-words">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-label="Status" className="w-[14%]">
           <WorkspaceLifecycleBadge isActive={item.isActive} />
         </TableCell>
-        <TableCell className="w-24 text-right">
+        <TableCell data-actions className="w-[10%] text-right">
           <div className="flex justify-end">
             <ItemActionsMenu
               itemId={item.id}
               itemName={item.name}
               isActive={item.isActive}
-              actionButtonId={`item-actions-desktop-${item.id}`}
+              actionButtonId={`item-actions-${item.id}`}
               onEdit={onEdit}
               onSetActive={onSetActive}
               onDelete={() => setIsDeleteDialogOpen(true)}
@@ -208,39 +128,23 @@ export default function ItemsTable({
   }
 
   return (
-    <>
-      <div className="flex flex-col gap-3 sm:hidden" data-items-mobile>
-        {items.map((item) => (
-          <ItemMobileCard
-            key={item.id}
-            item={item}
-            canManage={canManage}
-            onEdit={() => onEdit(item)}
-            onSetActive={(isActive) => onSetActive(item, isActive)}
-            onDeleted={() => onDeleted(item)}
-            onUnits={() => onUnits(item)}
-            actionDisabled={actionDisabled}
-          />
-        ))}
-      </div>
-      <div className="hidden sm:block" data-items-table-desktop>
-        <WorkspaceTableFrame caption="Items" className="min-w-[40rem]">
+        <WorkspaceTableFrame caption="Items" responsive>
           <TableHeader className="bg-muted/60">
             <TableRow>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="w-[25%] text-left">
                 Name
               </TableHead>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="w-[17%] text-left">
                 Category
               </TableHead>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="w-[15%] text-left">
                 Base Unit
               </TableHead>
-              <TableHead scope="col">Reorder level</TableHead>
-              <TableHead scope="col" className="text-center">
+              <TableHead scope="col" className="w-[19%] text-right">Reorder level</TableHead>
+              <TableHead scope="col" className="w-[14%]">
                 Status
               </TableHead>
-              <TableHead scope="col" className="w-24 text-right">Actions</TableHead>
+              <TableHead scope="col" className="w-[10%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -258,7 +162,5 @@ export default function ItemsTable({
             ))}
           </TableBody>
         </WorkspaceTableFrame>
-      </div>
-    </>
   );
 }

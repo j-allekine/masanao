@@ -552,7 +552,7 @@ test.describe("Items catalog journey", () => {
     ).toEqual({ issuanceQuantityPolicy: "whole-numbers-only" });
 
     const itemCard = page
-      .locator('[data-items-mobile] [data-item-id]')
+      .locator('[data-workspace-catalog] [data-item-id]')
       .filter({ hasText: "Eggs Policy Journey" });
     await itemCard
       .getByRole("button", {
@@ -687,7 +687,7 @@ test.describe("Items catalog journey", () => {
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
     const adminCard = page.locator(
-      `[data-items-mobile] [data-item-id="${fixtures.activeItemId}"]`,
+      `[data-workspace-catalog] [data-item-id="${fixtures.activeItemId}"]`,
     );
     await adminCard
       .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
@@ -817,7 +817,7 @@ test.describe("Items catalog journey", () => {
       .click();
     await expect(page).toHaveURL(/\/items$/);
     await expect(
-      page.locator("[data-items-table-desktop]").getByText("Alpha Beans", {
+      page.locator("[data-workspace-catalog]").getByText("Alpha Beans", {
         exact: true,
       }),
     ).toBeVisible();
@@ -856,9 +856,9 @@ test.describe("Items catalog journey", () => {
     fixturesToRemove = fixtures;
     await page.reload();
 
-    const desktopTable = page.locator("[data-items-table-desktop]");
+    const desktopTable = page.locator("[data-workspace-catalog]");
     await expect(desktopTable).toBeVisible();
-    await expect(page.locator("[data-items-mobile]")).toBeHidden();
+    await expect(page.getByRole("table", { name: "Items", exact: true })).toHaveCount(1);
     for (const column of ["Name", "Category", "Base Unit", "Status"]) {
       await expect(
         desktopTable.getByRole("columnheader", { name: column, exact: true }),
@@ -893,28 +893,29 @@ test.describe("Items catalog journey", () => {
     await page.goto("/items");
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
-    await expect(page.locator("[data-items-mobile]")).toBeVisible();
-    await expect(desktopTable).toBeHidden();
+    await expect(page.locator("[data-workspace-catalog]")).toBeVisible();
+    await expect(desktopTable).toBeVisible();
+    await expect(activeRow).toHaveCSS("display", "grid");
     await expect(
-      page.locator('[data-items-mobile]').getByText("Alpha Beans", { exact: true }),
+      page.locator('[data-workspace-catalog]').getByText("Alpha Beans", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.locator('[data-items-mobile]').getByText("Retired Rice", { exact: true }),
+      page.locator('[data-workspace-catalog]').getByText("Retired Rice", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.locator('[data-items-mobile]').getByText("Dry Goods", { exact: true }),
+      page.locator('[data-workspace-catalog]').getByText("Dry Goods", { exact: true }),
     ).toHaveCount(1);
     await expect(
       page
-        .locator('[data-items-mobile]')
+        .locator('[data-workspace-catalog]')
         .getByText("Retired Categories", { exact: true }),
     ).toHaveCount(1);
     await expect(
-      page.locator('[data-items-mobile]').getByText("Kilogram", { exact: true }),
+      page.locator('[data-workspace-catalog]').getByText("Kilogram", { exact: true }),
     ).toHaveCount(1);
     await expect(
       page
-        .locator('[data-items-mobile]')
+        .locator('[data-workspace-catalog]')
         .getByText("Retired Unit", { exact: true }),
     ).toHaveCount(1);
 
@@ -922,7 +923,8 @@ test.describe("Items catalog journey", () => {
       bodyScrollWidth: document.body.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
     }));
-    expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+    // A stable document scrollbar gutter may reserve space; it must not overflow.
+    expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
 
     const sidebarTrigger = page.locator('[data-slot="sidebar-trigger"]');
     await sidebarTrigger.focus();
@@ -1001,13 +1003,13 @@ test.describe("Items catalog journey", () => {
 
     await expect(dialog).toBeHidden();
     await expect(
-      page.locator("[data-items-mobile]").getByText("Brown Rice", {
+      page.locator("[data-workspace-catalog]").getByText("Brown Rice", {
         exact: true,
       }).first(),
     ).toBeVisible();
 
     const brownRiceCard = page
-      .locator('[data-items-mobile] [data-item-id]')
+      .locator('[data-workspace-catalog] [data-item-id]')
       .filter({ hasText: "Brown Rice" });
     await brownRiceCard
       .getByRole("button", { name: "Actions for Brown Rice", exact: true })
@@ -1036,7 +1038,7 @@ test.describe("Items catalog journey", () => {
 
     await expect(editDialog).toBeHidden();
     const updatedRiceCard = page
-      .locator('[data-items-mobile] [data-item-id]')
+      .locator('[data-workspace-catalog] [data-item-id]')
       .filter({ hasText: "Brown Rice Updated" });
     await expect(updatedRiceCard).toBeVisible();
     await expect(
@@ -1073,7 +1075,7 @@ test.describe("Items catalog journey", () => {
     await expect(validationDialog).toBeHidden();
 
     const retiredRiceCard = page.locator(
-      `[data-items-mobile] [data-item-id="${fixtures.inactiveItemId}"]`,
+      `[data-workspace-catalog] [data-item-id="${fixtures.inactiveItemId}"]`,
     );
     await retiredRiceCard
       .getByRole("button", { name: "Actions for Retired Rice", exact: true })
@@ -1118,7 +1120,7 @@ test.describe("Items catalog journey", () => {
     await expect(inactiveLookupDialog).toBeHidden();
 
     const alphaBeansCard = page.locator(
-      `[data-items-mobile] [data-item-id="${fixtures.activeItemId}"]`,
+      `[data-workspace-catalog] [data-item-id="${fixtures.activeItemId}"]`,
     );
     await alphaBeansCard
       .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
@@ -1165,7 +1167,7 @@ test.describe("Items catalog journey", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/items");
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-    await expect(page.locator("[data-items-table-desktop]")).toBeVisible();
+    await expect(page.locator("[data-workspace-catalog]")).toBeVisible();
     await expect(page.getByText("Showing 1 to 10 of 14 results", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Previous page", exact: true })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Next page", exact: true })).toBeEnabled();

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import WorkspaceHeader from "@/components/workspace/workspace-header";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import WorkspaceTableSkeleton from "@/components/workspace/workspace-table-skeleton";
 
 import type {
@@ -25,7 +26,7 @@ export default function ItemsContent({
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
+      <WorkspaceContent>
         <Suspense
           fallback={
             <WorkspaceTableSkeleton
@@ -40,7 +41,7 @@ export default function ItemsContent({
             canManageItems={canManageItems}
           />
         </Suspense>
-      </div>
+      </WorkspaceContent>
     </div>
   );
 }
