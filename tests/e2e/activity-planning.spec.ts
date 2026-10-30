@@ -511,6 +511,11 @@ test.describe("Activity planning journey", () => {
 
       deleteMealScheduleFixture(mealScheduleId);
       mealScheduleId = undefined;
+      // The fixture changed outside the UI; read its new child count before
+      // testing eligibility again instead of reusing a possibly stale row.
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(staleRow).toBeVisible();
 
       await staleRow
         .getByRole("button", {
