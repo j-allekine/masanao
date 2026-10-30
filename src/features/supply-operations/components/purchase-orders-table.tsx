@@ -6,12 +6,6 @@ import {
 } from "lucide-react";
 
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   TableBody,
   TableCell,
   TableHead,
@@ -33,85 +27,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-PH", {
 
 function formatUpdatedAt(value: string) {
   return dateFormatter.format(new Date(value));
-}
-
-function PurchaseOrderMobileCard({
-  purchaseOrder,
-  canManage,
-  actionDisabled,
-  amountsUnavailable,
-  onEdit,
-  onDeleted,
-}: {
-  purchaseOrder: PurchaseOrderListItem;
-  canManage: boolean;
-  actionDisabled: boolean;
-  amountsUnavailable?: boolean;
-  onEdit: () => void;
-  onDeleted: () => void;
-}) {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  return (
-    <>
-      <Card size="sm" data-purchase-order-id={purchaseOrder.id}>
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
-        <CardTitle className="break-words">
-          <Link
-            href={`/purchase-orders/${purchaseOrder.id}`}
-            className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {purchaseOrder.purchaseOrderNo}
-          </Link>
-        </CardTitle>
-        {canManage ? (
-          <PurchaseOrderActionsMenu
-            disabled={actionDisabled}
-            purchaseOrderId={purchaseOrder.id}
-            purchaseOrderNo={purchaseOrder.purchaseOrderNo}
-            actionButtonId={`purchase-order-actions-mobile-${purchaseOrder.id}`}
-            onEdit={onEdit}
-            onDelete={() => setIsDeleteDialogOpen(true)}
-            canDelete={!purchaseOrder.hasPostedReceipts}
-          />
-        ) : null}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <span className="text-label font-semibold text-muted-foreground">Vendor</span>
-          <span className="min-w-0 break-words text-right">
-            {purchaseOrder.vendor.name}
-          </span>
-        </div>
-        <div className="flex items-start justify-between gap-3">
-          <span className="text-label font-semibold text-muted-foreground">
-            Total delivered
-          </span>
-          <span className="min-w-0 break-words text-right">
-            <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} unavailable={amountsUnavailable} />
-          </span>
-        </div>
-        <div className="flex items-start justify-between gap-3">
-          <span className="text-label font-semibold text-muted-foreground">
-            Last updated
-          </span>
-          <span className="min-w-0 break-words text-right">
-            {formatUpdatedAt(purchaseOrder.updatedAt)}
-          </span>
-        </div>
-      </CardContent>
-      </Card>
-      {canManage ? (
-        <DeletePurchaseOrderDialog
-          key={`${purchaseOrder.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
-          purchaseOrder={purchaseOrder}
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          onDeleted={onDeleted}
-        />
-      ) : null}
-    </>
-  );
 }
 
 function PurchaseOrderRow({
@@ -137,10 +52,10 @@ function PurchaseOrderRow({
         className="hover:bg-muted/35"
         data-purchase-order-id={purchaseOrder.id}
       >
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+        <TableCell data-primary data-label="Purchase Order No." className="w-[27%]">
           <Link
             href={`/purchase-orders/${purchaseOrder.id}`}
-            className="block break-words rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="block break-words rounded-sm underline underline-offset-4 hover:decoration-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <FileText
               className="mr-2 inline-block align-text-bottom"
@@ -149,25 +64,25 @@ function PurchaseOrderRow({
             {purchaseOrder.purchaseOrderNo}
           </Link>
         </TableCell>
-        <TableCell className="max-w-[18rem] whitespace-normal align-top">
+        <TableCell data-label="Vendor" className="w-[24%]">
           <span className="block break-words">{purchaseOrder.vendor.name}</span>
         </TableCell>
-        <TableCell className="max-w-[18rem] px-6 whitespace-normal text-right align-top">
+        <TableCell data-label="Total delivered" className="w-[23%] text-right tabular-nums">
           <PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} unavailable={amountsUnavailable} />
         </TableCell>
-        <TableCell className="pl-6 whitespace-nowrap align-top">
+        <TableCell data-label="Last updated" className="w-[16%]">
           {formatUpdatedAt(purchaseOrder.updatedAt)}
         </TableCell>
         {canManage ? (
-          <TableCell className="text-center align-top">
+          <TableCell data-actions className="w-[10%] text-right">
             <PurchaseOrderActionsMenu
               disabled={actionDisabled}
               purchaseOrderId={purchaseOrder.id}
               purchaseOrderNo={purchaseOrder.purchaseOrderNo}
-              actionButtonId={`purchase-order-actions-desktop-${purchaseOrder.id}`}
+              actionButtonId={`purchase-order-actions-${purchaseOrder.id}`}
               onEdit={onEdit}
-            onDelete={() => setIsDeleteDialogOpen(true)}
-            canDelete={!purchaseOrder.hasPostedReceipts}
+              onDelete={() => setIsDeleteDialogOpen(true)}
+              canDelete={!purchaseOrder.hasPostedReceipts}
             />
           </TableCell>
         ) : null}
@@ -177,7 +92,12 @@ function PurchaseOrderRow({
           key={`${purchaseOrder.id}-${isDeleteDialogOpen ? "open" : "closed"}`}
           purchaseOrder={purchaseOrder}
           open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open);
+            if (!open) window.setTimeout(() => {
+              document.getElementById(`purchase-order-actions-${purchaseOrder.id}`)?.focus();
+            }, 0);
+          }}
           onDeleted={onDeleted}
         />
       ) : null}
@@ -228,38 +148,24 @@ export default function PurchaseOrdersTable({
   }
 
   return (
-    <>
-      <div className="flex flex-col gap-3 sm:hidden" data-purchase-orders-mobile>
-        {purchaseOrders.map((purchaseOrder) => (
-          <PurchaseOrderMobileCard
-            key={purchaseOrder.id}
-            purchaseOrder={purchaseOrder}
-            canManage={canManage}
-            actionDisabled={actionDisabled}
-            amountsUnavailable={amountsUnavailable}
-            onEdit={() => onEdit(purchaseOrder)}
-            onDeleted={() => onDeleted(purchaseOrder)}
-          />
-        ))}
-      </div>
-      <div className="hidden sm:block" data-purchase-orders-table-desktop>
-        <WorkspaceTableFrame caption="Purchase Orders" className="min-w-[42rem]">
+    <div data-purchase-orders-catalog>
+        <WorkspaceTableFrame caption="Purchase Orders" responsive>
           <TableHeader className="bg-muted/60">
             <TableRow>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="w-[27%] text-left">
                 Purchase Order No.
               </TableHead>
-              <TableHead scope="col" className="text-left">
+              <TableHead scope="col" className="w-[24%] text-left">
                 Vendor
               </TableHead>
-              <TableHead scope="col" className="px-6 text-right">
+              <TableHead scope="col" className="w-[23%] text-right">
                 Total delivered
               </TableHead>
-              <TableHead scope="col" className="pl-6 text-left">
+              <TableHead scope="col" className="w-[16%] text-left">
                 Last updated
               </TableHead>
               {canManage ? (
-                <TableHead scope="col" className="text-center">
+                <TableHead scope="col" className="w-[10%] text-right">
                   Actions
                 </TableHead>
               ) : null}
@@ -272,14 +178,13 @@ export default function PurchaseOrdersTable({
                 purchaseOrder={purchaseOrder}
                 canManage={canManage}
                 actionDisabled={actionDisabled}
-            amountsUnavailable={amountsUnavailable}
+                amountsUnavailable={amountsUnavailable}
                 onEdit={() => onEdit(purchaseOrder)}
                 onDeleted={() => onDeleted(purchaseOrder)}
               />
             ))}
           </TableBody>
         </WorkspaceTableFrame>
-      </div>
-    </>
+    </div>
   );
 }

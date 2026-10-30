@@ -167,6 +167,7 @@ export default function PurchaseOrderForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   mode: "create" | "edit";
   purchaseOrder?: PurchaseOrderListItem;
@@ -174,6 +175,7 @@ export default function PurchaseOrderForm({
   onCancel: () => void;
   onSuccess: (purchaseOrder: PurchaseOrderListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }) {
   const initialFormValues = initialValues(purchaseOrder);
   const [formValues, setFormValues] =
@@ -195,6 +197,10 @@ export default function PurchaseOrderForm({
     !vendors.some((vendor) => vendor.id === currentVendor.id)
       ? [...vendors, currentVendor]
       : vendors;
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     onDirtyChange?.(isDirty);
@@ -244,6 +250,7 @@ export default function PurchaseOrderForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -300,7 +307,7 @@ export default function PurchaseOrderForm({
       noValidate
       onSubmit={handleSubmit}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+      <div className="px-1 py-2">
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Purchase Order</AlertTitle>

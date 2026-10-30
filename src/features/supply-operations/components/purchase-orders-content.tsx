@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceTableSkeleton from "@/components/workspace/workspace-table-skeleton";
 
@@ -22,14 +23,14 @@ export default function PurchaseOrdersContent({
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
+      <WorkspaceContent>
         <Suspense
           fallback={
             <WorkspaceTableSkeleton
               columnLabels={[
                 "Purchase Order No.",
                 "Vendor",
-                "Reference",
+                "Total delivered",
                 "Last updated",
               ]}
             />
@@ -41,7 +42,7 @@ export default function PurchaseOrdersContent({
             canManagePurchaseOrders={canManagePurchaseOrders}
           />
         </Suspense>
-      </div>
+      </WorkspaceContent>
     </div>
   );
 }

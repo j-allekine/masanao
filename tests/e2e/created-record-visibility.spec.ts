@@ -187,7 +187,7 @@ for (const width of [1280, 375]) {
       await expect(dialog).toBeHidden();
       await expect(page.getByRole("searchbox")).toBeEmpty();
       await expect(page).toHaveURL(/\/purchase-orders\?view=compact$/);
-      const rows = page.locator(width < 640 ? '[data-purchase-orders-mobile] [data-purchase-order-id]' : '[data-purchase-orders-table-desktop] [data-purchase-order-id]');
+      const rows = page.locator('[data-purchase-orders-catalog] [data-purchase-order-id]');
       await expect(rows.first()).toContainText(number);
       await expect(rows.first()).toBeInViewport();
       await expect(page.getByRole("button", { name: `Actions for ${number}`, exact: true })).toBeFocused();
