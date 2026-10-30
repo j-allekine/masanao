@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
-import { getPurchaseOrder } from "@/features/supply-operations/server";
+import { listVendors } from "@/features/master-data/server";
+import { canManagePurchaseOrders, getPurchaseOrder } from "@/features/supply-operations/server";
 import { PurchaseOrderDetailContent } from "@/features/supply-operations/ui";
 import { auth } from "@/server/auth";
 
@@ -24,7 +25,8 @@ export default async function PurchaseOrderDetailRoute(
     redirect("/");
   }
 
-  const purchaseOrder = await getPurchaseOrder(id);
+  const [purchaseOrder, canManage] = await Promise.all([getPurchaseOrder(id), canManagePurchaseOrders({ id: session.user.id, name: session.user.name, username: session.user.username ?? null })]);
+  const vendors = canManage ? await listVendors() : [];
   if (!purchaseOrder) notFound();
 
   return (
@@ -35,7 +37,7 @@ export default async function PurchaseOrderDetailRoute(
       }}
       activeSection="purchase-orders"
     >
-      <PurchaseOrderDetailContent purchaseOrder={purchaseOrder} />
+      <PurchaseOrderDetailContent purchaseOrder={purchaseOrder} canManage={canManage} vendors={vendors} />
     </WorkspaceShell>
   );
 }

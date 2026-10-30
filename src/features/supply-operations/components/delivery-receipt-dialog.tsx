@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
 
 import type { ItemListItem } from "../types";
 import DeliveryReceiptForm from "./delivery-receipt-form";
+import { getPurchaseOrderReturn, withPurchaseOrderReturn } from "./purchase-order-return-state";
 
 export default function DeliveryReceiptDialog({
   purchaseOrderId,
@@ -24,10 +25,11 @@ export default function DeliveryReceiptDialog({
   items: ItemListItem[];
 }) {
   const router = useRouter();
+  const params = useSearchParams();
   const [open, setOpen] = useState(true);
 
   function returnToOrder() {
-    router.push(`/purchase-orders/${purchaseOrderId}`);
+    router.push(withPurchaseOrderReturn(`/purchase-orders/${purchaseOrderId}`, getPurchaseOrderReturn(params)));
   }
 
   return <Dialog disablePointerDismissal open={open} onOpenChange={(nextOpen) => {
