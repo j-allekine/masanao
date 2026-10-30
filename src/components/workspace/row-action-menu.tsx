@@ -59,6 +59,7 @@ export default function WorkspaceRowActionMenu({
   }
 
   const nonEmptyGroups = groups.filter((group) => group.actions.length > 0);
+  if (!nonEmptyGroups.length) return null;
 
   return (
     <DropdownMenu>
@@ -72,7 +73,7 @@ export default function WorkspaceRowActionMenu({
             aria-label={ariaLabel}
             disabled={disabled}
             {...triggerProps}
-            className={cn(triggerProps?.className)}
+            className={cn("size-10", triggerProps?.className)}
           />
         }
       >

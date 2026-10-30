@@ -37,7 +37,7 @@ test("administrator configures exact levels and staff view the catalog on deskto
   await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
   await expect(dialog).toBeHidden();
   await page.getByLabel("Search Items").fill("Reorder Browser Test");
-  const mobile = page.locator("[data-items-mobile]");
+  const mobile = page.locator("[data-workspace-catalog]");
   await expect(mobile).toContainText("0.000000000000000001 kg");
   await page.screenshot({ path: `${evidence}/items-mobile.png` });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -57,6 +57,6 @@ test("administrator configures exact levels and staff view the catalog on deskto
   await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
   await page.goto("/items");
   await page.getByLabel("Search Items").fill("Reorder Browser Test");
-  await expect(page.locator("[data-items-table-desktop]")).toContainText("2.5 pc");
+  await expect(page.locator("[data-workspace-catalog]")).toContainText("2.5 pc");
   await expect(page.getByRole("button", { name: "Create Item", exact: true })).toHaveCount(0);
 });
