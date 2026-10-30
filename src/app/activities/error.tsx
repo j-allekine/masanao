@@ -4,10 +4,10 @@ import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 
 export default function ActivitiesError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
-  return <WorkspaceRouteError activeSection="activity-designs" error={error} reset={reset} />;
+  return <WorkspaceRouteError activeSection="activity-designs" error={error} retry={retry} />;
 }

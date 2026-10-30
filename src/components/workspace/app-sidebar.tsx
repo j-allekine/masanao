@@ -74,13 +74,13 @@ function getInitials(name: string) {
 }
 
 function WorkspaceLink() {
-  const { setOpenMobile } = useSidebar()
+  const { closeMobileForNavigation } = useSidebar()
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={() => setOpenMobile(false)} />}
+          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={closeMobileForNavigation} />}
           tooltip="Masanao Municipal kitchen"
           className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent hover:text-sidebar-foreground"
         >
@@ -176,16 +176,17 @@ export function AppSidebar({
   user,
   activeSection = "overview",
 }: {
-  user: AppSidebarUser
+  user?: AppSidebarUser
   activeSection?: WorkspaceSectionId
 }) {
-  const { setOpenMobile } = useSidebar()
+  const { closeMobileForNavigation } = useSidebar()
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4 pt-6 pb-7 sidebar-compact:px-2">
         <WorkspaceLink />
       </SidebarHeader>
-      <SidebarContent className="gap-5 sidebar-compact:gap-3">
+      <SidebarContent>
+        <nav aria-label="Workspace" className="flex flex-col gap-5 sidebar-compact:gap-3">
         {workspaceSectionGroups.map((group) => (
           <SidebarGroup key={group.id} className="px-3 py-1 sidebar-compact:px-2">
             <SidebarGroupLabel className="h-7 px-3 text-label text-sidebar-foreground/70">
@@ -203,9 +204,7 @@ export function AppSidebar({
                         render={
                           <Link
                             href={item.href}
-                            onNavigate={() => {
-                              setOpenMobile(false)
-                            }}
+                            onNavigate={closeMobileForNavigation}
                             aria-label={visibleLabel}
                             aria-current={
                               activeSection === item.id ? "page" : undefined
@@ -226,11 +225,14 @@ export function AppSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        </nav>
       </SidebarContent>
-      <SidebarSeparator className="bg-sidebar-foreground/15" />
-      <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
-        <AccountMenu user={user} />
-      </SidebarFooter>
+      {user ? <>
+        <SidebarSeparator className="bg-sidebar-foreground/15" />
+        <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
+          <AccountMenu user={user} />
+        </SidebarFooter>
+      </> : null}
       <SidebarRail />
     </Sidebar>
   )

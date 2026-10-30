@@ -38,8 +38,13 @@ test("every workspace family retains one shared header and usable mobile navigat
     for (const [index, [path, title]] of routes.entries()) {
       await page.goto(path);
       await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-      // Master Data retains its existing subsection-based body in this header-only PR.
-      if (path !== "/master-data") await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole("main")).toHaveCount(1);
+      const skip = page.getByRole("link", { name: "Skip to main content", exact: true });
+      await skip.focus();
+      await expect(skip).toBeInViewport();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("main")).toBeFocused();
       const header = page.locator('[data-slot="workspace-header"]');
       await expect(header).toHaveCount(1);
       await expect(header.getByText(title, { exact: true })).toBeVisible();
@@ -125,4 +130,37 @@ test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => 
   await expect(page.getByRole("tooltip").getByText("Planning", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("tooltip")).toBeHidden();
+});
+
+test("failed reads retain anonymous orientation and recover through Retry", async ({ page }, info) => {
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.exec('ALTER TABLE item RENAME TO item_unavailable_for_header_test');
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/items");
+    await expect(page.getByRole("heading", { level: 1, name: "Unable to load Items" })).toBeVisible();
+    await expect(page.getByRole("main")).toHaveCount(1);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /account menu/ })).toHaveCount(0);
+    await expect(page.getByText("Workspace unavailable", { exact: true })).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath("items-error-anonymous-320.png"), fullPage: true });
+  } finally {
+    db.exec('ALTER TABLE item_unavailable_for_header_test RENAME TO item');
+    db.close();
+  }
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Items", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Municipal Administrator account menu" })).toBeVisible();
+});
+
+test("unknown routes have one anonymous main heading", async ({ page }, info) => {
+  await page.goto("/missing-workspace-page");
+  await expect(page.getByRole("main")).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await page.getByRole("link", { name: "Open workspace", exact: true }).click();
+  await expect(page.getByRole("main", { name: "Masanao staff sign-in" })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("unauthenticated-fallback.png"), fullPage: true });
 });
