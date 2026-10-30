@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent, ReactNode } from "react";
+import { useRef, type MouseEvent, type ReactNode } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -27,6 +27,8 @@ export type DestructiveDialogProps = {
   confirmLabel?: string;
   pendingLabel?: string;
   cancelLabel?: string;
+  /** Opt in for long identities on narrow or short screens. */
+  bounded?: boolean;
 };
 
 export default function DestructiveDialog({
@@ -40,10 +42,20 @@ export default function DestructiveDialog({
   confirmLabel = "Delete",
   pendingLabel = "Deleting…",
   cancelLabel = "Cancel",
+  bounded = false,
 }: DestructiveDialogProps) {
+  const popupRef = useRef<HTMLDivElement>(null);
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+    <AlertDialog open={open} onOpenChange={(nextOpen) => {
+      if (bounded && isPending && !nextOpen) return;
+      onOpenChange(nextOpen);
+    }}>
+      <AlertDialogContent
+        ref={popupRef}
+        initialFocus={bounded ? () => popupRef.current : undefined}
+        className={bounded ? "max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain [overflow-wrap:anywhere]" : undefined}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
