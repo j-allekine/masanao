@@ -27,7 +27,7 @@ export default function PurchaseOrderDetailContent({
     <div className="flex min-h-svh min-w-0 flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
 
-      <main className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
         <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-label font-medium uppercase tracking-label text-primary">
@@ -90,7 +90,7 @@ export default function PurchaseOrderDetailContent({
             </EmptyHeader>
           </Empty> : <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />}
         </section>
-      </main>
+      </div>
     </div>
   );
 }

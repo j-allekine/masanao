@@ -4,16 +4,16 @@ import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 
 export default function PurchaseOrdersError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
     <WorkspaceRouteError
       activeSection="purchase-orders"
       error={error}
-      reset={reset}
+      retry={retry}
     />
   );
 }

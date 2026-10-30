@@ -46,10 +46,10 @@ export default async function MealScheduleDetailRoute(
       <div className="flex h-svh min-h-0 flex-col bg-card">
         <WorkspaceHeader title="Planning" />
       {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
-        <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">
+        <div className="flex flex-col gap-6 px-4 py-5 sm:px-6">
           <MealScheduleHeader mealSchedule={mealSchedule}  />
           <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
-        </main>
+        </div>
       )}
       </div>
     </WorkspaceShell>
