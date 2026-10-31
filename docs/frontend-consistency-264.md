@@ -17,22 +17,22 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | #268 | Activity Design and Item catalog patterns | #266 | `c6a634f` + `bf6be87`; integrated `7f0c66d` |
 | #269 | Planning and Item entry dialogs | — | `da74302`; integrated `30e3284` |
 | #270 | Responsive filters | #268 | `87d4ab7` + `c418c0c`; integrated `7f0c66d` |
-| #271 | Activities catalog | #270 | Pending |
+| #271 | Activities catalog | #270 | `11f71de`; integrated `1819ea9` |
 | #272 | Recipes catalog | #269, #270 | `bbcc89f`; integrated `5f16784` |
 | #273 | Purchase Orders catalog | #269, #270 | `7b5909a`; integrated `77e696a` |
 | #274 | Master Data tabs, Units, Categories | #267, #269, #270 | `1ee0db5` + shared confirmation fixes; integrated `a3b5406` |
 | #275 | Offices and Vendors | #274 | `4107461` + `763d023`; integrated `a3b5406` |
-| #276 | Inventory | #270 | Pending |
+| #276 | Inventory | #270 | `a79bb59`; integrated `1819ea9` |
 | #277 | Planning records | #268, #269 | `741a59d`; integrated `6a2d0d6` |
 | #278 | Recipe record and return context | #272, #277 | `bb781fa`; integrated `26fe20b` |
 | #279 | Purchase Order record and receipt inspection | #273, #277 | `86e2eda`; integrated `d1b3539` |
-| #280 | Recipe editor | #278 | Pending |
+| #280 | Recipe editor | #278 | `1851cac` + `9d8780c`; integrated `487a036`; shared rapid-Back correction pending |
 | #281 | Delivery editor | #279 | Pending |
 | #282 | Draft Meal Schedule | #277 | Pending |
 | #283 | Posted Meal Schedule | #277 | Pending |
 | #284 | Activity Design child collection | #277 | Pending |
 | #285 | Activity child collection | #277 | Pending |
-| #286 | Purchase Order receipt history | #279 | Pending |
+| #286 | Purchase Order receipt history | #279 | `9d1498e`; integrated `71610dc` |
 | #287 | Dashboard origin | #277 | Pending |
 | #288 | Integrated verification | All terminal scopes | Pending |
 
@@ -204,6 +204,44 @@ are preserved in the task handoffs under `C:\Users\LENOVO\.codex\spec-264`.
   Lint, TypeScript, architecture, 34 unit tests and production build passed.
   See `handoff-279.md`.
 
-Recipe/delivery editors, Inventory, child collections, Dashboard origin, and
-final integration verification remain in progress. Real-phone and real 400%
+Delivery/draft issuance editors, child collections, Dashboard origin, and final
+integration verification remain in progress. Real-phone and real 400%
 browser-zoom gates remain outstanding. No full-spec completion is claimed.
+
+### Activities, Inventory, Recipe editing, and receipt history (`71610dc`)
+
+- #271: responsive Activities catalog; focused browser coverage includes both
+  roles, long facts, states, pagination, and return context. See `handoff-271.md`.
+- #276: one responsive Inventory table with all six facts and exact quantities.
+  Navigation, refresh, history, CSV, and domain owners are unchanged. Initial
+  browser set: 26 passed and one obsolete duplicated-layout locator failed.
+  Corrected category/empty/filter rerun: 6 passed; final long/status rerun: 4
+  passed. Unit 25, architecture, lint and TypeScript passed. See `handoff-276.md`.
+- Shared touch follow-up `79e261c`: growing 40px actions, header trigger,
+  pagination, search controls and dialog Close; bounded Item confirmation.
+  Focused browser 7 passed; header 2 passed across 15 routes at desktop/phone;
+  unit 8, architecture, lint and TypeScript passed. See `handoff-catalog-touch.md`.
+- #280: 24 browser journeys passed, including twelve ingredient lines, raw
+  values/errors, pending failure, native unload, reload and Back/Forward, and
+  short-screen 200% text. Screenshot review corrected an oversized footer that
+  had left too little usable body space. Shared guard is persistent and stores
+  only additive history indices. See `handoff-280-final.md` and
+  `handoff-navigation-guard.md`.
+- #286: final browser 3 passed across admin/staff and 0/1/10/11/24 children,
+  search, clamp, creation reveal, refresh/shrink, and history. Native URL writes
+  let Next supply routing markers while preserving unrelated metadata.
+  See `handoff-286.md` for retained evidence and limits of earlier check logs.
+- Integrated lint, architecture (2), route type generation, TypeScript,
+  production build and SQLite smoke passed at `71610dc`. Full unit result:
+  **502 passed, 1 failed** (76 files). Failure is the retired 36px action-class
+  expectation; isolated test correction `e4c883e` passed 2 focused tests and
+  awaits integration. This is not yet a passing integrated unit gate.
+- A production-server browser trial passed Recipe history and twelve-line
+  saving, but failed a receipt-count locator and the production sign-in rate
+  limit during repeated SSR checks. It does not replace the canonical full
+  browser gate. Details: `integration-71610dc-checks.md` and
+  `production-harness-71610dc.log` in the external task directory.
+- A subsequent draft-issuance stress test reproduced a real shared-guard gap:
+  two rapid Back actions can bypass the prompt. Its centralized correction is
+  in progress under #282 and must be adopted/rechecked by all three editors.
+  The PR remains draft; no full integrated browser pass is claimed.
