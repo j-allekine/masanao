@@ -1,3 +1,4 @@
+import { NavigationGuardProvider } from "@/components/workspace/navigation-guard";
 import { cookies } from "next/headers";
 import { SidebarStateProvider } from "@/components/ui/sidebar";
 import type { Metadata } from "next";
@@ -29,7 +30,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const defaultOpen = savedSidebar === "true" ? true : savedSidebar === "false" ? false : undefined;
   return (
     <html lang="en" className={`${fontVariables} h-full antialiased`}>
-      <body className="min-h-full flex flex-col"><SidebarStateProvider defaultOpen={defaultOpen}>{children}</SidebarStateProvider></body>
+      <body className="min-h-full flex flex-col"><NavigationGuardProvider><SidebarStateProvider defaultOpen={defaultOpen}>{children}</SidebarStateProvider></NavigationGuardProvider></body>
     </html>
   );
 }
