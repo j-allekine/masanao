@@ -31,7 +31,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     ).status(),
   ).toBe(200);
   await page.goto("/activity-designs/e2e-review-design/activities/e2e-review-activity");
-  await page.goto(mealPath);
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible({timeout:30_000});
+  await page.getByRole("link", {name:"Open Meal Schedule: Lunch",exact:true}).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
@@ -96,9 +97,10 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   ).toBeFocused();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
-  await page.goBack();
+  await expect(page.getByLabel("Meal pax", {exact:true})).toBeEnabled();
+  await page.evaluate(()=>history.back());
   await expect(page).toHaveURL(/\/activities\/e2e-review-activity$/);
-  await page.goForward();
+  await page.evaluate(()=>history.forward());
   await expect(page).toHaveURL(new RegExp(`${mealPath}$`));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await page.reload();
@@ -127,6 +129,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("2");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
+  await expect(page.getByLabel("Meal pax", {exact:true})).toBeEnabled();
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.prepare(
     "UPDATE item SET issuanceQuantityPolicy='allow-decimals' WHERE id='e2e-review-eggs'",
@@ -163,6 +166,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
+  await expect(page.getByLabel("Meal pax", {exact:true})).toBeEnabled();
   expect(
     db
       .prepare(
@@ -199,15 +203,17 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(
     review.getByText(/Meal pax pending. This review is incomplete/),
   ).toBeVisible();
+  await expect(review.getByRole("button", {name:"Close review",exact:true})).toBeEnabled();
   await page.keyboard.press("Escape");
-  await page.goBack();
+  await expect(review).toHaveCount(0);
+  await page.evaluate(()=>history.back());
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes?" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
-  await page.goBack();
+  await page.evaluate(()=>history.back());
   await page
     .getByRole("dialog", { name: "Discard unsaved changes?" })
     .getByRole("button", { name: "Discard changes", exact: true })

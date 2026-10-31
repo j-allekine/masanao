@@ -118,22 +118,23 @@ for (const cancel of ["cancel", "escape"] as const) {
   });
 }
 
-// The history guard can deliberately supersede a navigation before Next loads it.
-// Assert the final destination below; surface every other navigation error.
+// Guarded traversals can be canceled before any framework navigation starts.
+// Activate browser history directly; each caller asserts its eventual UI/URL.
 async function traverseHistory(page: Page, direction: "back" | "forward") {
-  try {
-    if (direction === "back") await page.goBack({ waitUntil: "domcontentloaded" });
-    else await page.goForward({ waitUntil: "domcontentloaded" });
-  } catch (error) {
-    if (!(error instanceof Error) || !error.message.includes("net::ERR_ABORTED")) throw error;
-  }
+  await page.evaluate((value) => {
+    if (value === "back") history.back();
+    else history.forward();
+  }, direction);
 }
 
 test("dirty browser Back resumes the actual previous page without reopening issuance", async ({ page }, testInfo) => {
   await signIn(page);
   await page.goto("/activity-designs");
   await page.goto("/purchase-orders");
-  await openIssuance(page, "history");
+  await page.goto("/activity-designs/e2e-regression-design/activities/e2e-regression-activity");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByRole("link", {name:"Open Meal Schedule: history",exact:true}).click();
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByLabel("Meal pax", { exact: true }).fill("11");
   await traverseHistory(page, "back");
   const discard = page.getByRole("dialog", { name: "Discard unsaved changes?" });
@@ -142,13 +143,13 @@ test("dirty browser Back resumes the actual previous page without reopening issu
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("11");
   await traverseHistory(page, "back");
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
-  await expect(page).toHaveURL(/\/purchase-orders$/);
+  await expect(page).toHaveURL(/\/activities\/e2e-regression-activity$/);
   await traverseHistory(page, "back");
-  await expect(page).toHaveURL(/\/activity-designs$/);
-  await page.screenshot({ path: testInfo.outputPath("original-history-destination.png"), fullPage: true });
-  await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
-  await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/purchase-orders$/);
+  await page.screenshot({ path: testInfo.outputPath("original-history-destination.png"), fullPage: true });
+  await expect(page.getByRole("heading", { name: "Purchase Orders", exact: true })).toBeVisible();
+  await traverseHistory(page, "forward");
+  await expect(page).toHaveURL(/\/activities\/e2e-regression-activity$/);
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("10");
@@ -157,7 +158,10 @@ test("dirty browser Back resumes the actual previous page without reopening issu
 test("saved draft preserves normal browser Back and Forward", async ({ page }) => {
   await signIn(page);
   await page.goto("/activity-designs");
-  await openIssuance(page, "history");
+  await page.goto("/activity-designs/e2e-regression-design/activities/e2e-regression-activity");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByRole("link", {name:"Open Meal Schedule: history",exact:true}).click();
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByLabel("Meal pax", { exact: true }).fill("15");
   await addRecipe(page);
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -168,8 +172,8 @@ test("saved draft preserves normal browser Back and Forward", async ({ page }) =
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await traverseHistory(page, "back");
-  await expect(page).toHaveURL(/\/activity-designs$/);
-  await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/activities\/e2e-regression-activity$/);
+  await expect(page.getByRole("heading", { name: "Regression preparation", exact: true })).toBeVisible();
   await page.waitForLoadState("domcontentloaded");
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
