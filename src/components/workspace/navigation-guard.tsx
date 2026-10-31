@@ -64,11 +64,16 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
     function traverse(event: PopStateEvent) {
       const destination = entry(event.state, session);
       if (restoring) {
-        if (destination?.index === restoring.index) {
-          event.stopImmediatePropagation();
+        if (!destination) return;
+        // Repeated Back/Forward can arrive before the first rollback completes.
+        // Keep Next from rendering an intermediate entry and unmounting the form.
+        event.stopImmediatePropagation();
+        if (destination.index === restoring.index) {
           const after = restoring.after;
           restoring = null;
           after();
+        } else {
+          window.history.go(restoring.index - destination.index);
         }
         return;
       }
