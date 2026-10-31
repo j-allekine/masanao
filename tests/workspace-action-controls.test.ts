@@ -26,10 +26,13 @@ describe("workspace action controls", () => {
     );
 
     expect(button).toContain('type="button"');
-    expect(button).toContain("h-9");
-    expect(button).toContain("w-full sm:w-auto");
+    expect(button).toContain("h-auto min-h-10");
+    expect(button).toContain("whitespace-normal");
+    expect(button).toContain("w-full");
+    expect(button).toContain("sm:w-auto");
     expect(link).toContain('href="/recipes/new"');
-    expect(link).toContain("h-9");
+    expect(link).toContain("h-auto min-h-10");
+    expect(link).toContain("whitespace-normal");
     expect(link).toContain("w-full sm:w-auto");
     expect(link).toContain('data-icon="inline-start"');
   });
