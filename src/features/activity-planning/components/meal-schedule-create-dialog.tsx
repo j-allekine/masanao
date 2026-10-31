@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Pencil, Plus } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -66,7 +66,17 @@ export default function MealScheduleCreateDialog({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
 
+  useEffect(() => {
+    const firstInvalidId = fieldErrors.label?.length
+      ? "mealScheduleLabel"
+      : fieldErrors.mealTime?.length
+        ? "mealScheduleTime"
+        : null;
+    if (firstInvalidId) document.getElementById(firstInvalidId)?.focus();
+  }, [fieldErrors]);
+
   function closeDialog() {
+    if (isSubmitting) return;
     setFormValues(getInitialFormValues(mealSchedule));
     setFieldErrors({});
     setFormError(null);
@@ -87,6 +97,7 @@ export default function MealScheduleCreateDialog({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -121,7 +132,7 @@ export default function MealScheduleCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeDialog()}>
-      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
+      <DialogContent size="entry">
         <DialogHeader>
           <DialogTitle>
             {mode === "edit"
@@ -157,7 +168,6 @@ export default function MealScheduleCreateDialog({
                   name="label"
                   value={formValues.label}
                   required
-                  autoFocus
                   aria-invalid={Boolean(fieldErrors.label?.length)}
                   aria-describedby={
                     fieldErrors.label?.length

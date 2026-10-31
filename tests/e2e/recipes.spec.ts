@@ -66,7 +66,7 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(preview.getByText("Chicken Tinola", { exact: true })).toBeVisible();
   await expect(preview.getByText(/Baseline pax not set/)).toBeVisible();
   await expect(preview.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
-  await expect(preview.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(preview.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(preview).toHaveCount(0);
   await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
@@ -75,13 +75,13 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await expect(page.getByRole("heading", { name: "Ingredients", exact: true })).toBeVisible();
   await expect(page.getByText(/Baseline pax not set/)).toBeVisible();
   await expect(page.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Create Recipe" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Edit Recipe" })).toHaveCount(0);
   await page.goto("/recipes/e2e-recipe-active/edit");
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
   await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Ingredients for ___ pax")).toHaveCount(0);
+  await expect(page.getByLabel("Recipe Baseline Pax")).toHaveCount(0);
 });
 
 test("lets an administrator open the Recipe editor from the catalog action menu", async ({ page }) => {
@@ -106,7 +106,7 @@ test("completes a legacy Recipe baseline without changing its ingredients", asyn
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/recipes/e2e-recipe-active/edit");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   await expect(page.getByText("Baseline pax not set")).toBeVisible();
   await expect(page.getByText(/redefines this batch; it does not multiply or change ingredient quantities/)).toBeVisible();
   await page.getByRole("button", { name: "Save Recipe" }).click();
@@ -117,7 +117,7 @@ test("completes a legacy Recipe baseline without changing its ingredients", asyn
   await page.getByRole("button", { name: "Save Recipe" }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
   await expect(page.getByText(/Ingredients for 50 pax/)).toBeVisible();
-  await expect(page.getByRole("cell", { name: "1.5", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1\.5/ })).toBeVisible();
   await page.goto("/recipes");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Actions for Chicken Tinola").click();
@@ -142,11 +142,13 @@ test("gives administrators lifecycle actions for inactive Recipes in the catalog
 test("lets an administrator manage an inactive Recipe from its detail page", async ({ page }) => {
   await signInAsAdministrator(page);
   await page.goto("/recipes/e2e-recipe-inactive");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-inactive$/);
   await expect(page.getByRole("heading", { name: "Retired Soup", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reactivate", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Delete Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Recipe actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Reactivate", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Delete Recipe", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Edit Recipe", exact: true })).toHaveCount(0);
 });
 
@@ -197,7 +199,7 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Recipe name").fill("Rice Porridge");
   await page.getByLabel("Preparation note").fill("Cook until soft.");
-  await page.getByLabel("Ingredients for ___ pax").fill("50");
+  await page.getByLabel("Recipe Baseline Pax").fill("50");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("2.5");
   await expect(page.getByText("Kilogram (kg)", { exact: true })).toBeVisible();
@@ -219,7 +221,7 @@ test("shows accessible baseline errors and keeps the Recipe editor usable at 320
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("1");
   await page.getByRole("button", { name: "Create Recipe" }).click();
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   await expect(baseline).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("Enter the number of people these ingredients serve.", { exact: true })).toBeVisible();
   await baseline.focus();
@@ -238,7 +240,7 @@ test("shows field errors for nonempty invalid baseline values without losing the
   await page.getByLabel("Recipe name").fill("Invalid Baseline Soup");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("1.2500");
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   for (const invalidValue of ["0", "1.5", "2147483648"]) {
     await baseline.fill(invalidValue);
     await baseline.press("Tab");
@@ -276,7 +278,7 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
   await page.getByLabel("Recipe name").fill("Gram Rice Porridge");
-  await page.getByLabel("Ingredients for ___ pax").fill("50");
+  await page.getByLabel("Recipe Baseline Pax").fill("50");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("500");
   await page.getByLabel("Ingredient 1 Unit").click();
@@ -320,4 +322,56 @@ test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) =
     scrollWidth: body.scrollWidth,
   }));
   expect(bodyWidths.scrollWidth).toBeLessThanOrEqual(bodyWidths.clientWidth);
+});
+
+test("keeps Recipe facts and preview associated without panning across layouts", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAsAdministrator(page);
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByLabel("Search Recipes").fill("Chicken");
+  for (const width of [1280, 900, 320]) {
+    await page.setViewportSize({ width, height: 600 });
+    const row = page.locator('[data-recipe-id="e2e-recipe-active"]');
+    await expect(row.getByRole("link", { name: "Chicken Tinola" })).toBeVisible();
+    await expect(row.getByText("Active", { exact: true })).toBeVisible();
+    expect(await row.locator('[data-label="Ingredients"]').textContent()).toBe("1");
+    expect(await row.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await row.getByLabel("Actions for Chicken Tinola").focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("menuitem", { name: "View", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("cell", { name: "Rice", exact: true })).toBeVisible();
+    expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath(`recipe-preview-${width}.png`), fullPage: true });
+    await page.keyboard.press("Escape");
+    await expect(row.getByLabel("Actions for Chicken Tinola")).toBeFocused();
+    await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
+    await page.screenshot({ path: test.info().outputPath(`recipe-catalog-${width}.png`), fullPage: true });
+  }
+});
+
+
+test("carries the latest typed query through Recipe record edit cancel and new cancel", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAsAdministrator(page);
+  await page.setViewportSize({ width: 320, height: 600 });
+  await page.goto("/recipes");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByLabel("Search Recipes").fill("Chicken");
+  const recordLink = page.getByRole("link", { name: "Chicken Tinola", exact: true });
+  await expect(recordLink).toHaveAttribute("href", /returnTo=.*Chicken/);
+  await recordLink.click();
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath("recipe-record-320.png"), fullPage: true });
+  await page.getByRole("link", { name: "Edit Recipe", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Recipes", exact: true }).last().click();
+  await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
+  await page.getByRole("link", { name: "Create Recipe", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "New Recipe", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
 });

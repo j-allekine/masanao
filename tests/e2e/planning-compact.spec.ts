@@ -33,7 +33,8 @@ test("Planning shows useful information once, reveals optional facts and preserv
     await page.getByRole("link", { name:"Compact Plan 11",exact:true }).click();
     await expect(page.getByRole("heading", {name:"Compact Plan 11",exact:true})).toBeVisible();
     await expect(page.getByText("COMPACT-11",{exact:true})).toHaveCount(1);
-    await expect(page.getByText("Fiscal year: 2026",{exact:true})).toBeVisible();
+    await expect(page.getByText("Fiscal year",{exact:true})).toBeVisible();
+    await expect(page.getByText("2026",{exact:true})).toBeVisible();
     await expect(page.getByText("Activity Design context",{exact:true})).toHaveCount(0);
     await expect(page.getByRole("link",{name:/Back to/})).toHaveCount(0);
     await expect(page.getByText("AIP-COMPACT",{exact:true})).not.toBeVisible();
@@ -47,7 +48,8 @@ test("Planning shows useful information once, reveals optional facts and preserv
     await expect(page.getByRole("heading",{name:"Compact Activity",exact:true})).toBeVisible();
     await expect(page.getByText("75",{exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"Additional details",exact:true})).toHaveCount(0);
-    const returnLink=page.getByRole("link",{name:"Activity Designs",exact:true});
+    if (width < 640) await page.getByRole("button", {name:"Show ancestors",exact:true}).click();
+    const returnLink=page.getByRole(width < 640 ? "menuitem" : "link",{name:"Activity Designs",exact:true});
     await expect(returnLink).toHaveAttribute("href",catalog);
     await returnLink.click();
     await expect(page).toHaveURL(new RegExp("activityDesignsPage=2$"));

@@ -55,7 +55,7 @@ export default function IssuancePostedContent({
       className="flex min-h-0 flex-1 flex-col bg-card"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6" data-workspace-scroll="body">
         <MealScheduleHeader
           mealSchedule={mealSchedule}
           ready={hydrated}
@@ -170,7 +170,7 @@ export default function IssuancePostedContent({
             </li>)}
           </ul>
         </section> : null}
-      </main>
+      </div>
       <Sheet
         open={Boolean(view)}
         onOpenChange={(open) => {

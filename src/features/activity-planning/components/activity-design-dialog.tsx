@@ -37,6 +37,7 @@ export default function ActivityDesignDialog({
   onSuccess: (activityDesign: ActivityDesignListItem) => void;
 }) {
   const [isDirty, setIsDirty] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
   const closeDialog = useCallback(() => {
@@ -46,6 +47,7 @@ export default function ActivityDesignDialog({
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -68,7 +70,7 @@ export default function ActivityDesignDialog({
         }}
       >
         {dialogState ? (
-          <DialogContent className="max-w-lg">
+          <DialogContent size="entry">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription className="sr-only">
@@ -95,6 +97,7 @@ export default function ActivityDesignDialog({
                 onSuccess(activityDesign);
               }}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
             />
           </DialogContent>
         ) : null}

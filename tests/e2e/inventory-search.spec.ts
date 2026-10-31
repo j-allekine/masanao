@@ -71,7 +71,7 @@ for (const width of [1280, 320]) {
       const response = page.waitForResponse(isInventoryResponse);
       releaseRefresh();
       await (await response).finished();
-      const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+      const list = page.getByRole("table", { name: "Inventory", exact: true });
       await expect(list.locator('[data-item-id="search-251-brown"]')).toContainText("Reorder now");
       await expect(refresh).toBeEnabled();
       await expect(page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true })).toHaveValue("Brown");
@@ -120,7 +120,7 @@ for (const width of [1280, 320]) {
       await page.goto("/inventory");
       await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
       await expect(page.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled();
-      const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+      const list = page.getByRole("table", { name: "Inventory", exact: true });
       const brown = list.locator('[data-item-id="search-251-brown"]');
       await expect(brown).toContainText("Good");
       if (width === 320) await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).first().click();
@@ -159,7 +159,7 @@ for (const width of [1280, 320]) {
     await expect(page).toHaveURL(/\/inventory$/);
     if (width === 320) await page.keyboard.press("Escape");
     await expect(search).toHaveValue("");
-    const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+    const list = page.getByRole("table", { name: "Inventory", exact: true });
     await expect(list.getByText("White Rice", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Export CSV", exact: true })).toHaveAttribute("href", "/inventory/export");
   });
@@ -201,7 +201,7 @@ for (const width of [1280, 320]) {
       const refreshed = page.waitForResponse((response) => response.request().headers()["rsc"] === "1" && new URL(response.url()).pathname === "/inventory");
       releaseRefresh();
       await (await refreshed).finished();
-      const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+      const list = page.getByRole("table", { name: "Inventory", exact: true });
       await expect(list.locator('[data-item-id="search-251-brown"]')).toContainText("Reorder now");
       await expect(search).toHaveValue("  bRoWn  ");
       await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe("  bRoWn  ");
@@ -226,9 +226,9 @@ for (const width of [1280, 320]) {
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const search = page.getByRole("searchbox", { name: "Search Inventory by Item name", exact: true });
-    const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
+    const list = page.getByRole("table", { name: "Inventory", exact: true });
     const brown = width === 320
-      ? page.locator('[data-inventory-mobile] [data-item-id="search-251-brown"]')
+      ? page.locator('[data-item-id="search-251-brown"]')
       : page.getByRole("row").filter({ hasText: "Brown Rice" });
     await expect(brown).toContainText("2.500000000000000001 kg");
     await expect(brown).toContainText("Good");

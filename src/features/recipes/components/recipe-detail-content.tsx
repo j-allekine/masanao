@@ -1,11 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { ClipboardList } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
+import { WorkspaceRecordHeading, WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
+import { recipeCatalogReturn, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
 
 import { buttonVariants } from "@/components/ui/button";
 import { RecordDetails } from "@/components/workspace/record-details";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -29,30 +36,19 @@ export default function RecipeDetailContent({
   recipe: RecipeDetailItem;
   canManageRecipes: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const returnTo = recipeCatalogReturn(searchParams.get("returnTo"));
+  const recordHref = recipeRecordHref(recipe.id, returnTo);
   return (
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
-
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-label text-primary">Recipe</p>
-            <h1 className="break-words text-heading-1 font-semibold">{recipe.name}</h1>
-            <p className="text-body text-muted-foreground">
-              Review the usual ingredients recorded for this food template.
-            </p>
-          </div>
-          <Link
-            href="/recipes"
-            className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}
-          >
-            <ClipboardList data-icon="inline-start" aria-hidden="true" />
-            Back to Recipes
-          </Link>
-          {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} /> : null}
-          {canManageRecipes && recipe.isActive ? <Link href={`/recipes/${recipe.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}>Edit Recipe</Link> : null}
-        </div>
-
+      <WorkspaceContent>
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Recipes", href: returnTo }]} currentLabel={recipe.name} />
+        <WorkspaceRecordHeading title={recipe.name} status={<div className="mt-3"><WorkspaceLifecycleBadge isActive={recipe.isActive} /></div>} actions={<>
+          {canManageRecipes && recipe.isActive ? <Link href={recipeEditorHref(recipe.id, recordHref)} className={cn(buttonVariants({ variant: "outline" }), "min-h-10 h-auto whitespace-normal lg:min-h-9")}>Edit Recipe</Link> : null}
+          {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} returnTo={returnTo} /> : null}
+        </>} />
+        {recipe.needsAttention ? <Alert><AlertTitle>Unavailable ingredients</AlertTitle><AlertDescription>Some Items or Units are inactive. Review the Recipe before using it for new work.</AlertDescription></Alert> : null}
         <RecordDetails label="Preparation note" fields={recipe.preparationNote ? [
           { label: "Note", value: <span className="whitespace-pre-wrap">{recipe.preparationNote}</span> },
         ] : []} />
@@ -66,8 +62,7 @@ export default function RecipeDetailContent({
               {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
             </p>
           </div>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
+          <WorkspaceTableFrame responsive caption="Recipe ingredients">
               <TableHeader className="bg-muted/60">
                 <TableRow>
                   <TableHead scope="col">Item</TableHead>
@@ -78,20 +73,19 @@ export default function RecipeDetailContent({
               <TableBody>
                 {recipe.ingredients.map((ingredient) => (
                   <TableRow key={ingredient.id}>
-                    <TableCell className="break-words font-medium">
+                    <TableCell data-primary className="break-words font-medium">
                       {ingredient.item.name}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell data-label="Quantity" className="text-right tabular-nums">
                       {ingredient.enteredQuantity}
                     </TableCell>
-                    <TableCell className="break-words">{displayUnit(ingredient)}</TableCell>
+                    <TableCell data-label="Unit" className="break-words">{displayUnit(ingredient)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-          </div>
+          </WorkspaceTableFrame>
         </section>
-      </main>
+      </WorkspaceContent>
     </div>
   );
 }

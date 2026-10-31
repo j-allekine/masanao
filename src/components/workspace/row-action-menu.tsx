@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Ellipsis } from "lucide-react";
 import { Fragment, type ComponentProps, type ReactNode } from "react";
 
@@ -30,10 +31,9 @@ type WorkspaceRowActionTriggerProps = Omit<
 export type WorkspaceRowAction = {
   label: string;
   icon?: ReactNode;
-  onSelect: () => void;
   variant?: "default" | "destructive";
   disabled?: boolean;
-};
+} & ({ href: string; onNavigate?: ComponentProps<typeof Link>["onNavigate"]; onSelect?: never } | { href?: never; onSelect: () => void });
 
 export type WorkspaceRowActionGroup = {
   actions: readonly WorkspaceRowAction[];
@@ -59,6 +59,7 @@ export default function WorkspaceRowActionMenu({
   }
 
   const nonEmptyGroups = groups.filter((group) => group.actions.length > 0);
+  if (!nonEmptyGroups.length) return null;
 
   return (
     <DropdownMenu>
@@ -72,7 +73,7 @@ export default function WorkspaceRowActionMenu({
             aria-label={ariaLabel}
             disabled={disabled}
             {...triggerProps}
-            className={cn(triggerProps?.className)}
+            className={cn("size-10", triggerProps?.className)}
           />
         }
       >
@@ -88,7 +89,9 @@ export default function WorkspaceRowActionMenu({
                   key={action.label}
                   variant={action.variant}
                   disabled={action.disabled}
-                  onClick={() => openAfterMenuCloses(action.onSelect)}
+                  nativeButton={action.href ? false : undefined}
+                  render={action.href ? <Link href={action.href} onNavigate={action.onNavigate} /> : undefined}
+                  onClick={action.onSelect ? () => openAfterMenuCloses(action.onSelect!) : undefined}
                 >
                   {action.icon}
                   {action.label}

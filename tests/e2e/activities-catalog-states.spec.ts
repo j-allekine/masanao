@@ -45,7 +45,11 @@ test("Activities catalog keeps empty, no-match, pagination and active-role actio
       const search = page.getByRole("searchbox", { name: "Search Activities", exact: true });
       await search.fill("Cross-design parent identity");
       await expect(page.getByText("Showing 1 to 10 of 12 results", { exact: true })).toBeVisible();
-      await expect(page.getByRole("columnheader", { name: "Activity Design title", exact: true })).toBeVisible();
+      if (width === 1280) await expect(page.getByRole("columnheader", { name: "Activity Design title", exact: true })).toBeVisible();
+      const row = page.getByRole("row").filter({ hasText: "Catalog state Activity" }).first();
+      await expect(row).toHaveCSS("display", width === 320 ? "grid" : "table-row");
+      await expect(row.getByRole("link", { name: "Cross-design parent identity", exact: true })).toHaveAttribute("href", /\/activity-designs\/e2e-activities-catalog-states\?planningReturn=/);
+      await expect(row.locator('[data-label="Meal Schedules"]')).toHaveText("0");
       await expect(page.getByRole("row").filter({ hasText: "Catalog state Activity" }).first()).toContainText("Cross-design parent identity");
       const next = page.getByRole("button", { name: "Next page", exact: true });
       await next.focus();
@@ -53,6 +57,16 @@ test("Activities catalog keeps empty, no-match, pagination and active-role actio
       await expect(page.getByText("Showing 11 to 12 of 12 results", { exact: true })).toBeVisible();
       await expect(page).toHaveURL(/activitiesPage=2/);
       await expect(next).toBeDisabled();
+      const pageButtons = await page.getByRole("navigation", { name: "pagination", exact: true }).getByRole("button").all();
+      const boxes = [];
+      for (const control of pageButtons) {
+        if (!await control.isVisible()) continue;
+        const box = (await control.boundingBox())!;
+        expect(box.width).toBeGreaterThanOrEqual(40);
+        expect(box.height).toBeGreaterThanOrEqual(40);
+        boxes.push(box);
+      }
+      for (let index = 1; index < boxes.length; index++) expect(boxes[index].x).toBeGreaterThanOrEqual(boxes[index - 1].x + boxes[index - 1].width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`catalog-page-2-${width}.png`), fullPage: true });
       await search.fill("No matching Activity in this catalog");
@@ -86,5 +100,50 @@ test("Activities catalog keeps empty, no-match, pagination and active-role actio
     database.prepare("DELETE FROM activity WHERE activityDesignId = ?").run(designId);
     database.prepare("DELETE FROM activity_design WHERE id = ?").run(designId);
     database.close();
+  }
+});
+
+test("Activities keeps complete long identities and parent navigation at short phone and expanded tablet widths", async ({ page, context }, info) => {
+  test.setTimeout(120_000);
+  const id = `${designId}-long`;
+  const name = "Activity".repeat(29).slice(0, 200);
+  const title = "Parent長".repeat(29).slice(0, 200);
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.prepare("INSERT INTO activity_design (id,activityDesignNo,title,fiscalYear,createdAt,updatedAt) VALUES (?,'CATALOG-LONG',?,2026,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(id, title);
+    db.prepare("INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,createdAt,updatedAt) VALUES (?,?,?,'Kitchen',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(id, id, name);
+    await signIn(page);
+    const catalog = `/activities?activitiesSearch=${name}`;
+    for (const width of [320, 1024]) {
+      await page.setViewportSize({ width, height: 480 });
+      await context.addCookies([{ name: "sidebar_state", value: "true", url: process.env.BETTER_AUTH_URL! }]);
+      await page.goto(catalog);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const row = page.getByRole("row").filter({ hasText: name });
+      await expect(row.getByRole("link", { name, exact: true })).toBeVisible();
+      const parent = row.getByRole("link", { name: title, exact: true });
+      await expect(parent).toBeVisible();
+      expect(await row.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+      await page.screenshot({ path: info.outputPath(`activities-long-${width}.png`), fullPage: true, animations: "disabled" });
+      const href = await parent.getAttribute("href");
+      const direct = await context.newPage();
+      await direct.goto(href!);
+      await expect(direct.getByRole("heading", { name: title, exact: true })).toBeVisible();
+      await expect(direct.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", catalog);
+      await direct.close();
+      await row.getByRole("link", { name, exact: true }).click();
+      await page.getByRole("link", { name: "Return to Activities", exact: true }).click();
+      await expect(page).toHaveURL(catalog);
+      await page.goBack();
+      await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+      await page.goForward();
+      await expect(page.getByRole("searchbox", { name: "Search Activities", exact: true })).toHaveValue(name);
+    }
+  } finally {
+    db.prepare("DELETE FROM activity WHERE id=?").run(id);
+    db.prepare("DELETE FROM activity_design WHERE id=?").run(id);
+    db.close();
   }
 });

@@ -43,22 +43,23 @@ function ActivityDesignRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell data-label="Design No." className="w-[18%] font-mono text-mono tracking-mono text-muted-foreground">
           {activityDesign.activityDesignNo}
         </TableCell>
-        <TableCell className="max-w-[28rem]">
+        <TableCell data-primary data-label="Activity Design" className="w-[40%]">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}`, catalogUrl)}
-            className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="workspace-record-link"
           >
             {activityDesign.title}
           </Link>
         </TableCell>
-        <TableCell className="text-center tabular-nums">
+        <TableCell data-label="Fiscal Year" className="w-[14%] text-right tabular-nums">
           {activityDesign.fiscalYear}
         </TableCell>
         <TableCell
-          className="text-center"
+          data-label="Activities"
+          className="w-[16%] text-right tabular-nums"
           aria-label={`${formattedActivityCount} ${activityDesign.activityCount === 1 ? "Activity" : "Activities"}`}
         >
           <span className="block tabular-nums">
@@ -68,7 +69,7 @@ function ActivityDesignRow({
             {activityDesign.activityCount === 1 ? "Activity" : "Activities"}
           </span>
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-actions className="w-[12%] text-right">
           <ActivityDesignActionsMenu
             activityDesignTitle={activityDesign.title}
             actionButtonId={`activity-design-actions-${activityDesign.id}`}
@@ -150,23 +151,23 @@ export default function ActivityDesignTable({
   return (
     <WorkspaceTableFrame
       caption="Activity Designs"
-      className="min-w-[52rem]"
+      responsive
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
-          <TableHead scope="col" className="text-left">
+          <TableHead scope="col" className="w-[18%] text-left">
             Design No.
           </TableHead>
-          <TableHead scope="col" className="text-left">
+          <TableHead scope="col" className="w-[40%] text-left">
             Activity Design
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-[14%] text-right">
             Fiscal Year
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-[16%] text-right">
             Activities
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-[12%] text-right">
             Actions
           </TableHead>
         </TableRow>

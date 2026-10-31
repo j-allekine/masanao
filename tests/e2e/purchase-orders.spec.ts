@@ -109,7 +109,7 @@ test.describe("Purchase Orders read journey", () => {
       });
 
       await page.reload();
-      const desktopTable = page.locator("[data-purchase-orders-table-desktop]");
+      const desktopTable = page.locator("[data-purchase-orders-catalog]");
       const populatedRow = desktopTable
         .locator("[data-purchase-order-id]")
         .filter({ hasText: "PO-E2E-001" });
@@ -191,7 +191,7 @@ test.describe("Purchase Orders read journey", () => {
           () => document.body.scrollWidth <= document.documentElement.clientWidth,
         ),
       ).toBe(true);
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
       await expect(page).toHaveURL(/\/purchase-orders$/);
       await page.setViewportSize({ width: 1280, height: 720 });
       await expect(
@@ -218,7 +218,7 @@ test.describe("Purchase Orders read journey", () => {
         page.getByText("Showing 11 to 11 of 11 results", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.locator("[data-purchase-orders-table-desktop]").getByText(
+        page.locator("[data-purchase-orders-catalog]").getByText(
           "PO-E2E-011",
           { exact: true },
         ),
@@ -234,7 +234,7 @@ test.describe("Purchase Orders read journey", () => {
         page.getByText("Showing 1 result", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.locator("[data-purchase-orders-table-desktop]").getByText(
+        page.locator("[data-purchase-orders-catalog]").getByText(
           "PO-E2E-001",
           { exact: true },
         ),
@@ -252,8 +252,8 @@ test.describe("Purchase Orders read journey", () => {
       ).toBeVisible();
 
       await page.setViewportSize({ width: 390, height: 844 });
-      await expect(page.locator("[data-purchase-orders-mobile]")).toBeVisible();
-      await expect(page.locator("[data-purchase-orders-table-desktop]")).toBeHidden();
+      await expect(page.locator("[data-purchase-orders-catalog]")).toBeVisible();
+      await expect(page.locator("[data-purchase-order-id]")).toHaveCount(10);
       expect(
         await page.evaluate(
           () => document.body.scrollWidth <= document.documentElement.clientWidth,
@@ -312,7 +312,7 @@ test.describe("Purchase Orders administration journey", () => {
       await signIn(page, "municipal.admin", adminPassword);
       await page.goto("/purchase-orders");
       const row = page.locator(
-        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+        '[data-purchase-orders-catalog] [data-purchase-order-id]',
       ).filter({ hasText: "PO-E2E-LOCKED-ORIGINAL" });
       await expect(row).toBeVisible();
       await row.getByRole("button", {
@@ -331,7 +331,7 @@ test.describe("Purchase Orders administration journey", () => {
       await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(page.locator(
-        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+        '[data-purchase-orders-catalog] [data-purchase-order-id]',
       ).filter({ hasText: "PO-E2E-LOCKED-CORRECTED" })).toBeVisible();
 
       expect(withE2eDatabase((database) => database.prepare(
@@ -405,7 +405,7 @@ test.describe("Purchase Orders administration journey", () => {
       await expect(dialog).toBeHidden();
 
       const desktopRow = page.locator(
-        '[data-purchase-orders-table-desktop] [data-purchase-order-id]',
+        '[data-purchase-orders-catalog] [data-purchase-order-id]',
       ).filter({ hasText: "PO-E2E-CRUD-001" });
       await expect(desktopRow).toBeVisible();
       await expect(desktopRow).toContainText("Acme Foods");
@@ -510,7 +510,7 @@ test.describe("Purchase Orders administration journey", () => {
 
       await page.reload();
       await expect(
-        page.locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
+        page.locator('[data-purchase-orders-catalog] [data-purchase-order-id]')
           .filter({ hasText: "PO-E2E-CRUD-001" }),
       ).toContainText("₱ 0.00");
       await expect(
@@ -518,7 +518,7 @@ test.describe("Purchase Orders administration journey", () => {
       ).toBeVisible();
 
       const refreshedDesktopRow = page
-        .locator('[data-purchase-orders-table-desktop] [data-purchase-order-id]')
+        .locator('[data-purchase-orders-catalog] [data-purchase-order-id]')
         .filter({ hasText: "PO-E2E-CRUD-001" });
 
       await refreshedDesktopRow
@@ -678,21 +678,21 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,000.00");
       await expect(page.locator('[data-po-receipt-count]')).toHaveText("1");
-      await expect(page.getByRole("cell", { name: "1", exact: true })).toBeVisible();
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "DR-E2E-ALT", exact: true }).click();
       const receiptDialog = page.getByRole("dialog");
       await expect(receiptDialog.getByRole("heading", { name: "Delivery receipt DR-E2E-ALT", exact: true })).toBeVisible();
       expect(await receiptDialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      await expect(receiptDialog.getByText("Lines", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("E2E Rice", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("62.5 Kilogram", { exact: true })).toBeVisible();
       await expect(receiptDialog.getByText("₱ 800.00", { exact: true })).toBeVisible();
-      await expect(receiptDialog.locator("tfoot").getByText("₱ 2,000.00", { exact: true })).toBeVisible();
+      await expect(receiptDialog.locator("[data-receipt-inspection-total]")).toHaveText("₱ 2,000.00");
       await expect(receiptDialog.getByText("Not recorded", { exact: true })).toBeVisible();
       await receiptDialog.locator('[data-slot="dialog-footer"]').getByRole("button", { name: "Close", exact: true }).click();
       await expect(receiptDialog).toBeHidden();
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
-      const receiptOrderRow = page.locator(`[data-purchase-orders-table-desktop] [data-purchase-order-id="${purchaseOrderId}"]`);
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
+      const receiptOrderRow = page.locator(`[data-purchase-orders-catalog] [data-purchase-order-id="${purchaseOrderId}"]`);
       await expect(receiptOrderRow).toContainText("₱ 2,000.00");
       const storedReceipt = withE2eDatabase((database) => database.prepare(
         'SELECT "receiptDate" FROM "delivery_receipt" WHERE "purchaseOrderId" = ? AND "receiptNo" = ?',
@@ -749,7 +749,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,350.00");
       await expect(page.locator('[data-po-receipt-count]')).toHaveText("2");
-      await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+      await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
       await expect(receiptOrderRow).toContainText("₱ 2,350.00");
 
       withE2eDatabase((database) => {

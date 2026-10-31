@@ -217,7 +217,6 @@ function ActivityParticipantCountField({
 function ActivityFormFields({
   formValues,
   fieldErrors,
-  layout,
   updateField,
   activityDesigns,
   activityDesignId,
@@ -226,12 +225,11 @@ function ActivityFormFields({
 }: {
   formValues: ActivityFormValues;
   fieldErrors: ActivityFieldErrors;
-  layout: "card" | "dialog";
   updateField: (field: ActivityField, value: string) => void;
   activityDesigns: ActivityDesignListItem[];
   activityDesignId?: string;
   mode: ActivityFormMode;
-  activityDesign?: ActivityDesignListItem;
+  activityDesign?: Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo">;
 }) {
   return (
     <FieldGroup>
@@ -265,7 +263,6 @@ function ActivityFormFields({
         required
         value={formValues.name}
         error={fieldErrors.name}
-        autoFocus={layout === "dialog"}
         onChange={(event) => updateField("name", event.target.value)}
       />
       <ActivityTextField
@@ -333,16 +330,18 @@ export default function ActivityForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  onPendingChange,
 }: {
   activityDesignId?: string;
   activityDesigns?: ActivityDesignListItem[];
   activity?: ActivityEditableListItem;
-  activityDesign?: ActivityDesignListItem;
+  activityDesign?: Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo">;
   mode?: ActivityFormMode;
   layout?: "card" | "dialog";
   onCancel?: () => void;
   onSuccess?: (activity: ActivityListItem) => void;
   onDirtyChange?: (isDirty: boolean) => void;
+  onPendingChange?: (isPending: boolean) => void;
 }) {
   const router = useRouter();
   const initialFormValues = getInitialFormValues(activityDesignId, activity);
@@ -366,6 +365,10 @@ export default function ActivityForm({
   useEffect(() => {
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    onPendingChange?.(isSubmitting);
+  }, [isSubmitting, onPendingChange]);
 
   useEffect(() => {
     const firstInvalidField = (
@@ -405,6 +408,7 @@ export default function ActivityForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
     setSuccessMessage(null);
@@ -482,7 +486,7 @@ export default function ActivityForm({
     <form
       className={
         layout === "dialog"
-          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+          ? "flex flex-col"
           : undefined
       }
       aria-label={mode === "edit" ? "Edit Activity" : "Create Activity"}
@@ -491,12 +495,11 @@ export default function ActivityForm({
       onSubmit={handleSubmit}
     >
       {layout === "dialog" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+        <div className="px-1 py-2">
           {feedback}
           <ActivityFormFields
             formValues={formValues}
             fieldErrors={fieldErrors}
-            layout={layout}
             updateField={updateField}
             activityDesigns={activityDesigns}
             activityDesignId={activityDesignId}
@@ -518,7 +521,6 @@ export default function ActivityForm({
           <ActivityFormFields
             formValues={formValues}
             fieldErrors={fieldErrors}
-            layout={layout}
             updateField={updateField}
             activityDesigns={activityDesigns}
             activityDesignId={activityDesignId}

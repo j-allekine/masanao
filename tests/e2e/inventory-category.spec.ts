@@ -32,7 +32,7 @@ test("Category keeps exact balances for active Items in an inactive Category and
   if (evidence) mkdirSync(evidence, { recursive: true });
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
-    const scope = width === 320 ? page.locator("[data-inventory-mobile]") : page.locator("[data-inventory-desktop]");
+    const scope = page.getByRole("table", { name: "Inventory", exact: true });
     const originalCount = await scope.locator("[data-item-id]").count();
     expect(originalCount).toBeGreaterThan(1);
     await openCatalogFilters(page);

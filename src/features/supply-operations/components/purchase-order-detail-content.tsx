@@ -1,96 +1,66 @@
-import Link from "next/link";
-import { ClipboardList, FilePlus2, Inbox } from "lucide-react";
+"use client";
 
-import { buttonVariants } from "@/components/ui/button";
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FilePlus2, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
+import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
 import { WorkspacePrimaryLink } from "@/components/workspace/catalog-controls";
-import { cn } from "@/lib/utils";
-
-import type { PurchaseOrderDetailItem } from "../types";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
+import type { PurchaseOrderDetailItem, PurchaseOrderVendorOption } from "../types";
 import DeliveryReceiptHistory from "./delivery-receipt-history";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
+import PurchaseOrderDialog from "./purchase-order-dialog";
+import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
+import { getPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderRecordUrl } from "./receipt-history-state";
 
-export default function PurchaseOrderDetailContent({
-  purchaseOrder,
-}: {
+export default function PurchaseOrderDetailContent({ purchaseOrder, canManage = false, vendors = [] }: {
   purchaseOrder: PurchaseOrderDetailItem;
+  canManage?: boolean;
+  vendors?: PurchaseOrderVendorOption[];
 }) {
-  return (
-    <div className="flex min-h-svh min-w-0 flex-col bg-card">
-      <WorkspaceHeader title="Supply Operations" />
-
-      <main className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-label text-primary">
-              Purchase Order
-            </p>
-            <h1 className="break-words text-heading-1 font-semibold">
-              {purchaseOrder.purchaseOrderNo}
-            </h1>
-            <p className="text-body text-muted-foreground">
-              Review deliveries recorded for this Purchase Order.
-            </p>
-          </div>
-          <Link
-            href="/purchase-orders"
-            className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}
-          >
-            <ClipboardList data-icon="inline-start" aria-hidden="true" />
-            Back to Purchase Orders
-          </Link>
+  const params = useSearchParams();
+  const router = useRouter();
+  const catalogUrl = getPurchaseOrderReturn(params);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  function restoreFocus(id: string) { window.setTimeout(() => document.getElementById(id)?.focus(), 0); }
+  return <div className="flex min-h-svh min-w-0 flex-col bg-card">
+    <WorkspaceHeader title="Supply Operations" />
+    <WorkspaceContent>
+      <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Purchase Orders", href: catalogUrl }]} currentLabel={purchaseOrder.purchaseOrderNo} />
+      <WorkspaceRecordHeading title={purchaseOrder.purchaseOrderNo} actions={canManage ? <>
+        <Button id="edit-purchase-order" variant="outline" className="min-h-10 lg:min-h-9" onClick={() => setEditing(true)}><Pencil data-icon="inline-start" />Edit</Button>
+        {!purchaseOrder.hasPostedReceipts ? <WorkspaceRowActionMenu actionButtonId="purchase-order-record-actions" ariaLabel={`Actions for ${purchaseOrder.purchaseOrderNo}`} groups={[{ actions: [{ label: "Delete", icon: <Trash2 />, variant: "destructive", onSelect: () => setDeleting(true) }] }]} /> : null}
+      </> : undefined} />
+      <div className="flex min-w-0 flex-col gap-2">
+        <RecordFacts fields={[
+          { label: "Vendor", value: purchaseOrder.vendor.name },
+          { label: "Total delivered", value: <span data-po-total-delivered><PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} /></span> },
+          { label: "Delivery receipts", value: <span className="tabular-nums" data-po-receipt-count>{purchaseOrder.deliverySummary.receiptCount}</span> },
+        ]} />
+        <RecordDetails label="Purchase Order details" fields={[
+          ...(purchaseOrder.referenceNumber ? [{ label: "Reference number", value: purchaseOrder.referenceNumber }] : []),
+          ...(purchaseOrder.note ? [{ label: "Note", value: <span className="whitespace-pre-wrap">{purchaseOrder.note}</span> }] : []),
+        ]} />
+      </div>
+      <section aria-labelledby="delivery-receipt-history-title" className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0"><h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">Delivery Receipt history <span className="text-muted-foreground">({purchaseOrder.deliveryReceipts.length})</span></h2><p className="text-body text-muted-foreground">Posted receipts remain available for inspection.</p></div>
+          <WorkspacePrimaryLink href={getPurchaseOrderRecordUrl(purchaseOrder.id, params, true)} icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}>Record delivery</WorkspacePrimaryLink>
         </div>
-
-        <div className="flex min-w-0 flex-col gap-2">
-          <RecordFacts fields={[
-            { label: "Vendor", value: purchaseOrder.vendor.name },
-            { label: "Total delivered", value: <span data-po-total-delivered><PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} /></span> },
-            { label: "Delivery receipts", value: <span className="tabular-nums" data-po-receipt-count>{purchaseOrder.deliverySummary.receiptCount}</span> },
-          ]} />
-          <RecordDetails label="Purchase Order details" fields={[
-            ...(purchaseOrder.referenceNumber ? [{ label: "Reference number", value: purchaseOrder.referenceNumber }] : []),
-            ...(purchaseOrder.note ? [{ label: "Note", value: <span className="whitespace-pre-wrap">{purchaseOrder.note}</span> }] : []),
-          ]} />
-        </div>
-
-        <section aria-labelledby="delivery-receipt-history-title" className="flex min-w-0 flex-col gap-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-            <h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">
-              Delivery Receipt history
-            </h2>
-            <p className="text-body text-muted-foreground">
-              Posted receipts will remain visible here as this order is received.
-            </p>
-            </div>
-            <WorkspacePrimaryLink
-              href={`/purchase-orders/${purchaseOrder.id}/record-delivery`}
-              icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}
-            >
-              Record delivery
-            </WorkspacePrimaryLink>
-          </div>
-          {purchaseOrder.deliveryReceipts.length === 0 ? <Empty className="min-h-60 rounded-lg border bg-background" data-delivery-receipt-history="empty">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Inbox aria-hidden="true" />
-              </EmptyMedia>
-              <EmptyTitle>No Delivery Receipts yet.</EmptyTitle>
-              <EmptyDescription>
-                Record a Delivery Receipt when supplies arrive for this Purchase Order.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty> : <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />}
-        </section>
-      </main>
-    </div>
-  );
+        <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />
+      </section>
+      {canManage ? <>
+        <PurchaseOrderDialog open={editing} purchaseOrder={purchaseOrder} vendors={vendors} onClose={() => { setEditing(false); restoreFocus("edit-purchase-order"); }} onSuccess={() => { setEditing(false); router.refresh(); restoreFocus("edit-purchase-order"); toast.success("Purchase Order updated"); }} />
+        <DeletePurchaseOrderDialog key={deleting ? "open" : "closed"} purchaseOrder={purchaseOrder} open={deleting} onOpenChange={(open) => { setDeleting(open); if (!open) restoreFocus("purchase-order-record-actions"); }} onDeleted={() => { router.push(catalogUrl); toast.success("Purchase Order deleted"); }} />
+      </> : null}
+    </WorkspaceContent>
+  </div>;
 }

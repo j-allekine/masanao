@@ -14,6 +14,7 @@ import type {
 import ActivitiesTable from "./activities-table";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivitiesToolbar from "./activities-toolbar";
+import { WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import ActivityCreateDialog from "./activity-create-dialog";
@@ -210,14 +211,11 @@ export default function ActivitiesWorkspace({
   }
 
   return (
-    <main
+    <div
       className="flex min-w-0 flex-col gap-6"
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-2 font-semibold">Activities</h1>
-        </div>
+      <WorkspaceCatalogHeader title="Activities" action={
         <WorkspacePrimaryAction
           id="new-activity"
           className="sm:min-w-[12rem]"
@@ -225,7 +223,7 @@ export default function ActivitiesWorkspace({
         >
           Create Activity
         </WorkspacePrimaryAction>
-      </div>
+      } />
       <ActivitiesToolbar
         search={search}
         onSearchChange={updateSearch}
@@ -267,6 +265,6 @@ export default function ActivitiesWorkspace({
         onClose={closeEditDialog}
         onSuccess={handleEditSuccess}
       />
-    </main>
+    </div>
   );
 }

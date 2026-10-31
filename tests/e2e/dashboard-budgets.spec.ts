@@ -1,5 +1,28 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function expectReportScrollsBelowPinnedHeader(page: Page, distance: number) {
+  const header = page.locator('[data-slot="workspace-header"]');
+  const reportControls = [
+    page.getByRole("heading", { name: "Budget accounting", exact: true }),
+    page.getByRole("button", { name: "Reporting period", exact: true }),
+    page.getByRole("button", { name: "Refresh", exact: true }),
+  ];
+  const initialTops = await Promise.all(reportControls.map((control) =>
+    control.evaluate((element) => element.getBoundingClientRect().top),
+  ));
+  const initialScroll = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, distance);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialScroll);
+  await expect(header).toBeInViewport({ ratio: 1 });
+  const headerTop = await header.evaluate((element) => element.getBoundingClientRect().top);
+  expect(headerTop).toBeGreaterThanOrEqual(0);
+  expect(headerTop).toBeLessThanOrEqual(1);
+  for (const [index, control] of reportControls.entries()) {
+    await expect.poll(() => control.evaluate((element) => element.getBoundingClientRect().top))
+      .toBeLessThan(initialTops[index]);
+  }
+}
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -39,7 +62,7 @@ test.afterAll(() => {
   })(); } finally { db.close(); }
 });
 
-test("budget figures, sticky header and Activity row navigation work on desktop and mobile", async ({ page }, info) => {
+test("budget figures, pinned workspace header, scrolling report controls and Activity row navigation work on desktop and mobile", async ({ page }, info) => {
   test.setTimeout(120_000);
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -65,12 +88,7 @@ test("budget figures, sticky header and Activity row navigation work on desktop 
   await expect(under.getByRole("link", { name: "A Workshop", exact: true })).toHaveAttribute("href", /\/activities\/bvar-under$/);
   await page.setViewportSize({ width: 1440, height: 600 });
   await page.mouse.move(1200, 550);
-  await page.mouse.wheel(0, 900);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  const lockedHeader = page.locator('[data-dashboard-header]');
-  expect((await lockedHeader.boundingBox())!.y).toBeGreaterThanOrEqual(0);
-  expect((await lockedHeader.boundingBox())!.y).toBeLessThanOrEqual(1);
-  await expect(page.getByRole("button", { name: "Reporting period", exact: true })).toBeInViewport();
+  await expectReportScrollsBelowPinnedHeader(page, 900);
   await page.mouse.wheel(0, -2000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await under.getByRole("cell", { name: "42.0%", exact: true }).click();
@@ -95,10 +113,7 @@ test("budget figures, sticky header and Activity row navigation work on desktop 
   const mobileUnder = page.locator('[data-budget-mobile] article').filter({ hasText: "A Workshop" });
   await expect(mobileUnder).toContainText("+₱2,900.00");
   await page.mouse.move(280, 700);
-  await page.mouse.wheel(0, 800);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  expect((await lockedHeader.boundingBox())!.y).toBeLessThanOrEqual(1);
-  await expect(page.getByRole("button", { name: "Reporting period", exact: true })).toBeInViewport();
+  await expectReportScrollsBelowPinnedHeader(page, 800);
   await page.mouse.wheel(0, -2000);
   await mobileUnder.getByText("+₱2,900.00", { exact: true }).click();
   await expect(page).toHaveURL(/\/activities\/bvar-under$/, { timeout: 30_000 });

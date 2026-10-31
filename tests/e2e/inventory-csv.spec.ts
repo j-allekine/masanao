@@ -92,7 +92,7 @@ test("authenticated Item creation, alternate receiving, unchanged draft, posted 
   await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
   await expect(dialog).toBeHidden();
   await page.getByLabel("Search Items").fill(itemName);
-  await expect(page.locator("[data-items-table-desktop]")).toContainText("10 pc");
+  await expect(page.locator("[data-workspace-catalog]")).toContainText("10 pc");
   await evidence(page, info, "item-catalog");
   await page.getByRole("button", { name: `Actions for ${itemName}`, exact: true }).click();
   await page.getByRole("menuitem", { name: "Manage units", exact: true }).click();

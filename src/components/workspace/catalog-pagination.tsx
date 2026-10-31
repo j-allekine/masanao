@@ -109,7 +109,7 @@ function CatalogPaginationContent({
           type="button"
           variant="outline"
           size="default"
-          className="min-w-9 px-2 sm:min-w-[5.5rem]"
+          className="h-auto min-h-10 min-w-10 px-2 py-2 sm:min-w-[5.5rem]"
           disabled={page === 1}
           aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
@@ -126,7 +126,7 @@ function CatalogPaginationContent({
               variant={item === page ? "outline" : "ghost"}
               size="icon"
               className={cn(
-                "min-w-9",
+                "size-10 min-w-10",
                 item === page && "bg-muted/40 font-semibold text-primary",
               )}
               aria-label={`Page ${item} of ${pageCount}`}
@@ -147,7 +147,7 @@ function CatalogPaginationContent({
           type="button"
           variant="outline"
           size="default"
-          className="min-w-9 px-2 sm:min-w-[5.5rem]"
+          className="h-auto min-h-10 min-w-10 px-2 py-2 sm:min-w-[5.5rem]"
           disabled={page === pageCount}
           aria-label="Next page"
           onClick={() => onPageChange(page + 1)}

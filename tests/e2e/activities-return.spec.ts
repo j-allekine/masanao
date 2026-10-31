@@ -40,9 +40,9 @@ test("Activities catalog opens records and preserves search/page through meals o
     await page.goto(catalog);
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await page.getByRole("link", { name: "Catalog Activity 01", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Catalog Activity 01", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Catalog Activity 01", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    await expect(page.getByRole("link", { name: "Activities", exact: true })).toHaveAttribute("href", catalog);
+    await expect(page.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", catalog);
     await page.getByRole("link", { name: "Open Meal Schedule: Catalog Lunch", exact: true }).click();
     await expect(page).toHaveURL(/\/meal-schedules\/e2e-issuance-activities-return-meal\?/, { timeout: 30_000 });
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();

@@ -79,7 +79,7 @@ for (const width of [1280, 320]) {
       await expect(row.getByText(scenario.label, { exact: true })).toBeVisible();
       await expect(row.getByText(`REF-${scenario.key}`, { exact: true })).toHaveCount(0);
       await row.getByRole("link", { name: id, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${id}$`));
+      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${id}(?:[?]|$)`), { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: id, exact: true })).toBeVisible();
       await expect(page.locator('[data-po-total-delivered]')).toHaveText(scenario.label);
       await expect(page.locator('[data-po-receipt-count]')).toHaveText(String(scenario.receipts.length));

@@ -36,16 +36,19 @@ export default function OfficeDialog({
   onClose: () => void;
   onSuccess: (office: OfficeListItem) => void;
 }) {
+  const [isPending, setIsPending] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
   const closeDialog = useCallback(() => {
     setIsDiscardDialogOpen(false);
     setIsDirty(false);
+    setIsPending(false);
     onClose();
   }, [onClose]);
 
   function requestClose() {
+    if (isPending) return;
     if (isDirty) {
       setIsDiscardDialogOpen(true);
       return;
@@ -65,7 +68,7 @@ export default function OfficeDialog({
         }}
       >
         {dialogState ? (
-          <DialogContent className="max-w-2xl">
+          <DialogContent size="entry" className="[&_[data-slot=dialog-close]]:size-10">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription>
@@ -87,6 +90,7 @@ export default function OfficeDialog({
               onCancel={requestClose}
               onSuccess={onSuccess}
               onDirtyChange={setIsDirty}
+              onPendingChange={setIsPending}
             />
           </DialogContent>
         ) : null}
@@ -96,14 +100,14 @@ export default function OfficeDialog({
         open={isDiscardDialogOpen}
         onOpenChange={setIsDiscardDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto [overflow-wrap:anywhere]">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>
               Your unsaved Office changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="[&_button]:h-auto [&_button]:min-h-10 [&_button]:py-2 [&_button]:whitespace-normal">
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={closeDialog}>
               Discard changes

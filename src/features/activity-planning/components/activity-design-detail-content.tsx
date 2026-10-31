@@ -16,9 +16,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { RecordDetails } from "@/components/workspace/record-details";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
+
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
+import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
+import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -35,6 +38,8 @@ import type {
   ActivityDesignDetailItem,
   ActivityDesignListItem,
 } from "../types";
+import ActivityDesignDialog from "./activity-design-dialog";
+import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 import ActivityActionsMenu from "./activity-actions-menu";
 import ActivityCreateDialog from "./activity-create-dialog";
 import DeleteActivityDialog from "./delete-activity-dialog";
@@ -59,13 +64,13 @@ function ActivityRows({
   onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   return (
-    <WorkspaceTableFrame caption="Activities under this Activity Design" className="w-full">
+    <WorkspaceTableFrame responsive caption="Activities under this Activity Design" className="w-full">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Activity</TableHead>
-          <TableHead scope="col" className="hidden sm:table-cell">Scheduled date</TableHead>
-          <TableHead scope="col" className="hidden sm:table-cell">Office</TableHead>
-          <TableHead scope="col" className="hidden text-center sm:table-cell">
+          <TableHead scope="col" >Scheduled date</TableHead>
+          <TableHead scope="col" >Office</TableHead>
+          <TableHead scope="col" className="text-center">
             Meal Schedules
           </TableHead>
           <TableHead scope="col" className="text-center">
@@ -105,7 +110,7 @@ function ActivityRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] whitespace-normal font-medium">
+        <TableCell data-primary className="whitespace-normal font-medium">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, returnUrl)}
             aria-label={`Open Activity: ${activity.name}`}
@@ -113,22 +118,18 @@ function ActivityRow({
           >
             {activity.name}
           </Link>
-          <dl className="mt-2 grid gap-1 text-body-sm font-normal sm:hidden">
-            <div><dt className="inline text-muted-foreground">Date: </dt><dd className="inline">{dateFormatter.format(new Date(activity.scheduledDate))}</dd></div>
-            <div><dt className="inline text-muted-foreground">Office: </dt><dd className="inline break-words">{activity.officeName}</dd></div>
-            <div><dt className="inline text-muted-foreground">Meal Schedules: </dt><dd className="inline">{activityCountFormatter.format(activity.mealScheduleCount)}</dd></div>
-          </dl>
+
         </TableCell>
-        <TableCell className="hidden tabular-nums sm:table-cell">
+        <TableCell data-label="Scheduled date" className="tabular-nums">
           {dateFormatter.format(new Date(activity.scheduledDate))}
         </TableCell>
-        <TableCell className="hidden max-w-[20rem] sm:table-cell">
-          <span className="block truncate">{activity.officeName}</span>
+        <TableCell data-label="Office">
+          <span className="wrap-anywhere">{activity.officeName}</span>
         </TableCell>
-        <TableCell className="hidden text-center tabular-nums sm:table-cell">
+        <TableCell data-label="Meal Schedules" className="text-center tabular-nums">
           {activityCountFormatter.format(activity.mealScheduleCount)}
         </TableCell>
-        <TableCell className="text-center">
+        <TableCell data-actions className="text-center">
           <ActivityActionsMenu
             activityName={activity.name}
             actionButtonId={`activity-actions-${activity.id}`}
@@ -176,6 +177,16 @@ export default function ActivityDesignDetailContent({
     () => false,
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isRecordEditOpen, setIsRecordEditOpen] = useState(false);
+  const [isRecordDeleteOpen, setIsRecordDeleteOpen] = useState(false);
+  function closeRecordEdit() {
+    setIsRecordEditOpen(false);
+    window.setTimeout(() => document.getElementById("edit-current-record")?.focus(), 0);
+  }
+  function changeRecordDeleteOpen(open: boolean) {
+    setIsRecordDeleteOpen(open);
+    if (!open) window.setTimeout(() => document.getElementById("current-record-actions")?.focus(), 0);
+  }
   const [activityForEdit, setActivityForEdit] =
     useState<ActivityDesignDetailActivity | null>(null);
   const createParent: ActivityDesignListItem = {
@@ -207,15 +218,13 @@ export default function ActivityDesignDetailContent({
     >
       <WorkspaceHeader title="Planning" />
 
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
-        <Breadcrumb><BreadcrumbList className="break-words">
-          <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
-          <BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage className="break-words">{activityDesign.activityDesignNo}</BreadcrumbPage></BreadcrumbItem>
-        </BreadcrumbList></Breadcrumb>
-        <div className="flex flex-col gap-2">
-          <h1 className="break-words text-heading-2 font-semibold">{activityDesign.title}</h1>
-          <p className="text-body-sm text-muted-foreground">Fiscal year: {activityDesign.fiscalYear}</p>
-        </div>
+      <WorkspaceContent>
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }]} currentLabel={activityDesign.activityDesignNo} />
+        {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
+        <WorkspaceRecordHeading title={activityDesign.title} actions={<>
+          <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity Design</Button>
+          <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity Design actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity Design", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
+        </>}><RecordFacts fields={[{ label: "Fiscal year", value: activityDesign.fiscalYear }]} /></WorkspaceRecordHeading>
         <RecordDetails disabled={!isHydrated} fields={activityDesign.aipReferenceCode ? [{ label: "AIP reference", value: activityDesign.aipReferenceCode }] : []} />
 
         <section aria-labelledby="activity-design-activities-title" className="flex flex-col gap-3">
@@ -228,7 +237,8 @@ export default function ActivityDesignDetailContent({
             <Button
               id="new-activity"
               onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
+              size="lg"
+              className="min-h-10 w-full sm:w-auto"
             >
               <Plus data-icon="inline-start" aria-hidden="true" />
               Create Activity
@@ -251,8 +261,10 @@ export default function ActivityDesignDetailContent({
             />
           )}
         </section>
-      </main>
+      </WorkspaceContent>
 
+      <ActivityDesignDialog dialogState={isRecordEditOpen ? { mode: "edit", activityDesign } : null} onClose={closeRecordEdit} onSuccess={() => { router.refresh(); toast.success("Activity Design updated"); }} />
+      <DeleteActivityDesignDialog activityDesign={activityDesign} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(returnUrl); toast.success("Activity Design deleted"); }} />
       <ActivityCreateDialog
         activityDesign={createParent}
         open={isCreateDialogOpen}

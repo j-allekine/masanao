@@ -238,11 +238,14 @@ test.describe("frontend stabilization regression seam", () => {
           };
         });
 
-        expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+        // Reserved scrollbar space is allowed; horizontal page overflow is not.
+        expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
         expect(metrics.tableRegions).toBe(1);
         expect(metrics.tableParentOverflowX).toBe("visible");
         if (viewport.name === "mobile") {
-          expect(metrics.tableScrollWidth).toBeGreaterThan(metrics.tableClientWidth);
+          expect(metrics.tableScrollWidth).toBe(metrics.tableClientWidth);
+          await expect(row).toHaveCSS("display", "grid");
+          await expect(rowActions).toBeInViewport();
         }
 
         await page.addStyleTag({
