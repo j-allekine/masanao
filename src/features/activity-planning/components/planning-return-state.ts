@@ -13,5 +13,9 @@ export function getPlanningReturnUrl(value: string | null): string {
 
 export function withPlanningReturn(path: string, catalogUrl: string) {
   const target = getPlanningReturnUrl(catalogUrl);
-  return target.includes("?") || target === "/activities" ? `${path}?${new URLSearchParams({ planningReturn: target })}` : path;
+  const [pathname, current = ""] = path.split("?");
+  const query = new URLSearchParams(current);
+  query.delete("planningReturn");
+  if (target.includes("?") || target === "/activities") query.set("planningReturn", target);
+  return `${pathname}${query.size ? `?${query}` : ""}`;
 }

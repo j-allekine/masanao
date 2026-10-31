@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   Inbox,
   Plus,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
 
-import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
@@ -43,6 +43,10 @@ import DeleteActivityDesignDialog from "./delete-activity-design-dialog";
 import ActivityActionsMenu from "./activity-actions-menu";
 import ActivityCreateDialog from "./activity-create-dialog";
 import DeleteActivityDialog from "./delete-activity-dialog";
+
+import CatalogPagination, { getCatalogPageContainingItem } from "@/components/workspace/catalog-pagination";
+import { WorkspaceSearchField } from "@/components/workspace/catalog-controls";
+import { filterDesignActivities, getDesignActivitiesQuery, getDesignActivitiesState, getPlanningRecordUrl, PLANNING_CHILD_PAGE_SIZE, writePlanningChildUrl } from "./planning-child-state";
 
 const activityCountFormatter = new Intl.NumberFormat("en-US");
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -105,14 +109,15 @@ function ActivityRow({
   onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
+  const params = useSearchParams();
 
   return (
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell data-primary className="whitespace-normal font-medium">
           <Link
-            href={withPlanningReturn(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, returnUrl)}
+            href={getPlanningRecordUrl(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, params, activityDesign.id, activity.id)}
+            id={`open-child-activity-${activity.id}`}
             aria-label={`Open Activity: ${activity.name}`}
             className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -170,7 +175,42 @@ export default function ActivityDesignDetailContent({
   activityDesign: ActivityDesignDetailItem;
 }) {
   const router = useRouter();
-  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const query = params.toString();
+  const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
+  const state = getDesignActivitiesState(params, activityDesign.id);
+  const filtered = filterDesignActivities(activityDesign.activities, state.search);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PLANNING_CHILD_PAGE_SIZE));
+  const page = Math.min(state.page, pageCount);
+  const start = (page - 1) * PLANNING_CHILD_PAGE_SIZE;
+  const visible = filtered.slice(start, start + PLANNING_CHILD_PAGE_SIZE);
+  const showControls = activityDesign.activities.length > PLANNING_CHILD_PAGE_SIZE || Boolean(state.search);
+  const handledCreated = useRef<string | null>(null);
+  function updateChildren(updates: Parameters<typeof getDesignActivitiesQuery>[2], push = false) {
+    const next = getDesignActivitiesQuery(window.location.search.slice(1), activityDesign.id, updates);
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${window.location.hash}`, push);
+  }
+  useEffect(() => {
+    if (!state.created || handledCreated.current === state.created || !activityDesign.activities.some(row => row.id === state.created)) return;
+    handledCreated.current = state.created;
+    const cleared = !filtered.some(row => row.id === state.created);
+    const rows = cleared ? activityDesign.activities : filtered;
+    const next = getDesignActivitiesQuery(query, activityDesign.id, { search: cleared ? "" : state.search, page: getCatalogPageContainingItem(rows, state.created, PLANNING_CHILD_PAGE_SIZE), created: null });
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}`);
+    if (cleared) toast.info("Activity search cleared to show the new Activity.");
+  }, [activityDesign.activities, activityDesign.id, filtered, pathname, query, state.created, state.search]);
+  useEffect(() => {
+    if (!state.created && handledCreated.current) {
+      const target = document.getElementById(`open-child-activity-${handledCreated.current}`);
+      if (target) { target.focus(); handledCreated.current = null; }
+    }
+  }, [state.created, page]);
+  useEffect(() => {
+    if (state.page <= pageCount) return;
+    const next = getDesignActivitiesQuery(query, activityDesign.id, { page: pageCount });
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${window.location.hash}`);
+  }, [activityDesign.id, pageCount, pathname, query, state.created, state.page]);
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -244,12 +284,17 @@ export default function ActivityDesignDetailContent({
               Create Activity
             </Button>
           </div>
-          {activityDesign.activities.length === 0 ? (
+          {showControls ? <div className="flex min-w-0 flex-wrap items-end gap-3">
+            <WorkspaceSearchField id="design-activities-search" label="Search this Design’s Activities by name or Office" placeholder="Activity or Office" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
+            {state.search ? <Button variant="outline" className="min-h-10" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("design-activities-search")?.focus(); }}>Clear Activity search</Button> : null}
+            <p className="w-full text-body-sm text-muted-foreground">Results update as you type.</p>
+          </div> : null}
+          {activityDesign.activities.length === 0 && !state.search ? (
             <ActivitiesEmptyState />
-          ) : (
+          ) : !visible.length ? <Empty className="min-h-40 rounded-lg border"><EmptyHeader><EmptyTitle>No matching Activities</EmptyTitle><EmptyDescription>Clear Activity search to see this Design’s Activities.</EmptyDescription></EmptyHeader></Empty> : (
             <ActivityRows
               activityDesign={createParent}
-              activities={activityDesign.activities}
+              activities={visible}
               onEdit={setActivityForEdit}
               onDeleted={() => {
                 router.refresh();
@@ -260,6 +305,7 @@ export default function ActivityDesignDetailContent({
               }}
             />
           )}
+          {showControls ? <CatalogPagination page={page} pageCount={pageCount} start={visible.length ? start + 1 : 0} end={start + visible.length} total={filtered.length} onPageChange={page => updateChildren({ page }, true)} /> : null}
         </section>
       </WorkspaceContent>
 
@@ -271,7 +317,8 @@ export default function ActivityDesignDetailContent({
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={(activity) => {
           setIsCreateDialogOpen(false);
-          router.push(withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, returnUrl));
+          updateChildren({ created: activity.id });
+          router.refresh();
           toast.success("Activity added");
         }}
       />

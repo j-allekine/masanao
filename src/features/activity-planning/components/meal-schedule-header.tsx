@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import { useSyncExternalStore, type ReactNode } from "react";
+import { getPlanningRecordUrl } from "./planning-child-state";
 import { RecordDetails } from "@/components/workspace/record-details";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import type { MealScheduleDetailItem } from "../types";
@@ -20,7 +21,8 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
 }) {
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const isReady = ready ?? hydrated;
-  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
+  const params = useSearchParams();
+  const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
   const { activity } = mealSchedule;
   const design = activity.activityDesign;
   const currentTitle = `${mealSchedule.label} · ${mealSchedule.mealTime}`;
@@ -34,16 +36,17 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
       <div className="flex min-w-0 items-start gap-3">
         <Breadcrumb className="min-w-0 pt-1">
           <BreadcrumbList className="wrap-anywhere">
-            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl} />}>Activity Designs</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={withPlanningReturn(`/activity-designs/${design.id}`, returnUrl)} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink render={<Link href={getPlanningRecordUrl(`/activity-designs/${design.id}`, params, design.id, activity.id)} />}>{design.activityDesignNo}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem className="min-w-0"><BreadcrumbLink className="break-words" render={<Link href={withPlanningReturn(`/activity-designs/${design.id}/activities/${activity.id}`, returnUrl)} />}>{activity.name}</BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0"><BreadcrumbLink className="break-words" render={<Link href={getPlanningRecordUrl(`/activity-designs/${design.id}/activities/${activity.id}`, params, design.id, activity.id)} />}>{activity.name}</BreadcrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem className="min-w-0"><BreadcrumbPage className="break-words">{mealSchedule.label}</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+      {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
       <div className={summary ? "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" : "flex flex-wrap items-start justify-between gap-3"}>
         <div className="min-w-0 flex-1">
           <h1 className="break-words text-heading-2 font-semibold">{title ?? `${mealSchedule.label} · ${mealSchedule.mealTime}`}</h1>
