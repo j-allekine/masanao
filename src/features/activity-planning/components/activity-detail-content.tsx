@@ -15,10 +15,11 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
-import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { getPlanningReturnUrl } from "./planning-return-state";
 import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
+import { getPlanningRecordUrl } from "./planning-child-state";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -103,14 +104,14 @@ function MealScheduleRow({
   onDeleted: (schedule: MealScheduleListItem) => void;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
+  const params = useSearchParams();
 
   return (
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell data-primary className="whitespace-normal font-medium">
           <Link
-            href={withPlanningReturn(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, returnUrl)}
+            href={getPlanningRecordUrl(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, params, activityDesignId, activityId)}
             aria-label={`Open Meal Schedule: ${schedule.label}`}
             className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -164,7 +165,8 @@ export default function ActivityDetailContent({
   activity: ActivityDetailItem;
 }) {
   const router = useRouter();
-  const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
+  const params = useSearchParams();
+  const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -206,7 +208,7 @@ export default function ActivityDetailContent({
       <WorkspaceHeader title="Planning" />
 
       <WorkspaceContent>
-        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }, { label: activity.activityDesign.activityDesignNo, href: withPlanningReturn(parentUrl, returnUrl) }]} currentLabel={activity.name} />
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }, { label: activity.activityDesign.activityDesignNo, href: getPlanningRecordUrl(parentUrl, params, activity.activityDesign.id, activity.id) }]} currentLabel={activity.name} />
         {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
         <WorkspaceRecordHeading title={activity.name} actions={<>
           <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
@@ -258,14 +260,14 @@ export default function ActivityDetailContent({
       </WorkspaceContent>
 
       <ActivityCreateDialog activityDesign={activity.activityDesign} activity={activity} mode="edit" open={isRecordEditOpen} onClose={closeRecordEdit} onSuccess={() => { closeRecordEdit(); router.refresh(); toast.success("Activity updated"); }} />
-      <DeleteActivityDialog activity={activity} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(withPlanningReturn(parentUrl, returnUrl)); toast.success("Activity deleted"); }} />
+      <DeleteActivityDialog activity={activity} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(getPlanningRecordUrl(parentUrl, params, activity.activityDesign.id, activity.id)); toast.success("Activity deleted"); }} />
       <MealScheduleCreateDialog
         activity={activity}
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={(mealSchedule) => {
           setIsCreateDialogOpen(false);
-          router.push(withPlanningReturn(`/activity-designs/${activity.activityDesign.id}/activities/${activity.id}/meal-schedules/${mealSchedule.id}`, returnUrl));
+          router.push(getPlanningRecordUrl(`/activity-designs/${activity.activityDesign.id}/activities/${activity.id}/meal-schedules/${mealSchedule.id}`, params, activity.activityDesign.id, activity.id));
           toast.success("Meal Schedule added");
         }}
       />

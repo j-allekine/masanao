@@ -135,7 +135,12 @@ for (const width of [1280, 375]) {
       await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
       await page.locator('[data-slot="calendar"] button[data-day]').first().click();
       await dialog.getByRole("button", { name: "Create Activity", exact: true }).click();
-      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+      await expect(dialog).toHaveCount(0);
+      const createdActivity = page.getByRole("link", { name: `Open Activity: ${name} Activity`, exact: true });
+      await expect(createdActivity).toBeFocused();
+      await expect(createdActivity).toBeInViewport();
+      await createdActivity.click();
+      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: name + " Activity", exact: true })).toBeVisible();
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page.screenshot({ path: info.outputPath(`created-activity-${width}.png`), fullPage: true });
