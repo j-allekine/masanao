@@ -1,9 +1,11 @@
 "use client";
 
-import { Fragment, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useLayoutEffect, useState, useSyncExternalStore, useTransition, type ReactNode, type RefObject, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useUnsavedNavigation } from "@/components/workspace/navigation-guard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
@@ -105,8 +107,10 @@ function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: I
   </Combobox>;
 }
 
-export default function DeliveryReceiptForm({ purchaseOrderId, items, presentation = "page" }: { purchaseOrderId: string; items: ItemListItem[]; presentation?: "page" | "dialog" }) {
+export default function DeliveryReceiptForm({ purchaseOrderId, items, presentation = "page", closeRequestRef, context }: { purchaseOrderId: string; items: ItemListItem[]; presentation?: "page" | "dialog"; closeRequestRef?: RefObject<(() => void) | null>; context?: ReactNode }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const discardRef = useRef<HTMLDivElement>(null);
   const params = useSearchParams();
   const returnUrl = getPurchaseOrderRecordUrl(purchaseOrderId, params);
   const isHydrated = useSyncExternalStore(
@@ -114,6 +118,8 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     () => true,
     () => false,
   );
+  const [receiptNo, setReceiptNo] = useState("");
+  const [note, setNote] = useState("");
   const [lines, setLines] = useState<Line[]>([initialLine]);
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const date = dateOverride ?? (isHydrated ? localDate() : "");
@@ -121,6 +127,29 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
   const [formError, setFormError] = useState<string | null>(null);
   const [editingUnitPriceLineId, setEditingUnitPriceLineId] = useState<string | null>(null);
   const [posting, startTransition] = useTransition();
+
+  const dirty = Boolean(receiptNo || note || (dateOverride !== null && dateOverride !== localDate()) || lines.length !== 1 || lines.some(line => line.itemId || line.unit || line.quantity || line.unitPrice));
+  const navigation = useUnsavedNavigation({ dirty, pending: posting });
+  function cancel() { navigation.requestLeave(() => router.push(returnUrl)); }
+  useLayoutEffect(() => {
+    if (closeRequestRef) closeRequestRef.current = cancel;
+    return () => { if (closeRequestRef) closeRequestRef.current = null; };
+  });
+
+  useEffect(() => {
+    let frame = 0;
+    function keepFocusedFieldVisible() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && formRef.current?.contains(active)) {
+          active.scrollIntoView({ block: "center", inline: "nearest" });
+        }
+      });
+    }
+    window.addEventListener("resize", keepFocusedFieldVisible);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", keepFocusedFieldVisible); };
+  }, []);
 
   function clearError(field: DeliveryReceiptField) {
     setErrors((current) => {
@@ -205,6 +234,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (posting) return;
     setErrors({});
     setFormError(null);
 
@@ -223,15 +253,17 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     })));
 
     startTransition(async () => {
+      try {
       const result = await postDeliveryReceiptAction(data);
       if (result.status === "success") {
         const [path, query = ""] = returnUrl.split("?");
         const next = getReceiptHistoryQuery(query, { created: result.receipt.id });
-        router.push(`${path}?${next}#delivery-receipt-${result.receipt.id}`);
+        navigation.complete(() => router.push(`${path}?${next}#delivery-receipt-${result.receipt.id}`));
         return;
       }
       setErrors(result.fields);
       setFormError(result.error);
+      } catch { setFormError("Could not post the delivery. Your entries are still here. Try again."); }
     });
   }
 
@@ -240,12 +272,15 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     return addExactPositiveDecimals(total, multiplyExactPositiveDecimals(value.quantity, value.unitPrice));
   }, "0");
 
-  return <form aria-label="Record delivery" aria-busy={posting} className={presentation === "dialog" ? "flex min-w-0 flex-col gap-6 px-6 py-5" : "flex min-w-0 flex-col gap-6"} data-client-ready={isHydrated ? "true" : undefined} noValidate onSubmit={submit}>
+  return <form ref={formRef} aria-label="Record delivery" aria-busy={posting} className={presentation === "dialog" ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 [&_[data-slot=button]]:min-h-10" : "flex min-w-0 flex-col gap-6"} data-client-ready={isHydrated ? "true" : undefined} noValidate onSubmit={submit}>
+    <div data-delivery-entry-body className={presentation === "dialog" ? "flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-[16px] py-[12px] sm:px-6" : "flex flex-col gap-6"}>
+    {context}
+    <fieldset disabled={posting} className="flex min-w-0 flex-col gap-5 [overflow-wrap:anywhere] [&_[data-slot=field]]:min-w-0 [&_#receiptDate]:h-auto [&_#receiptDate]:whitespace-normal [&_#receiptDate>span]:min-w-0">
     {formError ? <Alert variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
-    <FieldGroup className="grid gap-4 sm:grid-cols-2">
+    <FieldGroup className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
       <Field data-invalid={Boolean(errors.receiptNo?.length)}>
         <FieldLabel htmlFor="receiptNo">Receipt number</FieldLabel>
-        <Input id="receiptNo" name="receiptNo" aria-label="Receipt number" aria-invalid={Boolean(errors.receiptNo?.length)} aria-describedby={errors.receiptNo?.length ? "delivery-receipt-receiptNo-error" : undefined} maxLength={100} onChange={() => clearError("receiptNo")} required />
+        <Input id="receiptNo" name="receiptNo" aria-label="Receipt number" aria-invalid={Boolean(errors.receiptNo?.length)} aria-describedby={errors.receiptNo?.length ? "delivery-receipt-receiptNo-error" : undefined} maxLength={100} value={receiptNo} onChange={(event) => { setReceiptNo(event.target.value); clearError("receiptNo"); }} required />
         {fieldError("receiptNo")}
       </Field>
       <LocalDatePicker id="receiptDate" name="receiptDate" label="Receipt date" emptyLabel="Select receipt date" value={date} error={errors.receiptDate} required onChange={(value) => { setDateOverride(value); clearError("receiptDate"); }} />
@@ -261,8 +296,8 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
         </div>
         <Button id="add-delivery-line" type="button" variant="outline" onClick={addLine}><Plus data-icon="inline-start" />Add line</Button>
       </div>
-      {lines.length ? <Table aria-label="Delivery Receipt lines" className="min-w-[60rem] table-fixed">
-        <TableHeader>
+      {lines.length ? <Table aria-label="Delivery Receipt lines" className="block w-full min-w-0 xl:table xl:table-fixed [&_tbody]:grid [&_tbody]:gap-4 xl:[&_tbody]:table-row-group [&_tbody_tr]:grid [&_tbody_tr]:gap-3 [&_tbody_tr]:rounded-lg [&_tbody_tr]:border [&_tbody_tr]:p-3 xl:[&_tbody_tr]:table-row xl:[&_tbody_tr]:border-0 xl:[&_tbody_tr]:p-0 [&_td]:block [&_td]:min-w-0 [&_td]:p-0 xl:[&_td]:table-cell xl:[&_td]:p-2">
+        <TableHeader className="hidden xl:table-header-group">
           <TableRow>
             <TableHead className="w-[26%]">Item</TableHead>
             <TableHead className="w-[15%]">Unit</TableHead>
@@ -288,7 +323,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
         return <Fragment key={value.id}><TableRow aria-label={`Delivery line ${index + 1}`}>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "itemId")}>
-              <FieldLabel className="sr-only">Item</FieldLabel>
+              <FieldLabel className="xl:sr-only">Item</FieldLabel>
               <ItemPicker id={`item-${value.id}`} items={items} value={value.itemId} invalid={lineHasError(index, "itemId")} describedBy={lineHasError(index, "itemId") ? errorId("itemId") : undefined} onValueChange={(itemId, selectedItem) => {
                 const selected = selectedItem ?? items.find((candidate) => candidate.id === itemId);
                 updateLine(value.id, { itemId, unit: selected ? `${selected.baseUnit.id}:` : "", quantity: "", unitPrice: "" });
@@ -299,13 +334,13 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             </TableCell>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "selectedUnitId")}>
-              <FieldLabel className="sr-only">Unit</FieldLabel>
+              <FieldLabel className="xl:sr-only">Unit</FieldLabel>
               <Select items={item ? [{ value: `${item.baseUnit.id}:`, label: `${item.baseUnit.name} (${item.baseUnit.abbreviation})` }, ...(item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => ({ value: `${candidate.alternateUnit.id}:${candidate.id}`, label: candidate.label })) ?? [])] : []} value={value.unit || null} disabled={!item} onValueChange={(unit) => {
                 if (unit === null) return;
                 updateLine(value.id, { unit: unit ?? "", quantity: "", unitPrice: "" });
                 clearLineError(index, "selectedUnitId"); clearLineError(index, "quantity"); clearLineError(index, "unitPrice");
               }}>
-                <SelectTrigger aria-label="Unit" aria-invalid={lineHasError(index, "selectedUnitId")} aria-describedby={lineHasError(index, "selectedUnitId") ? errorId("selectedUnitId") : undefined} className="w-full"><SelectValue placeholder="Select an Item first" /></SelectTrigger>
+                <SelectTrigger aria-label="Unit" aria-invalid={lineHasError(index, "selectedUnitId")} aria-describedby={lineHasError(index, "selectedUnitId") ? errorId("selectedUnitId") : undefined} className="h-auto min-w-0 w-full whitespace-normal [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:break-words"><SelectValue placeholder="Select an Item first" /></SelectTrigger>
                 <SelectContent><SelectGroup>{item ? <><SelectItem value={`${item.baseUnit.id}:`}>{item.baseUnit.name} ({item.baseUnit.abbreviation})</SelectItem>{item.unitConversions?.filter((candidate) => candidate.alternateUnit.active).map((candidate) => <SelectItem key={candidate.id} value={`${candidate.alternateUnit.id}:${candidate.id}`}>{candidate.label}</SelectItem>)}</> : null}</SelectGroup></SelectContent>
               </Select>
               {lineFieldError(index, "selectedUnitId", errorId("selectedUnitId"))}
@@ -313,22 +348,22 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             </TableCell>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "quantity")}>
-              <FieldLabel className="sr-only" htmlFor={`quantity-${value.id}`}>Quantity</FieldLabel>
+              <FieldLabel className="xl:sr-only" htmlFor={`quantity-${value.id}`}>Quantity</FieldLabel>
               <Input id={`quantity-${value.id}`} aria-label="Quantity" aria-invalid={lineHasError(index, "quantity")} aria-describedby={lineHasError(index, "quantity") ? errorId("quantity") : undefined} inputMode="decimal" value={value.quantity} onChange={(event) => { updateLine(value.id, { quantity: event.target.value }); clearLineError(index, "quantity"); }} required />
               {lineFieldError(index, "quantity", errorId("quantity"))}
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
             <Field>
-              <FieldLabel className="sr-only" htmlFor={`calculated-${value.id}`}>Calculated Base Unit quantity</FieldLabel>
-              <output id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" className="flex min-h-9 w-full items-center rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
+              <FieldLabel className="xl:sr-only" htmlFor={`calculated-${value.id}`}>Calculated Base Unit quantity</FieldLabel>
+              <output id={`calculated-${value.id}`} aria-label="Calculated Base Unit quantity" className="flex min-h-9 w-full min-w-0 flex-wrap break-all items-center rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
                 {calculated ? `${calculated} ${item?.baseUnit.abbreviation ?? item?.baseUnit.name ?? "Base Units"}` : ""}
               </output>
             </Field>
             </TableCell>
             <TableCell className="align-top whitespace-normal">
             <Field data-invalid={lineHasError(index, "unitPrice")}>
-              <FieldLabel className="sr-only" htmlFor={`unit-price-${value.id}`}>Unit price</FieldLabel>
+              <FieldLabel className="xl:sr-only" htmlFor={`unit-price-${value.id}`}>Unit price</FieldLabel>
               <InputGroup>
                 <InputGroupAddon><InputGroupText>₱</InputGroupText></InputGroupAddon>
                 <InputGroupInput id={`unit-price-${value.id}`} aria-label="Unit price" className="text-right" aria-invalid={lineHasError(index, "unitPrice")} aria-describedby={lineHasError(index, "unitPrice") ? errorId("unitPrice") : undefined} inputMode="decimal" placeholder="0.00" value={editingUnitPriceLineId === value.id ? value.unitPrice : formatDeliveryReceiptUnitPrice(value.unitPrice)} onFocus={() => setEditingUnitPriceLineId(value.id)} onBlur={() => setEditingUnitPriceLineId((current) => current === value.id ? null : current)} onChange={(event) => { updateLine(value.id, { unitPrice: normalizeDeliveryReceiptUnitPriceInput(event.target.value) }); clearLineError(index, "unitPrice"); }} required />
@@ -338,8 +373,8 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
             </TableCell>
             <TableCell className="align-top text-right whitespace-normal">
               <Field>
-                <FieldLabel className="sr-only" htmlFor={`amount-${value.id}`}>Amount</FieldLabel>
-                <output id={`amount-${value.id}`} aria-label="Amount" className="flex min-h-9 w-full items-center justify-end rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
+                <FieldLabel className="xl:sr-only" htmlFor={`amount-${value.id}`}>Amount</FieldLabel>
+                <output id={`amount-${value.id}`} aria-label="Amount" className="flex min-h-9 w-full min-w-0 flex-wrap break-all items-center justify-end rounded-md border bg-muted/50 px-3 text-body-sm text-muted-foreground">
                   {lineAmount ? `₱ ${formatDeliveryReceiptAmount(lineAmount)}` : ""}
                 </output>
               </Field>
@@ -353,7 +388,7 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
         </TableRow></Fragment>;
       })}
         </TableBody>
-        <TableFooter>
+        <TableFooter className="block xl:table-footer-group">
           <TableRow>
             <TableCell colSpan={5} />
             <TableCell className="text-right">
@@ -373,28 +408,46 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
 
     <Field data-invalid={Boolean(errors.note?.length)}>
       <FieldLabel htmlFor="note">Receipt note</FieldLabel>
-      <Textarea id="note" name="note" aria-invalid={Boolean(errors.note?.length)} aria-describedby={errors.note?.length ? "delivery-receipt-note-error" : undefined} maxLength={500} onChange={() => clearError("note")} />
+      <Textarea id="note" name="note" aria-invalid={Boolean(errors.note?.length)} aria-describedby={errors.note?.length ? "delivery-receipt-note-error" : undefined} maxLength={500} value={note} onChange={(event) => { setNote(event.target.value); clearError("note"); }} />
       {fieldError("note")}
     </Field>
 
-    {presentation === "dialog" ? <DialogFooter className="sticky bottom-0 z-10 mx-0 mb-0 rounded-none px-6 py-4">
+    </fieldset>
+    </div>
+    {presentation === "dialog" ? <DialogFooter className="mx-0 mb-0 shrink-0 flex-row flex-wrap justify-end gap-[8px] rounded-none px-[8px] py-[8px] [&_button]:px-[6px] sm:px-6">
       <WorkspaceFormActionButtons
-        onCancel={() => router.push(returnUrl)}
+        onCancel={cancel}
         isPending={posting}
         submitDisabled={!items.length || !lines.length}
         pendingLabel="Posting..."
         submitLabel="Post delivery"
-        submitIcon={<Save data-icon="inline-start" />}
+        compactSubmitLabel="Post"
       />
     </DialogFooter> : <div className="flex flex-wrap justify-end gap-3">
       <WorkspaceFormActionButtons
-        onCancel={() => router.push(returnUrl)}
+        onCancel={cancel}
         isPending={posting}
         submitDisabled={!items.length || !lines.length}
         pendingLabel="Posting..."
         submitLabel="Post delivery"
-        submitIcon={<Save data-icon="inline-start" />}
+        compactSubmitLabel="Post"
       />
     </div>}
+    <AlertDialog open={navigation.open} onOpenChange={(open) => { if (!open) navigation.onStay(); }}>
+      <AlertDialogContent
+        ref={discardRef}
+        initialFocus={() => discardRef.current}
+        className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:py-2 [&_button]:whitespace-normal [&_button]:[overflow-wrap:normal]"
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Discard this delivery?</AlertDialogTitle>
+          <AlertDialogDescription>Your unsaved delivery entries will be lost. No stock has been added.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={navigation.onStay}>Keep editing</AlertDialogCancel>
+          <AlertDialogAction onClick={navigation.onDiscard}>Discard changes</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </form>;
 }

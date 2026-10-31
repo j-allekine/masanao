@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRef } from "react";
 
 import {
   Dialog,
@@ -13,44 +12,37 @@ import {
 
 import type { ItemListItem } from "../types";
 import DeliveryReceiptForm from "./delivery-receipt-form";
-import { getPurchaseOrderRecordUrl } from "./receipt-history-state";
 
 export default function DeliveryReceiptDialog({
   purchaseOrderId,
   vendorName,
+  purchaseOrderNo,
   items,
 }: {
   purchaseOrderId: string;
   vendorName: string;
+  purchaseOrderNo: string;
   items: ItemListItem[];
 }) {
-  const router = useRouter();
-  const params = useSearchParams();
-  const [open, setOpen] = useState(true);
+  const closeRequestRef = useRef<(() => void) | null>(null);
 
-  function returnToOrder() {
-    router.push(getPurchaseOrderRecordUrl(purchaseOrderId, params));
-  }
-
-  return <Dialog disablePointerDismissal open={open} onOpenChange={(nextOpen) => {
-    setOpen(nextOpen);
-    if (!nextOpen) returnToOrder();
+  return <Dialog disablePointerDismissal open onOpenChange={(nextOpen) => {
+    if (!nextOpen) closeRequestRef.current?.();
   }}>
     <DialogContent
-      className="min-w-0 max-h-[calc(100svh-2rem)] max-w-[calc(100%-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto p-0 sm:max-w-6xl [&>[data-slot=dialog-close]]:z-20"
+      className="flex min-w-0 w-[calc(100%-2rem)] h-[min(52rem,calc(100svh-2rem))] max-h-[calc(100svh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl [&>[data-slot=dialog-close]]:z-20 [&>[data-slot=dialog-close]]:right-[12px] [&>[data-slot=dialog-close]]:top-[12px] [&>[data-slot=dialog-close]]:size-[40px]"
+      initialFocus={() => document.getElementById("receiptNo")}
       showCloseButton
     >
-      <DialogHeader className="sticky top-0 z-10 border-b bg-popover px-6 py-5 pr-14">
-        <p className="text-label font-medium uppercase tracking-label text-primary">
-          Purchase Order · Delivery Receipt
-        </p>
-        <DialogTitle>Record delivery</DialogTitle>
-        <DialogDescription>Vendor: {vendorName}</DialogDescription>
+      <DialogHeader className="shrink-0 border-b bg-popover px-[16px] py-[12px] sm:px-6">
+        <DialogTitle className="pr-[56px]">Record delivery</DialogTitle>
       </DialogHeader>
       <DeliveryReceiptForm
         purchaseOrderId={purchaseOrderId}
         items={items}
         presentation="dialog"
+        closeRequestRef={closeRequestRef}
+        context={<DialogDescription className="min-w-0 [overflow-wrap:anywhere]">PO: {purchaseOrderNo} · Vendor: {vendorName}</DialogDescription>}
       />
     </DialogContent>
   </Dialog>;
