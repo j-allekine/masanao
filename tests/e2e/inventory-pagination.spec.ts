@@ -44,7 +44,7 @@ for (const width of [1280, 320]) {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 800 });
     await ready(page, "/inventory?q=Pagination");
-    const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
+    const list = page.getByRole("table", { name: "Inventory", exact: true });
     const search = page.getByRole("searchbox", { name: "Search Inventory by Item name" });
     const category = page.getByRole("combobox", { name: "Category", exact: true });
     await expect(list.locator("[data-item-id]")).toHaveCount(10);

@@ -36,7 +36,7 @@ for (const width of [1280, 320]) {
     expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
-    const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
+    const list = page.getByRole("table", { name: "Inventory", exact: true });
     await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
     await openCatalogFilters(page);
     const filter = page.getByRole("combobox", { name: "Stock status", exact: true });
@@ -80,7 +80,7 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
     await resetCatalogFilters(page);
-    await expect(page.locator('[data-inventory-desktop] [data-item-id="status-good"]')).toContainText("Reorder now");
+    await expect(page.locator('[data-item-id="status-good"]')).toContainText("Reorder now");
     await page.goto("/purchase-orders/status-po/record-delivery");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await page.getByLabel("Receipt number", { exact: true }).fill("STATUS-NEW");
@@ -93,7 +93,7 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     await chooseCatalogFilter(page, "Stock status", "Good");
-    await expect(page.locator('[data-inventory-desktop] [data-item-id="status-out"]')).toContainText("20 pc");
+    await expect(page.locator('[data-item-id="status-out"]')).toContainText("20 pc");
     await chooseCatalogFilter(page, "Stock status", "Out of stock");
     await expect(page.locator('[data-item-id="status-out"]')).toHaveCount(0);
   } finally { db.close(); }

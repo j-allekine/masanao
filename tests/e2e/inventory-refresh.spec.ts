@@ -103,7 +103,7 @@ test("returning through browser history sees posted receiving, unchanged drafts,
   if (evidence) mkdirSync(evidence, { recursive: true });
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
-    const item = width === 320 ? page.locator('[data-inventory-mobile] [data-item-id="refresh255-eggs"]') : eggs;
+    const item = eggs;
     await expect(item).toContainText("10 pc");
     await expect(item).toContainText("Good");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -151,7 +151,7 @@ for (const width of [1280, 320]) {
       await page.goto(url);
       await entryRefresh;
       await expect(page.getByText("Showing 21 to 23 of 23 results", { exact: true })).toBeVisible();
-      const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
+      const list = page.getByRole("table", { name: "Inventory", exact: true });
       const last = list.locator(`[data-item-id="${prefix}-23"]`);
       await expect(last).toContainText("10 pc");
       setReceivedQuantity(db, `${prefix}-23`, "7");
