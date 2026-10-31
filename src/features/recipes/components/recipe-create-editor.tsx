@@ -3,7 +3,7 @@
 import { WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
 import { recipeEditorReturn, recipeSaveHref } from "./recipe-return-context";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,8 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUnsavedNavigation } from "@/components/workspace/navigation-guard";
+import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
   isPositiveExactDecimal,
@@ -94,7 +96,6 @@ export default function RecipeCreateEditor({
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
-  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [initialDraftSignature] = useState(() =>
     getDraftSignature(
       recipe?.name ?? "",
@@ -121,17 +122,7 @@ export default function RecipeCreateEditor({
     [baselinePax, ingredients, initialDraftSignature, name, preparationNote],
   );
 
-  useEffect(() => {
-    if (!isDirty) return;
-
-    function warnBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    window.addEventListener("beforeunload", warnBeforeUnload);
-    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
-  }, [isDirty]);
+  const navigation = useUnsavedNavigation({ dirty: isDirty, pending: isSubmitting });
 
   function clearFieldError(field: keyof RecipeFieldErrors) {
     setFieldErrors((currentErrors) => {
@@ -162,19 +153,29 @@ export default function RecipeCreateEditor({
     const index = ingredients.findIndex((ingredient) => ingredient.id === id);
     clearFieldError(`ingredients.${index}.${field}` as RecipeIngredientField);
     clearFieldError("ingredients");
+    if (field === "itemId") clearFieldError(`ingredients.${index}.itemUnitConversionId` as RecipeIngredientField);
   }
 
   function removeIngredient(id: string) {
-    setIngredients((currentIngredients) =>
-      currentIngredients.length === 1
-        ? currentIngredients
-        : currentIngredients.filter((ingredient) => ingredient.id !== id),
-    );
-    clearFieldError("ingredients");
+    if (ingredients.length === 1 || isSubmitting) return;
+    const removedIndex = ingredients.findIndex(ingredient => ingredient.id === id);
+    setIngredients(current => current.filter(ingredient => ingredient.id !== id));
+    setFieldErrors(current => {
+      const next: RecipeFieldErrors = {};
+      for (const [key, errors] of Object.entries(current)) {
+        const match = /^ingredients\.(\d+)\.(.+)$/.exec(key);
+        if (!match) { if (key !== "ingredients") next[key as keyof RecipeFieldErrors] = errors; continue; }
+        const index = Number(match[1]);
+        if (index !== removedIndex) next[`ingredients.${index > removedIndex ? index - 1 : index}.${match[2]}` as RecipeIngredientField] = errors;
+      }
+      return next;
+    });
+    requestAnimationFrame(() => document.getElementById(`recipe-ingredient-${Math.min(removedIndex, ingredients.length - 2)}-item`)?.focus());
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFieldErrors({});
     setFormError(null);
 
@@ -203,7 +204,7 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
-        router.push(recipeSaveHref(result.recipe.id, returnTo));
+        navigation.complete(() => router.push(recipeSaveHref(result.recipe.id, returnTo)));
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
       }
@@ -211,16 +212,13 @@ export default function RecipeCreateEditor({
   }
 
   function cancelEditor() {
-    if (isDirty) {
-      setIsDiscardDialogOpen(true);
-      return;
-    }
-
-    router.push(returnTo);
+    navigation.requestLeave(() => router.push(returnTo));
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="workspace-pane flex h-[calc(100dvh-var(--workspace-header-height,4rem))] min-h-0 flex-col"><div className="workspace-content mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-4 py-4 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 [&_[data-slot=button]]:min-h-10 lg:[&_[data-slot=input]]:min-h-9 lg:[&_[data-slot=select-trigger]]:min-h-9 lg:[&_[data-slot=button]]:min-h-9">
+      <form aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} className="flex min-h-0 flex-1 flex-col" noValidate onSubmit={handleSubmit}>
+        <div data-recipe-editor-body className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain pb-4">
       <WorkspaceRecordBreadcrumbs ancestors={[{ label: recipe?.name ?? "Recipes", href: returnTo }]} currentLabel={recipe ? "Edit Recipe" : "New Recipe"} />
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -231,8 +229,7 @@ export default function RecipeCreateEditor({
         </div>
       </div>
 
-      <form aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-6">
+          <fieldset disabled={isSubmitting} className="flex min-w-0 flex-col gap-6">
           {formError ? (
             <Alert variant="destructive">
               <AlertTitle>Could not save Recipe</AlertTitle>
@@ -294,14 +291,13 @@ export default function RecipeCreateEditor({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Field data-invalid={Boolean(fieldErrors.baselinePax?.length)}>
-                <FieldLabel htmlFor="recipe-baseline-pax">Ingredients for ___ pax <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
+                <FieldLabel htmlFor="recipe-baseline-pax">Recipe Baseline Pax <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
                 <Input id="recipe-baseline-pax" className="max-w-48" inputMode="numeric" pattern="[1-9][0-9]*" required value={baselinePax} aria-invalid={Boolean(fieldErrors.baselinePax?.length)} aria-describedby={fieldErrors.baselinePax?.length ? "recipe-baseline-pax-error recipe-baseline-pax-help" : "recipe-baseline-pax-help"} onChange={(event) => { setBaselinePax(event.target.value); clearFieldError("baselinePax"); }} />
                 <p id="recipe-baseline-pax-help" className="text-body-sm text-muted-foreground">The entered ingredient quantities serve this many people. Changing the baseline redefines this batch; it does not multiply or change ingredient quantities.</p>
                 <FieldMessages id="recipe-baseline-pax-error" errors={fieldErrors.baselinePax} />
               </Field>
               {recipe?.baselinePax === null ? <Alert><AlertTitle>Baseline pax not set</AlertTitle><AlertDescription>Supply a baseline when saving this Recipe.</AlertDescription></Alert> : null}
-              <div className="overflow-x-auto">
-                <Table>
+              <WorkspaceTableFrame responsive caption="Recipe ingredient controls">
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Item</TableHead>
@@ -314,6 +310,9 @@ export default function RecipeCreateEditor({
                   <TableBody>
                     {ingredients.map((ingredient, index) => {
                       const selectedItem = itemById.get(ingredient.itemId);
+                      const originalIngredient = recipe?.ingredients.find(row => row.itemId === ingredient.itemId);
+                      const unavailable = originalIngredient && (originalIngredient.item.isActive === false || originalIngredient.item.baseUnit.active === false || originalIngredient.itemUnitConversion?.alternateUnit.active === false);
+                      const retainedUnit = originalIngredient?.itemUnitConversion?.alternateUnit ?? originalIngredient?.item.baseUnit;
                       const selectedConversion = selectedItem?.unitConversions.find(
                         (conversion) => conversion.id === ingredient.itemUnitConversionId,
                       );
@@ -334,10 +333,11 @@ export default function RecipeCreateEditor({
                       const unitErrors = fieldErrors[`ingredients.${index}.itemUnitConversionId` as RecipeIngredientField];
                       return (
                         <TableRow key={ingredient.id}>
-                          <TableCell className="min-w-56 align-top">
-                            <Field data-invalid={Boolean(itemErrors?.length)}>
+                          <TableCell data-primary className="align-top">
+                            <Field className="w-full" data-invalid={Boolean(itemErrors?.length)}>
+                            <FieldLabel htmlFor={itemInputId}>Ingredient {index + 1} Item</FieldLabel>
                             <Combobox items={itemOptions}
-                              value={selectedItem ? { value: selectedItem.id, label: selectedItem.name } : null}
+                              value={selectedItem ? { value: selectedItem.id, label: selectedItem.name } : originalIngredient ? { value: ingredient.itemId, label: `${originalIngredient.item.name} (unavailable)` } : null}
                               onValueChange={(option) => {
                                 const itemId = typeof option === "string"
                                   ? option
@@ -355,14 +355,15 @@ export default function RecipeCreateEditor({
                                 placeholder="Search active Items" />
                               <ComboboxContent><ComboboxList>{(option: { value: string; label: string; item: RecipeIngredientOption }) => <ComboboxItem key={option.value} value={option}>{option.label}</ComboboxItem>}</ComboboxList><ComboboxEmpty>No active Items match your search.</ComboboxEmpty></ComboboxContent>
                             </Combobox>
+                            {unavailable ? <p className="text-body-sm text-destructive">This Item or Unit is inactive. Select an available Item and Unit before saving.</p> : null}
                             <FieldMessages id={`${itemInputId}-error`} errors={itemErrors} />
                             </Field>
                           </TableCell>
-                          <TableCell className="align-top">
+                          <TableCell data-label="Quantity" className="align-top">
                             <Field data-invalid={Boolean(quantityErrors?.length)}>
                             <Input
                               id={quantityInputId}
-                              className="min-w-28"
+                              className="w-full min-w-0"
                               inputMode="decimal"
                               aria-label={`Ingredient ${index + 1} quantity`}
                               aria-invalid={Boolean(quantityErrors?.length)}
@@ -373,7 +374,7 @@ export default function RecipeCreateEditor({
                             <FieldMessages id={`${quantityInputId}-error`} errors={quantityErrors} />
                             </Field>
                           </TableCell>
-                          <TableCell className="align-top text-muted-foreground">
+                          <TableCell data-label="Unit" className="align-top text-muted-foreground">
                             <Field data-invalid={Boolean(unitErrors?.length)}>
                             <Select
                               items={selectedItem ? [
@@ -386,7 +387,7 @@ export default function RecipeCreateEditor({
                                   label: conversion.label,
                                 })),
                               ] : []}
-                              value={ingredient.itemUnitConversionId ?? "base-unit"}
+                              value={selectedItem ? ingredient.itemUnitConversionId ?? "base-unit" : null}
                               disabled={!selectedItem}
                               onValueChange={(value) =>
                                 updateIngredient(
@@ -403,7 +404,7 @@ export default function RecipeCreateEditor({
                                 aria-invalid={Boolean(unitErrors?.length)}
                                 aria-describedby={unitErrors?.length ? `${unitInputId}-error` : undefined}
                               >
-                                <SelectValue placeholder="Select an Item first" />
+                                <SelectValue placeholder="Select an Item first">{!selectedItem && retainedUnit ? `${retainedUnit.name} (${retainedUnit.abbreviation}) — unavailable` : undefined}</SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
@@ -425,18 +426,19 @@ export default function RecipeCreateEditor({
                             <FieldMessages id={`${unitInputId}-error`} errors={unitErrors} />
                             </Field>
                           </TableCell>
-                          <TableCell className="align-top text-muted-foreground">
+                          <TableCell data-label="Base Unit reference" className="align-top text-muted-foreground">
                             {selectedItem
                               ? calculatedBaseUnitQuantity
                                 ? `${calculatedBaseUnitQuantity} ${selectedItem.baseUnit.abbreviation}`
                                 : `${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})`
                               : "—"}
                           </TableCell>
-                          <TableCell className="align-top text-right">
+                          <TableCell data-actions className="align-top text-right">
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon-sm"
+                              className="size-10 lg:size-9"
                               aria-label={`Remove Ingredient ${index + 1}`}
                               disabled={ingredients.length === 1 || isSubmitting}
                               onClick={() => removeIngredient(ingredient.id)}
@@ -448,8 +450,7 @@ export default function RecipeCreateEditor({
                       );
                     })}
                   </TableBody>
-                </Table>
-              </div>
+              </WorkspaceTableFrame>
               <Field data-invalid={Boolean(fieldErrors.ingredients?.length)}>
                 <FieldMessages id="recipe-ingredients-error" errors={fieldErrors.ingredients} />
               </Field>
@@ -458,25 +459,29 @@ export default function RecipeCreateEditor({
                   <Plus data-icon="inline-start" />
                   Add Ingredient
                 </Button>
-                <div className="flex flex-wrap items-center gap-2">
+
+              </div>
+            </CardContent>
+          </Card>
+          </fieldset>
+        </div>
+        <div data-recipe-editor-actions className="flex shrink-0 flex-wrap justify-end gap-2 border-t bg-card py-3">                <div className="flex flex-wrap items-center gap-2">
                   <WorkspaceFormActionButtons
                     onCancel={cancelEditor}
                     isPending={isSubmitting}
                     submitDisabled={items.length === 0}
                     pendingLabel="Saving..."
+                    compactSubmitLabel={recipe ? "Save" : "Create"}
                     submitLabel={recipe ? "Save Recipe" : "Create Recipe"}
                     submitIcon={
                       recipe ? undefined : <Plus data-icon="inline-start" />
                     }
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </form>
-      <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
-        <AlertDialogContent>
+      <AlertDialog open={navigation.open} onOpenChange={(open) => { if (!open) navigation.onStay(); }}>
+        <AlertDialogContent className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-md [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -485,12 +490,12 @@ export default function RecipeCreateEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => router.push(returnTo)}>
+            <AlertDialogAction variant="destructive" onClick={navigation.onDiscard}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div></div>
   );
 }

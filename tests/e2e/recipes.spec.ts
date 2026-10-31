@@ -81,7 +81,7 @@ test("lets authenticated kitchen staff browse active Recipes only", async ({ pag
   await page.goto("/recipes/e2e-recipe-active/edit");
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active$/);
   await expect(page.getByRole("heading", { name: "Chicken Tinola", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Ingredients for ___ pax")).toHaveCount(0);
+  await expect(page.getByLabel("Recipe Baseline Pax")).toHaveCount(0);
 });
 
 test("lets an administrator open the Recipe editor from the catalog action menu", async ({ page }) => {
@@ -106,7 +106,7 @@ test("completes a legacy Recipe baseline without changing its ingredients", asyn
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto("/recipes/e2e-recipe-active/edit");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   await expect(page.getByText("Baseline pax not set")).toBeVisible();
   await expect(page.getByText(/redefines this batch; it does not multiply or change ingredient quantities/)).toBeVisible();
   await page.getByRole("button", { name: "Save Recipe" }).click();
@@ -199,7 +199,7 @@ test("lets an administrator create a Base Unit Recipe", async ({ page }) => {
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByLabel("Recipe name").fill("Rice Porridge");
   await page.getByLabel("Preparation note").fill("Cook until soft.");
-  await page.getByLabel("Ingredients for ___ pax").fill("50");
+  await page.getByLabel("Recipe Baseline Pax").fill("50");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("2.5");
   await expect(page.getByText("Kilogram (kg)", { exact: true })).toBeVisible();
@@ -221,7 +221,7 @@ test("shows accessible baseline errors and keeps the Recipe editor usable at 320
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("1");
   await page.getByRole("button", { name: "Create Recipe" }).click();
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   await expect(baseline).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("Enter the number of people these ingredients serve.", { exact: true })).toBeVisible();
   await baseline.focus();
@@ -240,7 +240,7 @@ test("shows field errors for nonempty invalid baseline values without losing the
   await page.getByLabel("Recipe name").fill("Invalid Baseline Soup");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("1.2500");
-  const baseline = page.getByLabel("Ingredients for ___ pax");
+  const baseline = page.getByLabel("Recipe Baseline Pax");
   for (const invalidValue of ["0", "1.5", "2147483648"]) {
     await baseline.fill(invalidValue);
     await baseline.press("Tab");
@@ -278,7 +278,7 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
 
   await page.getByLabel("Recipe name").fill("Gram Rice Porridge");
-  await page.getByLabel("Ingredients for ___ pax").fill("50");
+  await page.getByLabel("Recipe Baseline Pax").fill("50");
   await chooseIngredient(page, 1, "Rice");
   await page.getByLabel("Ingredient 1 quantity").fill("500");
   await page.getByLabel("Ingredient 1 Unit").click();
