@@ -28,9 +28,9 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | #279 | Purchase Order record and receipt inspection | #273, #277 | `86e2eda`; integrated `d1b3539` |
 | #280 | Recipe editor | #278 | `1851cac` + `9d8780c`; integrated `487a036`; shared rapid-Back correction pending |
 | #281 | Delivery editor | #279 | Pending |
-| #282 | Draft Meal Schedule | #277 | Pending |
+| #282 | Draft Meal Schedule | #277 | `73e1e57` + guard `0eb2dd6`; integrated `a762253`; portal-action sizing follow-up in progress |
 | #283 | Posted Meal Schedule | #277 | Pending |
-| #284 | Activity Design child collection | #277 | Pending |
+| #284 | Activity Design child collection | #277 | `6afbff8`; integrated `0067a34` |
 | #285 | Activity child collection | #277 | Pending |
 | #286 | Purchase Order receipt history | #279 | `9d1498e`; integrated `71610dc` |
 | #287 | Dashboard origin | #277 | Pending |
@@ -245,3 +245,36 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
   two rapid Back actions can bypass the prompt. Its centralized correction is
   in progress under #282 and must be adopted/rechecked by all three editors.
   The PR remains draft; no full integrated browser pass is claimed.
+
+### Draft issuance and Design child collection (`a762253`)
+
+- #284: fixed ten-row child finding, independent owned URL context, complete
+  name/Office search, all-child heading count and filtered range, created-row
+  reveal/focus, authoritative clamp, true hierarchy, and explicit catalog return.
+  Browser: 7 passed plus 1 expanded-tablet test covering both roles. Worker
+  helper/unit, architecture, lint and corrected final TypeScript checks passed.
+  An unsupported, ignored search-field prop caused the initial type failure;
+  removing only that prop corrected it. See `handoff-284.md`.
+- #282: one shared navigation owner replaces the former issuance sentinel and
+  listeners. Draft saves reset the saved baseline and later edits regain
+  protection. Stock picker initial focus, grouped phone actions, raw values,
+  transport recovery, twelve contributions, and enlarged-text states are covered.
+  Broad browser run: 18 passed / 3 failed; each classified failure subsequently
+  passed a focused rerun. Guard/cross-consumer run: 9 passed plus the corrected
+  review test passed separately. Domain 70, architecture, lint and TypeScript
+  passed. See `handoff-282-final.md`.
+- Shared rapid-history correction `0eb2dd6` suppresses intervening owned
+  traversal events until the original entry is restored. Repeated Back while
+  dirty, while the dialog is open, and while saving now pass focused tests;
+  destination URLs and forward entries are not rewritten.
+- The stale shared-action unit expectation is corrected by `e4c883e` in this
+  integration. The root focused run passed 2 files / 11 tests, covering action
+  controls and child-state helpers (`integration-a762253-focused-unit.log`).
+  This supplements the earlier full result; a final full suite remains required.
+- Source review found that portalled draft-dialog controls bypass the page's
+  40px action composition; a scoped measurement/follow-up is in progress.
+  Delivery is also replacing a separate scrollable identity header with the
+  required single editor body. Neither gap is being deferred as a passing state.
+- Meal child finding, posted-result presentation, Dashboard origin, integrated
+  return/focus checks, full final regression, real phone, and actual 400% browser
+  zoom remain outstanding. The PR stays draft.
