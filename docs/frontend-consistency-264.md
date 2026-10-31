@@ -18,14 +18,14 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | #269 | Planning and Item entry dialogs | — | `da74302`; integrated `30e3284` |
 | #270 | Responsive filters | #268 | `87d4ab7` + `c418c0c`; integrated `7f0c66d` |
 | #271 | Activities catalog | #270 | Pending |
-| #272 | Recipes catalog | #269, #270 | Pending |
-| #273 | Purchase Orders catalog | #269, #270 | Pending |
-| #274 | Master Data tabs, Units, Categories | #267, #269, #270 | Pending |
-| #275 | Offices and Vendors | #274 | Pending |
+| #272 | Recipes catalog | #269, #270 | `bbcc89f`; integrated `5f16784` |
+| #273 | Purchase Orders catalog | #269, #270 | `7b5909a`; integrated `77e696a` |
+| #274 | Master Data tabs, Units, Categories | #267, #269, #270 | `1ee0db5` + shared confirmation fixes; integrated `a3b5406` |
+| #275 | Offices and Vendors | #274 | `4107461` + `763d023`; integrated `a3b5406` |
 | #276 | Inventory | #270 | Pending |
-| #277 | Planning records | #268, #269 | Pending |
-| #278 | Recipe record and return context | #272, #277 | Pending |
-| #279 | Purchase Order record and receipt inspection | #273, #277 | Pending |
+| #277 | Planning records | #268, #269 | `741a59d`; integrated `6a2d0d6` |
+| #278 | Recipe record and return context | #272, #277 | `bb781fa`; integrated `26fe20b` |
+| #279 | Purchase Order record and receipt inspection | #273, #277 | `86e2eda`; integrated `d1b3539` |
 | #280 | Recipe editor | #278 | Pending |
 | #281 | Delivery editor | #279 | Pending |
 | #282 | Draft Meal Schedule | #277 | Pending |
@@ -168,6 +168,42 @@ Integrated revision: `20e40b4` (includes the reviewed foundation test correction
 - New observed failures include a cold Activities record heading wait, a stale
   eligibility fixture after direct database deletion, and PO hydration-flow
   focus. The first two have scoped fixes in the pending #277 branch; the PO
-  journey remains under investigation in #273. The full final suite is required.
+  journey received a scoped focus-restoration correction in #273. The full final
+  suite is required.
 - Handoffs/captures: `handoff-268.md`, `handoff-270.md`, `evidence-268`, and
   `evidence-270` under `C:\Users\LENOVO\.codex\spec-264`.
+
+### Record and catalog slices through `d1b3539`
+
+These are focused slice results, not a passing integrated acceptance suite.
+Detailed commands, revisions, captures, and earlier failed-run classifications
+are preserved in the task handoffs under `C:\Users\LENOVO\.codex\spec-264`.
+
+- #277: shared record heading/ancestry with Design and Activity consumers.
+  Twenty browser journeys passed before final focused refinements; subsequent
+  focused action/focus and short-screen enlarged-text checks passed. Lint,
+  TypeScript, architecture, 487 unit tests, build, and SQLite smoke passed in the
+  worker. See `handoff-277.md`.
+- #273: responsive Purchase Order catalog, entry/confirmation states and a
+  hydration focus-race test correction. Final three browser journeys, 20 focused
+  domain tests, architecture, lint and TypeScript passed. See `handoff-273.md`.
+- #274/#275: all four Master Data tabs and complete responsive facts. Final six
+  responsive journeys passed; one additional enlarged-text test covered all
+  four tabs after visual review found and corrected internal label/action
+  clipping. Lint, TypeScript, architecture and 31 domain tests passed. See
+  `handoff-274.md` and `handoff-275.md`.
+- #272: Recipe catalog and preview with actual availability warnings. Three
+  browser journeys, 20 unit tests, lint and TypeScript passed. Captures:
+  `evidence-272-final`; details: `handoff-272.md`.
+- #278: Recipe record, ancestry and safe catalog-return context. Navigation uses
+  real links and cancels obsolete search navigation. Four browser journeys,
+  30 unit tests, architecture, lint and TypeScript passed.
+- #279: Purchase Order record and immutable receipt inspection. Final three
+  functional journeys and two responsive inspection journeys passed after
+  correcting an obsolete history-cell expectation and inspection width owner.
+  Lint, TypeScript, architecture, 34 unit tests and production build passed.
+  See `handoff-279.md`.
+
+Recipe/delivery editors, Inventory, child collections, Dashboard origin, and
+final integration verification remain in progress. Real-phone and real 400%
+browser-zoom gates remain outstanding. No full-spec completion is claimed.
