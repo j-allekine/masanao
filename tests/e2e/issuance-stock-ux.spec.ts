@@ -140,6 +140,7 @@ test("unavailable saved Stock Items show their saved line and a visible editing 
     await page.getByLabel("Actions for Stock item Rice").click();
     await page.getByRole("menuitem", { name: "Edit Stock item", exact: true }).click();
     const edit = page.getByRole("dialog", { name: "Edit Stock item" });
+    await expect(edit.getByRole("combobox", {name:"Item",exact:true})).toBeEnabled({timeout:30000});
     await expect(edit.getByText("This saved Item is no longer available. Select an available Item to edit the line.")).toBeVisible();
     await expect(edit.getByRole("region", { name: "Stock already added" }).getByText("Rice", { exact: true })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("unavailable-stock-edit.png"), fullPage: true });

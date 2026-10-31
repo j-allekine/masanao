@@ -34,6 +34,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   const [loading, startTransition] = useTransition();
   const [applying, setApplying] = useState(false);
   const application = useRef<AbortController | null>(null);
+  const title = useRef<HTMLHeadingElement | null>(null);
   const itemInput = useRef<HTMLInputElement | null>(null);
   const pending = loading || applying;
 
@@ -107,6 +108,8 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
         setUnit("base");
         setNotice(`${item.name} added to stock.`);
       }
+    } catch {
+      if (!controller.signal.aborted) setError("The Stock item could not be added. Check your connection and try again.");
     } finally {
       if (!controller.signal.aborted) setApplying(false);
     }
@@ -114,9 +117,9 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+      <DialogContent initialFocus={() => title.current} finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add") ?? document.getElementById("issuance-add") ?? document.getElementById("meal-pax")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
+          <DialogTitle ref={title} tabIndex={-1}>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
           <DialogDescription className="sr-only">Choose an Item, quantity and Unit.</DialogDescription>
         </DialogHeader>
         <div className="grid min-w-0 gap-6 sm:grid-cols-2">

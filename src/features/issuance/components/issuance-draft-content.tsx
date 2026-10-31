@@ -1,14 +1,13 @@
 "use client";
 
 import {
-  useEffect,
   useRef,
   useState,
   useTransition,
   useSyncExternalStore,
 } from "react";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
+import { useUnsavedNavigation } from "@/components/workspace/navigation-guard";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -88,7 +87,6 @@ export default function IssuanceDraftContent({
   workspace: IssuanceWorkspace;
   mealSchedule: MealScheduleDetailItem;
 }) {
-  const router = useRouter();
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -121,7 +119,6 @@ export default function IssuanceDraftContent({
   const [confirmation, setConfirmation] = useState<IssuanceWorkspace | null>(
     null,
   );
-  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, startTransition] = useTransition();
@@ -136,12 +133,21 @@ export default function IssuanceDraftContent({
   const [viewId, setViewId] = useState<string | null>(null);
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustPax, setAdjustPax] = useState("");
-  const [leaveUrl, setLeaveUrl] = useState<string | null>(null);
-  const [discard, setDiscard] = useState<"leave" | "reset" | null>(null);
-  const browserBack = useRef(false);
-  const allowBack = useRef(false);
+  const [discard, setDiscard] = useState(false);
   const context = saved.context;
-  const backUrl = `/activity-designs/${context.activityDesignId}/activities/${context.activityId}`;
+  // Compare entered values, not mutation flags. Returning fields/lines to the
+  // saved baseline clears dirty; saving in place establishes the next baseline.
+  function draftValues(rawMealPax: string, draftRecipes: LocalRecipe[], draftStock: LocalStockItem[], totals: IssuanceItemTotal[]) {
+    return JSON.stringify({
+      mealPax: rawMealPax,
+      recipes: draftRecipes.map(({ id, recipeId, sourceRevision, targetMode, targetPax }) => ({ id, recipeId, sourceRevision, targetMode, targetPax })),
+      stock: draftStock.map(({ itemId, conversionId, enteredQuantity, conversionFactor }) => ({ itemId, conversionId, enteredQuantity, conversionFactor })),
+      // Automatic totals are derived; explicit adjustments are entered work.
+      totals: totals.filter(({ adjusted }) => adjusted).map(({ itemId, finalQuantity, adjusted }) => ({ itemId, finalQuantity, adjusted })).sort((a,b) => a.itemId.localeCompare(b.itemId)),
+    });
+  }
+  const dirty = saved.draft.status !== "posted" && draftValues(mealPax, recipes, stockItems, itemTotals) !== draftValues(saved.draft.mealPax?.toString() ?? "", saved.draft.recipes, saved.draft.stockItems, saved.draft.itemTotals ?? []);
+  const navigation = useUnsavedNavigation({dirty, pending});
   const view = recipes.find((recipe) => recipe.id === viewId);
   const adjust = recipes.find((recipe) => recipe.id === adjustId);
   const invalidMeal = mealPax !== "" && pax(mealPax) === null;
@@ -221,7 +227,6 @@ export default function IssuanceDraftContent({
     setQuantityReviews((current) => current.filter((entry) => !changed.has(entry.itemId)));
     setItemTotals((current) => current.filter((entry) => entry.adjusted || !changed.has(entry.itemId)));
     setError("");
-    setDirty(true);
     setNotice("");
     return true;
   }
@@ -243,7 +248,6 @@ export default function IssuanceDraftContent({
       ...current.filter((entry) => entry.itemId !== itemId),
       { itemId, finalQuantity },
     ]);
-    setDirty(true);
     setNotice("");
     setError("");
   }
@@ -261,7 +265,6 @@ export default function IssuanceDraftContent({
     setQuantityReviews((current) =>
       current.filter((entry) => entry.itemId !== itemId),
     );
-    setDirty(true);
     setNotice("");
     setError("");
   }
@@ -276,81 +279,6 @@ export default function IssuanceDraftContent({
     setRecipes(next);
     setAdjustId(null);
   }
-
-  async function releaseHistoryGuard() {
-    if (!window.history.state?.issuanceGuard) return;
-    // Return to the original same-page entry while suppressing route handling.
-    // The next normal navigation then replaces the obsolete forward guard.
-    allowBack.current = true;
-    await new Promise<void>((resolve) => {
-      const released = (event: PopStateEvent) => {
-        event.stopImmediatePropagation();
-        window.removeEventListener("popstate", released, true);
-        allowBack.current = false;
-        resolve();
-      };
-      window.addEventListener("popstate", released, true);
-      window.history.back();
-    });
-  }
-
-  useEffect(() => {
-    if (!dirty) return;
-    allowBack.current = false;
-    const warn = (event: BeforeUnloadEvent) => {
-      if (allowBack.current) return;
-      event.preventDefault();
-    };
-    const navigate = (event: MouseEvent) => {
-      if (
-        event.button !== 0 ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        event.altKey
-      )
-        return;
-      const anchor =
-        event.target instanceof Element
-          ? event.target.closest("a[href]")
-          : null;
-      if (
-        !(anchor instanceof HTMLAnchorElement) ||
-        anchor.target === "_blank" ||
-        anchor.hasAttribute("download") ||
-        anchor.href === window.location.href
-      )
-        return;
-      event.preventDefault();
-      event.stopPropagation();
-      browserBack.current = false;
-      setLeaveUrl(anchor.href);
-      setDiscard("leave");
-    };
-    const currentUrl = window.location.href;
-    if (!window.history.state?.issuanceGuard)
-      window.history.pushState(
-        { ...window.history.state, issuanceGuard: true },
-        "",
-        currentUrl,
-      );
-    const back = (event: PopStateEvent) => {
-      if (allowBack.current || event.state?.issuanceGuard) return;
-      event.stopImmediatePropagation();
-      browserBack.current = true;
-      window.history.forward();
-      setLeaveUrl(null);
-      setDiscard("leave");
-    };
-    window.addEventListener("popstate", back, true);
-    window.addEventListener("beforeunload", warn);
-    document.addEventListener("click", navigate, true);
-    return () => {
-      window.removeEventListener("popstate", back, true);
-      window.removeEventListener("beforeunload", warn);
-      document.removeEventListener("click", navigate, true);
-    };
-  }, [dirty]);
 
   function changeMeal(value: string) {
     const next = recipes.map((recipe) =>
@@ -420,7 +348,6 @@ export default function IssuanceDraftContent({
       const next = [...recipes, ...additions];
       if (!changeDemand({ recipes: next })) return;
       setRecipes(next);
-      setDirty(true);
       setNotice("");
       setSelected([]);
       setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added." : "Recipes added."}`);
@@ -471,7 +398,6 @@ export default function IssuanceDraftContent({
       setError(result.error);
       return;
     }
-    await releaseHistoryGuard();
     setSaved(result.value);
     setReferences(result.value.reviewReferences);
     setItemTotals(result.value.draft.itemTotals ?? []);
@@ -480,60 +406,65 @@ export default function IssuanceDraftContent({
     setRecipes(result.value.draft.recipes);
     setStockItems(result.value.draft.stockItems);
     setMealPax(result.value.draft.mealPax?.toString() ?? "");
-    setDirty(false);
     setNotice("Draft saved. No stock has been issued.");
     return result.value;
   }
   function save() {
+    if (pending) return;
     startTransition(async () => {
-      await persistDraft();
+      try { await persistDraft(); }
+      catch { setError("The draft could not be saved. Check your connection and try again."); }
     });
   }
   function preparePosting() {
+    if (pending) return;
     setError("");
     startTransition(async () => {
-      const current = dirty ? await persistDraft() : saved;
-      if (!current) return;
-      if (
-        !current.draft.id ||
-        !current.draft.mealPax ||
-        current.reviewPending ||
-        !current.review.length
-      ) {
-        setError(
-          "Save at least one supply line and enter positive Meal pax before posting.",
-        );
-        return;
-      }
-      if (current.review.some((row) => row.warning)) {
-        setError(
-          "Confirm the unresolved combined Item quantities in Review quantities and stock before posting.",
-        );
-        return;
-      }
-      setConfirmation(current);
+      try {
+        const current = dirty ? await persistDraft() : saved;
+        if (!current) return;
+        if (
+          !current.draft.id ||
+          !current.draft.mealPax ||
+          current.reviewPending ||
+          !current.review.length
+        ) {
+          setError(
+            "Save at least one supply line and enter positive Meal pax before posting.",
+          );
+          return;
+        }
+        if (current.review.some((row) => row.warning)) {
+          setError(
+            "Confirm the unresolved combined Item quantities in Review quantities and stock before posting.",
+          );
+          return;
+        }
+        setConfirmation(current);
+      } catch { setError("The draft could not be prepared for posting. Check your connection and try again."); }
     });
   }
   function post() {
     if (!confirmation || pending) return;
     setError("");
     startTransition(async () => {
-      const result = await postIssuanceAction(
-        {
-          activityDesignId: context.activityDesignId,
-          activityId: context.activityId,
-          mealScheduleId: context.mealScheduleId,
-        },
-        { revision: confirmation.draft.revision },
-      );
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      setSaved(result.value);
-      setDirty(false);
-      setConfirmation(null);
-      setNotice("");
+      try {
+        const result = await postIssuanceAction(
+          {
+            activityDesignId: context.activityDesignId,
+            activityId: context.activityId,
+            mealScheduleId: context.mealScheduleId,
+          },
+          { revision: confirmation.draft.revision },
+        );
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setSaved(result.value);
+        setConfirmation(null);
+        setNotice("");
+      } catch { setError("Posting could not be completed. Check your connection and try again."); }
     });
   }
   function resetToSaved() {
@@ -543,30 +474,16 @@ export default function IssuanceDraftContent({
     setRecipes(saved.draft.recipes);
     setStockItems(saved.draft.stockItems);
     setMealPax(saved.draft.mealPax?.toString() ?? "");
-    setDirty(false);
     setError("");
     setNotice("");
   }
   function confirmDiscard() {
     if (pending) return;
-    startTransition(async () => {
-      if (discard === "leave") {
-        if (!browserBack.current) await releaseHistoryGuard();
-        resetToSaved();
-        allowBack.current = true;
-        if (browserBack.current) {
-          // Resume Back from the restored guard to the original predecessor.
-          window.history.go(-2);
-        } else {
-          router.push(leaveUrl ?? backUrl);
-        }
-      } else {
-        await releaseHistoryGuard();
-        resetToSaved();
-      }
-      setDiscard(null);
-      setLeaveUrl(null);
-    });
+    if (navigation.open) navigation.onDiscard();
+    else {
+      resetToSaved();
+      setDiscard(false);
+    }
   }
 
   if (saved.draft.status === "posted") {
@@ -582,7 +499,7 @@ export default function IssuanceDraftContent({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col bg-card"
+      className="flex min-h-0 flex-1 flex-col bg-card [&_[data-slot=button]]:min-h-10 [&_[data-slot=input]]:min-h-10 [&_h1]:text-heading-1 lg:[&_[data-slot=button]]:min-h-9 lg:[&_[data-slot=input]]:min-h-9"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <div className="flex min-h-0 flex-1 flex-col">
@@ -689,7 +606,6 @@ export default function IssuanceDraftContent({
                               );
                               if (!changeDemand({ recipes: next })) return;
                               setRecipes(next);
-                              setDirty(true);
                               setNotice("");
                             },
                           },
@@ -753,7 +669,6 @@ export default function IssuanceDraftContent({
                                 );
                                 if (!changeDemand({ stockItems: next })) return;
                                 setStockItems(next);
-                                setDirty(true);
                                 setNotice("");
                               },
                             },
@@ -767,18 +682,18 @@ export default function IssuanceDraftContent({
             )}
           </section>
         </section>
+        <div className="flex flex-col items-start gap-2 px-4 pb-4 text-body-sm text-muted-foreground sm:px-6">
+          <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
+          {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
+          {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
+          {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard(true)}>Discard changes</Button> : null}
         </div>
-        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-card px-4 py-4 sm:px-6">
-          <div className="text-body-sm text-muted-foreground">
-            <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
-            {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
-            {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
-            <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
-            <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
-            <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
+        </div>
+        <footer aria-label="Draft actions" className="shrink-0 border-t bg-card px-4 py-3 sm:px-6">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <Button id="issuance-review" aria-label="Review quantities and stock" variant="outline" disabled={pending} onClick={openReview}><span className="sm:hidden">Review</span><span className="hidden sm:inline">Review quantities and stock</span></Button>
+            <Button aria-label={pending ? "Working…" : "Save draft"} variant="outline" disabled={pending || !canSave} onClick={save}><span className="sm:hidden">{pending ? "Working…" : "Save"}</span><span className="hidden sm:inline">{pending ? "Working…" : "Save draft"}</span></Button>
+            <Button id="issuance-post" className="col-span-2" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
           </div>
         </footer>
       </div>
@@ -865,7 +780,6 @@ export default function IssuanceDraftContent({
               return false;
             }
             setStockItems(next);
-            setDirty(true);
             setNotice("");
             setError("");
             if (stockPicker.line) setStockPicker(null);
@@ -1127,11 +1041,11 @@ export default function IssuanceDraftContent({
         </DialogContent>
       </Dialog>
       <Dialog
-        open={Boolean(discard)}
+        open={discard || navigation.open}
         onOpenChange={(open) => {
           if (!pending && !open) {
-            setDiscard(null);
-            setLeaveUrl(null);
+            setDiscard(false);
+            navigation.onStay();
           }
         }}
       >
@@ -1147,8 +1061,8 @@ export default function IssuanceDraftContent({
               variant="outline"
               disabled={pending}
               onClick={() => {
-                setDiscard(null);
-                setLeaveUrl(null);
+                setDiscard(false);
+                navigation.onStay();
               }}
             >
               Keep editing
