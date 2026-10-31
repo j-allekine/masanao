@@ -12,6 +12,7 @@ export function WorkspaceFormActionButtons({
   submitLabel,
   pendingLabel,
   submitIcon,
+  compactSubmitLabel,
   cancelLabel = "Cancel",
 }: {
   onCancel?: () => void;
@@ -20,6 +21,8 @@ export function WorkspaceFormActionButtons({
   submitLabel: string;
   pendingLabel: string;
   submitIcon?: ReactNode;
+  /** Short visible phone wording; the complete action remains its accessible name. */
+  compactSubmitLabel?: string;
   cancelLabel?: string;
 }) {
   return (
@@ -34,9 +37,9 @@ export function WorkspaceFormActionButtons({
           {cancelLabel}
         </Button>
       ) : null}
-      <Button type="submit" disabled={isPending || submitDisabled}>
+      <Button type="submit" aria-label={compactSubmitLabel ? isPending ? pendingLabel : submitLabel : undefined} disabled={isPending || submitDisabled}>
         {isPending ? <Spinner data-icon="inline-start" /> : submitIcon}
-        {isPending ? pendingLabel : submitLabel}
+        {isPending ? pendingLabel : compactSubmitLabel ? <><span className="sm:hidden">{compactSubmitLabel}</span><span className="hidden sm:inline">{submitLabel}</span></> : submitLabel}
       </Button>
     </>
   );
