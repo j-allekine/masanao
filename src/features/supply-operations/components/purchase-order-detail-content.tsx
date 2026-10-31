@@ -17,7 +17,8 @@ import DeliveryReceiptHistory from "./delivery-receipt-history";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 import PurchaseOrderDialog from "./purchase-order-dialog";
 import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
-import { getPurchaseOrderReturn, withPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderRecordUrl } from "./receipt-history-state";
 
 export default function PurchaseOrderDetailContent({ purchaseOrder, canManage = false, vendors = [] }: {
   purchaseOrder: PurchaseOrderDetailItem;
@@ -51,8 +52,8 @@ export default function PurchaseOrderDetailContent({ purchaseOrder, canManage = 
       </div>
       <section aria-labelledby="delivery-receipt-history-title" className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0"><h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">Delivery Receipt history</h2><p className="text-body text-muted-foreground">Posted receipts remain available for inspection.</p></div>
-          <WorkspacePrimaryLink href={withPurchaseOrderReturn(`/purchase-orders/${purchaseOrder.id}/record-delivery`, catalogUrl)} icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}>Record delivery</WorkspacePrimaryLink>
+          <div className="min-w-0"><h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">Delivery Receipt history <span className="text-muted-foreground">({purchaseOrder.deliveryReceipts.length})</span></h2><p className="text-body text-muted-foreground">Posted receipts remain available for inspection.</p></div>
+          <WorkspacePrimaryLink href={getPurchaseOrderRecordUrl(purchaseOrder.id, params, true)} icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}>Record delivery</WorkspacePrimaryLink>
         </div>
         <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />
       </section>

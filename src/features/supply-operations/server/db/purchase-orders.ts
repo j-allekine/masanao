@@ -48,9 +48,9 @@ const purchaseOrderDetailSelect = {
         },
       },
     },
-    orderBy: { postedAt: "desc" as const },
+    orderBy: [{ postedAt: "desc" }, { id: "desc" }],
   },
-} as const;
+} satisfies Prisma.PurchaseOrderSelect;
 
 type PurchaseOrderListRecord = Prisma.PurchaseOrderGetPayload<{
   select: typeof purchaseOrderListSelect;

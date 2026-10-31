@@ -23,7 +23,7 @@ import { postDeliveryReceiptAction } from "../actions";
 import { addExactPositiveDecimals, formatDeliveryReceiptAmount, formatDeliveryReceiptUnitPrice, isPositiveExactDecimal, multiplyExactPositiveDecimals, normalizeDeliveryReceiptUnitPriceInput, reindexLineErrorsAfterRemoval } from "../domain/delivery-receipt";
 import type { DeliveryReceiptField, DeliveryReceiptFieldErrors, DeliveryReceiptLineFieldErrors, ItemListItem } from "../types";
 
-import { getPurchaseOrderReturn, withPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderRecordUrl, getReceiptHistoryQuery } from "./receipt-history-state";
 
 type DeliveryReceiptLineField = keyof DeliveryReceiptLineFieldErrors;
 
@@ -108,7 +108,7 @@ function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: I
 export default function DeliveryReceiptForm({ purchaseOrderId, items, presentation = "page" }: { purchaseOrderId: string; items: ItemListItem[]; presentation?: "page" | "dialog" }) {
   const router = useRouter();
   const params = useSearchParams();
-  const returnUrl = withPurchaseOrderReturn(`/purchase-orders/${purchaseOrderId}`, getPurchaseOrderReturn(params));
+  const returnUrl = getPurchaseOrderRecordUrl(purchaseOrderId, params);
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -225,7 +225,9 @@ export default function DeliveryReceiptForm({ purchaseOrderId, items, presentati
     startTransition(async () => {
       const result = await postDeliveryReceiptAction(data);
       if (result.status === "success") {
-        router.push(`${returnUrl}#delivery-receipt-${result.receipt.id}`);
+        const [path, query = ""] = returnUrl.split("?");
+        const next = getReceiptHistoryQuery(query, { created: result.receipt.id });
+        router.push(`${path}?${next}#delivery-receipt-${result.receipt.id}`);
         return;
       }
       setErrors(result.fields);
