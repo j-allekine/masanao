@@ -45,6 +45,7 @@ export default function DeleteItemDialog({
 
   return (
     <DestructiveDialog
+      bounded
       open={open}
       onOpenChange={onOpenChange}
       title={`Delete “${item.name}”?`}

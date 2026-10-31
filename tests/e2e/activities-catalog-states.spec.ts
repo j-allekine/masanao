@@ -57,6 +57,16 @@ test("Activities catalog keeps empty, no-match, pagination and active-role actio
       await expect(page.getByText("Showing 11 to 12 of 12 results", { exact: true })).toBeVisible();
       await expect(page).toHaveURL(/activitiesPage=2/);
       await expect(next).toBeDisabled();
+      const pageButtons = await page.getByRole("navigation", { name: "pagination", exact: true }).getByRole("button").all();
+      const boxes = [];
+      for (const control of pageButtons) {
+        if (!await control.isVisible()) continue;
+        const box = (await control.boundingBox())!;
+        expect(box.width).toBeGreaterThanOrEqual(40);
+        expect(box.height).toBeGreaterThanOrEqual(40);
+        boxes.push(box);
+      }
+      for (let index = 1; index < boxes.length; index++) expect(boxes[index].x).toBeGreaterThanOrEqual(boxes[index - 1].x + boxes[index - 1].width);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`catalog-page-2-${width}.png`), fullPage: true });
       await search.fill("No matching Activity in this catalog");

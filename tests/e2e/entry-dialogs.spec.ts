@@ -39,9 +39,12 @@ async function expectBoundedDialog(dialog: Locator) {
   })).toBe(true);
   const heading = dialog.getByRole("heading");
   const close = dialog.getByRole("button", { name: "Close", exact: true });
+  await expect.poll(async () => (await close.boundingBox())?.width).toBe(40);
   const [titleBox, closeBox, dialogBox] = await Promise.all([
     heading.boundingBox(), close.boundingBox(), dialog.boundingBox(),
   ]);
+  expect(closeBox!.width).toBeGreaterThanOrEqual(40);
+  expect(closeBox!.height).toBeGreaterThanOrEqual(40);
   expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(dialogBox!.x + dialogBox!.width - 40);
   expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(closeBox!.x);
 }
