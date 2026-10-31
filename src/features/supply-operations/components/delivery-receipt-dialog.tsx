@@ -13,7 +13,7 @@ import {
 
 import type { ItemListItem } from "../types";
 import DeliveryReceiptForm from "./delivery-receipt-form";
-import { getPurchaseOrderReturn, withPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderRecordUrl } from "./receipt-history-state";
 
 export default function DeliveryReceiptDialog({
   purchaseOrderId,
@@ -29,7 +29,7 @@ export default function DeliveryReceiptDialog({
   const [open, setOpen] = useState(true);
 
   function returnToOrder() {
-    router.push(withPurchaseOrderReturn(`/purchase-orders/${purchaseOrderId}`, getPurchaseOrderReturn(params)));
+    router.push(getPurchaseOrderRecordUrl(purchaseOrderId, params));
   }
 
   return <Dialog disablePointerDismissal open={open} onOpenChange={(nextOpen) => {
