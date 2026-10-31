@@ -48,7 +48,11 @@ test("every workspace family retains one shared header and usable mobile navigat
       const header = page.locator('[data-slot="workspace-header"]');
       await expect(header).toHaveCount(1);
       await expect(header.getByText(title, { exact: true })).toBeVisible();
-      await expect(header.getByRole("button", { name: "Toggle Sidebar", exact: true })).toHaveCount(1);
+      const toggle = header.getByRole("button", { name: "Toggle Sidebar", exact: true });
+      await expect(toggle).toHaveCount(1);
+      const toggleBox = (await toggle.boundingBox())!;
+      expect(toggleBox.width).toBeGreaterThanOrEqual(40);
+      expect(toggleBox.height).toBeGreaterThanOrEqual(40);
       await expect(header).toBeInViewport();
       expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       for (const position of [0.5, 1]) {

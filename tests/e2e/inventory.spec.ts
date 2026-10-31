@@ -73,7 +73,7 @@ test("staff reads exact stock from converted receiving through draft and posted 
   if (evidence) mkdirSync(evidence, { recursive: true });
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 800 });
-    const item = width === 320 ? page.locator('[data-inventory-mobile] [data-item-id="inv-eggs"]') : eggs;
+    const item = eggs;
     await expect(item).toContainText("10 pc");
     await expect(item).toContainText("Reorder now");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -42,7 +42,7 @@ export function WorkspaceSearchField({
       <FieldLabel htmlFor={id}>
         Search
       </FieldLabel>
-      <InputGroup>
+      <InputGroup className="h-10">
         <InputGroupAddon>
           <Search aria-hidden="true" />
         </InputGroupAddon>
@@ -52,16 +52,17 @@ export function WorkspaceSearchField({
           id={id}
           aria-label={label}
           aria-describedby={describedBy}
-          className="text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-10 text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
           type="search"
           placeholder={placeholder}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
         />
         {value ? (
-          <InputGroupAddon align="inline-end">
+          <InputGroupAddon align="inline-end" className="py-0">
             <InputGroupButton
               size="icon-xs"
+              className="size-10"
               disabled={!hydrated}
               aria-label="Clear search"
               onClick={() => {
@@ -85,7 +86,7 @@ export function WorkspaceFilterField({ id, label, children, className }: {
   className?: string;
 }) {
   return (
-    <Field data-catalog-filter className={cn("w-full min-w-0 sm:w-44", className)}>
+    <Field data-catalog-filter className={cn("w-full min-w-0 sm:w-44 [&_[data-slot=select-trigger]]:min-h-10", className)}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {children}
     </Field>
@@ -110,7 +111,7 @@ export const WorkspacePrimaryAction = forwardRef<
       ref={ref}
       type={type}
       size="lg"
-      className={cn("w-full sm:w-auto", className)}
+      className={cn("h-auto min-h-10 w-full whitespace-normal py-2 sm:w-auto", className)}
       {...props}
     >
       {icon}
@@ -130,6 +131,7 @@ export function WorkspacePrimaryLink({
     <Link
       className={cn(
         buttonVariants({ size: "lg" }),
+        "h-auto min-h-10 whitespace-normal py-2",
         fullWidth && "w-full sm:w-auto",
         className,
       )}
@@ -235,14 +237,14 @@ export function WorkspaceCatalogToolbar({
           {filtersInline ? <>
           {filterContent}
           {activeFilterCount > 0 && onClearFilters ? (
-            <Button type="button" variant="ghost" onClick={() => {
+            <Button type="button" variant="ghost" className="h-auto min-h-10 whitespace-normal py-2" onClick={() => {
               onClearFilters();
               document.getElementById(searchId)?.focus();
             }}>
               <X data-icon="inline-start" aria-hidden="true" />Reset
             </Button>
           ) : null}
-        </> : <SheetTrigger render={<Button ref={filterTriggerRef} type="button" variant="outline" disabled={filtersInline === null} aria-label={activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filters"} />}>
+        </> : <SheetTrigger render={<Button ref={filterTriggerRef} type="button" variant="outline" className="h-auto min-h-10 whitespace-normal py-2" disabled={filtersInline === null} aria-label={activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filters"} />}>
               <ListFilter data-icon="inline-start" aria-hidden="true" />
               Filters{activeFilterCount ? ` · ${activeFilterCount}` : ""}
             </SheetTrigger>}
@@ -261,11 +263,11 @@ export function WorkspaceCatalogToolbar({
                 {!filtersInline ? filterContent : null}
               </div>
               <SheetFooter>
-                {activeFilterCount > 0 && onClearFilters ? <Button type="button" variant="outline" onClick={() => {
+                {activeFilterCount > 0 && onClearFilters ? <Button type="button" variant="outline" className="h-auto min-h-10 whitespace-normal py-2" onClick={() => {
                   onClearFilters();
                   setFiltersOpen(false);
                 }}>Reset filters</Button> : null}
-                <SheetClose render={<Button type="button" />}>Show results</SheetClose>
+                <SheetClose render={<Button type="button" className="h-auto min-h-10 whitespace-normal py-2" />}>Show results</SheetClose>
               </SheetFooter>
             </SheetContent>
           </Sheet> : null}

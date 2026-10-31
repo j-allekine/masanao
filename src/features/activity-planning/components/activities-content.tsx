@@ -1,3 +1,4 @@
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 
 import ActivitiesWorkspace from "./activities-workspace";
@@ -19,13 +20,13 @@ export default function ActivitiesContent({
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Planning" />
 
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
+      <WorkspaceContent>
         <ActivitiesWorkspace
           activities={initialActivities}
           activityDesigns={initialActivityDesigns}
           initialQuery={initialQuery}
         />
-      </div>
+      </WorkspaceContent>
     </div>
   );
 }

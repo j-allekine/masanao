@@ -41,6 +41,14 @@ for (const width of [1280, 1024, 320]) {
       }
       await search.fill("__no_matching_catalog_record__");
       const clear = toolbar.getByRole("button", { name: "Clear search", exact: true });
+      const clearBox = (await clear.boundingBox())!;
+      expect(clearBox.width).toBeGreaterThanOrEqual(40);
+      expect(clearBox.height).toBeGreaterThanOrEqual(40);
+      for (const button of await toolbar.getByRole("button").all()) {
+        if (await button.isVisible()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+      }
+      const inputBox = (await search.boundingBox())!;
+      expect(inputBox.x + inputBox.width).toBeLessThanOrEqual(clearBox.x + 1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({
         path: evidence ? join(evidence, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`),

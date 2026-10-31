@@ -43,24 +43,25 @@ function ActivityRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-      <TableCell className="max-w-[28rem]">
+      <TableCell data-primary data-label="Activity" className="w-[40%]">
         <Link
           href={withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, catalogUrl)}
-          className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="workspace-record-link"
         >
           {activity.name}
         </Link>
       </TableCell>
-      <TableCell className="max-w-[28rem]">
-        <span className="block truncate">{activity.activityDesignTitle}</span>
+      <TableCell data-label="Activity Design" className="w-[32%]">
+        <Link href={withPlanningReturn(`/activity-designs/${activity.activityDesignId}`, catalogUrl)} className="workspace-record-link">{activity.activityDesignTitle}</Link>
       </TableCell>
       <TableCell
-        className="text-center tabular-nums"
+        data-label="Meal Schedules"
+        className="w-[18%] text-right tabular-nums"
         aria-label={`${formattedMealScheduleCount} ${activity.mealScheduleCount === 1 ? "Meal Schedule" : "Meal Schedules"}`}
       >
         {formattedMealScheduleCount}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell data-actions className="w-[10%] text-right">
         <ActivityActionsMenu
           activityName={activity.name}
           actionButtonId={`activity-actions-${activity.id}`}
@@ -121,19 +122,19 @@ export default function ActivitiesTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Activities" className="min-w-[44rem]">
+    <WorkspaceTableFrame caption="Activities" responsive>
       <TableHeader className="bg-muted/60">
         <TableRow>
-          <TableHead scope="col" className="text-left">
+          <TableHead scope="col" className="w-[40%] text-left">
             Activity name
           </TableHead>
-          <TableHead scope="col" className="text-left">
+          <TableHead scope="col" className="w-[32%] text-left">
             Activity Design title
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-[18%] text-right">
             Meal Schedule count
           </TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="w-[10%] text-right">
             Actions
           </TableHead>
         </TableRow>
