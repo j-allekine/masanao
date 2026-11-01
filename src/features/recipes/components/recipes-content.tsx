@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCatalogReturnFocus } from "@/hooks/use-catalog-return-focus";
 
 import {
   TableBody,
@@ -29,7 +30,7 @@ import type { RecipeCatalogItem } from "../types";
 import { filterRecipes, hasRecipeListFilters } from "./recipe-filters";
 import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
 import RecipePreviewDialog, { type RecipePreviewState } from "./recipe-preview-dialog";
-import { recipeCatalogReturn, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
+import { RECIPE_RETURN_ROW_PREFIX, recipeCatalogReturn, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
 import RecipeCatalogActions from "./recipe-catalog-actions";
 
 const PAGE_SIZE = 10;
@@ -76,6 +77,7 @@ export default function RecipesContent({
   const resultStart = paginatedRecipes.length === 0 ? 0 : firstRecipeIndex + 1;
   const resultEnd = firstRecipeIndex + paginatedRecipes.length;
   const filtersAreActive = hasRecipeListFilters(filters);
+  useCatalogReturnFocus({ records: paginatedRecipes, prefix: RECIPE_RETURN_ROW_PREFIX, fallbackId: "recipe-search", query: currentQuery, enabled: searchInput === listState.search });
 
   useEffect(() => {
     const syncSearchInputTimeout = window.setTimeout(() => {
@@ -100,7 +102,7 @@ export default function RecipesContent({
       page: pageCount,
     });
     latestQueryRef.current = clampedUrl.split("?", 2)[1] ?? "";
-    router.replace(clampedUrl, { scroll: false });
+    router.replace(`${clampedUrl}${window.location.hash}`, { scroll: false });
   }, [currentQuery, listState.page, pageCount, pathname, router]);
 
   function navigateList(
@@ -109,7 +111,8 @@ export default function RecipesContent({
   ) {
     const nextUrl = getRecipeListUrl(pathname, latestQueryRef.current, updates);
     latestQueryRef.current = nextUrl.split("?", 2)[1] ?? "";
-    router[navigation](nextUrl, { scroll: false });
+    const fragment = window.location.hash.startsWith(`#${RECIPE_RETURN_ROW_PREFIX}`) ? "" : window.location.hash;
+    router[navigation](`${nextUrl}${fragment}`, { scroll: false });
   }
 
   function updateSearch(search: string) {
@@ -252,6 +255,7 @@ export default function RecipesContent({
                   <TableRow key={recipe.id} data-recipe-id={recipe.id}>
                     <TableCell data-primary>
                       <Link
+                        id={`${RECIPE_RETURN_ROW_PREFIX}${recipe.id}`}
                         href={recipeRecordHref(recipe.id, catalogReturn)}
                         onNavigate={cancelSearchNavigation}
                         className="workspace-record-link"

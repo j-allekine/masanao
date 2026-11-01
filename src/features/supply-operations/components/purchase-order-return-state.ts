@@ -1,6 +1,7 @@
 import { getPurchaseOrderListQuery, getPurchaseOrderListState } from "./purchase-order-list-state";
 
 const returnKey = "purchaseOrdersReturn";
+export const PURCHASE_ORDER_RETURN_ROW_PREFIX = "purchase-order-row-";
 
 /** Accept only this feature's catalog and its owned list keys. */
 export function validatePurchaseOrderReturn(value: string | null) {
@@ -16,6 +17,10 @@ export function validatePurchaseOrderReturn(value: string | null) {
 
 export function getPurchaseOrderReturn(params: Pick<URLSearchParams, "get">) {
   return validatePurchaseOrderReturn(params.get(returnKey));
+}
+
+export function getPurchaseOrderCatalogReturnHref(params: Pick<URLSearchParams, "get">, id: string) {
+  return `${getPurchaseOrderReturn(params)}#${PURCHASE_ORDER_RETURN_ROW_PREFIX}${encodeURIComponent(id)}`;
 }
 
 export function withPurchaseOrderReturn(path: string, catalogUrl: string) {

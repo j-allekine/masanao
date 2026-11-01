@@ -1,5 +1,7 @@
 import { getRecipeListUrl } from "./recipe-list-state";
 
+export const RECIPE_RETURN_ROW_PREFIX = "recipe-row-";
+
 /** Accept feature-owned destinations only; never navigate an arbitrary return URL. */
 export function recipeCatalogReturn(value: string | null | undefined): string {
   if (!value || /%(?![0-9a-f]{2})/i.test(value) || !value.startsWith("/recipes") || /[\\#\r\n]/.test(value)) return "/recipes";
@@ -18,6 +20,11 @@ export function recipeCatalogReturn(value: string | null | undefined): string {
 export function recipeRecordHref(id: string, catalog: string) {
   const path = `/recipes/${encodeURIComponent(id)}`;
   return catalog === "/recipes" ? path : `${path}?${new URLSearchParams({ returnTo: catalog })}`;
+}
+
+/** Only the authoritative record identity chooses the focus fragment. */
+export function recipeCatalogReturnHref(value: string | null | undefined, id: string) {
+  return `${recipeCatalogReturn(value)}#${RECIPE_RETURN_ROW_PREFIX}${encodeURIComponent(id)}`;
 }
 
 export function recipeEditorReturn(value: string | null | undefined, id?: string) {

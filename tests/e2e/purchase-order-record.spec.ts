@@ -72,7 +72,7 @@ for (const role of ["admin", "staff"]) test(`PO record, inspection and latest ca
   await expect(page.getByRole("dialog", { name: "Record delivery", exact: true })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   const catalog = page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true });
-  await expect(catalog).toHaveAttribute("href", `/purchase-orders?purchaseOrdersSearch=${encodeURIComponent(number)}`);
+  await expect(catalog).toHaveAttribute("href", `/purchase-orders?purchaseOrdersSearch=${encodeURIComponent(number)}#purchase-order-row-${id}`);
   await catalog.click();
   await expect(page.getByRole("searchbox", { name: "Search Purchase Orders", exact: true })).toHaveValue(number);
 });

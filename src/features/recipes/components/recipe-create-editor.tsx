@@ -3,7 +3,7 @@
 import { WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
 import { recipeEditorReturn, recipeSaveHref } from "./recipe-return-context";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -87,6 +87,34 @@ export default function RecipeCreateEditor({
   recipe?: RecipeDetailItem;
 }) {
   const router = useRouter();
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    let frame = 0;
+    function keepFocusedFieldVisible() {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const field = document.activeElement;
+        if (!(field instanceof HTMLElement) || !body?.contains(field)) return;
+        const bounds = body.getBoundingClientRect();
+        const position = field.getBoundingClientRect();
+        if (position.top < bounds.top || position.bottom > bounds.bottom) {
+          field.scrollIntoView({ block: "center", inline: "nearest" });
+        }
+      });
+    }
+    // Font changes and wrapping can move a field without a window resize.
+    const observer = new ResizeObserver(keepFocusedFieldVisible);
+    observer.observe(body);
+    for (const child of body.children) observer.observe(child);
+    body.addEventListener("focusin", keepFocusedFieldVisible);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      body.removeEventListener("focusin", keepFocusedFieldVisible);
+    };
+  }, []);
   const searchParams = useSearchParams();
   const returnTo = recipeEditorReturn(searchParams.get("returnTo"), recipe?.id);
   const [name, setName] = useState(recipe?.name ?? "");
@@ -216,13 +244,13 @@ export default function RecipeCreateEditor({
   }
 
   return (
-    <div className="workspace-pane flex h-[calc(100dvh-var(--workspace-header-height,4rem))] min-h-0 flex-col"><div className="workspace-content mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-4 py-4 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 [&_[data-slot=button]]:min-h-10 lg:[&_[data-slot=input]]:min-h-9 lg:[&_[data-slot=select-trigger]]:min-h-9 lg:[&_[data-slot=button]]:min-h-9">
+    <div className="workspace-pane flex h-[calc(100dvh-var(--workspace-header-height,4rem))] min-h-0 flex-col"><div className="workspace-content mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col gap-4 py-4 [@media(max-height:540px)]:py-0 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 [&_[data-slot=button]]:min-h-10 lg:[&_[data-slot=input]]:min-h-9 lg:[&_[data-slot=select-trigger]]:min-h-9 lg:[&_[data-slot=button]]:min-h-9">
       <form aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} className="flex min-h-0 flex-1 flex-col" noValidate onSubmit={handleSubmit}>
-        <div data-recipe-editor-body className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain pb-4">
+        <div ref={bodyRef} data-recipe-editor-body className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain pb-4">
       <WorkspaceRecordBreadcrumbs ancestors={[{ label: recipe?.name ?? "Recipes", href: returnTo }]} currentLabel={recipe ? "Edit Recipe" : "New Recipe"} />
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">{recipe ? "Edit Recipe" : "New Recipe"}</h1>
+          <h1 className="workspace-page-title font-semibold">{recipe ? "Edit Recipe" : "New Recipe"}</h1>
           <p className="text-body text-muted-foreground">
             Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
           </p>
@@ -465,7 +493,7 @@ export default function RecipeCreateEditor({
           </Card>
           </fieldset>
         </div>
-        <div data-recipe-editor-actions className="flex shrink-0 flex-wrap justify-end gap-2 border-t bg-card py-3">                <div className="flex flex-wrap items-center gap-2">
+        <div data-recipe-editor-actions className="flex shrink-0 flex-wrap justify-end gap-2 border-t bg-card py-3 [@media(max-height:540px)]:py-1">                <div className="flex flex-wrap items-center gap-2">
                   <WorkspaceFormActionButtons
                     onCancel={cancelEditor}
                     isPending={isSubmitting}

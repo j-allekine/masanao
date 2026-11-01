@@ -17,7 +17,7 @@ import DeliveryReceiptHistory from "./delivery-receipt-history";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 import PurchaseOrderDialog from "./purchase-order-dialog";
 import DeletePurchaseOrderDialog from "./delete-purchase-order-dialog";
-import { getPurchaseOrderReturn } from "./purchase-order-return-state";
+import { getPurchaseOrderCatalogReturnHref } from "./purchase-order-return-state";
 import { getPurchaseOrderRecordUrl } from "./receipt-history-state";
 
 export default function PurchaseOrderDetailContent({ purchaseOrder, canManage = false, vendors = [] }: {
@@ -27,7 +27,7 @@ export default function PurchaseOrderDetailContent({ purchaseOrder, canManage = 
 }) {
   const params = useSearchParams();
   const router = useRouter();
-  const catalogUrl = getPurchaseOrderReturn(params);
+  const catalogUrl = getPurchaseOrderCatalogReturnHref(params, purchaseOrder.id);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   function restoreFocus(id: string) { window.setTimeout(() => document.getElementById(id)?.focus(), 0); }

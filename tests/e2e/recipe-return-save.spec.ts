@@ -24,6 +24,7 @@ test("preserves validated Recipe catalog context after create and edit save", as
   await expect(page.getByLabel("Search Recipes")).toHaveValue("Chicken");
   await page.goto(`/recipes/new?${new URLSearchParams({returnTo:"https://evil.test/recipes"})}`);
   await expect(page.getByRole("heading",{name:"New Recipe",exact:true})).toBeVisible();
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByRole("button",{name:"Cancel",exact:true}).click();
   await expect(page).toHaveURL(/\/recipes$/);
 });

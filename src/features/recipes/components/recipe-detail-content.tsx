@@ -7,7 +7,7 @@ import WorkspaceLifecycleBadge from "@/components/workspace/lifecycle-badge";
 import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import { WorkspaceRecordHeading, WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
-import { recipeCatalogReturn, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
+import { recipeCatalogReturn, recipeCatalogReturnHref, recipeEditorHref, recipeRecordHref } from "./recipe-return-context";
 
 import { buttonVariants } from "@/components/ui/button";
 import { RecordDetails } from "@/components/workspace/record-details";
@@ -38,15 +38,16 @@ export default function RecipeDetailContent({
 }) {
   const searchParams = useSearchParams();
   const returnTo = recipeCatalogReturn(searchParams.get("returnTo"));
+  const catalogHref = recipeCatalogReturnHref(searchParams.get("returnTo"), recipe.id);
   const recordHref = recipeRecordHref(recipe.id, returnTo);
   return (
     <div className="flex min-h-svh flex-col bg-card">
       <WorkspaceHeader title="Supply Operations" />
       <WorkspaceContent>
-        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Recipes", href: returnTo }]} currentLabel={recipe.name} />
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Recipes", href: catalogHref }]} currentLabel={recipe.name} />
         <WorkspaceRecordHeading title={recipe.name} status={<div className="mt-3"><WorkspaceLifecycleBadge isActive={recipe.isActive} /></div>} actions={<>
           {canManageRecipes && recipe.isActive ? <Link href={recipeEditorHref(recipe.id, recordHref)} className={cn(buttonVariants({ variant: "outline" }), "min-h-10 h-auto whitespace-normal lg:min-h-9")}>Edit Recipe</Link> : null}
-          {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} returnTo={returnTo} /> : null}
+          {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} returnTo={catalogHref} /> : null}
         </>} />
         {recipe.needsAttention ? <Alert><AlertTitle>Unavailable ingredients</AlertTitle><AlertDescription>Some Items or Units are inactive. Review the Recipe before using it for new work.</AlertDescription></Alert> : null}
         <RecordDetails label="Preparation note" fields={recipe.preparationNote ? [

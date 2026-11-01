@@ -12,6 +12,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useCreatedRecord } from "@/hooks/use-created-record";
 import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
+import { useCatalogReturnFocus } from "@/hooks/use-catalog-return-focus";
 
 import { WorkspaceCatalogHeader } from "@/components/workspace/workspace-content";
 import { FieldSet, FieldLegend } from "@/components/ui/field";
@@ -37,6 +38,7 @@ import {
 } from "./purchase-order-list-state";
 import PurchaseOrdersTable from "./purchase-orders-table";
 import { usePurchaseOrderDeliverySummaries } from "./use-purchase-order-delivery-summaries";
+import { PURCHASE_ORDER_RETURN_ROW_PREFIX } from "./purchase-order-return-state";
 
 const PAGE_SIZE = 10;
 const SEARCH_NAVIGATION_DELAY_MS = 250;
@@ -99,6 +101,7 @@ export default function PurchaseOrdersWorkspace({
     paginatedPurchaseOrders.length === 0 ? 0 : firstPurchaseOrderIndex + 1;
   const resultEnd = firstPurchaseOrderIndex + paginatedPurchaseOrders.length;
   const filtersAreActive = hasPurchaseOrderListFilters(filters);
+  useCatalogReturnFocus({ records: paginatedPurchaseOrders, prefix: PURCHASE_ORDER_RETURN_ROW_PREFIX, fallbackId: "purchase-order-search", query: clientQuery, enabled: isHydrated && searchInput === listState.search });
   const focusCreatedRecord = useCreatedRecordFocus(
     paginatedPurchaseOrders,
     (id) => `[data-purchase-order-action-id="${CSS.escape(id)}"]`,
@@ -106,6 +109,7 @@ export default function PurchaseOrdersWorkspace({
 
   const replaceListUrl = useCallback((
     updates: Parameters<typeof getPurchaseOrderListQuery>[1],
+    keepReturnFocus = false,
   ) => {
     const nextUrl = getPurchaseOrderListUrl(
       pathname,
@@ -115,7 +119,13 @@ export default function PurchaseOrdersWorkspace({
     const nextQuery = nextUrl.split("?", 2)[1] ?? "";
 
     latestQueryRef.current = nextQuery;
-    window.history.replaceState(window.history.state, "", nextUrl);
+    const hash = window.location.hash;
+    const fragment = keepReturnFocus || !hash.startsWith(`#${PURCHASE_ORDER_RETURN_ROW_PREFIX}`) ? hash : "";
+    // Let Next synchronize its URL state; retain the navigation owner's metadata.
+    const historyData = { ...window.history.state };
+    delete historyData.__NA;
+    delete historyData._N;
+    window.history.replaceState(historyData, "", `${nextUrl}${fragment}`);
     setClientQuery(nextQuery);
   }, [pathname]);
 
@@ -149,7 +159,7 @@ export default function PurchaseOrdersWorkspace({
     if (listState.page <= pageCount) return;
 
     const timeoutId = window.setTimeout(() => {
-      replaceListUrl({ page: pageCount });
+      replaceListUrl({ page: pageCount }, true);
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
@@ -252,6 +262,7 @@ export default function PurchaseOrdersWorkspace({
         purchaseOrders={visibleAmounts.records}
         amountsUnavailable={visibleAmounts.amountsUnavailable}
         catalogUrl={getPurchaseOrderListUrl("/purchase-orders", "", { search: searchInput, page: currentPage })}
+        onRecordNavigate={clearPendingSearchUrlSync}
         hasFilters={filtersAreActive}
         onClearFilters={clearSearch}
         canManage={canManagePurchaseOrders}
