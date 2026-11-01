@@ -103,7 +103,7 @@ function CatalogPaginationContent({
   onPageChange: (page: number) => void;
 }) {
   return (
-    <PaginationContent className={cn("gap-1", className)}>
+    <PaginationContent className={cn("max-w-full flex-wrap justify-center gap-1", className)}>
       <PaginationItem>
         <Button
           type="button"
@@ -186,11 +186,11 @@ export default function CatalogPagination({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between">
-      <p className="min-w-0 text-body-sm text-muted-foreground" aria-live="polite">
+    <div className="flex min-w-0 flex-col flex-wrap gap-3 pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between">
+      <p className="min-w-0 max-w-full wrap-break-word text-body-sm text-muted-foreground" aria-live="polite">
         {resultsSummary}
       </p>
-      <Pagination className="mx-0 w-full shrink-0 justify-center sm:w-auto sm:justify-end">
+      <Pagination className="mx-0 w-full max-w-full shrink-0 justify-center sm:w-auto sm:justify-end">
         <CatalogPaginationContent
           className="sm:hidden"
           page={page}
