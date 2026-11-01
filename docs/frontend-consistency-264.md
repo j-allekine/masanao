@@ -301,3 +301,25 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Recipe/Purchase Order explicit-return focus, remaining Planning context and
   posted presentation follow-ups, Dashboard origin, whole-system regression,
   real phone and actual 400% zoom remain in progress or outstanding.
+
+### Posted Meal results and draft follow-ups (`572fcd1`)
+
+- #283 presents immutable saved final quantities before contributions. Current
+  planning details remain a separately labelled disclosure. Recorded,
+  reconstructed and missing receipt sources retain their existing meanings.
+  Long saved Recipe names now wrap inside the actual scrolling body.
+- #282 follow-ups fix measured 28px portal controls, enlarged-text discard
+  overflow and lost opener focus. Draft and posted content use the measured
+  pane/content gutter owners. Shared Header typography awaits #285 adoption.
+- All eight local journeys have passing final-source coverage: seven passed
+  in the broad run; the eighth passed after its fixture waited for indexed
+  client navigation. Posting/FIFO/quantity units: 43 passed. Architecture,
+  lint, type generation and TypeScript passed. See `handoff-283-final.md` and
+  `handoff-282-final.md` in the external task directory for exact logs and
+  classified fixture failures. This is not a full integrated browser pass.
+- CI for the preceding pushed revision `04ccb63` passed quality,
+  native-windows and production-runtime (run `41284524835`). Current changes
+  still require fresh CI and final integrated checks.
+- Remaining implementation: Meal child context, catalog return focus and
+  Dashboard origin. Final regression, actual 400% browser zoom and the
+  explicitly unavailable real-phone check remain outstanding. PR stays draft.
