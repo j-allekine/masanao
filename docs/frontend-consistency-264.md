@@ -323,3 +323,20 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Remaining implementation: Meal child context, catalog return focus and
   Dashboard origin. Final regression, actual 400% browser zoom and the
   explicitly unavailable real-phone check remain outstanding. PR stays draft.
+
+### Integrated baseline checks and native zoom (`ffc4e41`)
+
+- Root unit suite: 77 files / 512 tests passed. Lint and both architecture
+  checks passed. All three CI jobs passed at this revision
+  (`41309547752`). Logs are indexed in `integration-ffc4e41-checks.md`.
+- Actual Chrome 400% zoom was exercised through native browser controls,
+  reducing a normal desktop viewport to 320×180 CSS pixels. All seven main
+  destinations retained one main/H1 without whole-page horizontal overflow;
+  top/end captures are retained. This is an early baseline trial.
+- The trial found two real failures: Recipe's scrolling body shrank to
+  18.6px and draft Meal's to 2.6px, preventing full-field visibility. Both
+  have assigned implementation follow-ups. Delivery's first-line receipt
+  and quantity fields fit fully within its 43.2px body in this trial.
+- Native surface captures and measurement limits are documented in
+  `native-400-baseline-ffc4e41.md`. Final-source native zoom, integrated
+  regression and the unavailable real-phone gate remain outstanding.
