@@ -25,6 +25,7 @@ export default async function RecordDeliveryRoute({ params }: { params: Promise<
     <PurchaseOrderDetailContent purchaseOrder={purchaseOrder} canManage={canManage} vendors={vendors} />
     <DeliveryReceiptDialog
       purchaseOrderId={purchaseOrder.id}
+      purchaseOrderNo={purchaseOrder.purchaseOrderNo}
       vendorName={purchaseOrder.vendor.name}
       items={items.filter((item) => item.isActive)}
     />

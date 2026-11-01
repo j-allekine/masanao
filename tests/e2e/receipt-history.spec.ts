@@ -111,7 +111,7 @@ test("delayed receipt refresh and authoritative shrink retain owned state", asyn
   await expect(search).toHaveValue("");
   await expect(page).not.toHaveURL(/receiptCreated=/);
   await page.goto(`/purchase-orders/${orderId(25)}?receiptSearch=DR&receiptPage=3`);
-  await expect(page.getByText("Showing 21 to 25 of 25 results", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Showing 21 to 25 of 25 results", { exact: true })).toBeVisible();
   const shrink = database();
   try {
     for (let index = 0; index < 20; index++) {
@@ -122,6 +122,6 @@ test("delayed receipt refresh and authoritative shrink retain owned state", asyn
   await page.reload();
   await expect(search).toHaveValue("DR");
   await expect(page.getByRole("button", { name: "Clear receipt search", exact: true })).toBeVisible();
-  await expect(page.getByText("Showing 1 to 5 of 5 results", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Showing 1 to 5 of 5 results", { exact: true })).toBeVisible();
   await expect(page).not.toHaveURL(/receiptPage=/);
 });
