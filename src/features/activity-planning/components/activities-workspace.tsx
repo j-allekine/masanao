@@ -29,6 +29,8 @@ import {
   getPlanningListUrl,
 } from "./planning-list-state";
 
+import { usePlanningChildReturnFocus } from "./planning-child-return-focus";
+
 const PAGE_SIZE = 10;
 
 export default function ActivitiesWorkspace({
@@ -91,7 +93,7 @@ export default function ActivitiesWorkspace({
     );
   }
 
-  function changePage(nextPage: number) {
+  function changePage(nextPage: number, preserveReturnTarget = false) {
     const page = Math.min(Math.max(nextPage, 1), pageCount);
     setListState({ search, page });
     router.replace(
@@ -100,7 +102,7 @@ export default function ActivitiesWorkspace({
         currentQuery,
         "activities",
         { page },
-      ),
+      ) + (preserveReturnTarget ? window.location.hash : ""),
       { scroll: false },
     );
   }
@@ -209,6 +211,8 @@ export default function ActivitiesWorkspace({
       (target ?? document.getElementById("activity-search"))?.focus();
     }, 0);
   }
+
+  usePlanningChildReturnFocus("activity-actions-", filteredActivities, currentPage, PAGE_SIZE, "activity-search", page => changePage(page, true), isHydrated);
 
   return (
     <div

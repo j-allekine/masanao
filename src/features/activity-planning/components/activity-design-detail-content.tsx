@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
 
-import { getPlanningReturnUrl } from "./planning-return-state";
+import { getPlanningCatalogReturnUrl, getPlanningReturnUrl } from "./planning-return-state";
 import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
@@ -47,6 +47,8 @@ import DeleteActivityDialog from "./delete-activity-dialog";
 import CatalogPagination, { getCatalogPageContainingItem } from "@/components/workspace/catalog-pagination";
 import { WorkspaceSearchField } from "@/components/workspace/catalog-controls";
 import { filterDesignActivities, getDesignActivitiesQuery, getDesignActivitiesState, getPlanningRecordUrl, PLANNING_CHILD_PAGE_SIZE, writePlanningChildUrl } from "./planning-child-state";
+
+import { usePlanningChildReturnFocus } from "./planning-child-return-focus";
 
 const activityCountFormatter = new Intl.NumberFormat("en-US");
 const dateFormatter = new Intl.DateTimeFormat("en-PH", {
@@ -179,6 +181,7 @@ export default function ActivityDesignDetailContent({
   const pathname = usePathname();
   const query = params.toString();
   const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
+  const catalogReturnUrl = getPlanningCatalogReturnUrl(params.get("planningReturn"), activityDesign.id);
   const state = getDesignActivitiesState(params, activityDesign.id);
   const filtered = filterDesignActivities(activityDesign.activities, state.search);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PLANNING_CHILD_PAGE_SIZE));
@@ -187,18 +190,19 @@ export default function ActivityDesignDetailContent({
   const visible = filtered.slice(start, start + PLANNING_CHILD_PAGE_SIZE);
   const showControls = activityDesign.activities.length > PLANNING_CHILD_PAGE_SIZE || Boolean(state.search);
   const handledCreated = useRef<string | null>(null);
-  function updateChildren(updates: Parameters<typeof getDesignActivitiesQuery>[2], push = false) {
+  function updateChildren(updates: Parameters<typeof getDesignActivitiesQuery>[2], push = false, preserveReturnTarget = false) {
     const next = getDesignActivitiesQuery(window.location.search.slice(1), activityDesign.id, updates);
-    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${window.location.hash}`, push);
+    const hash = !preserveReturnTarget && window.location.hash.startsWith("#open-child-activity-") ? "" : window.location.hash;
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${hash}`, push);
   }
+  usePlanningChildReturnFocus("open-child-activity-", filtered, page, PLANNING_CHILD_PAGE_SIZE, "activity-design-activities-title", page => updateChildren({ page }, false, true));
   useEffect(() => {
     if (!state.created || handledCreated.current === state.created || !activityDesign.activities.some(row => row.id === state.created)) return;
     handledCreated.current = state.created;
     const cleared = !filtered.some(row => row.id === state.created);
     const rows = cleared ? activityDesign.activities : filtered;
-    const next = getDesignActivitiesQuery(query, activityDesign.id, { search: cleared ? "" : state.search, page: getCatalogPageContainingItem(rows, state.created, PLANNING_CHILD_PAGE_SIZE), created: null });
+    const next = getDesignActivitiesQuery(query, activityDesign.id, { search: cleared ? "" : state.search, page: getCatalogPageContainingItem(rows, state.created, PLANNING_CHILD_PAGE_SIZE), created: null, notice: cleared ? "search-cleared" : undefined });
     writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}`);
-    if (cleared) toast.info("Activity search cleared to show the new Activity.");
   }, [activityDesign.activities, activityDesign.id, filtered, pathname, query, state.created, state.search]);
   useEffect(() => {
     if (!state.created && handledCreated.current) {
@@ -259,8 +263,8 @@ export default function ActivityDesignDetailContent({
       <WorkspaceHeader title="Planning" />
 
       <WorkspaceContent>
-        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }]} currentLabel={activityDesign.activityDesignNo} />
-        {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? getPlanningCatalogReturnUrl(null, activityDesign.id) : catalogReturnUrl }]} currentLabel={activityDesign.activityDesignNo} />
+        {returnUrl.startsWith("/activities") ? <Link href={catalogReturnUrl} className="inline-flex min-h-10 items-center text-body-sm text-primary underline">Return to Activities</Link> : null}
         <WorkspaceRecordHeading title={activityDesign.title} actions={<>
           <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity Design</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity Design actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity Design", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
@@ -270,7 +274,7 @@ export default function ActivityDesignDetailContent({
         <section aria-labelledby="activity-design-activities-title" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="activity-design-activities-title" className="text-heading-3 font-semibold">
+              <h2 id="activity-design-activities-title" tabIndex={-1} className="text-heading-3 font-semibold">
                 Activities ({activityDesign.activityCount})
               </h2>
             </div>
@@ -284,6 +288,7 @@ export default function ActivityDesignDetailContent({
               Create Activity
             </Button>
           </div>
+          {state.notice === "search-cleared" ? <p role="status" className="text-body-sm text-muted-foreground">Activity search cleared to show the new Activity.</p> : null}
           {showControls ? <div className="flex min-w-0 flex-wrap items-end gap-3">
             <WorkspaceSearchField id="design-activities-search" label="Search this Design’s Activities by name or Office" placeholder="Activity or Office" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
             {state.search ? <Button variant="outline" className="min-h-10" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("design-activities-search")?.focus(); }}>Clear Activity search</Button> : null}
@@ -310,10 +315,11 @@ export default function ActivityDesignDetailContent({
       </WorkspaceContent>
 
       <ActivityDesignDialog dialogState={isRecordEditOpen ? { mode: "edit", activityDesign } : null} onClose={closeRecordEdit} onSuccess={() => { router.refresh(); toast.success("Activity Design updated"); }} />
-      <DeleteActivityDesignDialog activityDesign={activityDesign} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(returnUrl); toast.success("Activity Design deleted"); }} />
+      <DeleteActivityDesignDialog activityDesign={activityDesign} open={isRecordDeleteOpen} onOpenChange={changeRecordDeleteOpen} onDeleted={() => { router.push(catalogReturnUrl); toast.success("Activity Design deleted"); }} />
       <ActivityCreateDialog
         activityDesign={createParent}
         open={isCreateDialogOpen}
+        restoreFocusOnSuccess={false}
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={(activity) => {
           setIsCreateDialogOpen(false);

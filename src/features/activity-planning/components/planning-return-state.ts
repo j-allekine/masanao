@@ -19,3 +19,10 @@ export function withPlanningReturn(path: string, catalogUrl: string) {
   if (target.includes("?") || target === "/activities") query.set("planningReturn", target);
   return `${pathname}${query.size ? `?${query}` : ""}`;
 }
+
+/** The record supplies identity; return hints never choose an arbitrary row. */
+export function getPlanningCatalogReturnUrl(value: string | null, designId: string, activityId?: string) {
+  const target = getPlanningReturnUrl(value);
+  if (target.split("?")[0] === "/activities") return activityId ? `${target}#activity-actions-${activityId}` : `${target}#activity-search`;
+  return `${target}#activity-design-actions-${designId}`;
+}

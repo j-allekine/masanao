@@ -98,6 +98,7 @@ test("creating a child reveals it after the authoritative refresh and clears onl
   await signIn(page, "kitchen.staff");
   await page.setViewportSize({ width: 320, height: 480 });
   await page.goto(`${record}?${new URLSearchParams({ planningReturn: "/activities?activitiesPage=4", designActivitiesOwner: id, designActivitiesSearch: "Later Office" })}`);
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Create Activity", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("textbox", { name: "Activity name", exact: true }).fill("New visible child");
@@ -127,6 +128,7 @@ test("deletion clamps only the Design child page after success and returns focus
   setCount(11);
   await signIn(page, "municipal.admin");
   await page.goto(`${record}?${new URLSearchParams({ planningReturn: "/activities?activitiesPage=4", designActivitiesOwner: id, designActivitiesPage: "2" })}`);
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
   await expect(page.getByText("Showing 11 to 11 of 11 results", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Actions for Child Activity 1", exact: true }).click();
   await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
@@ -164,4 +166,37 @@ test("expanded tablet navigation leaves scoped child finding and keyboard pagina
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: info.outputPath(`${username}-expanded-tablet.png`), fullPage: true, animations: "disabled" });
   }
+});
+
+test("explicit parent return restores the existing child row and usable phone target", async ({ page }) => {
+  test.setTimeout(90_000);
+  setCount(25);
+  await signIn(page, "kitchen.staff");
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(`${record}?designActivitiesOwner=${id}&designActivitiesPage=2`);
+  const row = page.getByRole("link", { name: "Open Activity: Child Activity 15", exact: true });
+  await row.click();
+  await expect(page).toHaveURL(/\/activities\/child-activities-284-015/, { timeout: 30_000 });
+  const parent = page.getByRole("navigation", { name: "breadcrumb", exact: true }).getByRole("link", { name: "CHILD-284", exact: true });
+  expect((await parent.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+  await parent.click();
+  await expect(row).toBeFocused();
+  expect((await row.boundingBox())!.y).toBeGreaterThanOrEqual(0);
+});
+
+
+test("Planning catalog explicit returns focus their authoritative record or safe search fallback", async ({ page }) => {
+  test.setTimeout(90_000);
+  setCount(25); await signIn(page, "kitchen.staff");
+  await page.goto("/activities?activitiesSearch=Child+Activity&activitiesPage=2");
+  const activity = page.getByRole("link", { name: "Child Activity 15", exact: true });
+  await activity.click();
+  await expect(page.getByRole("heading", { level: 1, name: "Child Activity 15", exact: true })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("link", { name: "Return to Activities", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Actions for Child Activity 15", exact: true })).toBeFocused();
+  await page.goto("/activity-designs?activityDesignsSearch=Child+Activity+finding");
+  await page.getByRole("link", { name: "Child Activity finding", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Child Activity finding", exact: true })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("navigation", { name: "breadcrumb", exact: true }).getByRole("link", { name: "Activity Designs", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Actions for Child Activity finding", exact: true })).toBeFocused();
 });

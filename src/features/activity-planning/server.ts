@@ -125,3 +125,5 @@ export async function updateActivityDesign(id: string, input: unknown) {
 export async function deleteActivityDesign(id: string) {
   return deleteActivityDesignCommand(id);
 }
+
+export { getPlanningRecordUrl } from "./components/planning-child-state";

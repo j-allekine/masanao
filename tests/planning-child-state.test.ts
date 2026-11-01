@@ -1,5 +1,6 @@
+import { getPlanningCatalogReturnUrl } from "@/features/activity-planning/components/planning-return-state";
 import { describe, expect, it } from "vitest";
-import { filterDesignActivities, getDesignActivitiesQuery, getDesignActivitiesState, getPlanningRecordUrl } from "@/features/activity-planning/components/planning-child-state";
+import { filterMealSchedules, getMealSchedulesState, getMealSchedulesQuery, filterDesignActivities, getDesignActivitiesQuery, getDesignActivitiesState, getPlanningRecordUrl } from "@/features/activity-planning/components/planning-child-state";
 
 describe("Design child collection state", () => {
   it("filters the complete ordered collection by name or Office before slicing", () => {
@@ -27,4 +28,54 @@ describe("Design child collection state", () => {
     expect(getPlanningRecordUrl("//foreign.invalid", params, "design", "child")).toMatch(/^\/activity-designs\/design\?/);
     expect(getPlanningRecordUrl("/activity-designs/design/activities/foreign", params, "design", "child")).not.toContain("/foreign");
   });
+});
+
+describe("Meal child namespace and authoritative parent row targets", () => {
+  it("preserves primary order and filters the whole collection by label or time", () => {
+    const rows = [{ id: "first", label: "Custom midnight", mealTime: "23:45" }, { id: "second", label: "Any user meal", mealTime: "12:00" }];
+    expect(filterMealSchedules(rows, "23:45")).toEqual([rows[0]]);
+    expect(filterMealSchedules(rows, "USER")).toEqual([rows[1]]);
+    expect(filterMealSchedules(rows, "")).toEqual(rows);
+  });
+  it("keeps both owned child states separate from catalog and unknown state", () => {
+    const query = getMealSchedulesQuery("designActivitiesOwner=design&designActivitiesPage=2&planningReturn=%2Factivities%3FactivitiesPage%3D4&unknown=retained", "activity", { search: "custom", page: 3 });
+    const params = new URLSearchParams(query);
+    expect(params.get("unknown")).toBe("retained");
+    const target = new URL(getPlanningRecordUrl("/activity-designs/design/activities/activity/meal-schedules/meal", params, "design", "activity"), "https://test.invalid");
+    expect(target.searchParams.get("mealSchedulesPage")).toBe("3");
+    expect(target.searchParams.get("designActivitiesPage")).toBe("2");
+    expect(target.searchParams.has("unknown")).toBe(false);
+    expect(getPlanningRecordUrl("/activity-designs/design", params, "design", "activity")).toContain("#open-child-activity-activity");
+    expect(getPlanningRecordUrl("/activity-designs/design/activities/activity", params, "design", "activity", "meal")).toContain("#open-child-meal-meal");
+    const foreign = new URL(getPlanningRecordUrl("/activity-designs/design/activities/other", params, "design", "other"), "https://test.invalid");
+    expect(foreign.searchParams.has("mealSchedulesSearch")).toBe(false);
+  });
+  it.each(["mealSchedulesOwner=foreign&mealSchedulesSearch=x&mealSchedulesPage=2", "mealSchedulesPage=2&mealSchedulesPage=3", "mealSchedulesSearch=x&mealSchedulesSearch=y"])("rejects ambiguous or foreign context %s", query => {
+    expect(getMealSchedulesState(new URLSearchParams(query), "activity")).toEqual({ search: "", page: 1, created: null });
+  });
+  it.each(["0", "-1", "NaN", "2.5", "9007199254740992"])("does not accept invalid Meal page %s", page => {
+    expect(getMealSchedulesState(new URLSearchParams({ mealSchedulesPage: page }), "activity").page).toBe(1);
+  });
+});
+
+
+it("uses authoritative record IDs for explicit catalog returns without accepting arbitrary row hints", () => {
+  expect(getPlanningCatalogReturnUrl("/activities?activitiesPage=2#foreign", "design", "activity")).toBe("/activities?activitiesPage=2#activity-actions-activity");
+  expect(getPlanningCatalogReturnUrl("/activity-designs?activityDesignsSearch=Kitchen", "design")).toBe("/activity-designs?activityDesignsSearch=Kitchen#activity-design-actions-design");
+  expect(getPlanningCatalogReturnUrl("//foreign.invalid", "design")).toBe("/activity-designs#activity-design-actions-design");
+  expect(getPlanningCatalogReturnUrl("/activities", "design")).toBe("/activities#activity-search");
+});
+
+it("rejects malformed nested leaf paths instead of treating them as an authoritative Meal", () => {
+  for (const tail of ["", "meal/extra", "meal?foreign=1", "meal#foreign"]) {
+    expect(getPlanningRecordUrl(`/activity-designs/design/activities/activity/meal-schedules/${tail}`, new URLSearchParams(), "design", "activity")).toBe("/activity-designs/design");
+  }
+});
+
+it("keeps a validated collection notice only until another list choice and omits it from record links", () => {
+  const query = getMealSchedulesQuery("designActivitiesOwner=design&designActivitiesPage=2", "activity", { search: "", page: 2, created: null, notice: "search-cleared" });
+  expect(getMealSchedulesState(new URLSearchParams(query), "activity").notice).toBe("search-cleared");
+  expect(getMealSchedulesState(new URLSearchParams(query), "foreign").notice).toBeUndefined();
+  expect(getMealSchedulesQuery(query, "activity", { page: 1 })).not.toContain("Notice");
+  expect(getPlanningRecordUrl("/activity-designs/design/activities/activity/meal-schedules/meal", new URLSearchParams(query), "design", "activity")).not.toContain("Notice");
 });
