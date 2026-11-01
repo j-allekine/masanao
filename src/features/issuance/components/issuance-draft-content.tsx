@@ -134,6 +134,7 @@ export default function IssuanceDraftContent({
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustPax, setAdjustPax] = useState("");
   const [discard, setDiscard] = useState(false);
+  const discardTitle = useRef<HTMLHeadingElement | null>(null);
   const context = saved.context;
   // Compare entered values, not mutation flags. Returning fields/lines to the
   // saved baseline clears dirty; saving in place establishes the next baseline.
@@ -499,12 +500,13 @@ export default function IssuanceDraftContent({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col bg-card [&_[data-slot=button]]:min-h-10 [&_[data-slot=input]]:min-h-10 [&_h1]:text-heading-1 lg:[&_[data-slot=button]]:min-h-9 lg:[&_[data-slot=input]]:min-h-9"
+      className="flex min-h-0 flex-1 flex-col bg-card [&_[data-slot=button]]:min-h-10 [&_[data-slot=input]]:min-h-10 lg:[&_[data-slot=button]]:min-h-9 lg:[&_[data-slot=input]]:min-h-9"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto" data-workspace-scroll="body">
-        <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
+        <div className="workspace-pane min-h-0 flex-1 overflow-y-auto" data-workspace-scroll="body">
+        <div className="workspace-content mx-auto w-full max-w-[64rem]">
+        <div className="flex shrink-0 flex-col gap-4 border-b py-4">
           <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
             status={<Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>} />
           <FieldGroup className="max-w-sm">
@@ -550,7 +552,7 @@ export default function IssuanceDraftContent({
         </div>
         <section
           aria-labelledby="recipes-heading"
-          className="px-4 py-5 sm:px-6"
+          className="py-5"
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
@@ -682,15 +684,16 @@ export default function IssuanceDraftContent({
             )}
           </section>
         </section>
-        <div className="flex flex-col items-start gap-2 px-4 pb-4 text-body-sm text-muted-foreground sm:px-6">
+        <div className="flex flex-col items-start gap-2 pb-4 text-body-sm text-muted-foreground">
           <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
           {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
           {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
           {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard(true)}>Discard changes</Button> : null}
         </div>
         </div>
-        <footer aria-label="Draft actions" className="shrink-0 border-t bg-card px-4 py-3 sm:px-6">
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+        </div>
+        <footer aria-label="Draft actions" className="workspace-pane shrink-0 overflow-y-hidden border-t bg-card py-3 [scrollbar-gutter:stable]">
+          <div className="workspace-content mx-auto grid w-full max-w-[64rem] grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
             <Button id="issuance-review" aria-label="Review quantities and stock" variant="outline" disabled={pending} onClick={openReview}><span className="sm:hidden">Review</span><span className="hidden sm:inline">Review quantities and stock</span></Button>
             <Button aria-label={pending ? "Working…" : "Save draft"} variant="outline" disabled={pending || !canSave} onClick={save}><span className="sm:hidden">{pending ? "Working…" : "Save"}</span><span className="hidden sm:inline">{pending ? "Working…" : "Save draft"}</span></Button>
             <Button id="issuance-post" className="col-span-2" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
@@ -709,9 +712,9 @@ export default function IssuanceDraftContent({
         <DialogContent
           finalFocus={() => document.getElementById("issuance-post") ?? document.getElementById("posted-quantities")}
           showCloseButton={!pending}
-          className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-xl"
+          className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-xl"
         >
-          <DialogHeader>
+          <DialogHeader className="pr-10">
             <DialogTitle>Post issuance?</DialogTitle>
             <DialogDescription>
               These exact final quantities will be deducted together using the oldest receipt stock first (FIFO). Stock and
@@ -808,8 +811,8 @@ export default function IssuanceDraftContent({
         />
       ) : null}
       <Dialog open={picker} onOpenChange={(open) => { if (!pending) setPicker(open); }}>
-        <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-3xl">
-          <DialogHeader>
+        <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-3xl">
+          <DialogHeader className="pr-10">
             <DialogTitle>Add Recipes</DialogTitle>
             <DialogDescription className="sr-only">
               Choose Recipes for this meal.
@@ -1009,8 +1012,8 @@ export default function IssuanceDraftContent({
           if (!open) setAdjustId(null);
         }}
       >
-        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
+          <DialogHeader className="pr-10">
             <DialogTitle>Adjust target pax</DialogTitle>
             <DialogDescription>
               {adjust?.recipeName}. This target applies only to this Recipe.
@@ -1049,9 +1052,9 @@ export default function IssuanceDraftContent({
           }
         }}
       >
-        <DialogContent finalFocus={() => document.getElementById("meal-pax")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Discard unsaved changes?</DialogTitle>
+        <DialogContent initialFocus={() => discardTitle.current} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
+          <DialogHeader className="pr-10">
+            <DialogTitle ref={discardTitle} tabIndex={-1}>Discard unsaved changes?</DialogTitle>
             <DialogDescription>
               Your saved draft will remain available.
             </DialogDescription>
