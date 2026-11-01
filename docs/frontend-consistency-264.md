@@ -362,3 +362,23 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Dashboard propagation through Planning remains unfinished. Merger checks
   passed 49 focused tests, two architecture checks and lint. Final-source
   browser regression, editor short-height fixes and device gates remain open.
+
+### Catalog return focus and short editors (`2294c77`)
+
+- Recipe and Purchase Order returns use validated catalog URLs and actual row
+  IDs. The shared focus hook handles only authorized rendered rows or the known
+  search fallback. Feature state, filters, permissions and page clamp stay local.
+- Recipe title sizing follows actual inner width. A local resize observer and
+  short-height spacing keep focused fields visible: the full 80px enlarged
+  field at 320×480 and 40px field at 320×180 have passing viewport evidence.
+- Draft Meal's compact short-height footer retains all three actions and full
+  accessible names. At 320×180 its body measures 66px; the normal phone footer
+  remains two rows. Posted read-only scrolling also passed the focused check.
+- Recipe/PO worker browser coverage: 20 passing journeys plus the sole
+  corrected SSR-readiness case passed separately. Fifteen units, lint,
+  architecture, types and production build passed. Draft/Posted short-height
+  browser checks: two passed, with lint/types passing. See
+  `handoff-catalog-return-focus.md` and `handoff-meal-180.md`.
+- Merger checks passed 63 focused tests, lint and both architecture checks.
+  These viewport checks supplement the earlier failing native zoom trial;
+  actual 400% browser zoom must still be repeated on final source.
