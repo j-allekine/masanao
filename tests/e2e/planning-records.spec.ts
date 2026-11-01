@@ -64,12 +64,12 @@ for (const username of ["kitchen.staff", "municipal.admin"]) {
       await expect(page.getByRole("heading", { level: 1, name: activityName })).toBeVisible();
       await expect(page.getByText("Not recorded", { exact: true })).toBeVisible();
       const breadcrumb = page.getByRole("navigation", { name: "breadcrumb", exact: true });
-      await expect(breadcrumb.getByRole("link", { name: "RECORD-2026", exact: true })).toHaveAttribute("href", designUrl);
+      await expect(breadcrumb.getByRole("link", { name: "RECORD-2026", exact: true })).toHaveAttribute("href", `${designUrl}#open-child-activity-${activityId}`);
       const innerWidth = await page.locator(".workspace-content").evaluate(el => el.clientWidth - parseFloat(getComputedStyle(el).paddingLeft) - parseFloat(getComputedStyle(el).paddingRight));
       if (innerWidth < 640) {
         expect((await breadcrumb.getByRole("button", { name: "Show ancestors", exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(40);
         await breadcrumb.getByRole("button", { name: "Show ancestors", exact: true }).click();
-        await expect(page.getByRole("menuitem", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
+        await expect(page.getByRole("menuitem", { name: "Activity Designs", exact: true })).toHaveAttribute("href", `/activity-designs#activity-design-actions-${designId}`);
         await page.keyboard.press("Escape");
       } else {
         await expect(breadcrumb.getByRole("link", { name: "Activity Designs", exact: true })).toBeVisible();
@@ -185,11 +185,12 @@ test("current-record edits recover from a failed save and empty records delete t
   await page.getByRole("button", { name: "More Activity actions", exact: true }).click();
   await page.getByRole("menuitem", { name: "Delete Activity", exact: true }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete Activity", exact: true }).click();
-  await expect(page).toHaveURL(designUrl);
+  await expect(page).toHaveURL(`${designUrl}#open-child-activity-${activityId}`);
   await expect(page.getByRole("heading", { name: "Activities (0)", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "More Activity Design actions", exact: true }).click();
   await page.getByRole("menuitem", { name: "Delete Activity Design", exact: true }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete Activity Design", exact: true }).click();
-  await expect(page).toHaveURL("/activity-designs");
+  await expect(page).toHaveURL(`/activity-designs#activity-design-actions-${designId}`);
+  await expect(page.getByRole("searchbox", { name: "Search Activity Designs", exact: true })).toBeFocused();
 });
 

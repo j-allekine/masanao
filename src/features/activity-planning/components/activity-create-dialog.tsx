@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   AlertDialog,
@@ -36,6 +36,7 @@ export default function ActivityCreateDialog({
   open,
   onClose,
   onSuccess,
+  restoreFocusOnSuccess = true,
 }: {
   activityDesign: (Pick<ActivityDesignListItem, "id" | "title" | "activityDesignNo"> & Partial<Pick<ActivityDesignListItem, "fiscalYear">>) | null;
   activityDesigns?: ActivityDesignListItem[];
@@ -44,7 +45,11 @@ export default function ActivityCreateDialog({
   open: boolean;
   onClose: () => void;
   onSuccess: (activity: ActivityListItem) => void;
+  /** A collection reveal can own successful focus; cancellation keeps normal restoration. */
+  restoreFocusOnSuccess?: boolean;
 }) {
+  const didSucceed = useRef(false);
+  useEffect(() => { if (open) didSucceed.current = false; }, [open]);
   const [isDirty, setIsDirty] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
@@ -79,7 +84,7 @@ export default function ActivityCreateDialog({
         }}
       >
         {open && hasActivityDesigns ? (
-          <DialogContent size="entry">
+          <DialogContent size="entry" finalFocus={() => didSucceed.current && !restoreFocusOnSuccess ? false : true}>
             <DialogHeader>
               <DialogTitle>
                 {mode === "edit"

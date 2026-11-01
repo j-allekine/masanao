@@ -77,3 +77,23 @@ for (const role of ["admin", "staff"]) test(`PO record, inspection and latest ca
   await expect(page.getByRole("searchbox", { name: "Search Purchase Orders", exact: true })).toHaveValue(number);
 });
 
+
+test("long Purchase Order parent and receipt remain operable at enlarged text", async ({ page }, info) => {
+  test.setTimeout(90_000);
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(`/purchase-orders/${id}`);
+  await expect(page.getByRole("heading", { name: number, exact: true })).toBeVisible();
+  const parent = page.getByRole("navigation", { name: "breadcrumb", exact: true }).getByRole("link", { name: "Purchase Orders", exact: true });
+  expect((await parent.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+  await page.evaluate(() => document.documentElement.style.fontSize = "200%");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const inspect = page.getByRole("button", { name: receiptNo, exact: true });
+  await inspect.click();
+  const dialog = page.getByRole("dialog", { name: `Delivery receipt ${receiptNo}`, exact: true });
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath("po-long-receipt-parent-200.png"), fullPage: true });
+  const close = dialog.getByRole("button", { name: "Close", exact: true }).first();
+  await close.scrollIntoViewIfNeeded(); await close.click(); await expect(inspect).toBeFocused();
+});

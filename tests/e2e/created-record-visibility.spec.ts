@@ -149,6 +149,10 @@ for (const width of [1280, 375]) {
       await dialog.getByRole("textbox", { name: "Meal Schedule label", exact: true }).fill("Lunch");
       await dialog.locator("#mealScheduleTime").fill("12:00");
       await dialog.getByRole("button", { name: "Add Meal Schedule", exact: true }).click();
+      await expect(dialog).toHaveCount(0);
+      const createdMeal = page.getByRole("link", { name: "Open Meal Schedule: Lunch", exact: true });
+      await expect(createdMeal).toBeFocused();
+      await createdMeal.click();
       await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/, { timeout: 30_000 });
       await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
       await page.screenshot({ path: info.outputPath(`created-meal-${width}.png`), fullPage: true });

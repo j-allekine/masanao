@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { Pencil, Plus } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -51,6 +51,7 @@ export default function MealScheduleCreateDialog({
   open,
   onClose,
   onSuccess,
+  restoreFocusOnSuccess = true,
 }: {
   activity: ActivityDetailItem;
   mealSchedule?: MealScheduleListItem;
@@ -58,7 +59,11 @@ export default function MealScheduleCreateDialog({
   open: boolean;
   onClose: () => void;
   onSuccess: (mealSchedule: MealScheduleListItem) => void;
+  /** A collection reveal can own successful focus; cancellation keeps normal restoration. */
+  restoreFocusOnSuccess?: boolean;
 }) {
+  const didSucceed = useRef(false);
+  useEffect(() => { if (open) didSucceed.current = false; }, [open]);
   const [formValues, setFormValues] = useState(() =>
     getInitialFormValues(mealSchedule),
   );
@@ -121,6 +126,7 @@ export default function MealScheduleCreateDialog({
           return;
         }
 
+        didSucceed.current = true;
         onSuccess(result.mealSchedule);
       } catch {
         setFormError(
@@ -132,7 +138,7 @@ export default function MealScheduleCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeDialog()}>
-      <DialogContent size="entry">
+      <DialogContent size="entry" finalFocus={() => didSucceed.current && !restoreFocusOnSuccess ? false : true}>
         <DialogHeader>
           <DialogTitle>
             {mode === "edit"

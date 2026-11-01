@@ -42,13 +42,13 @@ test("Activities catalog opens records and preserves search/page through meals o
     await page.getByRole("link", { name: "Catalog Activity 01", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Catalog Activity 01", exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    await expect(page.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", catalog);
+    await expect(page.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", `${catalog}#activity-actions-${activityId}`);
     await page.getByRole("link", { name: "Open Meal Schedule: Catalog Lunch", exact: true }).click();
     await expect(page).toHaveURL(/\/meal-schedules\/e2e-issuance-activities-return-meal\?/, { timeout: 30_000 });
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
     await expect(page.getByRole("heading", { name: "Catalog Lunch · 12:00", exact: true })).toBeVisible();
     await page.getByRole("link", { name: "Return to Activities", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp("activitiesPage=2$"));
+    await expect(page).toHaveURL(new RegExp(`activitiesPage=2#activity-actions-${activityId}$`));
     await expect(page.getByRole("searchbox", { name: "Search Activities", exact: true })).toHaveValue("Catalog Activity");
     await expect(page.getByRole("link", { name: "Catalog Activity 01", exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

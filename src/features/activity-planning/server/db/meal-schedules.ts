@@ -20,6 +20,7 @@ export const mealScheduleSelect = {
 export const mealScheduleOrderBy = [
   { mealTime: "asc" },
   { label: "asc" },
+  { id: "asc" },
 ] satisfies Prisma.MealScheduleOrderByWithRelationInput[];
 
 export function toMealScheduleListItem(schedule: {

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,14 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
-import { getPlanningReturnUrl } from "./planning-return-state";
+import { getPlanningCatalogReturnUrl, getPlanningReturnUrl } from "./planning-return-state";
 import { WorkspaceContent } from "@/components/workspace/workspace-content";
 import { WorkspaceRecordBreadcrumbs, WorkspaceRecordHeading } from "@/components/workspace/record-presentation";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
-import { getPlanningRecordUrl } from "./planning-child-state";
+import { filterMealSchedules, getMealSchedulesQuery, getMealSchedulesState, getPlanningRecordUrl, PLANNING_CHILD_PAGE_SIZE, writePlanningChildUrl } from "./planning-child-state";
+import { usePlanningChildReturnFocus } from "./planning-child-return-focus";
+import CatalogPagination, { getCatalogPageContainingItem } from "@/components/workspace/catalog-pagination";
+import { WorkspaceSearchField } from "@/components/workspace/catalog-controls";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import {
   TableBody,
@@ -112,6 +115,7 @@ function MealScheduleRow({
         <TableCell data-primary className="whitespace-normal font-medium">
           <Link
             href={getPlanningRecordUrl(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, params, activityDesignId, activityId)}
+            id={`open-child-meal-${schedule.id}`}
             aria-label={`Open Meal Schedule: ${schedule.label}`}
             className="block break-words text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -167,6 +171,42 @@ export default function ActivityDetailContent({
   const router = useRouter();
   const params = useSearchParams();
   const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
+  const catalogReturnUrl = getPlanningCatalogReturnUrl(params.get("planningReturn"), activity.activityDesign.id, activity.id);
+  const pathname = usePathname();
+  const query = params.toString();
+  const state = getMealSchedulesState(params, activity.id);
+  const filtered = filterMealSchedules(activity.mealSchedules, state.search);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PLANNING_CHILD_PAGE_SIZE));
+  const page = Math.min(state.page, pageCount);
+  const start = (page - 1) * PLANNING_CHILD_PAGE_SIZE;
+  const visible = filtered.slice(start, start + PLANNING_CHILD_PAGE_SIZE);
+  const showControls = activity.mealSchedules.length > PLANNING_CHILD_PAGE_SIZE || Boolean(state.search);
+  const handledCreated = useRef<string | null>(null);
+  function updateChildren(updates: Parameters<typeof getMealSchedulesQuery>[2], push = false, preserveReturnTarget = false) {
+    const next = getMealSchedulesQuery(window.location.search.slice(1), activity.id, updates);
+    const hash = !preserveReturnTarget && window.location.hash.startsWith("#open-child-meal-") ? "" : window.location.hash;
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${hash}`, push);
+  }
+  usePlanningChildReturnFocus("open-child-meal-", filtered, page, PLANNING_CHILD_PAGE_SIZE, "activity-meal-schedules-title", page => updateChildren({ page }, false, true));
+  useEffect(() => {
+    if (!state.created || handledCreated.current === state.created || !activity.mealSchedules.some(row => row.id === state.created)) return;
+    handledCreated.current = state.created;
+    const cleared = !filtered.some(row => row.id === state.created);
+    const rows = cleared ? activity.mealSchedules : filtered;
+    const next = getMealSchedulesQuery(query, activity.id, { search: cleared ? "" : state.search, page: getCatalogPageContainingItem(rows, state.created, PLANNING_CHILD_PAGE_SIZE), created: null, notice: cleared ? "search-cleared" : undefined });
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}`);
+  }, [activity.mealSchedules, activity.id, filtered, pathname, query, state.created, state.search]);
+  useEffect(() => {
+    if (!state.created && handledCreated.current) {
+      const target = document.getElementById(`open-child-meal-${handledCreated.current}`);
+      if (target) { target.focus(); handledCreated.current = null; }
+    }
+  }, [state.created, page]);
+  useEffect(() => {
+    if (state.page <= pageCount) return;
+    const next = getMealSchedulesQuery(query, activity.id, { page: pageCount });
+    writePlanningChildUrl(`${pathname}${next ? `?${next}` : ""}${window.location.hash}`);
+  }, [activity.id, pageCount, pathname, query, state.created, state.page]);
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -208,8 +248,8 @@ export default function ActivityDetailContent({
       <WorkspaceHeader title="Planning" />
 
       <WorkspaceContent>
-        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? "/activity-designs" : returnUrl }, { label: activity.activityDesign.activityDesignNo, href: getPlanningRecordUrl(parentUrl, params, activity.activityDesign.id, activity.id) }]} currentLabel={activity.name} />
-        {returnUrl.startsWith("/activities") ? <Link href={returnUrl} className="text-body-sm text-primary underline">Return to Activities</Link> : null}
+        <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? getPlanningCatalogReturnUrl(null, activity.activityDesign.id) : catalogReturnUrl }, { label: activity.activityDesign.activityDesignNo, href: getPlanningRecordUrl(parentUrl, params, activity.activityDesign.id, activity.id) }]} currentLabel={activity.name} />
+        {returnUrl.startsWith("/activities") ? <Link href={catalogReturnUrl} className="inline-flex min-h-10 items-center text-body-sm text-primary underline">Return to Activities</Link> : null}
         <WorkspaceRecordHeading title={activity.name} actions={<>
           <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />
@@ -223,7 +263,7 @@ export default function ActivityDetailContent({
         <section aria-labelledby="activity-meal-schedules-title" className="flex flex-col gap-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="activity-meal-schedules-title" className="text-heading-3 font-semibold">
+              <h2 id="activity-meal-schedules-title" tabIndex={-1} className="text-heading-3 font-semibold">
                 Meal Schedules ({activity.mealSchedules.length})
               </h2>
             </div>
@@ -237,13 +277,19 @@ export default function ActivityDetailContent({
               Add Meal Schedule
             </Button>
           </div>
-          {activity.mealSchedules.length === 0 ? (
+          {state.notice === "search-cleared" ? <p role="status" className="text-body-sm text-muted-foreground">Meal Schedule search cleared to show the new Meal Schedule.</p> : null}
+          {showControls ? <div className="flex min-w-0 flex-wrap items-end gap-3">
+            <WorkspaceSearchField id="meal-schedules-search" label="Search this Activity’s Meal Schedules by label or time" placeholder="Meal label or time" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
+            {state.search ? <Button variant="outline" className="min-h-10" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("meal-schedules-search")?.focus(); }}>Clear Meal Schedule search</Button> : null}
+            <p className="w-full text-body-sm text-muted-foreground">Results update as you type.</p>
+          </div> : null}
+          {activity.mealSchedules.length === 0 && !state.search ? (
             <MealSchedulesEmptyState />
-          ) : (
+          ) : !visible.length ? <Empty className="min-h-40 rounded-lg border"><EmptyHeader><EmptyTitle>No matching Meal Schedules</EmptyTitle><EmptyDescription>Clear Meal Schedule search to see this Activity’s Meal Schedules.</EmptyDescription></EmptyHeader></Empty> : (
             <MealScheduleRows
               activityDesignId={activity.activityDesign.id}
               activityId={activity.id}
-              schedules={activity.mealSchedules}
+              schedules={visible}
               onEdit={setMealScheduleForEdit}
               onDeleted={() => {
                 router.refresh();
@@ -256,6 +302,7 @@ export default function ActivityDetailContent({
               }}
             />
           )}
+          {showControls ? <CatalogPagination page={page} pageCount={pageCount} start={visible.length ? start + 1 : 0} end={start + visible.length} total={filtered.length} onPageChange={page => updateChildren({ page }, true)} /> : null}
         </section>
       </WorkspaceContent>
 
@@ -264,10 +311,12 @@ export default function ActivityDetailContent({
       <MealScheduleCreateDialog
         activity={activity}
         open={isCreateDialogOpen}
+        restoreFocusOnSuccess={false}
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={(mealSchedule) => {
           setIsCreateDialogOpen(false);
-          router.push(getPlanningRecordUrl(`/activity-designs/${activity.activityDesign.id}/activities/${activity.id}/meal-schedules/${mealSchedule.id}`, params, activity.activityDesign.id, activity.id));
+          updateChildren({ created: mealSchedule.id });
+          router.refresh();
           toast.success("Meal Schedule added");
         }}
       />

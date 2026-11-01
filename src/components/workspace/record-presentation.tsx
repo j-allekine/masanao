@@ -36,7 +36,7 @@ export function WorkspaceRecordBreadcrumbs({ ancestors, currentLabel }: {
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="size-10" aria-label="Show ancestors" />}><Ellipsis aria-hidden="true" /></DropdownMenuTrigger>
           <DropdownMenuContent className="max-w-[min(28rem,90vw)] w-auto"><DropdownMenuGroup>
-            {earlier.map(({ label, href }) => <DropdownMenuItem key={href} render={<Link href={href} />} className="whitespace-normal wrap-anywhere">{label}</DropdownMenuItem>)}
+            {earlier.map(({ label, href }) => <DropdownMenuItem key={href} render={<Link href={href} />} className="min-h-10 whitespace-normal wrap-anywhere">{label}</DropdownMenuItem>)}
           </DropdownMenuGroup></DropdownMenuContent>
         </DropdownMenu>
       </BreadcrumbItem>
@@ -44,7 +44,7 @@ export function WorkspaceRecordBreadcrumbs({ ancestors, currentLabel }: {
     </> : null}
     {ancestors.map(({ label, href }, index) => <Fragment key={href}>
       <BreadcrumbItem className={index < ancestors.length - 1 ? styles.wide : "min-w-0 max-w-full"}>
-        <BreadcrumbLink render={<Link href={href} />} className="wrap-anywhere">{label}</BreadcrumbLink>
+        <BreadcrumbLink render={<Link href={href} />} className="inline-flex min-h-10 min-w-10 items-center wrap-anywhere">{label}</BreadcrumbLink>
       </BreadcrumbItem>
       <BreadcrumbSeparator className={index < ancestors.length - 1 ? styles.wide : undefined} />
     </Fragment>)}
