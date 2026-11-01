@@ -43,6 +43,10 @@ export default function IssuancePostedContent({
   const [viewId, setViewId] = useState<string | null>(null);
   const [receiptItemId, setReceiptItemId] = useState<string | null>(null);
   const receiptOpenerId = useRef<string | null>(null);
+  const totalsTitle = useRef<HTMLHeadingElement | null>(null);
+  const sourceTitle = useRef<HTMLHeadingElement | null>(null);
+  const postingTitle = useRef<HTMLHeadingElement | null>(null);
+  const recipeTitle = useRef<HTMLHeadingElement | null>(null);
   const receiptRow = review.find((row) => row.itemId === receiptItemId);
   const openerId = useRef<string | null>(null);
   const jumpToTotals = useRef(false);
@@ -52,10 +56,11 @@ export default function IssuancePostedContent({
   }, [focusAfterPosting]);
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col bg-card"
+      className="flex min-h-0 flex-1 flex-col bg-card [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6" data-workspace-scroll="body">
+      <div className="workspace-pane min-h-0 flex-1 overflow-y-auto" data-workspace-scroll="body">
+      <div className="workspace-content mx-auto w-full max-w-[64rem] py-5">
         <MealScheduleHeader
           mealSchedule={mealSchedule}
           ready={hydrated}
@@ -67,14 +72,14 @@ export default function IssuancePostedContent({
             <Button id="view-issued-totals" disabled={!hydrated} variant="outline" onClick={() => setTotalsOpen(true)}>View issued totals</Button>
             <Dialog open={postingDetailsOpen} onOpenChange={setPostingDetailsOpen}>
               <Tooltip>
-                <TooltipTrigger render={<DialogTrigger disabled={!hydrated} render={<Button variant="ghost" size="icon-lg" aria-label="Posting details" />} />}>
+                <TooltipTrigger render={<DialogTrigger disabled={!hydrated} render={<Button variant="ghost" size="icon-lg" className="size-10" aria-label="Posting details" />} />}>
                   <Info aria-hidden="true" />
                 </TooltipTrigger>
                 <TooltipContent>Posting details</TooltipContent>
               </Tooltip>
-              <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
+              <DialogContent initialFocus={() => postingTitle.current} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-lg">
                 <DialogHeader className="pr-8">
-                  <DialogTitle>Posting details</DialogTitle>
+                  <DialogTitle ref={postingTitle} tabIndex={-1}>Posting details</DialogTitle>
                   <DialogDescription>Posted issuance is read-only.</DialogDescription>
                 </DialogHeader>
                 <dl className="grid gap-4 text-body-sm sm:grid-cols-2">
@@ -89,24 +94,40 @@ export default function IssuancePostedContent({
           </>}
         />
         <p role="status" className="sr-only">Issuance posted. Stock was deducted.</p>
+        <section aria-labelledby="posted-results" className="mt-6 flex flex-col gap-3">
+          <div>
+            <h2 id="posted-results" className="text-heading-3 font-semibold">Issued quantities</h2>
+            <p className="mt-1 text-body-sm text-muted-foreground">Saved at posting. These quantities have already been deducted from stock.</p>
+          </div>
+          <ul aria-label="Saved issued quantities" className="divide-y rounded-lg border">
+            {review.map((row) => <li key={row.itemId} className="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+              <span className="min-w-0 break-words font-medium">{row.itemName}</span>
+              <div className="flex min-w-0 flex-col gap-1 sm:max-w-1/2 sm:items-end sm:text-right">
+                <strong className="break-all text-heading-3 tabular-nums">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
+                {row.adjusted ? <><Badge variant="secondary">Adjusted</Badge><span className="break-all text-body-sm text-muted-foreground">Calculated: {row.calculatedApproximate ? "≈ " : ""}{row.calculatedQuantity} {row.baseUnitAbbreviation}</span></> : null}
+              </div>
+            </li>)}
+          </ul>
+          {posted ? <p className="break-words text-body-sm text-muted-foreground">Posted by {posted.actorName} ({posted.actorUsername}) · <time dateTime={posted.postedAt}>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(posted.postedAt))}</time></p> : null}
+        </section>
         <Dialog open={totalsOpen} onOpenChange={setTotalsOpen}>
-          <DialogContent finalFocus={() => document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+          <DialogContent initialFocus={() => totalsTitle.current} finalFocus={() => document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
             <DialogHeader className="pr-8">
-              <DialogTitle id="posted-quantities">Issued item totals</DialogTitle>
+              <DialogTitle ref={totalsTitle} tabIndex={-1} id="posted-quantities">Issued item totals</DialogTitle>
               <DialogDescription>Combined quantities deducted from stock, including recipe ingredients and items added separately.</DialogDescription>
             </DialogHeader>
           <ul className="mt-3 divide-y rounded-lg border">
             {review.map((row) => (
-              <li key={row.itemId} className="grid grid-cols-[minmax(0,1fr)_auto_2.25rem] items-center gap-4 px-4 py-3">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <li key={row.itemId} className="grid grid-cols-[minmax(0,1fr)_2.5rem] items-start gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_2.5rem]">
+                <div className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 sm:col-span-1">
                   <h3 className="min-w-0 break-words text-body-sm font-medium">
                     {row.itemName}
                   </h3>
                   {row.adjusted ? <Badge variant="secondary">Adjusted</Badge> : null}
                 </div>
-                <strong className="max-w-32 break-all text-body-sm tabular-nums">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
+                <strong className="col-span-2 col-start-1 row-start-2 break-all text-body-sm tabular-nums sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:max-w-48">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
                 <Tooltip>
-                  <TooltipTrigger render={<Button id={`receipt-sources-${row.itemId}`} disabled={!hydrated} aria-label={`View breakdown for ${row.itemName}`} variant="ghost" size="icon-lg" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }} />}>
+                  <TooltipTrigger render={<Button id={`receipt-sources-${row.itemId}`} className="size-10 col-start-2 row-start-3 sm:col-start-3 sm:row-start-1" disabled={!hydrated} aria-label={`View breakdown for ${row.itemName}`} variant="ghost" size="icon-lg" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }} />}>
                     <Info aria-hidden="true" />
                   </TooltipTrigger>
                   <TooltipContent>View breakdown</TooltipContent>
@@ -115,9 +136,9 @@ export default function IssuancePostedContent({
             ))}
           </ul>
         <Dialog open={Boolean(receiptRow)} onOpenChange={(open) => { if (!open) setReceiptItemId(null); }}>
-          <DialogContent finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : null} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
+          <DialogContent initialFocus={() => sourceTitle.current} finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
             <DialogHeader className="pr-8">
-              <DialogTitle>Details for {receiptRow?.itemName}</DialogTitle>
+              <DialogTitle ref={sourceTitle} tabIndex={-1}>Details for {receiptRow?.itemName}</DialogTitle>
               <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
             </DialogHeader>
             <dl className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
@@ -126,13 +147,14 @@ export default function IssuancePostedContent({
             </dl>
             <h3 className="font-medium">Receipt sources</h3>
             {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">Receipt sources were not recorded for this older issuance.</p>}
+            {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Receipt provenance for the issued quantities. These allocations do not deduct stock again.</p> : null}
             <ul className="flex flex-col divide-y sm:hidden" aria-label="Receipt allocations">
               {receiptRow?.receiptAllocations?.map((allocation) => <li key={allocation.receiptLineId} className="flex min-w-0 justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="break-words font-medium">{allocation.receiptNo}</p>
                   <p className="break-words text-body-sm"><span className="text-muted-foreground">PO: </span><span>{allocation.purchaseOrderNo}</span></p>
                   <p className="text-body-sm text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>
-                  {allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}
+                  <span className="block text-body-sm text-muted-foreground">{allocation.basis === "reconstructed" ? "Historical source reconstructed" : "Recorded receipt source"}</span>
                 </div>
                 <p className="max-w-1/3 shrink-0 break-all text-body-sm tabular-nums">{allocation.quantity} <span className="inline-block max-w-full break-all">{receiptRow.baseUnitAbbreviation}</span></p>
               </li>)}
@@ -140,7 +162,7 @@ export default function IssuancePostedContent({
             <div className="hidden sm:block"><Table>
               <TableHeader><TableRow><TableHead>Receipt</TableHead><TableHead>Purchase Order</TableHead><TableHead className="text-right">Quantity</TableHead></TableRow></TableHeader>
               <TableBody>{receiptRow?.receiptAllocations?.map((allocation) => <TableRow key={allocation.receiptLineId}>
-                <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>{allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}</TableCell>
+                <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p><span className="block text-body-sm text-muted-foreground">{allocation.basis === "reconstructed" ? "Historical source reconstructed" : "Recorded receipt source"}</span></TableCell>
                 <TableCell className="whitespace-normal break-words">{allocation.purchaseOrderNo}</TableCell>
                 <TableCell className="whitespace-normal break-all text-right tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</TableCell>
               </TableRow>)}</TableBody>
@@ -155,11 +177,20 @@ export default function IssuancePostedContent({
           <h2 id="posted-recipes" className="text-heading-3 font-semibold">Recipes ({draft.recipes.length})</h2>
           <ul className="mt-3 divide-y rounded-lg border">
             {draft.recipes.map((recipe) => <li key={recipe.id} className="flex min-w-0 items-center justify-between gap-4 px-4 py-3">
-              <Button id={`posted-ingredients-${recipe.id}`} disabled={!hydrated} variant="link" className="h-auto min-w-0 whitespace-normal px-0 text-left" aria-label={`View ingredients for ${recipe.recipeName}`} onClick={() => { jumpToTotals.current = false; openerId.current = `posted-ingredients-${recipe.id}`; setViewId(recipe.id); }}>{recipe.recipeName}</Button>
+              <Button id={`posted-ingredients-${recipe.id}`} disabled={!hydrated} variant="link" className="h-auto min-w-0 flex-1 shrink justify-start whitespace-normal px-0 text-left wrap-anywhere" aria-label={`View ingredients for ${recipe.recipeName}`} onClick={() => { jumpToTotals.current = false; openerId.current = `posted-ingredients-${recipe.id}`; setViewId(recipe.id); }}>{recipe.recipeName}</Button>
               <span className="shrink-0 text-body-sm text-muted-foreground tabular-nums">{recipe.targetPax} pax</span>
             </li>)}
           </ul>
         </section> : null}
+        <section aria-label="Current planning context" className="mt-8">
+          <RecordDetails disabled={!hydrated} label="Current planning details" fields={[
+            { label: "Planning context", value: "Live planning values. Changes here do not change the posted issuance above." },
+            { label: "Current Activity", value: mealSchedule.activity.name },
+            { label: "Current Office", value: mealSchedule.activity.officeName },
+            { label: "Current Meal", value: `${mealSchedule.label} · ${mealSchedule.mealTime}` },
+            ...(mealSchedule.activity.venue ? [{ label: "Current venue", value: mealSchedule.activity.venue }] : []),
+          ]} />
+        </section>
         {draft.stockItems.length ? <section aria-labelledby="posted-direct-items" className="mt-8">
           <h2 id="posted-direct-items" className="text-heading-3 font-semibold">Items added separately ({draft.stockItems.length})</h2>
           <ul className="mt-3 divide-y rounded-lg border">
@@ -170,6 +201,7 @@ export default function IssuancePostedContent({
             </li>)}
           </ul>
         </section> : null}
+      </div>
       </div>
       <Sheet
         open={Boolean(view)}
@@ -184,6 +216,7 @@ export default function IssuancePostedContent({
         }}
       >
         <SheetContent
+          initialFocus={() => recipeTitle.current}
           finalFocus={() =>
             jumpToTotals.current
               ? document.getElementById("view-issued-totals")
@@ -191,15 +224,16 @@ export default function IssuancePostedContent({
                 ? document.getElementById(openerId.current)
                 : null
           }
-          className="data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
+          className="[overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
         >
-          <SheetHeader className="gap-2 px-5 pt-6 pb-0 pr-12 sm:px-6 sm:pr-14">
-            <SheetTitle>{view?.recipeName}</SheetTitle>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+          <SheetHeader className="gap-2 px-5 pt-6 pb-4 pr-12 sm:px-6 sm:pr-14">
+            <SheetTitle ref={recipeTitle} tabIndex={-1}>{view?.recipeName}</SheetTitle>
             <SheetDescription>
               Baseline {view?.baselinePax} pax · Target {view?.targetPax} pax
             </SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 overflow-y-auto px-5 pb-6 sm:px-6">
+          <div className="px-5 pb-6 sm:px-6">
             <WorkspaceTableFrame
               caption="Posted Recipe ingredients: saved baseline and calculated contributions"
               className="table-fixed"
@@ -260,6 +294,7 @@ export default function IssuancePostedContent({
             <p className="mt-5 text-body-sm leading-relaxed text-muted-foreground">
               Calculated recipe contributions. Use View issued totals to see the final stock deductions.
             </p>
+          </div>
           </div>
         </SheetContent>
       </Sheet>
