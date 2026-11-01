@@ -79,7 +79,7 @@ export default function QuantityReviewDialog({
       <DialogContent
         finalFocus={() => document.getElementById("issuance-review")}
         showCloseButton={!saving}
-        className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-2xl"
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-2xl"
       >
         <DialogHeader className="pr-10">
           <DialogTitle>Combined quantities and stock</DialogTitle>

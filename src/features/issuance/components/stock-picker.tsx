@@ -117,7 +117,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent initialFocus={() => title.current} finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add") ?? document.getElementById("issuance-add") ?? document.getElementById("meal-pax")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-2xl">
+      <DialogContent initialFocus={() => title.current} finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add") ?? document.getElementById("issuance-add") ?? document.getElementById("meal-pax")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-2xl">
         <DialogHeader className="pr-10">
           <DialogTitle ref={title} tabIndex={-1}>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
           <DialogDescription className="sr-only">Choose an Item, quantity and Unit.</DialogDescription>

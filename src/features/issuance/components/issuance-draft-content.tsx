@@ -500,7 +500,7 @@ export default function IssuanceDraftContent({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col bg-card [&_[data-slot=button]]:min-h-10 [&_[data-slot=input]]:min-h-10 lg:[&_[data-slot=button]]:min-h-9 lg:[&_[data-slot=input]]:min-h-9"
+      className="flex min-h-0 flex-1 flex-col bg-card [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10"
       data-issuance-ready={hydrated ? "true" : undefined}
     >
       <div className="flex min-h-0 flex-1 flex-col">
@@ -712,7 +712,7 @@ export default function IssuanceDraftContent({
         <DialogContent
           finalFocus={() => document.getElementById("issuance-post") ?? document.getElementById("posted-quantities")}
           showCloseButton={!pending}
-          className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-xl"
+          className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-xl"
         >
           <DialogHeader className="pr-10">
             <DialogTitle>Post issuance?</DialogTitle>
@@ -811,7 +811,7 @@ export default function IssuanceDraftContent({
         />
       ) : null}
       <Dialog open={picker} onOpenChange={(open) => { if (!pending) setPicker(open); }}>
-        <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-3xl">
+        <DialogContent finalFocus={() => document.getElementById("issuance-add-recipe")} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-3xl">
           <DialogHeader className="pr-10">
             <DialogTitle>Add Recipes</DialogTitle>
             <DialogDescription className="sr-only">
@@ -1012,7 +1012,7 @@ export default function IssuanceDraftContent({
           if (!open) setAdjustId(null);
         }}
       >
-        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
+        <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
           <DialogHeader className="pr-10">
             <DialogTitle>Adjust target pax</DialogTitle>
             <DialogDescription>
@@ -1052,7 +1052,7 @@ export default function IssuanceDraftContent({
           }
         }}
       >
-        <DialogContent initialFocus={() => discardTitle.current} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_[data-slot=button]]:h-auto [&_[data-slot=button]]:min-h-10 [&_[data-slot=button]]:whitespace-normal [&_[data-slot=button]]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
+        <DialogContent initialFocus={() => discardTitle.current} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10">
           <DialogHeader className="pr-10">
             <DialogTitle ref={discardTitle} tabIndex={-1}>Discard unsaved changes?</DialogTitle>
             <DialogDescription>

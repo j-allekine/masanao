@@ -82,6 +82,7 @@ test("Draft portal actions fit and remain reachable at 320x480 and 200 percent t
     const recipeName=enlarged ? "Portal Rice large" : "Portal Rice";
     await page.getByLabel("Search Recipes").fill(recipeName);
     await page.getByRole("checkbox",{name:recipeName,exact:true}).check();
+    await reachable(recipes.getByRole("button",{name:`Remove selection ${recipeName}`,exact:true}));
     await reachable(recipes.getByRole("button",{name:"Add 1 Recipe",exact:true}));
     await recipes.getByRole("button",{name:"Add 1 Recipe",exact:true}).click();
     await expect(recipes.getByRole("heading",{name:`Already added (${enlarged ? 2 : 1})`,exact:true})).toBeVisible();
@@ -114,8 +115,12 @@ test("discard Stay restores the actual footer opener",async({page})=>{
   test.setTimeout(90000);
   expect((await page.request.post("/api/auth/sign-in/username",{data:{username:"kitchen.staff",password:"correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);
   await page.goto(meal.split('/meal-schedules/')[0]);
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible({timeout:30000});
+  await expect.poll(()=>page.evaluate(()=>Boolean(history.state?.masanaoNavigation))).toBe(true);
+  const parentEntry=await page.evaluate(()=>history.state.masanaoNavigation as {session:string;index:number});
   await page.getByRole("link",{name:"Open Meal Schedule: Lunch",exact:true}).click();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({timeout:30000});
+  expect(await page.evaluate(()=>history.state.masanaoNavigation)).toEqual({...parentEntry,index:parentEntry.index+1});
   await page.setViewportSize({width:320,height:480});
   await page.getByLabel("Meal pax",{exact:true}).fill("65");
   const opener=page.getByRole("main").getByRole("button",{name:"Discard changes",exact:true});
