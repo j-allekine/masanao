@@ -2,6 +2,19 @@ import { getPlanningCatalogReturnUrl } from "@/features/activity-planning/compon
 import { describe, expect, it } from "vitest";
 import { filterMealSchedules, getMealSchedulesState, getMealSchedulesQuery, filterDesignActivities, getDesignActivitiesQuery, getDesignActivitiesState, getPlanningRecordUrl } from "@/features/activity-planning/components/planning-child-state";
 
+it("carries validated Dashboard origin independently through real parents and drops foreign owners", () => {
+  const params = new URLSearchParams({ dashboardOrigin: "/dashboard?start=2020-10-01&end=2020-10-31&activitySearch=Kitchen&budgetPage=2", dashboardOriginOwner: "/activity-designs/design/activities/child", planningReturn: "/activities?activitiesPage=2", designActivitiesOwner: "design", designActivitiesPage: "2", mealSchedulesOwner: "child", mealSchedulesPage: "3" });
+  for (const path of ["/activity-designs/design", "/activity-designs/design/activities/child", "/activity-designs/design/activities/child/meal-schedules/meal"]) {
+    const url = new URL(getPlanningRecordUrl(path, params, "design", "child", "meal"), "https://test.invalid");
+    expect(url.searchParams.get("dashboardOrigin")).toBe(params.get("dashboardOrigin"));
+    expect(url.searchParams.get("planningReturn")).toBe("/activities?activitiesPage=2");
+    expect(url.searchParams.get("designActivitiesPage")).toBe("2");
+    expect(url.searchParams.get("mealSchedulesPage")).toBe("3");
+  }
+  const other = new URL(getPlanningRecordUrl("/activity-designs/design/activities/other", params, "design", "other"), "https://test.invalid");
+  expect(other.searchParams.has("dashboardOrigin")).toBe(false);
+});
+
 describe("Design child collection state", () => {
   it("filters the complete ordered collection by name or Office before slicing", () => {
     const rows = Array.from({ length: 25 }, (_, i) => ({ name: `Activity ${i}`, officeName: i === 24 ? "Later Office" : "Kitchen" }));

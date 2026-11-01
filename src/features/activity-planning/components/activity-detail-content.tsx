@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getDashboardOriginUrl } from "@/features/supply-operations/components/dashboard-origin-state";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CalendarDays, Plus } from "lucide-react";
@@ -171,6 +172,7 @@ export default function ActivityDetailContent({
   const router = useRouter();
   const params = useSearchParams();
   const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
+  const dashboardReturnUrl = getDashboardOriginUrl(params, activity.activityDesign.id, activity.id);
   const catalogReturnUrl = getPlanningCatalogReturnUrl(params.get("planningReturn"), activity.activityDesign.id, activity.id);
   const pathname = usePathname();
   const query = params.toString();
@@ -250,6 +252,7 @@ export default function ActivityDetailContent({
       <WorkspaceContent>
         <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? getPlanningCatalogReturnUrl(null, activity.activityDesign.id) : catalogReturnUrl }, { label: activity.activityDesign.activityDesignNo, href: getPlanningRecordUrl(parentUrl, params, activity.activityDesign.id, activity.id) }]} currentLabel={activity.name} />
         {returnUrl.startsWith("/activities") ? <Link href={catalogReturnUrl} className="inline-flex min-h-10 items-center text-body-sm text-primary underline">Return to Activities</Link> : null}
+        {dashboardReturnUrl ? <Link href={dashboardReturnUrl} className="inline-flex min-h-10 min-w-10 items-center text-body-sm text-primary underline">Return to Dashboard</Link> : null}
         <WorkspaceRecordHeading title={activity.name} actions={<>
           <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />

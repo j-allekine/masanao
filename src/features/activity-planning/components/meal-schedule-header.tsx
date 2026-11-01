@@ -8,6 +8,7 @@ import { getPlanningRecordUrl } from "./planning-child-state";
 import { RecordDetails } from "@/components/workspace/record-details";
 import { WorkspaceRecordBreadcrumbs } from "@/components/workspace/record-presentation";
 import type { MealScheduleDetailItem } from "../types";
+import { getDashboardOriginUrl } from "@/features/supply-operations/components/dashboard-origin-state";
 
 /** Planning details remain live; a posted heading may use its saved evidence. */
 export default function MealScheduleHeader({ mealSchedule, title, status, ready, disabled = false, showDetails = true, summary }: {
@@ -25,6 +26,7 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
   const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
   const { activity } = mealSchedule;
   const design = activity.activityDesign;
+  const dashboardReturnUrl = getDashboardOriginUrl(params, design.id, activity.id);
   const catalogReturnUrl = getPlanningCatalogReturnUrl(params.get("planningReturn"), design.id, activity.id);
   const currentTitle = `${mealSchedule.label} · ${mealSchedule.mealTime}`;
   const fields = [
@@ -40,6 +42,7 @@ export default function MealScheduleHeader({ mealSchedule, title, status, ready,
         { label: activity.name, href: getPlanningRecordUrl(`/activity-designs/${design.id}/activities/${activity.id}`, params, design.id, activity.id, mealSchedule.id) },
       ]} currentLabel={mealSchedule.label} />
       {returnUrl.startsWith("/activities") ? <Link href={catalogReturnUrl} className="inline-flex min-h-10 items-center text-body-sm text-primary underline">Return to Activities</Link> : null}
+      {dashboardReturnUrl ? <Link href={dashboardReturnUrl} className="inline-flex min-h-10 min-w-10 items-center text-body-sm text-primary underline">Return to Dashboard</Link> : null}
       <div className={summary ? "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" : "flex flex-wrap items-start justify-between gap-3"}>
         <div className="min-w-0 flex-1">
           <h1 className="workspace-page-title break-words font-semibold">{title ?? `${mealSchedule.label} · ${mealSchedule.mealTime}`}</h1>

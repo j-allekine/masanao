@@ -1,4 +1,5 @@
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
+import { appendDashboardOrigin } from "@/features/supply-operations/components/dashboard-origin-state";
 
 export const PLANNING_CHILD_PAGE_SIZE = 10;
 type Params = Pick<URLSearchParams, "getAll" | "get">;
@@ -41,6 +42,7 @@ export function getPlanningRecordUrl(path: string, params: Params, designId: str
   const state = getDesignActivitiesState(params, designId);
   let query = getDesignActivitiesQuery("", designId, { ...state, created: null, notice: undefined });
   if (activityId) query = getMealSchedulesQuery(query, activityId, { ...getMealSchedulesState(params, activityId), created: null, notice: undefined });
+  if (activityId) query = appendDashboardOrigin(query, params, designId, activityId);
   const target = withPlanningReturn(`${path}${query ? `?${query}` : ""}`, getPlanningReturnUrl(params.get("planningReturn")));
   if (path === designPath && activityId) return `${target}#open-child-activity-${activityId}`;
   if (path === activityPath && mealScheduleId) return `${target}#open-child-meal-${mealScheduleId}`;

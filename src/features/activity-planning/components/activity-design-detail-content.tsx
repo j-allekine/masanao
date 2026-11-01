@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getDesignDashboardOriginUrl } from "@/features/supply-operations/components/dashboard-origin-state";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
@@ -181,6 +182,7 @@ export default function ActivityDesignDetailContent({
   const pathname = usePathname();
   const query = params.toString();
   const returnUrl = getPlanningReturnUrl(params.get("planningReturn"));
+  const dashboardReturnUrl = getDesignDashboardOriginUrl(params, activityDesign.id, activityDesign.activities.map(activity => activity.id));
   const catalogReturnUrl = getPlanningCatalogReturnUrl(params.get("planningReturn"), activityDesign.id);
   const state = getDesignActivitiesState(params, activityDesign.id);
   const filtered = filterDesignActivities(activityDesign.activities, state.search);
@@ -265,6 +267,7 @@ export default function ActivityDesignDetailContent({
       <WorkspaceContent>
         <WorkspaceRecordBreadcrumbs ancestors={[{ label: "Activity Designs", href: returnUrl.startsWith("/activities") ? getPlanningCatalogReturnUrl(null, activityDesign.id) : catalogReturnUrl }]} currentLabel={activityDesign.activityDesignNo} />
         {returnUrl.startsWith("/activities") ? <Link href={catalogReturnUrl} className="inline-flex min-h-10 items-center text-body-sm text-primary underline">Return to Activities</Link> : null}
+        {dashboardReturnUrl ? <Link href={dashboardReturnUrl} className="inline-flex min-h-10 min-w-10 items-center text-body-sm text-primary underline">Return to Dashboard</Link> : null}
         <WorkspaceRecordHeading title={activityDesign.title} actions={<>
           <Button id="edit-current-record" variant="outline" size="lg" className="min-h-10" disabled={!isHydrated} onClick={() => setIsRecordEditOpen(true)}>Edit Activity Design</Button>
           <WorkspaceRowActionMenu actionButtonId="current-record-actions" ariaLabel="More Activity Design actions" disabled={!isHydrated} groups={[{ actions: [{ label: "Delete Activity Design", variant: "destructive", onSelect: () => setIsRecordDeleteOpen(true) }] }]} />

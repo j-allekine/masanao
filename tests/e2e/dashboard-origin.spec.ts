@@ -20,6 +20,95 @@ test.afterAll(()=>{
   try{db.exec("DELETE FROM meal_schedule WHERE id LIKE 'dash-origin-%'; DELETE FROM activity WHERE id LIKE 'dash-origin-%'; DELETE FROM activity_design WHERE id='dash-origin-design'");}finally{db.close();}
 });
 
+test("Dashboard access loss, session recovery and absent origin keep the applied report boundary",async({page,context})=>{
+  test.setTimeout(90000);
+  const signIn=async()=>expect((await page.request.post("/api/auth/sign-in/username",{data:{username:"kitchen.staff",password:"correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);
+  await signIn();await page.goto(applied);await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible({timeout:30000});
+  const reportLink=page.getByRole("link",{name:"Origin Activity 06",exact:true});const href=await reportLink.getAttribute("href");
+  const db=new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try{
+    db.prepare("UPDATE user SET disabled=1 WHERE username='kitchen.staff'").run();
+    await page.getByRole("button",{name:"Refresh",exact:true}).click();
+    await expect(page.getByRole("alert").filter({hasText:"Report unavailable"})).toContainText("Staff access required.");
+    await expect(reportLink).toHaveCount(0);
+  }finally{db.prepare("UPDATE user SET disabled=0 WHERE username='kitchen.staff'").run();db.close();}
+  await page.getByRole("button",{name:"Refresh",exact:true}).click();await expect(reportLink).toHaveAttribute("href",href!);
+  expect(new URL(page.url()).searchParams.get("budgetPage")).toBe("2");
+  await context.clearCookies();await page.reload();await expect(page).toHaveURL("/",{timeout:30000});
+  await signIn();await page.goto(applied);await expect(reportLink).toHaveAttribute("href",href!);
+  await page.goto(activity);await expect(page.getByRole("heading",{name:"Origin Activity 06",exact:true})).toBeVisible();
+  await expect(page.getByRole("link",{name:"Return to Dashboard",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("navigation",{name:"breadcrumb",exact:true}).getByRole("link",{name:"AD-ORIGIN",exact:true})).toBeVisible();
+});
+
+for (const username of ["kitchen.staff", "municipal.admin"]) test(`${username} retains applied Dashboard origin through real ancestry and guarded cancellation`, async ({page,context},info)=>{
+  test.setTimeout(180000);
+  expect((await page.request.post("/api/auth/sign-in/username",{data:{username,password:username==="municipal.admin" ? "administrator-password" : "correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);
+  await page.goto(applied);
+  await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  const reportLink=page.getByRole("link",{name:"Origin Activity 06",exact:true});
+  const appliedHref=await reportLink.getAttribute("href");
+  let releaseRefresh!:()=>void;
+  const refreshGate=new Promise<void>(resolve=>{releaseRefresh=resolve;});
+  await page.route("**/dashboard?**",async route=>{await refreshGate;await route.continue();},{times:1});
+  await page.getByRole("button",{name:"Refresh",exact:true}).click();
+  try{
+    await expect(page.getByRole("button",{name:"Updating…",exact:true})).toBeDisabled();
+    await expect(reportLink).toHaveAttribute("href",appliedHref!);
+    await expect(page.getByRole("button",{name:"Reporting period",exact:true})).toBeDisabled();
+  }finally{releaseRefresh();}
+  await expect(page.getByRole("button",{name:"Refresh",exact:true})).toBeEnabled();
+  await expect(reportLink).toHaveAttribute("href",appliedHref!);
+  await reportLink.click();
+  await expect(page.getByRole("heading",{name:"Origin Activity 06",exact:true})).toBeVisible({timeout:30000});
+  const returnLink=page.getByRole("link",{name:"Return to Dashboard",exact:true});
+  await expect(returnLink).toHaveAttribute("href",`${applied}#dashboard-activity-dash-origin-06`);
+  await page.getByRole("button",{name:"Edit Activity",exact:true}).click();
+  await page.getByRole("button",{name:"Cancel",exact:true}).click();
+  await expect(returnLink).toHaveAttribute("href",`${applied}#dashboard-activity-dash-origin-06`);
+  await page.getByRole("link",{name:"Open Meal Schedule: Lunch",exact:true}).click();
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(returnLink).toHaveAttribute("href",`${applied}#dashboard-activity-dash-origin-06`);
+  const mealUrl=page.url();
+  const legacy=new URL(mealUrl);legacy.pathname+="/issuance";
+  await page.goto(legacy.toString());await expect(page).toHaveURL(mealUrl);
+  await page.reload();await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({timeout:30000});
+  const popupPromise=context.waitForEvent("page");await returnLink.click({modifiers:["Control"]});
+  const popup=await popupPromise;await expect(popup.locator('[data-dashboard-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(popup.getByRole("link",{name:"Origin Activity 06",exact:true})).toBeFocused();await popup.close();
+  await page.getByLabel("Meal pax",{exact:true}).fill("51");
+  await returnLink.click();
+  const discard=page.getByRole("dialog",{name:"Discard unsaved changes?",exact:true});
+  await expect(discard).toBeVisible();await discard.getByRole("button",{name:"Keep editing",exact:true}).click();
+  await expect(returnLink).toBeFocused();await expect(page.getByLabel("Meal pax",{exact:true})).toHaveValue("51");
+  await page.getByRole("navigation",{name:"breadcrumb",exact:true}).getByRole("link",{name:"Origin Activity 06",exact:true}).click();
+  await expect(discard).toBeVisible();await discard.getByRole("button",{name:"Discard changes",exact:true}).click();
+  await expect(page.getByRole("link",{name:"Open Meal Schedule: Lunch",exact:true})).toBeFocused();
+  await page.getByRole("navigation",{name:"breadcrumb",exact:true}).getByRole("link",{name:"AD-ORIGIN",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Dashboard origin training",exact:true})).toBeVisible({timeout:30000});
+  await expect(returnLink).toHaveAttribute("href",`${applied}#dashboard-activity-dash-origin-06`);
+  await page.goBack();await expect(page.getByRole("heading",{name:"Origin Activity 06",exact:true})).toBeVisible();
+  await page.goForward();await expect(page.getByRole("heading",{name:"Dashboard origin training",exact:true})).toBeVisible();
+  await returnLink.click();await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(reportLink).toBeFocused();expect(new URL(page.url()).searchParams.get("budgetPage")).toBe("2");
+  const query=new URL(mealUrl).searchParams;
+  for(const invalid of ["https://evil.invalid/dashboard?start=2020-10-01&end=2020-10-31","/dashboard?start=2020-10-01&end=2020-10-31&unknown=1"]){
+    query.set("dashboardOrigin",invalid);await page.goto(`${new URL(mealUrl).pathname}?${query}`);await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();await expect(returnLink).toHaveCount(0);
+    await expect(page.getByRole("navigation",{name:"breadcrumb",exact:true}).getByRole("link",{name:"Origin Activity 06",exact:true})).toBeVisible();
+  }
+  query.set("dashboardOrigin",applied);query.set("dashboardOriginOwner","/activity-designs/dash-origin-design/activities/dash-origin-05");
+  await page.goto(`${new URL(mealUrl).pathname}?${query}`);await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();await expect(returnLink).toHaveCount(0);
+  await page.goto(`/activity-designs/dash-origin-design?${query}`);await expect(page.getByRole("heading",{name:"Dashboard origin training",exact:true})).toBeVisible();await expect(returnLink).toHaveCount(1);
+  query.set("dashboardOriginOwner","/activity-designs/dash-origin-design/activities/missing");await page.goto(`/activity-designs/dash-origin-design?${query}`);await expect(page.getByRole("heading",{name:"Dashboard origin training",exact:true})).toBeVisible();await expect(returnLink).toHaveCount(0);
+  await page.setViewportSize({width:320,height:480});await page.goto(mealUrl);await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  await page.evaluate(()=>{document.documentElement.style.fontSize="200%";});await returnLink.scrollIntoViewIfNeeded();
+  expect(await returnLink.evaluate(element=>element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(40);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:info.outputPath("meal-origin-320-200.png")});
+  await returnLink.click();await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();await expect(reportLink).toBeFocused();
+});
+
 test("Dashboard links carry applied page-2 state while unsent search and period fields remain local",async({page,context},info)=>{
   test.setTimeout(90000);
   expect((await page.request.post("/api/auth/sign-in/username",{data:{username:"kitchen.staff",password:"correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);
