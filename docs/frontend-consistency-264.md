@@ -340,3 +340,25 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Native surface captures and measurement limits are documented in
   `native-400-baseline-ffc4e41.md`. Final-source native zoom, integrated
   regression and the unavailable real-phone gate remain outstanding.
+
+### Meal child navigation and Dashboard foundation (`0ee9594`)
+
+- #285 adds ten-row Meal Schedule finding with stable ties, complete counts,
+  isolated child URL state, authoritative created-row reveal and deletion
+  clamp. Planning record/catalog returns now focus the actual authorized row
+  or a safe visible fallback. Parent targets have measured 40×40 minimums.
+- Successful child creation opts out of Dialog opener restoration so it can
+  focus the new row; cancellation and other callers retain normal restoration.
+  The shared Meal Header now uses the responsive title and ancestry patterns.
+- Worker checks: 27 affected browser journeys passed across the retained run
+  and one corrected cold-route rerun; six repeated creation/focus journeys
+  passed. Helpers and Meal safeguards: 44 passed. Lint, architecture, build
+  and explicit TypeScript passed. See `handoff-285.md`.
+- #287 foundation adds strictly validated applied Dashboard origin links,
+  shared title/gutters and responsive report controls. A measured 200% text
+  pagination overflow is fixed within Dashboard. Worker checks: 31 units,
+  three existing browser journeys plus the corrected new journey, architecture,
+  lint and types passed. See `handoff-287-foundation.md`.
+- Dashboard propagation through Planning remains unfinished. Merger checks
+  passed 49 focused tests, two architecture checks and lint. Final-source
+  browser regression, editor short-height fixes and device gates remain open.
