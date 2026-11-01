@@ -1,0 +1,11 @@
+.wide { display: none; }
+.compact { display: flex; }
+.pagination > div { flex-wrap: wrap; }
+.pagination [data-slot="pagination"] { max-width: 100%; }
+.pagination [data-slot="pagination-content"] { max-width: 100%; flex-wrap: wrap; justify-content: center; }
+
+/* Five-column comparison needs room inside the pane, including an open sidebar. */
+@container workspace-content (min-width: 760px) {
+  .wide { display: block; }
+  .compact { display: none; }
+}

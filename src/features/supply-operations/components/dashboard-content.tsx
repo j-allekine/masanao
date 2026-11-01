@@ -6,6 +6,8 @@ import { Info, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
+import { WorkspaceContent } from "@/components/workspace/workspace-content";
+import { getAppliedDashboardUrl } from "./dashboard-origin-state";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import type { DashboardResult } from "../dashboard-types";
@@ -43,25 +45,26 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
   return <WorkspaceShell user={user} activeSection="overview">
     <div className="flex min-h-svh min-w-0 flex-col bg-card" data-dashboard-surface>
       <WorkspaceHeader title="Dashboard" />
-      <div className="border-b bg-card" data-dashboard-header>
-        <header className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <h1 className="text-heading-1 font-semibold">Budget accounting</h1>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+      <div className="workspace-pane border-b bg-card" data-dashboard-header>
+        <header className="workspace-content mx-auto flex w-full min-w-0 max-w-content flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <h1 className="workspace-page-title font-heading font-heading-1">Budget accounting</h1>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <DashboardPeriodPicker period={period} disabled={disabled} onApply={(next) => navigate({ ...next, budgetPage: 1 })} />
-            <Button variant="outline" disabled={disabled} onClick={() => startTransition(() => router.refresh())}><RefreshCw data-icon="inline-start" aria-hidden="true" />{pending ? "Updating…" : "Refresh"}</Button>
+            <Button variant="outline" className="h-auto min-h-10 max-w-full whitespace-normal py-2" disabled={disabled} onClick={() => startTransition(() => router.refresh())}><RefreshCw data-icon="inline-start" aria-hidden="true" />{pending ? "Updating…" : "Refresh"}</Button>
           </div>
         </header>
       </div>
-      <div className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
+      <WorkspaceContent>
+      <div className="flex min-w-0 flex-col gap-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
         {!result.ok ? <Alert variant="destructive"><AlertTitle>Report unavailable</AlertTitle><AlertDescription>{result.error}</AlertDescription></Alert> : report && <>
           {report.sampleData && <Alert data-dashboard-sample><AlertTitle>Sample data (preview only)</AlertTitle></Alert>}
-          <DashboardBudgetReport key={`${period.start}/${period.end}/${report.budgets.search}`} report={report.budgets} disabled={disabled}
+          <DashboardBudgetReport key={`${period.start}/${period.end}/${report.budgets.search}`} report={report.budgets} appliedUrl={getAppliedDashboardUrl(report.period, report.budgets.search, report.budgets.page)} disabled={disabled}
             onPageChange={(budgetPage) => navigate({ budgetPage })}
             onSearch={(activitySearch) => { restoreSearchFocus.current = true; navigate({ activitySearch, budgetPage: 1 }); }} />
           <footer className="flex min-w-0 flex-col gap-2 text-label text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <Popover>
-              <PopoverTrigger render={<Button variant="ghost" size="sm" />}><Info data-icon="inline-start" aria-hidden="true" />Report notes</PopoverTrigger>
-              <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] gap-3 p-4">
+              <PopoverTrigger render={<Button variant="ghost" size="sm" className="h-auto min-h-10 max-w-full whitespace-normal py-2" />}><Info data-icon="inline-start" aria-hidden="true" />Report notes</PopoverTrigger>
+              <PopoverContent align="start" className="max-h-[calc(100dvh-2rem)] w-80 max-w-[calc(100vw-2rem)] gap-3 overflow-y-auto p-4 [overflow-wrap:anywhere]">
                 <PopoverHeader><PopoverTitle>About this report</PopoverTitle></PopoverHeader>
                 <p>Variance = Planned budget − Issued supply cost. Positive is under budget; negative is over budget. Costs are to date, not final savings or profit.</p>
                 <p>Activities are selected by scheduled date. Full budgets are compared with all their posted supply costs through the period end in Manila. Current budgets are not frozen historical submissions.</p>
@@ -72,6 +75,7 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
           </footer>
         </>}
       </div>
+      </WorkspaceContent>
     </div>
   </WorkspaceShell>;
 }
