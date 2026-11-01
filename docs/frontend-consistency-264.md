@@ -27,7 +27,7 @@ Each ticket is integrated only after its predecessors. All changes converge on
 | #278 | Recipe record and return context | #272, #277 | `bb781fa`; integrated `26fe20b` |
 | #279 | Purchase Order record and receipt inspection | #273, #277 | `86e2eda`; integrated `d1b3539` |
 | #280 | Recipe editor | #278 | `1851cac` + `9d8780c`; integrated `487a036`; shared rapid-Back correction pending |
-| #281 | Delivery editor | #279 | Pending |
+| #281 | Delivery editor | #279 | `5a2473d`; integrated `b59b4b1` |
 | #282 | Draft Meal Schedule | #277 | `73e1e57` + guard `0eb2dd6`; integrated `a762253`; portal-action sizing follow-up in progress |
 | #283 | Posted Meal Schedule | #277 | Pending |
 | #284 | Activity Design child collection | #277 | `6afbff8`; integrated `0067a34` |
@@ -278,3 +278,26 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Meal child finding, posted-result presentation, Dashboard origin, integrated
   return/focus checks, full final regression, real phone, and actual 400% browser
   zoom remain outstanding. The PR stays draft.
+
+### Delivery entry (`b59b4b1`)
+
+- #281 passed 7 final browser journeys, 23 focused unit tests, lint,
+  architecture, route type generation, TypeScript, SQLite smoke and a clean
+  production build. See `handoff-281.md` and `evidence-281-gutter-final` under
+  the external task directory.
+- Purchase Order/Vendor identity, date, lines and errors share one scrolling
+  body. Task title, Close, Cancel and Post remain outside it. Phone lines retain
+  Item/Unit/quantity/price/exact results, including twelve-line posting, stale
+  Item recovery and same-Item/different-Unit behavior.
+- Discard uses bounded feature-owned AlertDialog composition with 40px growing
+  actions and whole-word labels. Checks cover pending close refusal without a
+  queued exit after failure, native unload, Back/Forward/reload, raw values,
+  full focused-field clearance, no horizontal crop and tablet modal insets.
+- The receipt-range test now scopes to the accessible main landmark after
+  trace inspection proved the duplicate was a hidden streamed SSR copy.
+- Before this merge, CI at `dc8a48f` passed all three required jobs, including
+  77 unit files / 512 tests, types, lint, architecture and production build.
+  Evidence: `ci-dc8a48f.log`. Later changes still require current CI.
+- Recipe/Purchase Order explicit-return focus, remaining Planning context and
+  posted presentation follow-ups, Dashboard origin, whole-system regression,
+  real phone and actual 400% zoom remain in progress or outstanding.
