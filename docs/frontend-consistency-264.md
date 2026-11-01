@@ -382,3 +382,25 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Merger checks passed 63 focused tests, lint and both architecture checks.
   These viewport checks supplement the earlier failing native zoom trial;
   actual 400% browser zoom must still be repeated on final source.
+
+### Dashboard round trip and shared pagination (`3497583`)
+
+- #287 now carries the separately validated applied Dashboard origin through
+  Planning hierarchy links, edit cancellation, guarded draft exits and legacy
+  redirects. Real breadcrumbs remain intact. Invalid or mismatched origin
+  omits Return to Dashboard; actual Design child membership is checked.
+- Worker checks passed 54 helper/domain tests and nine unique browser journeys,
+  including both roles, page-two custom report round trips, reload/new-tab/history,
+  unsent fields, delayed refresh and access/session recovery. Lint, architecture,
+  types and production build passed. See `handoff-287-final.md`.
+- Access evidence preserves the existing distinction: a disabled account can
+  retain its session, while Dashboard's unchanged report read rechecks current
+  eligibility and withholds report data. Reenabling and refreshing recovers it.
+- Shared pagination now wraps its summary, navigation and page choices within
+  available width. Items reproduced clipped controls at 320px with 200% text;
+  final coverage passed all 14 consumers across 84 combinations, including
+  enlarged 80px targets, every page choice and keyboard paging. Twenty-five
+  units, lint, architecture and types passed. See `handoff-pagination-reflow.md`.
+- Merger checks passed 75 focused tests, lint and both architecture checks.
+  #288 combined-chain evidence, current design guidance, full final regression,
+  native zoom recheck and the unavailable phone gate remain outstanding.
