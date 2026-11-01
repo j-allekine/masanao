@@ -692,11 +692,11 @@ export default function IssuanceDraftContent({
         </div>
         </div>
         </div>
-        <footer aria-label="Draft actions" className="workspace-pane shrink-0 overflow-y-hidden border-t bg-card py-3 [scrollbar-gutter:stable]">
-          <div className="workspace-content mx-auto grid w-full max-w-[64rem] grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            <Button id="issuance-review" aria-label="Review quantities and stock" variant="outline" disabled={pending} onClick={openReview}><span className="sm:hidden">Review</span><span className="hidden sm:inline">Review quantities and stock</span></Button>
-            <Button aria-label={pending ? "Working…" : "Save draft"} variant="outline" disabled={pending || !canSave} onClick={save}><span className="sm:hidden">{pending ? "Working…" : "Save"}</span><span className="hidden sm:inline">{pending ? "Working…" : "Save draft"}</span></Button>
-            <Button id="issuance-post" className="col-span-2" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
+        <footer aria-label="Draft actions" className="workspace-pane shrink-0 overflow-y-hidden border-t bg-card py-3 [scrollbar-gutter:stable] [@media(max-height:360px)]:py-1">
+          <div className="workspace-content mx-auto grid w-full max-w-[64rem] grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end [@media(max-height:360px)]:grid [@media(max-height:360px)]:grid-cols-3">
+            <Button id="issuance-review" aria-label="Review quantities and stock" variant="outline" disabled={pending} onClick={openReview}><span className="sm:hidden [@media(max-height:360px)]:inline">Review</span><span className="hidden sm:inline [@media(max-height:360px)]:hidden">Review quantities and stock</span></Button>
+            <Button aria-label={pending ? "Working…" : "Save draft"} variant="outline" disabled={pending || !canSave} onClick={save}><span className="sm:hidden [@media(max-height:360px)]:inline">{pending ? "Working…" : "Save"}</span><span className="hidden sm:inline [@media(max-height:360px)]:hidden">{pending ? "Working…" : "Save draft"}</span></Button>
+            <Button id="issuance-post" aria-label="Post issuance" className="col-span-2 [@media(max-height:360px)]:col-span-1" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}><span className="hidden [@media(max-height:360px)]:inline">Post</span><span className="[@media(max-height:360px)]:hidden">Post issuance</span></Button>
           </div>
         </footer>
       </div>
