@@ -117,8 +117,8 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
-      <DialogContent initialFocus={() => title.current} finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add") ?? document.getElementById("issuance-add") ?? document.getElementById("meal-pax")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent initialFocus={() => title.current} finalFocus={() => document.getElementById(line ? `stock-actions-${line.id}` : "issuance-add") ?? document.getElementById("issuance-add") ?? document.getElementById("meal-pax")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 [&_[data-slot=input]]:min-h-10 [&_[data-slot=select-trigger]]:min-h-10 sm:max-w-2xl">
+        <DialogHeader className="pr-10">
           <DialogTitle ref={title} tabIndex={-1}>{line ? "Edit Stock item" : "Add Stock item"}</DialogTitle>
           <DialogDescription className="sr-only">Choose an Item, quantity and Unit.</DialogDescription>
         </DialogHeader>
@@ -173,7 +173,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
               <h3 className="text-body-sm font-medium">{line ? "Changes" : "Selected to add (1)"}</h3>
               <div className="flex min-w-0 items-center justify-between gap-2 rounded-md border p-2">
                 <div className="min-w-0"><p className="break-words font-medium">{item.name}</p><p className="text-muted-foreground tabular-nums">{quantity || "Quantity pending"} {units.find((entry) => entry.value === unit) ? (conversion?.alternateUnit.abbreviation ?? item.baseUnit.abbreviation) : ""}</p></div>
-                <Button variant="ghost" size="icon-sm" disabled={pending} aria-label="Clear Stock selection" onClick={() => { setItemId(""); setQuery(""); setQuantity(""); setUnit("base"); setError(""); setNotice(""); itemInput.current?.focus(); }}><X /></Button>
+                <Button variant="ghost" size="icon-sm" className="size-10 shrink-0" disabled={pending} aria-label="Clear Stock selection" onClick={() => { setItemId(""); setQuery(""); setQuantity(""); setUnit("base"); setError(""); setNotice(""); itemInput.current?.focus(); }}><X /></Button>
               </div>
             </section> : null}
             <h3 className="text-body-sm font-medium">Stock already added ({addedItems.length})</h3>

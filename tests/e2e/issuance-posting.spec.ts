@@ -289,8 +289,8 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     .click();
   await expect(ingredients).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Issued item totals", exact: true })).toBeVisible();
-  await expect(itemDetails).toBeFocused();
-  await expect(page.getByText("19 pc", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog", {name:"Issued item totals",exact:true}).getByRole("heading",{name:"Issued item totals",exact:true})).toBeFocused();
+  await expect(page.getByRole("dialog", {name:"Issued item totals",exact:true}).getByText("19 pc", { exact: true })).toBeVisible();
   await itemDetails.click();
   await expect(detail.locator("dd")).toHaveText(["19 pc", "18.5 pc"]);
   await expect(detail.getByText("Adjusted", { exact: true })).toBeVisible();
