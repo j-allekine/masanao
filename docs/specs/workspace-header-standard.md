@@ -1,3 +1,9 @@
+> Successor guidance: this document preserves its staged implementation scope.
+> Current #264 catalog, record, editor, child-list and navigation guidance is in
+> [DESIGN.md](../../DESIGN.md#delivered-frontend-consistency-contract-264) and
+> [the implementation ledger](../frontend-consistency-264.md). Historical scope
+> exclusions and labels below do not override the delivered successor contract.
+
 ## Problem Statement
 
 Staff see independently built headers across Masanao. Sidebar access, spacing, titles and loading/error orientation drift between modules. Some editors lack the same orientation, and the Meal Schedule once repeated its sidebar toggle inside breadcrumbs. This makes the system feel inconsistent.

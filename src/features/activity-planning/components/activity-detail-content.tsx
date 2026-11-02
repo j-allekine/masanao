@@ -282,8 +282,8 @@ export default function ActivityDetailContent({
           </div>
           {state.notice === "search-cleared" ? <p role="status" className="text-body-sm text-muted-foreground">Meal Schedule search cleared to show the new Meal Schedule.</p> : null}
           {showControls ? <div className="flex min-w-0 flex-wrap items-end gap-3">
-            <WorkspaceSearchField id="meal-schedules-search" label="Search this Activity’s Meal Schedules by label or time" placeholder="Meal label or time" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
-            {state.search ? <Button variant="outline" className="min-h-10" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("meal-schedules-search")?.focus(); }}>Clear Meal Schedule search</Button> : null}
+            <WorkspaceSearchField className="min-w-[min(100%,16rem)]" id="meal-schedules-search" label="Search this Activity’s Meal Schedules by label or time" placeholder="Meal label or time" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
+            {state.search ? <Button variant="outline" className="h-auto min-h-10 max-w-full whitespace-normal" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("meal-schedules-search")?.focus(); }}>Clear Meal Schedule search</Button> : null}
             <p className="w-full text-body-sm text-muted-foreground">Results update as you type.</p>
           </div> : null}
           {activity.mealSchedules.length === 0 && !state.search ? (

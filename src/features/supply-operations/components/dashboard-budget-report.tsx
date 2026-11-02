@@ -105,7 +105,7 @@ export default function DashboardBudgetReport({ report, appliedUrl, disabled, on
         <dl className="mt-4 grid grid-cols-2 gap-4">{facts(row).map((fact) => <div key={fact.label} className="min-w-0"><dt className="text-label text-muted-foreground">{fact.label}</dt><dd className={cn("mt-1 break-words font-medium tabular-nums", fact.label === "Budget variance" && varianceTone(row.variance))}>{fact.value}</dd></div>)}</dl>
         <CostNotes row={row} />
       </article>)}</div>
-      <FieldSet disabled={disabled} className={cn("min-w-0", styles.pagination)} aria-label="Activity budget pagination"><CatalogPagination page={report.page} pageCount={report.pageCount} total={report.total} start={(report.page - 1) * report.pageSize + 1} end={Math.min(report.page * report.pageSize, report.total)} onPageChange={onPageChange} /></FieldSet>
+      <FieldSet disabled={disabled} className="min-w-0" aria-label="Activity budget pagination"><CatalogPagination page={report.page} pageCount={report.pageCount} total={report.total} start={(report.page - 1) * report.pageSize + 1} end={Math.min(report.page * report.pageSize, report.total)} onPageChange={onPageChange} /></FieldSet>
     </>}
   </section>;
 }

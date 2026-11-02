@@ -1,3 +1,9 @@
+> Successor guidance: this document preserves its staged implementation scope.
+> Current #264 catalog, record, editor, child-list and navigation guidance is in
+> [DESIGN.md](../../DESIGN.md#delivered-frontend-consistency-contract-264) and
+> [the implementation ledger](../frontend-consistency-264.md). Historical scope
+> exclusions and labels below do not override the delivered successor contract.
+
 ## Problem Statement
 
 Planning repeats identity, context cards, explanatory copy and parent navigation before the staff member's actual work. Optional details can repeat information already on screen. Child collections are difficult to scan on narrow screens. Posted Item inspection gives the final result, calculations and receipt evidence similar emphasis, making the important quantity harder to find.

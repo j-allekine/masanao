@@ -382,3 +382,41 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Merger checks passed 63 focused tests, lint and both architecture checks.
   These viewport checks supplement the earlier failing native zoom trial;
   actual 400% browser zoom must still be repeated on final source.
+
+
+### Combined return integration and draft inspection (#288; base `3497583`)
+
+- The new combined Planning journey establishes three different searches and
+  page 2 positions through real controls, then verifies stepwise/direct ancestor
+  returns, reload/new-tab, Back/Forward, row focus and latest-query ownership.
+  Both roles run at 1280x720 and 320x480. Six owned-fixture renamed/deleted return
+  cases verify safe focus and page fallback without mixing collection state.
+- Fresh phone captures exposed child search inputs squeezed by Clear buttons.
+  Feature-local minimum search width and wrapping actions restore readable
+  queries; the regression failed at 33.6px before the fix. The new combined cases
+  and four existing role-based child-list journeys passed afterward (14 cases).
+- The draft Recipe inspector reproduced 1225px content inside a 575px Sheet with
+  a valid 100-character Recipe name. Identity, description and all ingredients
+  now share one bounded scroller below a fixed Close band. Table cells wrap;
+  Close retains 40px targets (80px at 200% text). Focus enters the title, returns
+  to the actual opener, and waits for Sheet closure before combined review.
+- Two final inspector cases passed for admin/staff at 1280x720,320x180 and
+  320x480 with 200% text. They retain 12 ingredient rows, exact baseline/scaled
+  quantities, read-only inspection, keyboard and measured visible-point pointer
+  activation, Escape/Close return, and 2kg contribution versus 3kg adjusted total.
+  No draft is saved by these fixtures.
+- Removed only Dashboard's three duplicate pagination CSS overrides and their
+  obsolete wrapper class after shared pagination adoption. Five Dashboard
+  pagination/origin journeys passed with fresh geometry and keyboard evidence.
+- Current DESIGN/record guidance describes delivered patterns. Earlier staged
+  specs have explicit successor notes; historical ADR/capture facts remain.
+- Safeguards: 125 focused helper/domain tests, lint, changed-test lint, two
+  architecture checks and TypeScript passed. Retained browser evidence records
+  14 Planning passes and two corrected inspector passes separately; it does not
+  call the earlier 16-case invocation a complete pass. See `handoff-288.md`,
+  `288-fixed.log`, `288-inspector-verified.log` and `288-verified.log` in the
+  external spec-264 evidence folder for exact commands, diagnoses and captures.
+- This is scoped integration evidence. Root owns the final merged-source full
+  browser suite, production build, all 22 acceptance cases and actual 400% zoom
+  after separate Filters/Sidebar follow-ups. The unavailable real-phone gate
+  remains open. Neither #264 nor #288 is declared complete.
