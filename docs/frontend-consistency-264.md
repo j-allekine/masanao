@@ -460,3 +460,30 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
   browser suite, production build, all 22 acceptance cases and actual 400% zoom
   after separate Filters/Sidebar follow-ups. The unavailable real-phone gate
   remains open. Neither #264 nor #288 is declared complete.
+
+
+## Review fixes after combined source 4278916
+
+- Read-only Recipe, Delivery Receipt, posting details, issued totals, and nested
+  breakdown Dialogs now compose the canonical DialogContent with one bounded
+  identity/content scroller below a retained Close area. Posted Recipe inspection
+  also reserves that Close band. Entry, picker, confirmation, and discard
+  primitives are unchanged. Three browser cases passed at 320x480, 320x200, and
+  320x180, checking all consumers at scroll start/middle/end, nested Escape,
+  canonical Tooltip dismissal, and opener focus (`review-fixes-inspect-second.log`).
+- Activity and Meal child edits defer focus until authoritative refreshed rows and
+  any page clamp settle. A still-visible row regains its menu focus; a renamed
+  filtered-out row falls back to its collection heading. Activity creation now
+  marks successful completion before delegating new-row focus to its collection.
+- Recipe unavailable-Unit warnings reflect the selected draft Unit, clearing after
+  an active Base Unit repair while preserving raw `0.1250` and server validation.
+  The three original behavior regressions failed with baseline implementations;
+  seven final browser cases passed, including both visible-row/fallback edit
+  variants and delayed creation (`review-fixes-behavior-final.log`).
+- A pure native-history state helper removes only Next integration markers and
+  preserves navigation-owner metadata, Next tree, and unrelated state. Features
+  retain their own URLs and filter rules. Forty relevant helper tests, lint, and
+  both architecture checks passed. No domain/schema/auth-policy changes.
+- This is isolated review-fix evidence. Combined final-source browser, production,
+  and native-zoom verification remain root-owned. The real-phone keyboard,
+  rotation, and touch gate remains outstanding; #264/#288 are not complete.

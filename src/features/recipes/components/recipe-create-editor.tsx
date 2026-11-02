@@ -339,7 +339,11 @@ export default function RecipeCreateEditor({
                     {ingredients.map((ingredient, index) => {
                       const selectedItem = itemById.get(ingredient.itemId);
                       const originalIngredient = recipe?.ingredients.find(row => row.itemId === ingredient.itemId);
-                      const unavailable = originalIngredient && (originalIngredient.item.isActive === false || originalIngredient.item.baseUnit.active === false || originalIngredient.itemUnitConversion?.alternateUnit.active === false);
+                      const unavailable = originalIngredient && (
+                        originalIngredient.item.isActive === false || originalIngredient.item.baseUnit.active === false ||
+                        !selectedItem || (ingredient.itemUnitConversionId !== null &&
+                          !selectedItem.unitConversions.some(conversion => conversion.id === ingredient.itemUnitConversionId))
+                      );
                       const retainedUnit = originalIngredient?.itemUnitConversion?.alternateUnit ?? originalIngredient?.item.baseUnit;
                       const selectedConversion = selectedItem?.unitConversions.find(
                         (conversion) => conversion.id === ingredient.itemUnitConversionId,

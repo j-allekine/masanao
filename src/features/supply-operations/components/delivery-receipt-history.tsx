@@ -1,5 +1,9 @@
 "use client";
 
+import { InspectorDialogContent } from "@/components/workspace/inspector-dialog-content";
+
+import { getNativeHistoryState } from "@/lib/native-history-state";
+
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { usePathname, useSearchParams } from "next/navigation";
@@ -12,7 +16,6 @@ import { filterReceiptHistory, getReceiptHistoryQuery, getReceiptHistoryState, R
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -40,9 +43,7 @@ function replaceHistoryUrl(url: string) {
   // Next copies its current routing tree into native history updates. Passing
   // its private markers back skips that integration and leaves searchParams
   // stale. Preserve other owners' metadata while letting Next copy its own.
-  const data = { ...window.history.state };
-  delete data.__NA;
-  delete data._N;
+  const data = getNativeHistoryState(window.history.state);
   window.history.replaceState(data, "", url);
 }
 
@@ -127,7 +128,7 @@ export default function DeliveryReceiptHistory({
     <p className="text-right">Total delivered: <span data-delivery-history-total><PurchaseOrderDeliveredAmount summary={total} /></span></p>
 
     <Dialog open={selectedReceipt !== null} onOpenChange={(open) => { if (!open) { const id = selectedReceiptId; setSelectedReceiptId(null); window.setTimeout(() => document.getElementById(`inspect-receipt-${id}`)?.focus(), 0); } }}>
-      {selectedReceipt ? <DialogContent size="wide" initialFocus={() => document.querySelector<HTMLElement>('[role="dialog"]')} className="[&_[data-slot=dialog-close]]:size-10 [&_[data-slot=dialog-footer]_button]:min-h-10" showCloseButton>
+      {selectedReceipt ? <InspectorDialogContent size="wide" initialFocus={() => document.querySelector<HTMLElement>('[role="dialog"]')} className="[&_[data-slot=dialog-close]]:size-10 [&_[data-slot=dialog-footer]_button]:min-h-10">
         <DialogHeader>
           <p className="text-label font-medium uppercase tracking-label text-primary">Purchase Order · Delivery Receipt</p>
           <DialogTitle>Delivery receipt {selectedReceipt.receiptNo}</DialogTitle>
@@ -155,7 +156,7 @@ export default function DeliveryReceiptHistory({
           <div className="flex flex-col gap-1"><p className="text-label font-medium text-muted-foreground">Receipt note</p><p className="whitespace-pre-wrap">{selectedReceipt.note ?? "Not recorded"}</p></div>
         </div>
         <DialogFooter showCloseButton />
-      </DialogContent> : null}
+      </InspectorDialogContent> : null}
     </Dialog>
   </>;
 }

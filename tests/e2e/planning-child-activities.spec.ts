@@ -200,3 +200,27 @@ test("Planning catalog explicit returns focus their authoritative record or safe
   await page.getByRole("navigation", { name: "breadcrumb", exact: true }).getByRole("link", { name: "Activity Designs", exact: true }).click();
   await expect(page.getByRole("button", { name: "Actions for Child Activity finding", exact: true })).toBeFocused();
 });
+
+
+for (const leavesResults of [true, false]) test(`editing a searched Activity restores settled ${leavesResults ? "fallback" : "row"} focus`, async ({ page }) => {
+  setCount(11);
+  await signIn(page, "kitchen.staff");
+  await page.goto(`${record}?${new URLSearchParams({ planningReturn: "/activities?activitiesPage=4", designActivitiesOwner: id, designActivitiesSearch: "Child Activity", designActivitiesPage: "2", mealSchedulesOwner: "separate-meal", mealSchedulesSearch: "other" })}`);
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+  const trigger = page.locator(`[id="activity-actions-${id}-001"]`);
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Activity name", exact: true }).fill(leavesResults ? "Renamed preparation" : "Child Activity repaired");
+  await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  if (leavesResults) {
+    await expect(trigger).toHaveCount(0);
+    await expect(page.locator("#activity-design-activities-title")).toBeFocused();
+  } else {
+    await expect(trigger).toBeFocused();
+  }
+  expect(new URL(page.url()).searchParams.get("designActivitiesSearch")).toBe("Child Activity");
+  expect(new URL(page.url()).searchParams.get("mealSchedulesSearch")).toBe("other");
+  expect(new URL(page.url()).searchParams.get("planningReturn")).toBe("/activities?activitiesPage=4");
+});

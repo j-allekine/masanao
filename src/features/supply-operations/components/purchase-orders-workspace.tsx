@@ -1,5 +1,7 @@
 "use client";
 
+import { getNativeHistoryState } from "@/lib/native-history-state";
+
 import {
   useCallback,
   useEffect,
@@ -122,9 +124,7 @@ export default function PurchaseOrdersWorkspace({
     const hash = window.location.hash;
     const fragment = keepReturnFocus || !hash.startsWith(`#${PURCHASE_ORDER_RETURN_ROW_PREFIX}`) ? hash : "";
     // Let Next synchronize its URL state; retain the navigation owner's metadata.
-    const historyData = { ...window.history.state };
-    delete historyData.__NA;
-    delete historyData._N;
+    const historyData = getNativeHistoryState(window.history.state);
     window.history.replaceState(historyData, "", `${nextUrl}${fragment}`);
     setClientQuery(nextQuery);
   }, [pathname]);

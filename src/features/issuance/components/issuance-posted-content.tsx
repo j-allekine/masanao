@@ -1,3 +1,4 @@
+import { InspectorDialogContent } from "@/components/workspace/inspector-dialog-content";
 import { useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { RecordDetails } from "@/components/workspace/record-details";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MealScheduleHeader } from "@/features/activity-planning/ui";
 import type { MealScheduleDetailItem } from "@/features/activity-planning/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -77,7 +78,7 @@ export default function IssuancePostedContent({
                 </TooltipTrigger>
                 <TooltipContent>Posting details</TooltipContent>
               </Tooltip>
-              <DialogContent initialFocus={() => postingTitle.current} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-lg">
+              <InspectorDialogContent size="inspection" initialFocus={() => postingTitle.current} className="max-h-[calc(100dvh-2rem)] [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-lg">
                 <DialogHeader className="pr-8">
                   <DialogTitle ref={postingTitle} tabIndex={-1}>Posting details</DialogTitle>
                   <DialogDescription>Posted issuance is read-only.</DialogDescription>
@@ -89,7 +90,7 @@ export default function IssuancePostedContent({
                   <div className="min-w-0"><dt className="text-muted-foreground">Activity at posting</dt><dd className="break-words">{context.activityName}</dd></div>
                   {`${mealSchedule.label} · ${mealSchedule.mealTime}` !== `${context.mealLabel} · ${context.mealTime}` ? <div className="min-w-0 sm:col-span-2"><dt className="text-muted-foreground">Current planning meal</dt><dd className="break-words">{mealSchedule.label} · {mealSchedule.mealTime}</dd></div> : null}
                 </dl>
-              </DialogContent>
+              </InspectorDialogContent>
             </Dialog>
           </>}
         />
@@ -111,7 +112,7 @@ export default function IssuancePostedContent({
           {posted ? <p className="break-words text-body-sm text-muted-foreground">Posted by {posted.actorName} ({posted.actorUsername}) · <time dateTime={posted.postedAt}>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(posted.postedAt))}</time></p> : null}
         </section>
         <Dialog open={totalsOpen} onOpenChange={setTotalsOpen}>
-          <DialogContent initialFocus={() => totalsTitle.current} finalFocus={() => document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
+          <InspectorDialogContent size="inspection" initialFocus={() => totalsTitle.current} finalFocus={() => document.getElementById("view-issued-totals")} className="max-h-[calc(100dvh-2rem)] [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
             <DialogHeader className="pr-8">
               <DialogTitle ref={totalsTitle} tabIndex={-1} id="posted-quantities">Issued item totals</DialogTitle>
               <DialogDescription>Combined quantities deducted from stock, including recipe ingredients and items added separately.</DialogDescription>
@@ -136,7 +137,7 @@ export default function IssuancePostedContent({
             ))}
           </ul>
         <Dialog open={Boolean(receiptRow)} onOpenChange={(open) => { if (!open) setReceiptItemId(null); }}>
-          <DialogContent initialFocus={() => sourceTitle.current} finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
+          <InspectorDialogContent size="inspection" initialFocus={() => sourceTitle.current} finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : document.getElementById("view-issued-totals")} className="max-h-[calc(100dvh-2rem)] [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 sm:max-w-2xl">
             <DialogHeader className="pr-8">
               <DialogTitle ref={sourceTitle} tabIndex={-1}>Details for {receiptRow?.itemName}</DialogTitle>
               <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
@@ -169,9 +170,9 @@ export default function IssuancePostedContent({
             </Table></div>
             {receiptRow?.receiptAllocations?.some((allocation) => allocation.basis === "reconstructed") ? <p className="text-body-sm text-muted-foreground">Historical receipt sources were inferred using FIFO; they do not prove which receipts were picked at the original posting.</p> : null}
             <RecordDetails label="Calculation details" fields={[{ label: "Quantity rule at posting", value: receiptRow?.policy === "whole-only" ? "Whole quantities only" : "Decimals allowed" }]} />
-          </DialogContent>
+          </InspectorDialogContent>
         </Dialog>
-          </DialogContent>
+          </InspectorDialogContent>
         </Dialog>
         {draft.recipes.length ? <section aria-labelledby="posted-recipes" className="mt-8">
           <h2 id="posted-recipes" className="text-heading-3 font-semibold">Recipes ({draft.recipes.length})</h2>
@@ -224,7 +225,7 @@ export default function IssuancePostedContent({
                 ? document.getElementById(openerId.current)
                 : null
           }
-          className="[overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
+          className="gap-0 overflow-hidden pt-14 [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
         >
           <div className="min-h-0 flex-1 overflow-y-auto">
           <SheetHeader className="gap-2 px-5 pt-6 pb-4 pr-12 sm:px-6 sm:pr-14">

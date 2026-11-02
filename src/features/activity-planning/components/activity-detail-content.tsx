@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { getDashboardOriginUrl } from "@/features/supply-operations/components/dashboard-origin-state";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { CalendarDays, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -184,6 +184,16 @@ export default function ActivityDetailContent({
   const visible = filtered.slice(start, start + PLANNING_CHILD_PAGE_SIZE);
   const showControls = activity.mealSchedules.length > PLANNING_CHILD_PAGE_SIZE || Boolean(state.search);
   const handledCreated = useRef<string | null>(null);
+  const [isRefreshingEdit, startEditRefresh] = useTransition();
+  const editedChildFocus = useRef<{ id: string; rows: typeof activity.mealSchedules } | null>(null);
+  useEffect(() => {
+    const edited = editedChildFocus.current;
+    // Wait for the authoritative payload and URL page clamp, not the old row.
+    if (!edited || isRefreshingEdit || edited.rows === activity.mealSchedules || state.page > pageCount) return;
+    const target = document.getElementById(`meal-schedule-actions-${edited.id}`) ?? document.getElementById("activity-meal-schedules-title");
+    target?.focus();
+    editedChildFocus.current = null;
+  }, [activity.mealSchedules, isRefreshingEdit, page, pageCount, state.page]);
   function updateChildren(updates: Parameters<typeof getMealSchedulesQuery>[2], push = false, preserveReturnTarget = false) {
     const next = getMealSchedulesQuery(window.location.search.slice(1), activity.id, updates);
     const hash = !preserveReturnTarget && window.location.hash.startsWith("#open-child-meal-") ? "" : window.location.hash;
@@ -330,9 +340,11 @@ export default function ActivityDetailContent({
         mode="edit"
         open={mealScheduleForEdit !== null}
         onClose={closeEditDialog}
+        restoreFocusOnSuccess={false}
         onSuccess={() => {
-          closeEditDialog();
-          router.refresh();
+          if (mealScheduleForEdit) editedChildFocus.current = { id: mealScheduleForEdit.id, rows: activity.mealSchedules };
+          setMealScheduleForEdit(null);
+          startEditRefresh(() => router.refresh());
           toast.success("Meal Schedule updated");
         }}
       />
