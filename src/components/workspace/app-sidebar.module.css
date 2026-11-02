@@ -1,0 +1,44 @@
+/* The mobile Sheet belongs to AppSidebar; other Sheets retain primitive defaults. */
+:global([data-slot="sidebar"][data-mobile="true"]):has(.header) {
+  width: min(18rem, 100dvw);
+  max-width: 100dvw;
+  /* Navigation owns the scrollbar; the fixed Sheet must not reserve a gutter. */
+  scrollbar-gutter: auto;
+}
+
+:global([data-slot="sidebar"][data-mobile="true"]):has(.header) > :global([data-slot="sheet-close"]) {
+  width: 40px;
+  height: 40px;
+  top: 4px;
+  right: 4px;
+}
+
+:global([data-slot="sidebar"][data-mobile="true"]) .header {
+  padding-left: 16px;
+  padding-right: 52px;
+}
+
+:global([data-slot="sidebar"][data-mobile="true"]) .footer {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+:global([data-slot="sidebar"][data-mobile="true"]) .header :global([data-slot="sidebar-menu-button"]) > span > span,
+:global([data-slot="sidebar"][data-mobile="true"]) .account > span > span {
+  white-space: normal;
+  overflow: visible;
+}
+
+:global([data-slot="sidebar"][data-mobile="true"]) .account {
+  height: auto;
+  min-height: 40px;
+  padding: 8px;
+}
+
+@media (max-height: 540px) {
+  :global([data-slot="sidebar"][data-mobile="true"]) .header,
+  :global([data-slot="sidebar"][data-mobile="true"]) .footer {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}

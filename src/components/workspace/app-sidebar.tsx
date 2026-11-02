@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 
 import BrandMark from "@/components/brand-mark"
+import { cn } from "@/lib/utils"
+import styles from "./app-sidebar.module.css"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,7 +135,7 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
               <SidebarMenuButton
                 size="lg"
                 aria-label={`${user.name} account menu`}
-                className="sidebar-compact:justify-center"
+                className={cn(styles.account, "sidebar-compact:justify-center")}
               />
             }
           >
@@ -147,7 +149,7 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
             <ChevronDown className="ml-auto sidebar-compact:hidden" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-56"
+            className="w-56 max-w-[calc(100dvw-1rem)]"
             side={isMobile ? "bottom" : "right"}
             align={isMobile ? "end" : "start"}
             sideOffset={4}
@@ -161,7 +163,7 @@ function AccountMenu({ user }: { user: AppSidebarUser }) {
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
+            <DropdownMenuItem className="h-auto min-h-10 whitespace-normal py-2" onClick={handleLogout} disabled={isLoggingOut}>
               <LogOut aria-hidden="true" />
               {isLoggingOut ? "Logging out…" : "Log out"}
             </DropdownMenuItem>
@@ -182,7 +184,7 @@ export function AppSidebar({
   const { closeMobileForNavigation } = useSidebar()
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader className="p-4 pt-6 pb-7 sidebar-compact:px-2">
+      <SidebarHeader className={cn(styles.header, "p-4 pt-6 pb-7 sidebar-compact:px-2")}>
         <WorkspaceLink />
       </SidebarHeader>
       <SidebarContent>
@@ -213,7 +215,7 @@ export function AppSidebar({
                         }
                         isActive={activeSection === item.id}
                         tooltip={visibleLabel}
-                        className="h-10 rounded-lg px-3 text-body-sm"
+                        className="h-auto min-h-10 rounded-lg px-3 py-2 text-body-sm sidebar-compact:min-h-0 [&>span:last-child]:whitespace-normal [&>span:last-child]:break-words"
                       >
                         <Icon />
                         <span>{visibleLabel}</span>
@@ -229,7 +231,7 @@ export function AppSidebar({
       </SidebarContent>
       {user ? <>
         <SidebarSeparator className="bg-sidebar-foreground/15" />
-        <SidebarFooter className="p-4 pt-3 pb-7 sidebar-compact:px-2">
+        <SidebarFooter className={cn(styles.footer, "p-4 pt-3 pb-7 sidebar-compact:px-2")}>
           <AccountMenu user={user} />
         </SidebarFooter>
       </> : null}
