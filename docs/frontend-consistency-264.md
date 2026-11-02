@@ -404,3 +404,22 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Merger checks passed 75 focused tests, lint and both architecture checks.
   #288 combined-chain evidence, current design guidance, full final regression,
   native zoom recheck and the unavailable phone gate remain outstanding.
+
+### Native overlay findings and filter correction (`69f7849`)
+
+- Native Chrome 400% at application source `3497583` confirms the corrected
+  Recipe and draft Meal fields fit fully in their 66.6px scroll bodies. Raw
+  Recipe decimal input survives Keep editing; real Discard navigation succeeds.
+- The same trial found filter-body collapse, an unreachable short navigation
+  drawer, and a maximum-length Recipe inspector title overflowing its Sheet.
+  Exact measurements and native surface captures are indexed in
+  `native-overlays-3497583.md`. These findings prevent a passing native-gate claim.
+- Shared filter Sheets now place instructions in their single scrolling body,
+  preserve fixed task identity, enlarge Close, and wrap growing footer actions.
+  Both actual Sheet consumers (Items and Inventory), eight search-only toolbar
+  routes, active reset/dropdowns, breakpoint focus and delayed Inventory refresh
+  have passing worker evidence across five retained browser cases. Focused
+  units, lint, architecture and types passed. See `handoff-short-filter-sheets.md`.
+- Merger focused units, lint and architecture passed. Drawer, inspector and
+  child-toolbar integration follow-ups remain in verification. Final full-suite,
+  production/native recheck, code review and real-phone gates remain open.
