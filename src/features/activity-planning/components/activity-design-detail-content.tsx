@@ -293,8 +293,8 @@ export default function ActivityDesignDetailContent({
           </div>
           {state.notice === "search-cleared" ? <p role="status" className="text-body-sm text-muted-foreground">Activity search cleared to show the new Activity.</p> : null}
           {showControls ? <div className="flex min-w-0 flex-wrap items-end gap-3">
-            <WorkspaceSearchField id="design-activities-search" label="Search this Design’s Activities by name or Office" placeholder="Activity or Office" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
-            {state.search ? <Button variant="outline" className="min-h-10" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("design-activities-search")?.focus(); }}>Clear Activity search</Button> : null}
+            <WorkspaceSearchField className="min-w-[min(100%,16rem)]" id="design-activities-search" label="Search this Design’s Activities by name or Office" placeholder="Activity or Office" value={state.search} onValueChange={search => updateChildren({ search, page: 1 })} />
+            {state.search ? <Button variant="outline" className="h-auto min-h-10 max-w-full whitespace-normal" onClick={() => { updateChildren({ search: "", page: 1 }); document.getElementById("design-activities-search")?.focus(); }}>Clear Activity search</Button> : null}
             <p className="w-full text-body-sm text-muted-foreground">Results update as you type.</p>
           </div> : null}
           {activityDesign.activities.length === 0 && !state.search ? (

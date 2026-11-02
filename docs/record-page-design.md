@@ -1,6 +1,6 @@
 # Record-page design direction
 
-Masanao uses one shared workspace header across authenticated modules, with task-specific page bodies. All Planning adopts the compact record direction described here; other module bodies remain separate rollout work. [ADR 0009](adr/0009-task-focused-record-pages.md) records the original Meal Schedule choice and its later Planning refinement. Global palette/type tokens are unchanged. The original capture notes below are historical; current evidence belongs to the linked implementation specs.
+Masanao uses one shared workspace header across authenticated modules, with task-specific page bodies. Planning, Recipe and Purchase Order records now adopt the shared record presentation through #264, with feature-owned working bodies. The original rollout boundaries below are historical. [ADR 0009](adr/0009-task-focused-record-pages.md) records the original Meal Schedule choice and its later Planning refinement. Global palette/type tokens are unchanged. The original capture notes below are historical; current evidence belongs to the linked implementation specs.
 
 ## Pattern
 
@@ -24,7 +24,7 @@ Use the existing shadcn Breadcrumb, Sheet, Badge, Button and confirmation primit
 | Recipe detail/editor | Recipe identity, baseline pax and ingredient task stay prominent | Baseline quantities are essential working data, not optional details. Editing can remain a dedicated form. |
 | Items, Recipes, Purchase Orders and Master Data catalogs | Existing catalog toolbar, filters, table/list and pagination | Breadcrumb/details composition does not replace catalog navigation or lifecycle controls. |
 
-The earlier source review found repeated module subtitles, large explanatory context cards and duplicate parent navigation across some record pages. These are candidates for later scoped improvements, not defects automatically fixed by this change. The new layout applies only to Meal Schedule.
+The earlier source review found repeated module subtitles, large explanatory context cards and duplicate parent navigation across some record pages. These are candidates for later scoped improvements, not defects automatically fixed by this change. That original rollout applied only to Meal Schedule. The later #264 adoption extends the shared record direction to Planning, Recipe and Purchase Order records; see the current contract in [DESIGN.md](../DESIGN.md#delivered-frontend-consistency-contract-264) and [verification ledger](frontend-consistency-264.md).
 
 ## Basis and limits
 

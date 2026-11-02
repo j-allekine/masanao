@@ -319,7 +319,7 @@ Borders should be thin and low contrast. Focus indicators must remain visible an
 
 Primary buttons are green and reserved for the main safe action on a screen. Secondary buttons use quiet surfaces with green text. Clay is an accent, not the default call to action. Destructive actions use the danger treatment and should be labeled with an explicit verb.
 
-Current workspace navigation is grouped under Workspace, Supply Operations and Master Data, with Planning as the hierarchy entry. Use `src/lib/workspace-navigation.ts` as navigation authority; do not introduce aspirational destinations as part of a presentation cleanup. The selected item uses the soft-green active state, while the clay secondary token is reserved for attention cues, draft or review emphasis, and the next-action panel. Contextual tabs belong to the selected workspace and should not replace the stable global navigation.
+Current workspace navigation is grouped under Operations (Dashboard, Planning, Inventory, Purchase Orders) and Setup (Items, Recipes, Master Data). The Planning destination opens Activity Designs. Use `src/lib/workspace-navigation.ts` as navigation authority; do not introduce aspirational destinations as part of a presentation cleanup. The selected item uses the soft-green active state, while the clay secondary token is reserved for attention cues, draft or review emphasis, and the next-action panel. Contextual tabs belong to the selected workspace and should not replace the stable global navigation.
 
 Data tables should support scanning: stable column alignment, compact rows, clear headers, readable quantities, and visible status labels. Use monospace type selectively for IDs, quantities, and reference numbers rather than styling the entire table as code.
 
@@ -354,3 +354,43 @@ In Masanao's domain model, planning context is not the same as an inventory move
 Authenticated modules compose WorkspaceHeader for consistent sidebar access, module orientation, spacing and responsive behavior. Record heading, state, actions and domain data remain feature-owned below it. Loading/error views reuse that orientation. Catalog, record, editor and transaction bodies follow task-specific patterns rather than one universal form.
 
 Show each fact where it supports the task. Remove redundant context cards and routine copy; use labelled inline disclosure for small optional groups and omit empty controls. Help icons explain concepts rather than hide record data. Preserve visible identity, quantities, units, warnings, input constraints and final-post consequences. Larger structured inspections may retain dialogs/Sheets. See `docs/specs/planning-frontend-standard.md` and `docs/specs/workspace-header-standard.md` for the staged adoption and verification contract.
+
+
+### Delivered frontend consistency contract (#264)
+
+Use the current shared workspace components for catalog controls, table frames,
+pagination, row actions, lifecycle badges, destructive dialogs and record
+presentation. Features own labels, filters, permissions, data and mutations.
+Catalogs keep one search/filter/reset model; narrow panes use labelled compact
+rows and a bounded filter drawer. Pagination wraps at enlarged text sizes.
+
+The inner workspace pane owns responsive decisions: record ancestor links become
+an accessible menu below 640px of available content; table and report variants
+use their own measured content thresholds. The sidebar uses a drawer below
+768px, defaults closed from 768–1023px and open from 1024px, and preserves an
+explicit expanded/collapsed preference. Keep navigation and module header labels
+distinct: Planning and Supply Operations remain valid header orientation.
+
+Ordinary pages scroll in the document. Bounded transaction editors mark their
+working scroll body and keep actions reachable; do not introduce a second page
+scroll owner. Dialogs and inspection overlays remain bounded with their own
+scrolling. A short task title such as Filters stays visible while instructions
+and controls scroll. In a record inspector, long identity and contents scroll
+together below a reachable fixed Close area; do not pin a long heading above a
+shrinking body. Recipe ingredients, delivery lines and issuance contributions remain
+complete working payloads, without catalog pagination.
+
+Planning Activities and Meal Schedules and PO receipt history use ten-row child
+pages with independent search/page state. Planning record links validate each
+collection's owner and preserve catalog return context separately from Design
+and Meal list state. Dashboard report origin is a separate validated namespace.
+Use authoritative record IDs for returned-row focus; missing or filtered-out rows
+fall back safely and out-of-range child pages normalize. Explicit list choices
+consume return focus so reload/history does not override the user's latest query.
+Editor exits retain existing unsaved-work protection; posting and immutable
+source evidence keep their domain contracts.
+
+Current implementation evidence and outstanding gates are recorded in
+[frontend consistency #264](docs/frontend-consistency-264.md). Earlier staged
+specifications and capture counts describe their original revisions; they are
+not final system verification or real-phone accessibility evidence.

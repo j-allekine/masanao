@@ -131,6 +131,9 @@ export default function IssuanceDraftContent({
   const [selected, setSelected] = useState<string[]>([]);
   const recipeCheckboxes = useRef(new Map<string, HTMLElement>());
   const [viewId, setViewId] = useState<string | null>(null);
+  const recipeViewTitle = useRef<HTMLHeadingElement>(null);
+  const recipeViewOpener = useRef<HTMLButtonElement | null>(null);
+  const jumpToCombinedReview = useRef(false);
   const [adjustId, setAdjustId] = useState<string | null>(null);
   const [adjustPax, setAdjustPax] = useState("");
   const [discard, setDiscard] = useState(false);
@@ -577,7 +580,7 @@ export default function IssuanceDraftContent({
                     variant="ghost"
                     className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left"
                     aria-label={`View ingredients for ${recipe.recipeName}`}
-                    onClick={() => setViewId(recipe.id)}
+                    onClick={(event) => { recipeViewOpener.current = event.currentTarget; setViewId(recipe.id); }}
                   >
                     <span className="flex min-w-0 flex-col gap-1"><span>{recipe.recipeName}</span><span className="text-muted-foreground">View ingredients</span></span>
                   </Button>
@@ -930,24 +933,35 @@ export default function IssuanceDraftContent({
         onOpenChange={(open) => {
           if (!open) setViewId(null);
         }}
+        onOpenChangeComplete={(open) => {
+          if (!open && jumpToCombinedReview.current) {
+            jumpToCombinedReview.current = false;
+            openReview();
+          }
+        }}
       >
-        <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none">
+        <SheetContent
+          initialFocus={() => recipeViewTitle.current}
+          finalFocus={() => jumpToCombinedReview.current ? document.getElementById("issuance-review") : recipeViewOpener.current}
+          className="pt-14 [overflow-wrap:anywhere] [&_button]:h-auto [&_button]:min-h-10 [&_button]:min-w-10 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:py-2 data-[side=right]:w-full data-[side=right]:sm:w-[36rem] data-[side=right]:sm:max-w-none"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{view?.recipeName}</SheetTitle>
+            <SheetTitle ref={recipeViewTitle} tabIndex={-1}>{view?.recipeName}</SheetTitle>
             <SheetDescription>
               Baseline {view?.baselinePax} pax · To issue{" "}
               {view?.targetPax ?? "pending"} pax
             </SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 overflow-y-auto px-4 pb-4">
-            <WorkspaceTableFrame caption="Recipe ingredients: baseline and scaled quantities">
+          <div className="px-4 pb-4">
+            <WorkspaceTableFrame caption="Recipe ingredients: baseline and scaled quantities" className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ingredient</TableHead>
-                  <TableHead className="whitespace-normal">
+                  <TableHead className="w-[44%] whitespace-normal">Ingredient</TableHead>
+                  <TableHead className="w-[28%] whitespace-normal">
                     Baseline ({view?.baselinePax} pax)
                   </TableHead>
-                  <TableHead className="whitespace-normal">
+                  <TableHead className="w-[28%] whitespace-normal">
                     To issue ({view?.targetPax ?? "pending"} pax)
                   </TableHead>
                 </TableRow>
@@ -976,8 +990,8 @@ export default function IssuanceDraftContent({
                             <Button
                               variant="link"
                               onClick={() => {
+                                jumpToCombinedReview.current = true;
                                 setViewId(null);
-                                openReview();
                               }}
                             >
                               View combined review
@@ -985,11 +999,11 @@ export default function IssuanceDraftContent({
                           </p>
                         ) : null}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-normal tabular-nums">
                         {ingredient.enteredQuantity}{" "}
                         {ingredient.selectedUnitAbbreviation}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-normal tabular-nums">
                         {amount
                           ? `${amount.approximate ? "≈ " : ""}${amount.quantity} ${ingredient.selectedUnitAbbreviation}`
                           : "Pending"}
@@ -1003,6 +1017,7 @@ export default function IssuanceDraftContent({
               Approximate repeating decimals are shown to six places. Final
               combined Item quantities are determined at issuance review.
             </p>
+          </div>
           </div>
         </SheetContent>
       </Sheet>
