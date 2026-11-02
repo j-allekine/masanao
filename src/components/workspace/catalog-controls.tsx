@@ -253,16 +253,16 @@ export function WorkspaceCatalogToolbar({
               finalFocus={() => filtersInline
                 ? (focusedFilterId.current ? document.getElementById(focusedFilterId.current) : null) ?? document.getElementById(searchId)
                 : filterTriggerRef.current ?? document.getElementById(searchId)}
-              className="data-[side=right]:w-full [&_[data-catalog-filter]]:w-full"
+              className="gap-2 data-[side=right]:w-full [&_[data-catalog-filter]]:w-full [&>[data-slot=sheet-close]]:top-2 [&>[data-slot=sheet-close]]:right-2 [&>[data-slot=sheet-close]]:size-10"
             >
-              <SheetHeader>
+              <SheetHeader className="min-h-14 shrink-0 justify-center pr-16 [@media(max-height:240px)]:min-h-12 [@media(max-height:240px)]:py-2">
                 <SheetTitle>Filters</SheetTitle>
-                <SheetDescription>Narrow the list. Changes apply immediately.</SheetDescription>
               </SheetHeader>
-              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-1 scroll-py-1">
+                <SheetDescription>Narrow the list. Changes apply immediately.</SheetDescription>
                 {!filtersInline ? filterContent : null}
               </div>
-              <SheetFooter>
+              <SheetFooter className="shrink-0 flex-row flex-wrap p-3 [@media(max-height:240px)]:py-2 [&>button]:basis-28 [&>button]:flex-1">
                 {activeFilterCount > 0 && onClearFilters ? <Button type="button" variant="outline" className="h-auto min-h-10 whitespace-normal py-2" onClick={() => {
                   onClearFilters();
                   setFiltersOpen(false);
