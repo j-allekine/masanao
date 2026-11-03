@@ -1,8 +1,9 @@
 "use client";
 
+import { InspectorDialogContent } from "@/components/workspace/inspector-dialog-content";
+
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -46,7 +47,7 @@ export default function RecipePreviewDialog({
 
   return (
     <Dialog open={preview.status !== "closed"} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="inspection" className="workspace-pane [&_[data-slot=dialog-close]]:size-10">
+      <InspectorDialogContent size="inspection" className="workspace-pane [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Read-only Recipe preview.</DialogDescription>
@@ -115,7 +116,7 @@ export default function RecipePreviewDialog({
         ) : null}
 
         <DialogFooter showCloseButton />
-      </DialogContent>
+      </InspectorDialogContent>
     </Dialog>
   );
 }

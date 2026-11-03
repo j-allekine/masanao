@@ -73,7 +73,7 @@ test("Activity record details wrap optional facts and support keyboard disclosur
       await expect(page.getByText(office, { exact: true })).toBeVisible();
       await expect(page.getByText("75", { exact: true })).toBeVisible();
       if (width < 640) await page.getByRole("button", { name: "Show ancestors", exact: true }).click();
-      await expect(page.getByRole(width < 640 ? "menuitem" : "link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
+      await expect(page.getByRole(width < 640 ? "menuitem" : "link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", `/activity-designs#activity-design-actions-${designId}`);
     }
   } finally {
     database.prepare("UPDATE activity SET particulars = NULL, plannedBudgetCentavos = NULL WHERE id = ?").run(activityId);

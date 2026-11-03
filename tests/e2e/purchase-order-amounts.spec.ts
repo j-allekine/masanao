@@ -99,10 +99,12 @@ for (const width of [1280, 320]) {
         await expect(page.locator('[data-delivery-history-total]')).toHaveText(scenario.label);
         await expect(page.locator('[data-receipt-amount]')).toHaveCount(scenario.receipts.length);
         if (scenario.key === "complete") {
-          await expect(page.locator('[data-receipt-amount]')).toHaveText(["₱ 1,000.30", "₱ 200.00"]);
+          await expect(page.locator(`[id="delivery-receipt-${id}-0"] [data-receipt-amount]`)).toHaveText("₱ 1,000.30");
+          await expect(page.locator(`[id="delivery-receipt-${id}-1"] [data-receipt-amount]`)).toHaveText("₱ 200.00");
         }
         if (scenario.key === "partial") {
-          await expect(page.locator('[data-receipt-amount]')).toHaveText(["₱ 50.00", "Not recorded"]);
+          await expect(page.locator(`[id="delivery-receipt-${id}-0"] [data-receipt-amount]`)).toHaveText("₱ 50.00");
+          await expect(page.locator(`[id="delivery-receipt-${id}-1"] [data-receipt-amount]`)).toHaveText("Not recorded");
         }
       }
       await page.screenshot({ path: info.outputPath(`po-amounts-${scenario.key}-${width}.png`), fullPage: true });

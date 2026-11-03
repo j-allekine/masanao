@@ -129,6 +129,7 @@ export default function ActivityCreateDialog({
               onDirtyChange={setIsDirty}
               onPendingChange={setIsPending}
               onSuccess={(activity) => {
+                didSucceed.current = true;
                 setIsDirty(false);
                 onSuccess(activity);
               }}

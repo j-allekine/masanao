@@ -229,3 +229,39 @@ test("keeps Recipe first and last fields reachable at enlarged text on a short s
   await page.screenshot({path:test.info().outputPath("recipe-editor-last-200.png"),fullPage:true});
 });
 
+
+
+test("clears an inactive Unit warning after repair and saves the raw quantity", async ({ page }) => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.exec(`INSERT INTO unit(id,name,abbreviation,normalizedName,normalizedAbbreviation,active,createdAt,updatedAt) VALUES ('repair-unit','Retired scoop','rs','retired scoop','rs',0,0,0);
+      INSERT INTO item_unit_conversion(id,itemId,alternateUnitId,baseUnitQuantity,createdAt,updatedAt) VALUES ('repair-conversion','e2e-recipe-item-rice','repair-unit','2',0,0);
+      INSERT INTO recipe(id,name,normalizedName,isActive,baselinePax,createdAt,updatedAt) VALUES ('repair-recipe','Repair Unit Recipe','repair unit recipe',1,50,0,0);
+      INSERT INTO recipe_ingredient(id,recipeId,itemId,itemUnitConversionId,enteredQuantity,createdAt,updatedAt) VALUES ('repair-ingredient','repair-recipe','e2e-recipe-item-rice','repair-conversion','0.1250',0,0);`);
+  } finally { db.close(); }
+  await admin(page);
+  await page.goto("/recipes/repair-recipe/edit");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  const warning = page.getByText("This Item or Unit is inactive. Select an available Item and Unit before saving.", { exact: true });
+  await expect(warning).toBeVisible();
+  await page.getByLabel("Ingredient 1 Unit", { exact: true }).click();
+  await page.getByRole("option", { name: "Base Unit — Kilogram (kg)", exact: true }).click();
+  await expect(warning).toHaveCount(0);
+  await expect(page.getByLabel("Ingredient 1 quantity", { exact: true })).toHaveValue("0.1250");
+  await page.getByRole("button", { name: "Save Recipe", exact: true }).click();
+  await expect(page).toHaveURL(/\/recipes\/repair-recipe$/);
+  const saved = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    expect(saved.prepare("SELECT enteredQuantity,itemUnitConversionId FROM recipe_ingredient WHERE recipeId='repair-recipe'").get()).toEqual({ enteredQuantity: "0.1250", itemUnitConversionId: null });
+  } finally { saved.close(); }
+});
+
+test.afterAll(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.prepare("DELETE FROM recipe_ingredient WHERE recipeId='repair-recipe'").run();
+    db.prepare("DELETE FROM recipe WHERE id='repair-recipe'").run();
+    db.prepare("DELETE FROM item_unit_conversion WHERE id='repair-conversion'").run();
+    db.prepare("DELETE FROM unit WHERE id='repair-unit'").run();
+  } finally { db.close(); }
+});

@@ -1,3 +1,4 @@
+import { getNativeHistoryState } from "@/lib/native-history-state";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import { appendDashboardOrigin } from "@/features/supply-operations/components/dashboard-origin-state";
 
@@ -56,9 +57,7 @@ export function filterDesignActivities<T extends { name: string; officeName: str
 
 /** Let Next's native-history wrapper supply its routing markers and tree. */
 export function writePlanningChildUrl(url: string, push = false) {
-  const data = { ...window.history.state };
-  delete data.__NA;
-  delete data._N;
+  const data = getNativeHistoryState(window.history.state);
   if (push) window.history.pushState(data, "", url);
   else window.history.replaceState(data, "", url);
 }

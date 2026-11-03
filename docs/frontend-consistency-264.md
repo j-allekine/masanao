@@ -460,3 +460,71 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
   browser suite, production build, all 22 acceptance cases and actual 400% zoom
   after separate Filters/Sidebar follow-ups. The unavailable real-phone gate
   remains open. Neither #264 nor #288 is declared complete.
+
+
+## Review fixes after combined source 4278916
+
+- Read-only Recipe, Delivery Receipt, posting details, issued totals, and nested
+  breakdown Dialogs now compose the canonical DialogContent with one bounded
+  identity/content scroller below a retained Close area. Posted Recipe inspection
+  also reserves that Close band. Entry, picker, confirmation, and discard
+  primitives are unchanged. Three browser cases passed at 320x480, 320x200, and
+  320x180, checking all consumers at scroll start/middle/end, nested Escape,
+  canonical Tooltip dismissal, and opener focus (`review-fixes-inspect-second.log`).
+- Activity and Meal child edits defer focus until authoritative refreshed rows and
+  any page clamp settle. A still-visible row regains its menu focus; a renamed
+  filtered-out row falls back to its collection heading. Activity creation now
+  marks successful completion before delegating new-row focus to its collection.
+- Recipe unavailable-Unit warnings reflect the selected draft Unit, clearing after
+  an active Base Unit repair while preserving raw `0.1250` and server validation.
+  The three original behavior regressions failed with baseline implementations;
+  seven final browser cases passed, including both visible-row/fallback edit
+  variants and delayed creation (`review-fixes-behavior-final.log`).
+- A pure native-history state helper removes only Next integration markers and
+  preserves navigation-owner metadata, Next tree, and unrelated state. Features
+  retain their own URLs and filter rules. Forty relevant helper tests, lint, and
+  both architecture checks passed. No domain/schema/auth-policy changes.
+- This is isolated review-fix evidence. Combined final-source browser, production,
+  and native-zoom verification remain root-owned. The real-phone keyboard,
+  rotation, and touch gate remains outstanding; #264/#288 are not complete.
+
+
+## Canonical browser corrections after review fixes
+
+- Corrected stale exact return URLs/hrefs to include their approved focus targets.
+  Contextual Meal creation verifies its new child link is revealed/focused in
+  the parent collection before drilling into the new Meal. Existing guard,
+  permission, posting, conversion, and exact-amount assertions remain.
+- Indexed delivery history now starts from a hydrated parent link. Receipt
+  Back/Forward after reload waits for shell hydration. Full catalog-return,
+  delivery-editor, and Inventory-search files passed sequentially in one isolated
+  database (29 cases), proving owned fixture cleanup no longer changes another
+  file's first Inventory page (`candidate-fixture-cleanup.log`).
+- Receiving checks use active stacked field labels and horizontal containment at
+  narrow widths; desktop headers remain checked at 1280. Receipt amounts remain
+  associated with exact receipt identities under deterministic tied-date ordering.
+- All 25 prior diagnostic failures now have passing focused evidence. This does
+  not claim a passing whole suite: the partial correction runs retain their
+  actual failure counts in external logs, and root owns the final combined run.
+- Root individually inspected and accepted exactly six regenerated baselines:
+  `activity-designs-{desktop,mobile}-win32.png`,
+  `dashboard-{desktop,mobile}-win32.png`, and
+  `items-{desktop,mobile}-win32.png`. Shared header/control sizes, title hierarchy,
+  mobile controls/cards/pagination and report stacking are intentional. No
+  unintended clipping, overlap or overflow was visible. Dashboard's updated-time
+  stripe remains the explicit test mask. No other baselines changed.
+- One new delayed-loading regression forwards the real upstream Items HTML,
+  assets and development websocket through a test-owned streaming proxy. It
+  captures the actual Loading Items fallback with one header/main/H1 and saved
+  collapsed sidebar, then releases the remaining real bytes and asserts hydrated
+  Items with the same sidebar. It adds no app hook, fabricated markup or blocking
+  database lock, and closes its owned sockets. Root visually accepted the genuine
+  loading capture (`items-real-loading.png`).
+- Final capture invocation passed five cases: contextual creation, the three
+  desktop/mobile baseline cases and real loading-to-ready
+  (`candidate-corrections-final-captures.log`). Corrected affected journeys,
+  helpers and changed-test ESLint passed separately. App source remains exactly
+  the reviewed e214cd4 source; these follow-ups change tests/evidence only.
+- Final production, full browser and native 400% verification remain root-owned.
+  Real-phone software keyboard, rotation and touch remain outstanding; PR stays
+  draft and neither #264 nor #288 is declared complete.

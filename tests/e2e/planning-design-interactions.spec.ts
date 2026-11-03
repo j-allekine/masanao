@@ -59,7 +59,7 @@ test("Design disclosure supports touch and Space and rejects unsafe return desti
 
   for (const destination of ["https://example.com/activities", "//example.com/activities", "/recipes"]) {
     await page.goto(`${record}?${new URLSearchParams({ planningReturn: destination })}`);
-    await expect(page.getByRole("link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", "/activity-designs");
+    await expect(page.getByRole("link", { name: "Activity Designs", exact: true })).toHaveAttribute("href", `/activity-designs#activity-design-actions-${id}`);
   }
 });
 

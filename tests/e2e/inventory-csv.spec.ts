@@ -125,12 +125,16 @@ test("authenticated Item creation, alternate receiving, unchanged draft, posted 
   await evidence(page, info, "receiving");
   await page.setViewportSize({ width: 320, height: 800 });
   const receiving = page.getByRole("dialog", { name: "Record delivery", exact: true });
-  const tableScroll = receiving.locator('[data-slot="table-container"]');
+  const entryBody = receiving.locator("[data-delivery-entry-body]");
   await page.getByLabel("Quantity", { exact: true }).focus();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Unit price", { exact: true })).toBeFocused();
   await expect(page.getByLabel("Unit price", { exact: true })).toBeInViewport();
-  expect(await tableScroll.evaluate((table) => table.scrollLeft)).toBeGreaterThan(0);
+  // At phone width the line fields stack instead of requiring horizontal scroll.
+  expect(await entryBody.evaluate((body) => body.scrollWidth <= body.clientWidth)).toBe(true);
+  expect(await receiving.evaluate((dialog) => dialog.scrollWidth <= dialog.clientWidth)).toBe(true);
+  await expect(page.getByLabel("Quantity", { exact: true })).toHaveValue("2");
+  await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveText("20 pc");
   expect(await receiving.evaluate((dialog) => dialog.scrollLeft)).toBe(0);
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Remove delivery line 1", exact: true })).toBeFocused();

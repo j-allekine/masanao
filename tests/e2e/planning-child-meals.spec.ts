@@ -210,3 +210,28 @@ test("changing a returned Meal page keeps the new page on reload", async ({ page
   await page.goForward();
   await expect(page.getByRole("searchbox")).toHaveValue("Meal 25");
 });
+
+
+for (const leavesResults of [true, false]) test(`editing a searched Meal restores settled ${leavesResults ? "fallback" : "row"} focus`, async ({ page }) => {
+  setCount(11);
+  await signIn(page, "kitchen.staff");
+  await page.goto(`${record}?${new URLSearchParams({ ...preserved, mealSchedulesOwner: activity, mealSchedulesSearch: "Meal", mealSchedulesPage: "2" })}`);
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+  const trigger = page.locator(`[id="meal-schedule-actions-${activity}-011"]`);
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Meal Schedule label", exact: true }).fill(leavesResults ? "Renamed lunch" : "Meal repaired");
+  await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  if (leavesResults) {
+    await expect(trigger).toHaveCount(0);
+    await expect(page.locator("#activity-meal-schedules-title")).toBeFocused();
+  } else {
+    await expect(trigger).toBeFocused();
+  }
+  expect(new URL(page.url()).searchParams.get("mealSchedulesSearch")).toBe("Meal");
+  expect(new URL(page.url()).searchParams.get("designActivitiesSearch")).toBe("Kitchen");
+  expect(new URL(page.url()).searchParams.get("designActivitiesPage")).toBe("2");
+  expect(new URL(page.url()).searchParams.get("planningReturn")).toBe(catalog);
+});

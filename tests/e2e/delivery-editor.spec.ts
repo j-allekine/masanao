@@ -2,12 +2,18 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
+const createdOrders: string[] = [];
+const createdItems: string[] = [];
+
 async function openEditor(page: Page, role = "staff") {
   const id = `delivery-editor-${randomUUID()}`;
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try { db.prepare('INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES (?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)').run(id,id,id,"e2e-vendor-acme"); } finally { db.close(); }
+  createdOrders.push(id);
   expect((await page.request.post("/api/auth/sign-in/username", {data:{username: role === "admin" ? "municipal.admin" : "kitchen.staff",password:role === "admin" ? "administrator-password" : "correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);
   await page.goto(`/purchase-orders/${id}`);
+  // Indexed Back/Forward requires an actual hydrated same-document entry.
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.getByRole("link",{name:"Record delivery",exact:true}).click();
   await expect(page).toHaveURL(new RegExp(`/${id}/record-delivery`),{timeout:60_000});
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible({timeout:30_000});
@@ -79,6 +85,7 @@ test("delivery stale Item retains long entry and exact decimals for a successful
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try {
     db.prepare("INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,reorderLevel,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram',1,0,'allow-decimals',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(itemId,itemName,itemName.toLowerCase());
+    createdItems.push(itemId);
     const id = await openEditor(page);
     await page.setViewportSize({width:320,height:480});
     await page.getByRole("textbox",{name:"Receipt number",exact:true}).fill(`Retry-${id}`);
@@ -238,4 +245,17 @@ test("delivery short enlarged text, native unload, new-tab and sidebar exits",as
   await page.screenshot({path:info.outputPath("delivery-discard-200-text-320x480.png"),animations:"disabled"});
   await page.getByRole("button",{name:"Keep editing",exact:true}).click();
   await expect(page).toHaveURL(new RegExp(`/${id}/record-delivery`));
+});
+
+test.afterAll(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    for (const id of createdOrders) {
+      db.prepare("DELETE FROM inventory_ledger_movement WHERE deliveryReceiptLineId IN (SELECT id FROM delivery_receipt_line WHERE deliveryReceiptId IN (SELECT id FROM delivery_receipt WHERE purchaseOrderId=?))").run(id);
+      db.prepare("DELETE FROM delivery_receipt_line WHERE deliveryReceiptId IN (SELECT id FROM delivery_receipt WHERE purchaseOrderId=?)").run(id);
+      db.prepare("DELETE FROM delivery_receipt WHERE purchaseOrderId=?").run(id);
+      db.prepare("DELETE FROM purchase_order WHERE id=?").run(id);
+    }
+    for (const id of createdItems) db.prepare("DELETE FROM item WHERE id=?").run(id);
+  } finally { db.close(); }
 });

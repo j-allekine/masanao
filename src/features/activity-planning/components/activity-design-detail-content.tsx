@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { getDesignDashboardOriginUrl } from "@/features/supply-operations/components/dashboard-origin-state";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import {
   Inbox,
   Plus,
@@ -192,6 +192,16 @@ export default function ActivityDesignDetailContent({
   const visible = filtered.slice(start, start + PLANNING_CHILD_PAGE_SIZE);
   const showControls = activityDesign.activities.length > PLANNING_CHILD_PAGE_SIZE || Boolean(state.search);
   const handledCreated = useRef<string | null>(null);
+  const [isRefreshingEdit, startEditRefresh] = useTransition();
+  const editedChildFocus = useRef<{ id: string; rows: typeof activityDesign.activities } | null>(null);
+  useEffect(() => {
+    const edited = editedChildFocus.current;
+    // Wait for the authoritative payload and URL page clamp, not the old row.
+    if (!edited || isRefreshingEdit || edited.rows === activityDesign.activities || state.page > pageCount) return;
+    const target = document.getElementById(`activity-actions-${edited.id}`) ?? document.getElementById("activity-design-activities-title");
+    target?.focus();
+    editedChildFocus.current = null;
+  }, [activityDesign.activities, isRefreshingEdit, page, pageCount, state.page]);
   function updateChildren(updates: Parameters<typeof getDesignActivitiesQuery>[2], push = false, preserveReturnTarget = false) {
     const next = getDesignActivitiesQuery(window.location.search.slice(1), activityDesign.id, updates);
     const hash = !preserveReturnTarget && window.location.hash.startsWith("#open-child-activity-") ? "" : window.location.hash;
@@ -337,9 +347,11 @@ export default function ActivityDesignDetailContent({
         mode="edit"
         open={activityForEdit !== null}
         onClose={closeEditDialog}
+        restoreFocusOnSuccess={false}
         onSuccess={() => {
-          closeEditDialog();
-          router.refresh();
+          if (activityForEdit) editedChildFocus.current = { id: activityForEdit.id, rows: activityDesign.activities };
+          setActivityForEdit(null);
+          startEditRefresh(() => router.refresh());
           toast.success("Activity updated");
         }}
       />
