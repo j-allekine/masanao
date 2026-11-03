@@ -19,6 +19,17 @@ test.beforeAll(() => {
   } finally { db.close(); }
 });
 
+test.afterAll(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    // These twelve Items must not change another file's unfiltered Inventory page.
+    db.prepare("DELETE FROM recipe_ingredient WHERE recipeId LIKE ?").run(`recipe-${fixture}-%`);
+    db.prepare("DELETE FROM recipe WHERE id LIKE ?").run(`recipe-${fixture}-%`);
+    db.prepare("DELETE FROM purchase_order WHERE id LIKE ?").run(`po-${fixture}-%`);
+    db.prepare("DELETE FROM item WHERE id LIKE ?").run(`focus-ingredient-${fixture}-%`);
+  } finally { db.close(); }
+});
+
 type Feature = "recipes" | "purchase-orders";
 async function signIn(page: Page, role: "admin" | "staff" = "admin") {
   expect((await page.request.post("/api/auth/sign-in/username",{data:{username:role==="admin" ? "municipal.admin" : "kitchen.staff",password:role==="admin" ? "administrator-password" : "correct-horse-battery-staple"},headers:{origin:process.env.BETTER_AUTH_URL!}})).status()).toBe(200);

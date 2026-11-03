@@ -98,7 +98,7 @@ test("draft save establishes a baseline and later edits regain guards while reve
   await discard(page).getByRole("button",{name:"Keep editing"}).click();
   await page.getByLabel("Meal pax",{exact:true}).fill("50");
   await page.getByRole("link",{name:"Draft guard activity",exact:true}).click();
-  await expect(page).toHaveURL(new RegExp(`${activity}$`));
+  await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}${activity}#open-child-meal-e2e-issuance-282-baseline`);
   const db=new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try {expect(db.prepare("SELECT mealPax FROM issuance_record WHERE mealScheduleId='e2e-issuance-282-baseline'").get()).toEqual({mealPax:50});expect(db.prepare("SELECT COUNT(*) AS count FROM inventory_ledger_movement WHERE movementType='stock-out'").get()).toEqual({count:0});} finally{db.close();}
 });

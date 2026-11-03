@@ -192,7 +192,7 @@ test.describe("Purchase Orders read journey", () => {
         ),
       ).toBe(true);
       await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Purchase Orders", exact: true }).click();
-      await expect(page).toHaveURL(/\/purchase-orders$/);
+      await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}/purchase-orders#purchase-order-row-${purchaseOrderIds[0]}`);
       await page.setViewportSize({ width: 1280, height: 720 });
       await expect(
         page.locator('[data-can-manage-purchase-orders="false"]'),
@@ -588,12 +588,13 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
         "Remove",
       ]);
       await page.setViewportSize({ width: 1024, height: 800 });
-      for (const header of [
-        linesTable.getByRole("columnheader", { name: "Delivered quantity", exact: true }),
-        linesTable.getByRole("columnheader", { name: "Base Unit quantity", exact: true }),
-        linesTable.getByRole("columnheader", { name: "Unit price", exact: true }),
-      ]) {
-        expect(await header.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      // Below xl the same line uses labelled stacked fields, not hidden headers.
+      const line = linesTable.getByRole("row", { name: "Delivery line 1", exact: true });
+      for (const label of ["Item", "Unit", "Quantity", "Calculated Base Unit quantity", "Unit price"]) {
+        await expect(line.getByText(label, { exact: true })).toBeVisible();
+      }
+      for (const control of [line.getByRole("combobox", { name: "Item", exact: true }), line.getByRole("textbox", { name: "Quantity", exact: true }), line.getByRole("textbox", { name: "Unit price", exact: true })]) {
+        expect(await control.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       }
       expect(await page.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const today = await page.evaluate(() => new Intl.DateTimeFormat("en-PH", { dateStyle: "long" }).format(new Date()));
@@ -675,7 +676,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByText("1 line", { exact: true })).toBeVisible();
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
-      await expect(page.getByRole("heading", { name: "Delivery Receipt history", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Delivery Receipt history (1)", exact: true })).toBeVisible();
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,000.00");
       await expect(page.locator('[data-po-receipt-count]')).toHaveText("1");
       await expect(page.getByText("Sep 3, 2026", { exact: true })).toBeVisible();

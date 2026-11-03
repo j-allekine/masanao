@@ -881,7 +881,7 @@ test.describe("Activity planning journey", () => {
         await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
         await expect(
           page.getByRole("link", { name: design.activityDesignNo, exact: true }),
-        ).toHaveAttribute("href", `/activity-designs/${design.id}`);
+        ).toHaveAttribute("href", `/activity-designs/${design.id}#open-child-activity-${populatedActivity.id}`);
         await expect(page.getByRole("link", { name: "Back to Activity Design", exact: true })).toHaveCount(0);
         await expect(page.getByText("Lunch", { exact: true })).toBeVisible();
         await expect(page.getByText("12:00", { exact: true })).toBeVisible();
@@ -921,7 +921,7 @@ test.describe("Activity planning journey", () => {
           page.getByRole("link", { name: populatedActivity.name, exact: true }),
         ).toHaveAttribute(
           "href",
-          `/activity-designs/${design.id}/activities/${populatedActivity.id}`,
+          `/activity-designs/${design.id}/activities/${populatedActivity.id}#open-child-meal-${mealScheduleId}`,
         );
         await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);
         await page.screenshot({ path: `test-results/planning-meal-${viewport.width}.png`, fullPage: true });
@@ -949,7 +949,7 @@ test.describe("Activity planning journey", () => {
         await expect(backToActivity).toBeFocused();
         await page.keyboard.press("Enter");
         await expect(page).toHaveURL(
-          new RegExp(`/activity-designs/${design.id}/activities/${populatedActivity.id}$`),
+          `${process.env.BETTER_AUTH_URL}/activity-designs/${design.id}/activities/${populatedActivity.id}#open-child-meal-${mealScheduleId}`,
         );
         {
           // A stable scrollbar gutter may leave unused width without overflow.
@@ -1000,6 +1000,10 @@ test.describe("Activity planning journey", () => {
         .getByRole("button", { name: "Add Meal Schedule", exact: true })
         .click();
       await expect(createDialog).toHaveCount(0);
+      // Creation reveals the child in its parent collection before drilling in.
+      await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}/activity-designs/${design.id}/activities/${emptyActivity.id}`);
+      await expect(page.getByRole("link", { name: "Open Meal Schedule: Afternoon Snack", exact: true })).toBeFocused();
+      await page.getByRole("link", { name: "Open Meal Schedule: Afternoon Snack", exact: true }).click();
       await expect(page).toHaveURL(/\/meal-schedules\/[^/?]+(?:\?.*)?$/);
       await expect(page.getByRole("heading", { name: "Afternoon Snack · 15:30", exact: true })).toBeVisible();
       await expect(page.getByText("Planned servings", { exact: true })).toHaveCount(0);

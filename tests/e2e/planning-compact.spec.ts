@@ -50,9 +50,9 @@ test("Planning shows useful information once, reveals optional facts and preserv
     await expect(page.getByRole("button",{name:"Additional details",exact:true})).toHaveCount(0);
     if (width < 640) await page.getByRole("button", {name:"Show ancestors",exact:true}).click();
     const returnLink=page.getByRole(width < 640 ? "menuitem" : "link",{name:"Activity Designs",exact:true});
-    await expect(returnLink).toHaveAttribute("href",catalog);
+    await expect(returnLink).toHaveAttribute("href",`${catalog}#activity-design-actions-e2e-issuance-compact-design-11`);
     await returnLink.click();
-    await expect(page).toHaveURL(new RegExp("activityDesignsPage=2$"));
+    await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}${catalog}#activity-design-actions-e2e-issuance-compact-design-11`);
     await expect(page.getByRole("searchbox",{name:"Search Activity Designs",exact:true})).toHaveValue("Compact Plan");
     await expect(page.getByRole("link",{name:"Compact Plan 11",exact:true})).toBeVisible();
     await page.goto(detailedActivity);
@@ -66,6 +66,6 @@ test("Planning shows useful information once, reveals optional facts and preserv
     await page.goto("/activity-designs/e2e-issuance-compact-design-12");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
     await expect(page.getByRole("button",{name:"Additional details",exact:true})).toHaveCount(0);
-    await expect(page.getByRole("link",{name:"Activity Designs",exact:true})).toHaveAttribute("href","/activity-designs");
+    await expect(page.getByRole("link",{name:"Activity Designs",exact:true})).toHaveAttribute("href","/activity-designs#activity-design-actions-e2e-issuance-compact-design-12");
   }
 });

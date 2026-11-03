@@ -28,7 +28,16 @@ test("long Meal Schedule breadcrumbs wrap without hiding controls at narrow widt
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
     for (const width of [320, 406, 768, 1024]) {
       await page.setViewportSize({ width, height: 900 });
-      await expect(page.getByRole("link", { name: designNo, exact: true })).toBeVisible();
+      if (width < 640) {
+        await page.getByRole("button", { name: "Show ancestors", exact: true }).click();
+        const ancestor = page.getByRole("menuitem", { name: designNo, exact: true });
+        await expect(ancestor).toBeVisible();
+        await expect(ancestor).toHaveAttribute("href", "/activity-designs/e2e-issuance-layout-design#open-child-activity-e2e-issuance-layout-activity");
+        expect(await ancestor.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+        await page.keyboard.press("Escape");
+      } else {
+        await expect(page.getByRole("link", { name: designNo, exact: true })).toBeVisible();
+      }
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await expect(page.getByRole("button", { name: "Post issuance", exact: true })).toBeInViewport();
     }
@@ -55,7 +64,7 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await expect(page).toHaveURL(new RegExp(`${meal}$`));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lunch · 12:00", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Community kitchen", exact: true })).toHaveAttribute("href", activity);
+  await expect(page.getByRole("link", { name: "Community kitchen", exact: true })).toHaveAttribute("href", `${activity}#open-child-meal-e2e-issuance-layout-meal`);
   await expect(page.getByRole("link", { name: "Open issuance draft", exact: true })).toHaveCount(0);
   await expect(page.getByText("Meal Schedule context", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Municipal hall", { exact: true })).toHaveCount(0);
@@ -85,5 +94,5 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("80");
   await page.getByRole("link", { name: "Community kitchen", exact: true }).click();
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${activity}$`));
+  await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}${activity}#open-child-meal-e2e-issuance-layout-meal`);
 });

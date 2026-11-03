@@ -131,11 +131,12 @@ test("Activities keeps complete long identities and parent navigation at short p
       const direct = await context.newPage();
       await direct.goto(href!);
       await expect(direct.getByRole("heading", { name: title, exact: true })).toBeVisible();
-      await expect(direct.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", catalog);
+      await expect(direct.getByRole("link", { name: "Return to Activities", exact: true })).toHaveAttribute("href", `${catalog}#activity-search`);
       await direct.close();
       await row.getByRole("link", { name, exact: true }).click();
       await page.getByRole("link", { name: "Return to Activities", exact: true }).click();
-      await expect(page).toHaveURL(catalog);
+      await expect(page).toHaveURL(`${process.env.BETTER_AUTH_URL}${catalog}#activity-actions-${id}`);
+      await expect(page.locator(`[id="activity-actions-${id}"]`)).toBeFocused();
       await page.goBack();
       await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
       await page.goForward();
