@@ -85,7 +85,10 @@ export default function DeliveryReceiptHistory({
   useEffect(() => {
     if (created || !handledCreated.current) return;
     const target = document.getElementById(`inspect-receipt-${handledCreated.current}`);
-    target?.focus();
+    if (target) {
+      target.focus();
+      handledCreated.current = null;
+    }
   }, [created, page]);
   useEffect(() => {
     if (created || state.page <= pageCount) return;
