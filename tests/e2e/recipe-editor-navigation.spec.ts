@@ -35,6 +35,11 @@ test.beforeAll(() => {
       db.prepare("INSERT OR IGNORE INTO item(reorderLevel,id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt) VALUES ('0',?,?,?,'default-category-staples-dry-goods','default-unit-kilogram',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`e2e-long-item-${i}`,name,name.toLowerCase());
       db.prepare("INSERT OR IGNORE INTO recipe_ingredient(id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES (?,'e2e-long-recipe',?,'0.125',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`e2e-long-ingredient-${i}`,`e2e-long-item-${i}`);
     }
+    // This regression owns twelve lines even after an earlier test saves eleven.
+    db.prepare("INSERT OR IGNORE INTO recipe(id,name,normalizedName,isActive,baselinePax,createdAt,updatedAt) VALUES ('e2e-readable-recipe','Readable Recipe ingredient inspection','readable recipe ingredient inspection',1,50,0,0)").run();
+    for (let i = 1; i <= 12; i++) {
+      db.prepare("INSERT OR IGNORE INTO recipe_ingredient(id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES (?,'e2e-readable-recipe',?,'0.125',0,0)").run(`e2e-readable-ingredient-${i}`, `e2e-long-item-${i}`);
+    }
   } finally { db.close(); }
 });
 
@@ -263,5 +268,47 @@ test.afterAll(() => {
     db.prepare("DELETE FROM recipe WHERE id='repair-recipe'").run();
     db.prepare("DELETE FROM item_unit_conversion WHERE id='repair-conversion'").run();
     db.prepare("DELETE FROM unit WHERE id='repair-unit'").run();
+    db.prepare("DELETE FROM recipe_ingredient WHERE recipeId='e2e-readable-recipe'").run();
+    db.prepare("DELETE FROM recipe WHERE id='e2e-readable-recipe'").run();
   } finally { db.close(); }
+});
+
+test("Recipe ingredient controls stay readable through tablet width, sidebar and text reflow", async ({ page, context }, info) => {
+  test.setTimeout(120_000);
+  await context.addCookies([{ name: "sidebar_state", value: "false", url: process.env.BETTER_AUTH_URL! }]);
+  await admin(page);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/recipes/e2e-readable-recipe/edit");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  const items = page.getByRole("combobox", { name: /^Ingredient \d+ Item$/ });
+  await expect(items).toHaveCount(12);
+  await expect.poll(() => items.first().evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(160);
+  await items.first().scrollIntoViewIfNeeded();
+  await page.addStyleTag({ content: "nextjs-portal { display:none!important }" });
+  await page.screenshot({ path: info.outputPath("recipe-ingredient-tablet-768-normal.png"), animations: "disabled" });
+  const quantity = page.getByLabel("Ingredient 12 quantity", { exact: true });
+  await quantity.fill("0.");
+  for (const expanded of [false, true]) {
+    if (expanded) await page.locator("header").getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+    await quantity.focus();
+    for (const width of [768, 1280, 1024, 768]) {
+      await page.setViewportSize({ width, height: 1024 });
+      await expect(items).toHaveCount(12);
+      await expect.poll(() => items.evaluateAll(elements => Math.min(...elements.map(el => el.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(160);
+      await expect(quantity).toBeFocused();
+      await expect(quantity).toHaveValue("0.");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+  }
+  await page.locator("header").getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  await quantity.focus();
+  for (const width of [1024, 768]) {
+    await page.setViewportSize({ width, height: 1024 });
+    await expect.poll(() => items.evaluateAll(elements => Math.min(...elements.map(el => el.getBoundingClientRect().width / parseFloat(getComputedStyle(el).fontSize))))).toBeGreaterThanOrEqual(8);
+    await expect(quantity).toHaveValue("0.");
+    await expect(quantity).toBeFocused();
+  }
+  await page.addStyleTag({ content: "nextjs-portal { display:none!important }" });
+  await page.screenshot({ path: info.outputPath("recipe-ingredient-tablet-text200.png"), animations: "disabled" });
 });

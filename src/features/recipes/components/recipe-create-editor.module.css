@@ -1,0 +1,85 @@
+.ingredients {
+  container: recipe-ingredients / inline-size;
+}
+
+.ingredientTable {
+  table-layout: fixed;
+}
+
+.ingredientTable th,
+.ingredientTable td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Entry fields need more space than read-only catalog cells. The same inputs
+   stack until their actual content width fits all five columns at this text size. */
+@container recipe-ingredients (width < 56rem) {
+  .ingredients > div {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .ingredientTable,
+  .ingredientTable tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .ingredientTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .ingredientTable tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ingredientTable tbody tr {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+  }
+
+  .ingredientTable td {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .ingredientTable td[data-label]::before {
+    content: attr(data-label);
+    font-size: var(--text-label);
+    line-height: var(--text-label--line-height);
+    font-weight: var(--font-weight-label);
+    color: var(--muted-foreground);
+  }
+
+  .ingredientTable td[data-actions] {
+    align-items: flex-end;
+  }
+
+  .ingredientTable :global([data-slot="select-trigger"]),
+  .ingredientTable :global([data-slot="select-value"]) {
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
