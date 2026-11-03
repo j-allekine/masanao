@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type FocusEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type FocusEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ListFilter, Plus, Search, X } from "lucide-react";
 
@@ -178,6 +178,7 @@ export function WorkspaceCatalogToolbar({
   const inlineRef = useRef<boolean | null>(null);
   const focusedFilterId = useRef<string | null>(null);
   const focusFrame = useRef<number | null>(null);
+  const pendingLayoutFocus = useRef<"trigger" | "inline" | null>(null);
   const hasAdditionalFilters = Boolean(filterContent);
 
   function rememberFilterFocus(event: FocusEvent<HTMLElement>) {
@@ -191,7 +192,10 @@ export function WorkspaceCatalogToolbar({
     if (!toolbar || !hasAdditionalFilters) return;
     // Leave room for search, two selectors and Reset beside the workspace sidebar.
     const observer = new ResizeObserver(([entry]) => {
-      const inline = entry.contentRect.width >= INLINE_FILTERS_MIN_WIDTH;
+      // The selectors use rem widths; reserve the same readable search space
+      // when text enlarges, including a font-only change without window resize.
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const inline = entry.contentRect.width >= INLINE_FILTERS_MIN_WIDTH * (rootFontSize / 16);
       if (inlineRef.current === inline) return;
       const active = document.activeElement;
       const previousControl = focusedFilterId.current ? document.getElementById(focusedFilterId.current) : null;
@@ -199,20 +203,38 @@ export function WorkspaceCatalogToolbar({
       const popup = popupId ? document.getElementById(popupId) : null;
       const filterHadFocus = Boolean(previousControl?.contains(active) || popup?.contains(active));
       const focusTrigger = inlineRef.current === true && !inline && filterHadFocus;
+      const focusInline = inlineRef.current === false && inline && active === filterTriggerRef.current;
       inlineRef.current = inline;
       if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
+      pendingLayoutFocus.current = focusTrigger ? "trigger" : focusInline ? "inline" : null;
       setFiltersInline(inline);
       if (inline) setFiltersOpen(false);
-      if (focusTrigger) focusFrame.current = requestAnimationFrame(() => {
-        if (!inlineRef.current) filterTriggerRef.current?.focus();
-      });
     });
     observer.observe(toolbar);
     return () => {
       observer.disconnect();
       if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
     };
-  }, [hasAdditionalFilters]);
+  }, [hasAdditionalFilters, searchId]);
+
+  useLayoutEffect(() => {
+    const target = pendingLayoutFocus.current;
+    pendingLayoutFocus.current = null;
+    if (!target) return;
+    // ResizeObserver can run before React commits the replacement controls.
+    // Restore focus only once the selected layout is actually mounted.
+    focusFrame.current = requestAnimationFrame(() => {
+      focusFrame.current = null;
+      if (target === "trigger" && !filtersInline) filterTriggerRef.current?.focus();
+      else if (target === "inline" && filtersInline) {
+        const control = focusedFilterId.current ? document.getElementById(focusedFilterId.current) : null;
+        (control ?? document.getElementById(searchId))?.focus();
+      }
+    });
+    return () => {
+      if (focusFrame.current !== null) cancelAnimationFrame(focusFrame.current);
+    };
+  }, [filtersInline, searchId]);
 
   return (
     <div

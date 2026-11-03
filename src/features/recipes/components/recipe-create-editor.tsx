@@ -41,6 +41,7 @@ import {
   multiplyExactPositiveDecimals,
 } from "@/features/supply-operations/domain/delivery-receipt";
 
+import styles from "./recipe-create-editor.module.css";
 import { createRecipeAction, updateRecipeAction } from "../actions";
 import type { RecipeDetailItem, RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
 
@@ -325,7 +326,8 @@ export default function RecipeCreateEditor({
                 <FieldMessages id="recipe-baseline-pax-error" errors={fieldErrors.baselinePax} />
               </Field>
               {recipe?.baselinePax === null ? <Alert><AlertTitle>Baseline pax not set</AlertTitle><AlertDescription>Supply a baseline when saving this Recipe.</AlertDescription></Alert> : null}
-              <WorkspaceTableFrame responsive caption="Recipe ingredient controls">
+              <div className={styles.ingredients}>
+              <WorkspaceTableFrame className={styles.ingredientTable} caption="Recipe ingredient controls">
                   <TableHeader>
                     <TableRow>
                       <TableHead scope="col">Item</TableHead>
@@ -483,6 +485,7 @@ export default function RecipeCreateEditor({
                     })}
                   </TableBody>
               </WorkspaceTableFrame>
+              </div>
               <Field data-invalid={Boolean(fieldErrors.ingredients?.length)}>
                 <FieldMessages id="recipe-ingredients-error" errors={fieldErrors.ingredients} />
               </Field>

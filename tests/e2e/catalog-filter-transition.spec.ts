@@ -76,3 +76,28 @@ test("filter breakpoints preserve selections and transfer focus to a visible equ
   await page.keyboard.press("Escape");
   await expect(trigger).toBeFocused();
 });
+
+for (const [path, searchName, categoryName] of [["/items", "Search Items", "Category filter"], ["/inventory", "Search Inventory by Item name", "Category"]]) test(`${path} keeps search readable when text enlarges without a viewport resize`, async ({ page, context }, info) => {
+  await context.addCookies([{ name: "sidebar_state", value: "false", url: process.env.BETTER_AUTH_URL! }]);
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto(path);
+  const toolbar = page.getByRole("search");
+  const search = page.getByRole("searchbox", { name: searchName, exact: true });
+  await expect(toolbar).toHaveAttribute("data-filter-layout", "inline");
+  await search.fill("retained query");
+  await toolbar.getByRole("combobox", { name: categoryName, exact: true }).focus();
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  await expect(toolbar).toHaveAttribute("data-filter-layout", "panel");
+  const filters = toolbar.getByRole("button", { name: "Filters", exact: true });
+  await expect(filters).toBeFocused();
+  await expect(search).toHaveValue("retained query");
+  expect(await search.evaluate(el => el.getBoundingClientRect().width / parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(8);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.addStyleTag({ content: "nextjs-portal { display:none!important }" });
+  await page.screenshot({ path: info.outputPath(`${path.slice(1)}-filter-text200.png`), animations: "disabled" });
+  await page.evaluate(() => { document.documentElement.style.fontSize = "100%"; });
+  await expect(toolbar).toHaveAttribute("data-filter-layout", "inline");
+  await expect(toolbar.getByRole("combobox", { name: categoryName, exact: true })).toBeFocused();
+  await expect(search).toHaveValue("retained query");
+});

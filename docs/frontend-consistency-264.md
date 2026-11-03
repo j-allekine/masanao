@@ -528,3 +528,36 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
 - Final production, full browser and native 400% verification remain root-owned.
   Real-phone software keyboard, rotation and touch remain outstanding; PR stays
   draft and neither #264 nor #288 is declared complete.
+
+### Production visual findings: readable editor and filter widths
+
+- Final production captures at `4e4efa1` exposed a real Recipe entry gap:
+  the Item control was 31.5px wide at 768x1024 even though the page had no
+  horizontal overflow. Recipe ingredient rows now use a feature-local 56rem
+  content-container threshold. The same Table, labelled controls, raw values
+  and handlers stack until all entry columns have useful room; the shared
+  read-only catalog threshold is unchanged.
+- Items and Inventory at 200% root text could retain inline rem-sized filters
+  while squeezing search to roughly one character. The existing 760px toolbar
+  threshold now scales with root text size. Normal 759/760/761 behavior remains
+  intact; a font-only change also updates the layout without resetting queries.
+- Returning from the closed Filters trigger to inline controls now restores the
+  remembered visible filter or search fallback. The destination is recorded by
+  ResizeObserver and focused after React commits the replacement layout, so a
+  frame cannot focus controls which have not mounted yet. Open-Sheet final focus
+  remains primitive-owned; scheduled work is cancelled on transition/unmount.
+- Three intended baseline failures and three preliminary corrected passes are
+  retained in `production-gap-baseline.log` / `production-gap-fixed.log`.
+  The broader run then passed 32 of 33 cases, including Recipe editing, both
+  filter consumers, eight search-only toolbars, short overlays and Inventory
+  refresh. Its sole Items focus race is not reported as a complete pass.
+- With focus tied to the committed layout, the complete three-case filter
+  transition file passed three independent repetitions (9/9, no retries),
+  including normal thresholds and both enlarged-text round trips. The new
+  readability Recipe has its own 12-line fixture so an earlier test's valid
+  removal cannot affect it. See `production-gap-focus-committed-layout.log`.
+- Source/changed-test lint, both architecture checks, fresh Next route type
+  generation and explicit TypeScript passed. Root owns merged-source production,
+  full browser and native 400% verification; prior production evidence is
+  superseded rather than relabelled. Real-phone keyboard/orientation/touch remains
+  explicitly outstanding, with PR draft and #264/#288 incomplete.
