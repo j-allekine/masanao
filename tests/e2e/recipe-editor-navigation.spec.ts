@@ -249,6 +249,7 @@ test("clears an inactive Unit warning after repair and saves the raw quantity", 
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   const warning = page.getByText("This Item or Unit is inactive. Select an available Item and Unit before saving.", { exact: true });
   await expect(warning).toBeVisible();
+  await expect(page.getByLabel("Ingredient 1 Unit", { exact: true }).locator('[data-slot="select-value"]')).toHaveText("Retired scoop (rs) — unavailable");
   await page.getByLabel("Ingredient 1 Unit", { exact: true }).click();
   await page.getByRole("option", { name: "Base Unit — Kilogram (kg)", exact: true }).click();
   await expect(warning).toHaveCount(0);

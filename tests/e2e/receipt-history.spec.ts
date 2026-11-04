@@ -26,7 +26,8 @@ test.beforeAll(() => {
 test.afterAll(() => {
   const db = database();
   try {
-    db.prepare('DELETE FROM delivery_receipt_line WHERE deliveryReceiptId LIKE ?').run(`${prefix}%`);
+    db.prepare('DELETE FROM inventory_ledger_movement WHERE deliveryReceiptLineId IN (SELECT line.id FROM delivery_receipt_line line JOIN delivery_receipt receipt ON receipt.id=line.deliveryReceiptId WHERE receipt.purchaseOrderId LIKE ?)').run(`${prefix}%`);
+    db.prepare('DELETE FROM delivery_receipt_line WHERE deliveryReceiptId IN (SELECT id FROM delivery_receipt WHERE purchaseOrderId LIKE ?)').run(`${prefix}%`);
     db.prepare('DELETE FROM delivery_receipt WHERE purchaseOrderId LIKE ?').run(`${prefix}%`);
     db.prepare('DELETE FROM purchase_order WHERE id LIKE ?').run(`${prefix}%`);
     db.prepare('DELETE FROM vendor WHERE id LIKE ?').run(`${prefix}%`);
@@ -99,6 +100,41 @@ for (const role of ["admin", "staff"]) test(`complete receipt search, paging and
   }
 });
 
+
+test("a posted receipt receives focus once without stealing later paging or search focus", async ({ page }, info) => {
+  test.setTimeout(90_000);
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(`/purchase-orders/${orderId(11)}`);
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  await page.getByRole("link", { name: "Record delivery", exact: true }).click();
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+  const receiptNo = `Focus-${prefix}`;
+  await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill(receiptNo);
+  await page.getByRole("combobox", { name: "Item", exact: true }).fill("Rice");
+  await page.getByRole("option", { name: "Rice", exact: true }).click();
+  await page.getByRole("textbox", { name: "Quantity", exact: true }).fill("1");
+  await page.getByRole("textbox", { name: "Unit price", exact: true }).fill("0.10");
+  await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+  const receipt = page.getByRole("button", { name: receiptNo, exact: true });
+  await expect(receipt).toBeFocused();
+  await expect(page).not.toHaveURL(/receiptCreated=/);
+  const pagination = page.getByRole("main").getByRole("navigation", { name: "pagination" });
+  await pagination.getByRole("button", { name: "Page 2 of 2", exact: true }).click();
+  await expect(page.getByText("Showing 11 to 12 of 12 results", { exact: true })).toBeVisible();
+  const firstPage = pagination.getByRole("button", { name: "Page 1 of 2", exact: true });
+  await firstPage.click();
+  await expect(page.getByText("Showing 1 to 10 of 12 results", { exact: true })).toBeVisible();
+  await expect.soft(firstPage).toBeFocused();
+  await page.screenshot({ path: info.outputPath("posted-receipt-pagination-focus.png"), animations: "disabled" });
+  await pagination.getByRole("button", { name: "Page 2 of 2", exact: true }).click();
+  const search = page.getByRole("searchbox", { name: "Search receipt numbers", exact: true });
+  await search.fill(receiptNo);
+  await expect(receipt).toBeVisible();
+  await expect(search).toBeFocused();
+  await expect(page.getByText("Showing 1 result", { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("posted-receipt-search-focus.png"), animations: "disabled" });
+});
 
 test("delayed receipt refresh and authoritative shrink retain owned state", async ({ page }) => {
   test.setTimeout(90_000);

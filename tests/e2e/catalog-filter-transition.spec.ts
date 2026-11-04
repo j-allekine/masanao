@@ -1,6 +1,34 @@
 import { expect, test } from "@playwright/test";
 import { chooseCatalogFilter, openCatalogFilters } from "./catalog-filter-helpers";
 
+for (const [path, searchName] of [["/items", "Search Items"], ["/inventory", "Search Inventory by Item name"]]) test(`${path} keeps typed search and Clear inside the phone toolbar at enlarged text`, async ({ page }) => {
+  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(path);
+  await expect(page.getByRole("search")).toHaveAttribute("data-filter-layout", "panel");
+  await page.evaluate(() => { document.documentElement.style.fontSize = "200%"; });
+  const search = page.getByRole("searchbox", { name: searchName, exact: true });
+  await search.fill("Brown Rice");
+  await expect(search).toHaveValue("Brown Rice");
+  const readable = await search.evaluate(element => {
+    const style = getComputedStyle(element);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d")!;
+    context.font = style.font;
+    return { available: element.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), expected: context.measureText("Brown Ri").width };
+  });
+  expect(readable.available).toBeGreaterThanOrEqual(readable.expected);
+  const group = search.locator("..");
+  const clear = group.getByRole("button", { name: "Clear search", exact: true });
+  const [groupBox, clearBox] = await Promise.all([group.boundingBox(), clear.boundingBox()]);
+  expect(clearBox!.x + clearBox!.width).toBeLessThanOrEqual(groupBox!.x + groupBox!.width);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath(`${path.slice(1)}-phone-search-text200.png`), animations: "disabled" });
+  await clear.click();
+  await expect(search).toHaveValue("");
+  await expect(search).toBeFocused();
+});
+
 test("filter breakpoints preserve selections and transfer focus to a visible equivalent", async ({ page, context }, info) => {
   test.setTimeout(120_000);
   await context.addCookies([{ name: "sidebar_state", value: "true", url: process.env.BETTER_AUTH_URL! }]);

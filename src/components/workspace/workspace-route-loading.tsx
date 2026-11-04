@@ -30,7 +30,7 @@ export default function WorkspaceRouteLoading({
 
   return (
     <WorkspaceShell activeSection={activeSection}>
-      <div className="flex min-h-svh flex-col bg-card">
+      <div data-workspace-loading className="flex min-h-svh flex-col bg-card">
         <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
         <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
           <h1 className="break-words text-heading-2 font-semibold">Loading {getWorkspaceSectionDetails(activeSection).label}</h1>

@@ -117,7 +117,7 @@ function SidebarStateProvider({
     if (!focusDestination.current) return
     const focus = () => {
       const heading = [...document.querySelectorAll<HTMLElement>('[data-shell-client-ready="true"] h1')]
-        .find((element) => element.checkVisibility())
+        .find((element) => element.checkVisibility() && !element.closest("[data-workspace-loading]"))
       if (!heading) return false
       heading.tabIndex = -1
       heading.focus({ preventScroll: true })
@@ -412,7 +412,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(
-        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto sidebar-compact:overflow-hidden",
+        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto sidebar-compact:overflow-x-hidden",
         className
       )}
       {...props}

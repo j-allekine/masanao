@@ -77,7 +77,7 @@ function ActivityRows({
           <TableHead scope="col">Activity</TableHead>
           <TableHead scope="col" >Scheduled date</TableHead>
           <TableHead scope="col" >Office</TableHead>
-          <TableHead scope="col" className="text-center">
+          <TableHead scope="col" className="text-right">
             Meal Schedules
           </TableHead>
           <TableHead scope="col" className="text-center">
@@ -134,7 +134,7 @@ function ActivityRow({
         <TableCell data-label="Office">
           <span className="wrap-anywhere">{activity.officeName}</span>
         </TableCell>
-        <TableCell data-label="Meal Schedules" className="text-center tabular-nums">
+        <TableCell data-label="Meal Schedules" className="text-right tabular-nums">
           {activityCountFormatter.format(activity.mealScheduleCount)}
         </TableCell>
         <TableCell data-actions className="text-center">

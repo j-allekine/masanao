@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   const [quantity, setQuantity] = useState(line?.enteredQuantity ?? "");
   const [unit, setUnit] = useState(line?.conversionId ?? "base");
   const [error, setError] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [notice, setNotice] = useState("");
   const [loading, startTransition] = useTransition();
   const [applying, setApplying] = useState(false);
@@ -45,16 +48,24 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   useEffect(() => {
     let active = true;
     startTransition(async () => {
-      const result = await listIssuanceStockItemsAction();
-      if (!active) return;
-      if (result.ok) setOptions(result.value);
-      else setError(result.error);
+      try {
+        const result = await listIssuanceStockItemsAction();
+        if (!active) return;
+        if (result.ok) setOptions(result.value);
+        else { setError(result.error); setLoadFailed(true); }
+      } catch (error) {
+        unstable_rethrow(error);
+        if (active) {
+          setError("Stock items could not be loaded. Check your connection and try again.");
+          setLoadFailed(true);
+        }
+      }
     });
     return () => {
       active = false;
       application.current?.abort();
     };
-  }, []);
+  }, [loadAttempt]);
 
   const item = options.find((option) => option.id === itemId);
   const itemOptions = options.map((option) => ({ value: option.id, label: option.name }));
@@ -65,7 +76,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   ] : [];
   const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
   const unavailableSavedItem = Boolean(line && !loading && !item && !options.some((option) => option.id === line.itemId));
-  const itemHelp = loading ? "Loading available Items…" : unavailableSavedItem ? "This saved Item is no longer available. Select an available Item to edit the line." : options.length === 0 ? "No active Stock items are available." : null;
+  const itemHelp = loading ? "Loading available Items…" : loadFailed ? null : unavailableSavedItem ? "This saved Item is no longer available. Select an available Item to edit the line." : options.length === 0 ? "No active Stock items are available." : null;
   const validUnit = unit === "base" || Boolean(conversion);
   const baseQuantity = item && isPositiveExactDecimal(quantity) && validUnit
     ? multiplyExactPositiveDecimals(quantity, conversion?.factor ?? "1")
@@ -191,6 +202,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
           </section>
         </div>
         {error || submissionError ? <Alert variant="destructive"><AlertDescription>{error || submissionError}</AlertDescription></Alert> : null}
+        {loadFailed ? <Button variant="outline" disabled={pending} onClick={() => { setError(""); setLoadFailed(false); setLoadAttempt(attempt => attempt + 1); }}>Retry available Items</Button> : null}
         {notice ? <p role="status" className="text-body-sm">{notice}</p> : null}
         <DialogFooter>
           <Button variant="outline" onClick={close}>{line || !addedItems.length || applying ? "Cancel" : "Done"}</Button>

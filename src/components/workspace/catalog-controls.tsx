@@ -52,7 +52,7 @@ export function WorkspaceSearchField({
           id={id}
           aria-label={label}
           aria-describedby={describedBy}
-          className="h-10 text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-10 pl-[min(0.375rem,6px)]! text-body-sm [&::-webkit-search-cancel-button]:appearance-none"
           type="search"
           placeholder={placeholder}
           value={value}
@@ -253,7 +253,7 @@ export function WorkspaceCatalogToolbar({
           value={search}
           onValueChange={onSearchChange}
           describedBy={`${searchId}-hint`}
-          className={filterContent ? "w-0 flex-1 sm:max-w-[24rem]" : "w-full sm:max-w-[27rem]"}
+          className={filterContent ? "min-w-[min(100%,12rem)] flex-1 sm:max-w-[24rem]" : "w-full sm:max-w-[27rem]"}
         />
         {filterContent ? <Sheet open={filtersOpen && !filtersInline} onOpenChange={setFiltersOpen}>
           {filtersInline ? <>
