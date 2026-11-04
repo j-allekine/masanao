@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   useTransition,
   type ChangeEvent,
@@ -186,6 +187,7 @@ export default function ItemForm({
   const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
+  const savedItem = useRef<ItemListItem | null>(null);
   const isDirty = (Object.keys(initialFormValues) as ItemField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
   );
@@ -209,6 +211,15 @@ export default function ItemForm({
   useEffect(() => {
     onPendingChange?.(isSubmitting);
   }, [isSubmitting, onPendingChange]);
+
+  useEffect(() => {
+    // The action result can arrive before Next commits its revalidated route.
+    // Keep the dialog pending until that transition has settled, then hand off once.
+    if (isSubmitting || !savedItem.current) return;
+    const item = savedItem.current;
+    savedItem.current = null;
+    onSuccess(item);
+  }, [isSubmitting, onSuccess]);
 
   useEffect(() => {
     const firstInvalidField = (
@@ -251,7 +262,7 @@ export default function ItemForm({
       return;
     }
 
-    onSuccess(result.item);
+    savedItem.current = result.item;
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

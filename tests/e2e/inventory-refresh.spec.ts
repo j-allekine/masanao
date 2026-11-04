@@ -87,11 +87,25 @@ test("returning through browser history sees posted receiving, unchanged drafts,
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
   const edit = page.getByRole("dialog");
   await edit.getByLabel("Reorder level").fill("5");
-  await edit.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect(edit).toBeHidden();
-  await page.goBack();
-  await expect(eggs).toContainText("Good");
-  await expect(eggs).toContainText("5 pc");
+  // A separately requested Item refresh may arrive after the user goes Back.
+  // Hold its response until Inventory has restored the saved reorder level.
+  let releaseItemRefresh!: () => void;
+  const heldItemRefresh = new Promise<void>((resolve) => { releaseItemRefresh = resolve; });
+  await page.route("**/items?**", async (route) => {
+    if (route.request().method() !== "GET" || route.request().headers()["rsc"] !== "1") return route.continue();
+    const response = await route.fetch();
+    await heldItemRefresh;
+    await route.fulfill({ response });
+  });
+  try {
+    await edit.getByRole("button", { name: "Save changes", exact: true }).click();
+    await expect(edit).toBeHidden();
+    await page.goBack();
+    await expect(eggs).toContainText("Good");
+    await expect(eggs).toContainText("5 pc");
+  } finally {
+    releaseItemRefresh();
+  }
   await page.goForward();
   await page.getByRole("button", { name: "Actions for Refresh Eggs", exact: true }).click();
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
