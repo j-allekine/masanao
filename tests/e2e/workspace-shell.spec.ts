@@ -16,6 +16,33 @@ async function signIn(page: Page) {
   expect(response.status()).toBe(200);
 }
 
+test("short compact navigation keeps the last destination reachable by wheel and keyboard", async ({ page }, info) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 768, height: 360 });
+  await page.goto("/items");
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+  const sidebar = page.locator('[data-slot="sidebar"][data-state="collapsed"]');
+  const content = sidebar.locator('[data-slot="sidebar-content"]');
+  expect(await content.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+  await content.hover();
+  await page.mouse.wheel(0, 600);
+  await expect.poll(() => content.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  const last = sidebar.getByRole("link", { name: "Master Data", exact: true });
+  await expect.poll(() => last.evaluate(element => {
+    const target = element.getBoundingClientRect();
+    const owner = element.closest<HTMLElement>('[data-slot="sidebar-content"]')!;
+    const body = owner.getBoundingClientRect();
+    return target.left >= body.left && target.right <= body.left + owner.clientWidth && target.top >= body.top && target.bottom <= body.bottom;
+  })).toBe(true);
+  await sidebar.getByRole("link", { name: "Dashboard", exact: true }).focus();
+  for (let index = 0; index < 6; index++) await page.keyboard.press("Tab");
+  await expect(last).toBeFocused();
+  await page.screenshot({ path: info.outputPath("compact-short-last-destination.png"), animations: "disabled" });
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/master-data$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Master Data", exact: true })).toBeVisible();
+});
+
 test.describe("workspace shell", () => {
   test("keeps the full brand badge and account control inside the collapsed sidebar across modules", async ({ page }) => {
     test.setTimeout(120_000);

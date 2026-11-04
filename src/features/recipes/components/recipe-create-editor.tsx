@@ -438,7 +438,7 @@ export default function RecipeCreateEditor({
                                 aria-invalid={Boolean(unitErrors?.length)}
                                 aria-describedby={unitErrors?.length ? `${unitInputId}-error` : undefined}
                               >
-                                <SelectValue placeholder="Select an Item first">{!selectedItem && retainedUnit ? `${retainedUnit.name} (${retainedUnit.abbreviation}) — unavailable` : undefined}</SelectValue>
+                                <SelectValue placeholder="Select an Item first">{retainedUnit && (!selectedItem || (ingredient.itemUnitConversionId !== null && !selectedConversion)) ? `${retainedUnit.name} (${retainedUnit.abbreviation}) — unavailable` : undefined}</SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>

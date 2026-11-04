@@ -561,3 +561,40 @@ browser-zoom gates remain outstanding. No full-spec completion is claimed.
   full browser and native 400% verification; prior production evidence is
   superseded rather than relabelled. Real-phone keyboard/orientation/touch remains
   explicitly outstanding, with PR draft and #264/#288 incomplete.
+### Complete-review follow-up (base `acddeec`)
+
+- A real posted Delivery Receipt in an eleven-receipt history reproduced the
+  Greptile focus finding: paging back and searching both stole focus. The
+  successful initial handoff now consumes its pending receipt target; an absent
+  target remains pending. All four receipt-history journeys passed afterward,
+  including delayed receipt refresh, authoritative shrink, and both roles.
+- The remaining Purchase Order browser failure was reproduced with two fixed
+  creation-time cohorts. Its chosen page-two row did not necessarily match the
+  test's hardcoded narrowed search. The journey now derives that search from
+  the opened identity, preserving latest-query, native-link, history and focus
+  assertions. All four Recipe/PO role journeys passed with the fixed cohorts.
+- Filtered phone toolbars reserve usable search width and cap the leading
+  input padding when text enlarges. Both actual consumers keep a typed query
+  and their Clear target contained at 320px/200% text. Retired Recipe Unit
+  selections show their saved name and abbreviation until repaired, preserving
+  their actual selection identity, warning and raw quantity.
+- Compact desktop navigation scrolls vertically while retaining its hidden
+  scrollbar and icon rail width. A 768x360 wheel/keyboard journey reaches and
+  activates the last destination with full target containment. Child Meal
+  Schedule counts use the documented right alignment.
+- Loading workspaces have an explicit presentation marker. Mobile destination
+  focus ignores a loading heading and keeps waiting for the ready task. Root's
+  real production-prefetch baseline reproduced the lost-focus issue; final
+  production verification of this correction remains required.
+- Four controlled Server Action read failures previously replaced dirty Meal
+  work with an error boundary. Review, Recipe loading, Stock loading and Recipe
+  preview now retain the draft and expose recovery. Framework-controlled errors
+  are rethrown through Next's public API. Four short-screen failure/retry cases
+  passed with raw `0077`, exact Stock quantity, retained Recipe selection, and
+  no saved issuance record. Failed Stock loads remain guarded after unmount.
+- Evidence lives in the external spec-264 folder: receipt-focus-baseline/fixed,
+  po-return-order-baseline, phone-unit-baseline, phone-unit-po-fixed,
+  review-recovery-fixed, and review-read-recovery-final logs/artifacts. Partial
+  diagnostic runs are not whole-suite passes. Final merged-source checks,
+  production/native evidence and the unavailable real-phone gate remain open.
+

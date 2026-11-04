@@ -8,8 +8,10 @@ test.beforeAll(() => {
   try {
     for (let i=0;i<24;i++) {
       const name=`${fixture}-${String(i).padStart(2,"0")}`;
-      db.prepare("INSERT INTO recipe (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES (?,?,?,50,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`recipe-${name}`,name,name);
-      db.prepare("INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES (?,?,?,'e2e-vendor-acme',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`po-${name}`,name,name);
+      // Two fixed creation cohorts exercise PO ordering independently of names.
+      const createdAt = i < 18 ? "2026-10-01T00:00:00.000Z" : "2026-10-01T00:00:01.000Z";
+      db.prepare("INSERT INTO recipe (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES (?,?,?,50,1,?,?)").run(`recipe-${name}`,name,name,createdAt,createdAt);
+      db.prepare("INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES (?,?,?,'e2e-vendor-acme',?,?)").run(`po-${name}`,name,name,createdAt,createdAt);
     }
     for(let i=0;i<12;i++) {
       const id=`focus-ingredient-${fixture}-${i}`, name=`${fixture} ingredient ${i} ${"municipal kitchen ".repeat(4)}`.slice(0,100);
@@ -112,7 +114,7 @@ for(const feature of ["recipes","purchase-orders"] as const) for(const role of [
   await page.goto(returnHref);
   await ready(page);
   await expect(returned).toBeFocused();
-  const typed=`${fixture}-1`;
+  const typed=name.slice(0, -1);
   await search.fill(typed);
   await expect(returned).toHaveAttribute("href",new RegExp(encodeURIComponent(typed)));
   await returned.click();

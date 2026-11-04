@@ -1,5 +1,7 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
+
 import {
   useRef,
   useState,
@@ -120,6 +122,7 @@ export default function IssuanceDraftContent({
     null,
   );
   const [error, setError] = useState("");
+  const [recipeLoadFailed, setRecipeLoadFailed] = useState(false);
   const [notice, setNotice] = useState("");
   const [pending, startTransition] = useTransition();
   const [picker, setPicker] = useState(false);
@@ -169,22 +172,29 @@ export default function IssuanceDraftContent({
       : calculateIssuanceReview(localDraft, references);
   async function refreshReferences(itemIds: string[], signal?: AbortSignal) {
     if (signal?.aborted) return false;
-    const result = await getIssuanceReviewReferencesAction([
-      ...new Set(itemIds),
-    ]);
-    // Server Actions may finish after the picker that requested them closes.
-    if (signal?.aborted) return false;
-    if (!result.ok) {
-      setError(result.error);
+    try {
+      const result = await getIssuanceReviewReferencesAction([
+        ...new Set(itemIds),
+      ]);
+      // Server Actions may finish after the picker that requested them closes.
+      if (signal?.aborted) return false;
+      if (!result.ok) {
+        setError(result.error);
+        return false;
+      }
+      setReferences((current) => [
+        ...current.filter((entry) => !itemIds.includes(entry.itemId)),
+        ...result.value,
+      ]);
+      return true;
+    } catch (error) {
+      unstable_rethrow(error);
+      if (!signal?.aborted) setError("Stock availability could not be refreshed. Check your connection and try again.");
       return false;
     }
-    setReferences((current) => [
-      ...current.filter((entry) => !itemIds.includes(entry.itemId)),
-      ...result.value,
-    ]);
-    return true;
   }
   function openReview() {
+    setError("");
     startTransition(async () => {
       if (
         await refreshReferences([
@@ -294,19 +304,29 @@ export default function IssuanceDraftContent({
     setMealPax(value);
     setRecipes(next);
   }
-  function openPicker() {
+  function loadRecipeOptions() {
     setError("");
+    setRecipeLoadFailed(false);
+    startTransition(async () => {
+      try {
+        const result = await listIssuanceRecipesAction();
+        if (result.ok) setOptions(result.value);
+        else { setError(result.error); setRecipeLoadFailed(true); }
+      } catch (error) {
+        unstable_rethrow(error);
+        setError("Recipes could not be loaded. Check your connection and try again.");
+        setRecipeLoadFailed(true);
+      }
+    });
+  }
+  function openPicker() {
     setPickerPax(mealPax);
     setCustomPickerPax(false);
     setPickerNotice("");
     setSelected([]);
     setQuery("");
     setPicker(true);
-    startTransition(async () => {
-      const result = await listIssuanceRecipesAction();
-      if (result.ok) setOptions(result.value);
-      else setError(result.error);
-    });
+    loadRecipeOptions();
   }
   function addRecipes() {
     const target = pax(customPickerPax ? pickerPax : mealPax);
@@ -316,45 +336,51 @@ export default function IssuanceDraftContent({
       );
       return;
     }
+    setError("");
     startTransition(async () => {
-      const results = await Promise.all(
-        selected.map((id) => previewIssuanceRecipeAction(id)),
-      );
-      const failure = results.find((result) => !result.ok);
-      if (failure && !failure.ok) {
-        setError(failure.error);
-        return;
+      try {
+        const results = await Promise.all(
+          selected.map((id) => previewIssuanceRecipeAction(id)),
+        );
+        const failure = results.find((result) => !result.ok);
+        if (failure && !failure.ok) {
+          setError(failure.error);
+          return;
+        }
+        const additions: LocalRecipe[] = results.flatMap((result) =>
+          result.ok
+            ? [
+                {
+                  ...result.value,
+                  id: `new-${result.value.recipeId}`,
+                  targetMode:
+                    target === pax(mealPax)
+                      ? ("meal" as const)
+                      : ("explicit" as const),
+                  targetPax: target,
+                  unsaved: true,
+                },
+              ]
+            : [],
+        );
+        if (
+          !(await refreshReferences(
+            additions.flatMap((recipe) =>
+              recipe.ingredients.map((ingredient) => ingredient.itemId),
+            ),
+          ))
+        )
+          return;
+        const next = [...recipes, ...additions];
+        if (!changeDemand({ recipes: next })) return;
+        setRecipes(next);
+        setNotice("");
+        setSelected([]);
+        setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added." : "Recipes added."}`);
+      } catch (error) {
+        unstable_rethrow(error);
+        setError("Recipes could not be added. Check your connection and try again.");
       }
-      const additions: LocalRecipe[] = results.flatMap((result) =>
-        result.ok
-          ? [
-              {
-                ...result.value,
-                id: `new-${result.value.recipeId}`,
-                targetMode:
-                  target === pax(mealPax)
-                    ? ("meal" as const)
-                    : ("explicit" as const),
-                targetPax: target,
-                unsaved: true,
-              },
-            ]
-          : [],
-      );
-      if (
-        !(await refreshReferences(
-          additions.flatMap((recipe) =>
-            recipe.ingredients.map((ingredient) => ingredient.itemId),
-          ),
-        ))
-      )
-        return;
-      const next = [...recipes, ...additions];
-      if (!changeDemand({ recipes: next })) return;
-      setRecipes(next);
-      setNotice("");
-      setSelected([]);
-      setPickerNotice(`${additions.length} ${additions.length === 1 ? "Recipe added." : "Recipes added."}`);
     });
   }
   async function persistDraft() {
@@ -891,7 +917,7 @@ export default function IssuanceDraftContent({
                 );
               })}
           </FieldSet>
-          {!pending && !options.some((option) => option.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())) ? <Empty><EmptyHeader><EmptyDescription>No Recipes match your search.</EmptyDescription></EmptyHeader></Empty> : null}
+          {!pending && !recipeLoadFailed && !options.some((option) => option.name.toLocaleLowerCase().includes(query.toLocaleLowerCase())) ? <Empty><EmptyHeader><EmptyDescription>No Recipes match your search.</EmptyDescription></EmptyHeader></Empty> : null}
           {pending ? <p role="status" className="text-body-sm">Loading Recipes…</p> : null}
           </section>
           <section aria-labelledby="already-added-recipes" className="flex min-w-0 flex-col gap-3 rounded-lg border p-3">
@@ -919,6 +945,7 @@ export default function IssuanceDraftContent({
             <Button variant="outline" disabled={pending} onClick={() => setPicker(false)}>
               Done
             </Button>
+            {recipeLoadFailed ? <Button variant="outline" disabled={pending} onClick={loadRecipeOptions}>Retry Recipes</Button> : null}
             <Button
               disabled={pending || selected.length === 0 || !pax(mealPax) || !pax(customPickerPax ? pickerPax : mealPax)}
               onClick={addRecipes}

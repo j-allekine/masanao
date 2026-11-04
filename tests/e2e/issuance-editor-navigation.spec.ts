@@ -13,7 +13,7 @@ test.beforeAll(() => {
     INSERT INTO activity(id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('e2e-issuance-282-activity','e2e-issuance-282-design','Draft guard activity','Kitchen',CURRENT_TIMESTAMP,50,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
     db.exec(`INSERT INTO recipe(id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES ('e2e-issuance-282-recipe','Baseline Rice 282','baseline rice 282',50,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO recipe_ingredient(id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES ('e2e-issuance-282-ingredient','e2e-issuance-282-recipe','e2e-recipe-item-rice','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
-    for (const name of ["history","baseline","failure","long","role","rapid"]) db.prepare("INSERT INTO meal_schedule(id,activityId,label,mealTime,createdAt,updatedAt) VALUES (?,'e2e-issuance-282-activity',?,'12:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`e2e-issuance-282-${name}`,name);
+    for (const name of ["history","baseline","failure","long","role","rapid","read-review","read-recipes","read-stock","read-preview"]) db.prepare("INSERT INTO meal_schedule(id,activityId,label,mealTime,createdAt,updatedAt) VALUES (?,'e2e-issuance-282-activity',?,'12:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").run(`e2e-issuance-282-${name}`,name);
   } finally { db.close(); }
 });
 test.afterAll(cleanupIssuanceFixtures);
@@ -35,6 +35,70 @@ async function stock(page:Page,quantity:string) {
   await picker.getByRole("button",{name:"Done",exact:true}).click();
 }
 const discard=(page:Page)=>page.getByRole("dialog",{name:"Discard unsaved changes?",exact:true});
+
+for (const operation of ["review", "recipes", "stock", "preview"] as const) test(`${operation} read transport failure keeps dirty draft values and permits retry`, async ({ page }, info) => {
+  await open(page, `read-${operation}`);
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.getByLabel("Meal pax", { exact: true }).fill("0077");
+  await stock(page, "0.123456789123456789");
+  const recipes = page.getByRole("dialog", { name: "Add Recipes", exact: true });
+  if (operation === "preview") {
+    await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
+    await recipes.getByLabel("Search Recipes").fill("Baseline Rice 282");
+    await recipes.getByRole("checkbox", { name: "Baseline Rice 282", exact: true }).check();
+  }
+  let rejected = false;
+  await page.route("**/*", async route => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) {
+      rejected = true;
+      await route.abort("failed");
+    } else await route.continue();
+  });
+  const message = operation === "review" ? "Stock availability could not be refreshed. Check your connection and try again."
+    : operation === "stock" ? "Stock items could not be loaded. Check your connection and try again."
+    : operation === "recipes" ? "Recipes could not be loaded. Check your connection and try again."
+    : "Recipes could not be added. Check your connection and try again.";
+  if (operation === "review") await page.getByRole("button", { name: "Review quantities and stock", exact: true }).click();
+  else if (operation === "stock") await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
+  else if (operation === "recipes") await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
+  else await recipes.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  const errorScope = operation === "review" ? page : operation === "stock" ? page.getByRole("dialog", { name: "Add Stock item", exact: true }) : recipes;
+  const errorMessage = errorScope.getByText(message, { exact: true });
+  await expect(errorMessage).toBeVisible();
+  await errorMessage.scrollIntoViewIfNeeded();
+  expect(rejected).toBe(true);
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+  await expect(page.locator("#meal-pax")).toHaveValue("0077");
+  await page.screenshot({ path: info.outputPath(`${operation}-read-failure.png`), animations: "disabled" });
+  await page.unroute("**/*");
+  if (operation === "review") {
+    await page.getByRole("button", { name: "Review quantities and stock", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Combined quantities and stock", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+  } else if (operation === "stock") {
+    const picker = page.getByRole("dialog", { name: "Add Stock item", exact: true });
+    await picker.getByRole("button", { name: "Retry available Items", exact: true }).click();
+    await picker.getByRole("combobox", { name: "Item", exact: true }).fill("Rice");
+    await expect(page.getByRole("option", { name: "Rice", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await picker.getByRole("button", { name: "Done", exact: true }).click();
+  } else {
+    if (operation === "recipes") await recipes.getByRole("button", { name: "Retry Recipes", exact: true }).click();
+    else await expect(recipes.getByRole("checkbox", { name: "Baseline Rice 282", exact: true })).toBeChecked();
+    if (operation === "recipes") {
+      await recipes.getByLabel("Search Recipes").fill("Baseline Rice 282");
+      await recipes.getByRole("checkbox", { name: "Baseline Rice 282", exact: true }).check();
+    }
+    await recipes.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+    await expect(recipes.getByRole("heading", { name: "Already added (1)", exact: true })).toBeVisible();
+    await recipes.getByRole("button", { name: "Done", exact: true }).click();
+  }
+  await expect(page.locator("#meal-pax")).toHaveValue("0077");
+  await expect(page.getByText(message, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Stock (1)", exact: true }).getByText("0.123456789123456789 kg", { exact: true })).toBeVisible();
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try { expect(db.prepare("SELECT COUNT(*) AS count FROM issuance_record WHERE mealScheduleId=?").get(`e2e-issuance-282-read-${operation}`)).toEqual({ count: 0 }); } finally { db.close(); }
+});
 
 test("Meal dirty Back Stay Discard preserves real history Forward and native new-tab behavior",async({page,context})=>{
   await open(page,"history");
