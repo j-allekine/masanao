@@ -381,7 +381,8 @@ function ItemsWorkspaceContent({
               navigateList({ ...nextFilters, page }, "replace");
             }
             closeCreateDialog();
-            if (mode === "edit") router.refresh();
+            // The edit action already revalidates Items and Inventory. A second
+            // refresh can outlive Back and overwrite the restored history entry.
             toast.success(
               mode === "edit"
                 ? `Item “${item.name}” updated`

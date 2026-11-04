@@ -150,6 +150,10 @@ test("dirty browser Back resumes the actual previous page without reopening issu
   await expect(page.getByRole("heading", { name: "Purchase Orders", exact: true })).toBeVisible();
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/activities\/e2e-regression-activity$/);
+  // Forward can reload the prior document. Wait for its route and history
+  // handlers to hydrate before requesting the next same-document traversal.
+  await expect(page.getByRole("heading", { name: "Regression preparation", exact: true })).toBeVisible();
+  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("10");
