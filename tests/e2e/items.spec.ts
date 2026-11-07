@@ -1305,6 +1305,7 @@ test("keeps the Item catalog and permitted actions visible during document scrol
     await page.goto("/items?itemsSearch=Layout+Pantry");
     const main = page.getByRole("main");
     const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const chrome = main.locator('[data-slot="workspace-chrome"]');
     const title = main.getByRole("heading", { name: "Items", level: 1, exact: true });
     const create = main.getByRole("button", { name: "Create Item", exact: true });
     const search = page.getByLabel("Search Items", { exact: true });
@@ -1320,13 +1321,12 @@ test("keeps the Item catalog and permitted actions visible during document scrol
         window.scrollTo(0, 0);
       }, width === 768 || height === 480);
       await expect(title).toBeInViewport({ ratio: 1 });
-      const originalTitle = await title.boundingBox();
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);
         await expect(toggle).toBeInViewport({ ratio: 1 });
         await expect(create).toBeInViewport({ ratio: 1 });
         await expect(title).toBeInViewport({ ratio: 1 });
-        expect((await title.boundingBox())!.y).toBeCloseTo(originalTitle!.y, 0);
+        await expect.poll(async () => (await chrome.boundingBox())!.y).toBeCloseTo(0, 0);
       }
       if (width >= 640) {
         const column = table.getByRole("columnheader", { name: "Reorder level", exact: true });
