@@ -102,8 +102,8 @@ test("a long draft and posted meal retain identity while the working body scroll
         INSERT INTO issuance_record (id,mealScheduleId,mealPax,createdAt,updatedAt) VALUES ('e2e-issuance-layout-draft','e2e-issuance-layout-meal',75,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
         INSERT INTO delivery_receipt (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate,postedAt) VALUES ('e2e-issuance-layout-receipt','e2e-issuance-layout-po','e2e-vendor-acme','Acme Foods','PO-LAYOUT','DR-LAYOUT','dr-layout',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
       `);
-      const item = db.prepare(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt)
-        VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-piece',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+      const item = db.prepare(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
+        VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-piece','0',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
       const stock = db.prepare(`INSERT INTO issuance_stock_item (id,issuanceRecordId,itemId,itemName,enteredQuantity,conversionFactor,selectedUnitId,selectedUnitName,selectedUnitAbbreviation,baseUnitId,baseUnitName,baseUnitAbbreviation)
         VALUES (?,'e2e-issuance-layout-draft',?,?,'1','1','default-unit-piece','Piece','pc','default-unit-piece','Piece','pc')`);
       const receiptLine = db.prepare(`INSERT INTO delivery_receipt_line (id,deliveryReceiptId,itemId,selectedUnitId,baseUnitId,itemName,selectedUnitName,baseUnitName,enteredQuantity,conversionFactor,calculatedBaseUnitQuantity)
@@ -132,7 +132,7 @@ test("a long draft and posted meal retain identity while the working body scroll
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
 
   const heading = page.getByRole("heading", { name: title, level: 1, exact: true });
-  const sidebar = page.getByRole("button", { name: "Toggle Sidebar", exact: true });
+  const sidebar = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
   const pax = page.getByLabel("Meal pax", { exact: true });
   const review = page.getByRole("button", { name: "Review quantities and stock", exact: true });
   const save = page.getByRole("button", { name: "Save draft", exact: true });

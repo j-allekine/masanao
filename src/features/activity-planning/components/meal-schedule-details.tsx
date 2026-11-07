@@ -19,7 +19,6 @@ export default function MealScheduleDetails({ mealSchedule, ready, disabled = fa
   const returnUrl = getPlanningReturnUrl(useSearchParams().get("planningReturn"));
   const { activity } = mealSchedule;
   const design = activity.activityDesign;
-  const currentTitle = `${mealSchedule.label} · ${mealSchedule.mealTime}`;
   const fields = [
     { label: "Office", value: activity.officeName },
     ...(activity.venue ? [{ label: "Venue", value: activity.venue }] : []),

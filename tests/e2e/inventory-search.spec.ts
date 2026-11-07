@@ -68,9 +68,7 @@ for (const width of [1280, 320]) {
       await expect(pending).toBeDisabled();
       await expect(pending).toHaveAttribute("aria-busy", "true");
       db.prepare("UPDATE item SET reorderLevel='3' WHERE id='search-251-brown'").run();
-      const response = page.waitForResponse(isInventoryResponse);
       releaseRefresh();
-      await (await response).finished();
       const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
       await expect(list.locator('[data-item-id="search-251-brown"]')).toContainText("Reorder now");
       await expect(refresh).toBeEnabled();
