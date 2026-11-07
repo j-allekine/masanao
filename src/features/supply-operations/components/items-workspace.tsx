@@ -7,6 +7,7 @@ import { useCreatedRecord } from "@/hooks/use-created-record";
 import { useCreatedRecordFocus } from "@/hooks/use-created-record-focus";
 
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { FieldSet, FieldLegend } from "@/components/ui/field";
 import CatalogPagination, { getCatalogPageContainingItem } from "@/components/workspace/catalog-pagination";
 
@@ -293,30 +294,32 @@ function ItemsWorkspaceContent({
     toast.success("Alternate Unit added");
   }
 
-  return (
-    <main
-      className="flex min-w-0 flex-col gap-6"
+  const task = (
+    <WorkspaceTaskHeader
+      actions={canManageItems ? (
+        <WorkspacePrimaryAction
+          id="new-item"
+          disabled={!hydrated}
+          className="sm:min-w-[8rem]"
+          onClick={openCreateDialog}
+        >
+          Create Item
+        </WorkspacePrimaryAction>
+      ) : null}
+    >
+      <h1 className="text-heading-3 font-semibold">Items</h1>
+    </WorkspaceTaskHeader>
+  );
+
+  const catalog = (
+    <div
+      className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6"
       data-can-manage-items={canManageItems ? "true" : "false"}
       data-items-ready={hydrated ? "true" : undefined}
     >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">Items</h1>
-          <p className="text-body text-muted-foreground">
-            View the ingredients and supplies available to municipal kitchen operations.
-          </p>
-        </div>
-        {canManageItems ? (
-          <WorkspacePrimaryAction
-            id="new-item"
-            disabled={!hydrated}
-            className="sm:min-w-[8rem]"
-            onClick={openCreateDialog}
-          >
-            Create Item
-          </WorkspacePrimaryAction>
-        ) : null}
-      </div>
+      <p className="text-body text-muted-foreground">
+        View the ingredients and supplies available to municipal kitchen operations.
+      </p>
       <FieldSet disabled={!hydrated} className="min-w-0">
         <FieldLegend className="sr-only">Item catalog controls</FieldLegend>
         <ItemToolbar
@@ -398,6 +401,12 @@ function ItemsWorkspaceContent({
           }}
         />
       ) : null}
-    </main>
+    </div>
+  );
+
+  return (
+    <WorkspaceLayout workspaceTitle="Supply Operations" task={task}>
+      {catalog}
+    </WorkspaceLayout>
   );
 }
