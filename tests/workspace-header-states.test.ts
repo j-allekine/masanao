@@ -8,11 +8,11 @@ import WorkspaceRouteLoading from "@/components/workspace/workspace-route-loadin
 import WorkspaceRouteError from "@/components/workspace/workspace-route-error";
 import type { WorkspaceSectionId } from "@/lib/workspace-navigation";
 
-const sections: [WorkspaceSectionId, string][] = [["overview", "Dashboard"], ["activity-designs", "Planning"], ["items", "Supply Operations"], ["recipes", "Supply Operations"], ["purchase-orders", "Supply Operations"], ["master-data", "Master Data"]];
+const sections: [WorkspaceSectionId, string][] = [["overview", "Dashboard"], ["activity-designs", "Planning"], ["inventory", "Supply Operations"], ["items", "Supply Operations"], ["recipes", "Supply Operations"], ["purchase-orders", "Supply Operations"], ["master-data", "Master Data"]];
 describe("workspace orientation during route transitions", () => {
   it.each(sections)("keeps %s loading and error identity consistent", (activeSection, label) => {
     const loading = renderToStaticMarkup(createElement(WorkspaceRouteLoading, { activeSection }));
-    const failed = renderToStaticMarkup(createElement(WorkspaceRouteError, { activeSection, error: new Error("Unavailable"), reset: () => {} }));
+    const failed = renderToStaticMarkup(createElement(WorkspaceRouteError, { activeSection, retry: () => {} }));
     for (const markup of [loading, failed]) {
       expect(markup.match(/data-slot="workspace-header"/g)).toHaveLength(1);
       expect(markup).toContain(`>${label}</p>`);

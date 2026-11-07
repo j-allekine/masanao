@@ -73,13 +73,13 @@ function getInitials(name: string) {
   return initials || "MS"
 }
 
-function WorkspaceLink() {
+function WorkspaceLink({ onNavigate }: { onNavigate: () => void }) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" />}
+          render={<Link href="/dashboard" aria-label="Masanao Municipal kitchen" onNavigate={onNavigate} />}
           tooltip="Masanao Municipal kitchen"
           className="h-auto gap-3 rounded-xl p-0 hover:bg-transparent hover:text-sidebar-foreground"
         >
@@ -175,13 +175,16 @@ export function AppSidebar({
   user,
   activeSection = "overview",
 }: {
-  user: AppSidebarUser
+  user?: AppSidebarUser
   activeSection?: WorkspaceSectionId
 }) {
+  const { setOpenMobile } = useSidebar()
+  const closeDrawer = () => setOpenMobile(false)
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4 pt-6 pb-7 group-data-[collapsible=icon]:px-2">
-        <WorkspaceLink />
+        <WorkspaceLink onNavigate={closeDrawer} />
       </SidebarHeader>
       <SidebarContent className="gap-5 group-data-[collapsible=icon]:gap-3">
         {workspaceSectionGroups.map((group) => (
@@ -201,6 +204,7 @@ export function AppSidebar({
                         render={
                           <Link
                             href={item.href}
+                            onNavigate={closeDrawer}
                             aria-label={visibleLabel}
                             aria-current={
                               activeSection === item.id ? "page" : undefined
@@ -222,10 +226,14 @@ export function AppSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarSeparator className="bg-sidebar-foreground/15" />
-      <SidebarFooter className="p-4 pt-3 pb-7 group-data-[collapsible=icon]:px-2">
-        <AccountMenu user={user} />
-      </SidebarFooter>
+      {user && (
+        <>
+          <SidebarSeparator className="bg-sidebar-foreground/15" />
+          <SidebarFooter className="p-4 pt-3 pb-7 group-data-[collapsible=icon]:px-2">
+            <AccountMenu key={user.username} user={user} />
+          </SidebarFooter>
+        </>
+      )}
       <SidebarRail />
     </Sidebar>
   )

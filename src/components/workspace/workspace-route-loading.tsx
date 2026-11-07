@@ -1,15 +1,10 @@
 import WorkspaceLayout from "@/components/workspace/workspace-layout";
 import { Skeleton } from "@/components/ui/skeleton";
-import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
+import WorkspaceShell from "@/components/workspace/workspace-shell";
 import {
   getWorkspaceHeaderTitle,
   type WorkspaceSectionId,
 } from "@/lib/workspace-navigation";
-
-const loadingUser: WorkspaceUser = {
-  name: "Loading workspace",
-  username: "Please wait",
-};
 
 function DefaultLoadingLayout() {
   return (
@@ -33,9 +28,10 @@ export default function WorkspaceRouteLoading({
 }) {
 
   return (
-    <WorkspaceShell user={loadingUser} activeSection={activeSection}>
+    <WorkspaceShell activeSection={activeSection}>
       <WorkspaceLayout workspaceTitle={getWorkspaceHeaderTitle(activeSection)}>
         <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+          <p role="status" className="sr-only">Loading workspace</p>
           {children ?? <DefaultLoadingLayout />}
         </div>
       </WorkspaceLayout>
