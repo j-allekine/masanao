@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout from "@/components/workspace/workspace-layout";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import {
   getWorkspaceHeaderTitle,
@@ -31,8 +31,7 @@ export default function WorkspaceRouteError({
 
   return (
     <WorkspaceShell user={errorUser} activeSection={activeSection}>
-      <div className="flex min-h-svh flex-col bg-card">
-        <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
+      <WorkspaceLayout workspaceTitle={getWorkspaceHeaderTitle(activeSection)}>
         <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
           {children}
           <Alert variant="destructive" role="alert">
@@ -46,7 +45,7 @@ export default function WorkspaceRouteError({
             </AlertDescription>
           </Alert>
         </div>
-      </div>
+      </WorkspaceLayout>
     </WorkspaceShell>
   );
 }

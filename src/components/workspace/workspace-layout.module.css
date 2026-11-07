@@ -1,0 +1,9 @@
+:global(html):has(.layout) {
+  scrollbar-gutter: stable;
+}
+
+.body :where([id], :focus) {
+  scroll-margin-block-start: calc(
+    var(--workspace-chrome-height, 0px) + var(--workspace-column-label-height, 0px) + 0.25rem
+  );
+}

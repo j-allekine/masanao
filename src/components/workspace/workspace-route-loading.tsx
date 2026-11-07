@@ -1,4 +1,4 @@
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout from "@/components/workspace/workspace-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import {
@@ -34,12 +34,11 @@ export default function WorkspaceRouteLoading({
 
   return (
     <WorkspaceShell user={loadingUser} activeSection={activeSection}>
-      <div className="flex min-h-svh flex-col bg-card">
-        <WorkspaceHeader title={getWorkspaceHeaderTitle(activeSection)} />
+      <WorkspaceLayout workspaceTitle={getWorkspaceHeaderTitle(activeSection)}>
         <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
           {children ?? <DefaultLoadingLayout />}
         </div>
-      </div>
+      </WorkspaceLayout>
     </WorkspaceShell>
   );
 }
