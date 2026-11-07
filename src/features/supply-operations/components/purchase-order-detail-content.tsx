@@ -13,19 +13,23 @@ import {
 import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 
 import type { PurchaseOrderDetailItem } from "../types";
+import { getPurchaseOrderListStateFromRoute, getPurchaseOrderListUrl } from "./purchase-order-list-state";
 import DeliveryReceiptHistory from "./delivery-receipt-history";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 
 export default function PurchaseOrderDetailContent({
   purchaseOrder,
+  searchParams = {},
 }: {
   purchaseOrder: PurchaseOrderDetailItem;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const catalogState = getPurchaseOrderListStateFromRoute(searchParams);
   const task = (
     <WorkspaceTaskHeader actions={
       <>
         <Link
-          href="/purchase-orders"
+          href={getPurchaseOrderListUrl("/purchase-orders", "", catalogState)}
           aria-label="Back to Purchase Orders"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
@@ -35,7 +39,7 @@ export default function PurchaseOrderDetailContent({
         </Link>
         <Link
           id="record-delivery-link"
-          href={`/purchase-orders/${purchaseOrder.id}/record-delivery`}
+          href={getPurchaseOrderListUrl(`/purchase-orders/${purchaseOrder.id}/record-delivery`, "", catalogState)}
           className={buttonVariants({ size: "sm" })}
         >
           <FilePlus2 data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />

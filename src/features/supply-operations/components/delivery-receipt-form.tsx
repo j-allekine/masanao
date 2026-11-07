@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState, useSyncExternalStore, useTransition, type FormEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
 
@@ -107,7 +107,7 @@ export default function DeliveryReceiptForm({
   purchaseOrderId,
   items,
   presentation = "page",
-  context,
+  recordHref = `/purchase-orders/${purchaseOrderId}`,
   onCancel,
   onDirty,
   onPostingChange,
@@ -115,12 +115,13 @@ export default function DeliveryReceiptForm({
   purchaseOrderId: string;
   items: ItemListItem[];
   presentation?: "page" | "dialog";
-  context?: ReactNode;
+  recordHref?: string;
   onCancel?: () => void;
   onDirty?: () => void;
   onPostingChange?: (posting: boolean) => void;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -138,9 +139,18 @@ export default function DeliveryReceiptForm({
     onPostingChange?.(posting);
   }, [posting, onPostingChange]);
 
+  useEffect(() => {
+    if (posting || !formError) return;
+    const form = formRef.current;
+    const target = form?.querySelector<HTMLElement>('[aria-invalid="true"]:not(:disabled):not([aria-disabled="true"])')
+      ?? form?.querySelector<HTMLElement>("#delivery-post-error");
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [formError, posting]);
+
   function cancel() {
     if (onCancel) onCancel();
-    else router.push(`/purchase-orders/${purchaseOrderId}`);
+    else router.push(recordHref);
   }
 
   function clearError(field: DeliveryReceiptField) {
@@ -250,7 +260,7 @@ export default function DeliveryReceiptForm({
     startTransition(async () => {
       const result = await postDeliveryReceiptAction(data);
       if (result.status === "success") {
-        router.push(`/purchase-orders/${purchaseOrderId}#delivery-receipt-${result.receipt.id}`);
+        router.push(`${recordHref}#delivery-receipt-${result.receipt.id}`);
         return;
       }
       setErrors(result.fields);
@@ -268,8 +278,7 @@ export default function DeliveryReceiptForm({
     <div className={inDialog
       ? "flex min-h-0 min-w-0 flex-col gap-6 overflow-y-auto overscroll-y-contain px-4 py-5 [scrollbar-gutter:stable] sm:px-6"
       : "flex min-w-0 flex-col gap-6"}>
-      {context}
-      {formError ? <Alert variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
+      {formError ? <Alert id="delivery-post-error" tabIndex={-1} variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
       <FieldGroup className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.receiptNo?.length)}>
           <FieldLabel htmlFor="receiptNo">Receipt number</FieldLabel>
@@ -420,6 +429,7 @@ export default function DeliveryReceiptForm({
 
   return (
     <form
+      ref={formRef}
       aria-label="Record delivery"
       aria-busy={posting}
       className={inDialog ? "grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto]" : "flex min-w-0 flex-col gap-6"}

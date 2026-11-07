@@ -37,6 +37,7 @@ function formatUpdatedAt(value: string) {
 
 function PurchaseOrderMobileCard({
   purchaseOrder,
+  detailHref,
   canManage,
   actionDisabled,
   amountsUnavailable,
@@ -44,6 +45,7 @@ function PurchaseOrderMobileCard({
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
+  detailHref: string;
   canManage: boolean;
   actionDisabled: boolean;
   amountsUnavailable?: boolean;
@@ -58,7 +60,7 @@ function PurchaseOrderMobileCard({
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <CardTitle className="break-words">
           <Link
-            href={`/purchase-orders/${purchaseOrder.id}`}
+            href={detailHref}
             className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {purchaseOrder.purchaseOrderNo}
@@ -116,6 +118,7 @@ function PurchaseOrderMobileCard({
 
 function PurchaseOrderRow({
   purchaseOrder,
+  detailHref,
   canManage,
   actionDisabled,
   amountsUnavailable,
@@ -123,6 +126,7 @@ function PurchaseOrderRow({
   onDeleted,
 }: {
   purchaseOrder: PurchaseOrderListItem;
+  detailHref: string;
   canManage: boolean;
   actionDisabled: boolean;
   amountsUnavailable?: boolean;
@@ -139,7 +143,7 @@ function PurchaseOrderRow({
       >
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
           <Link
-            href={`/purchase-orders/${purchaseOrder.id}`}
+            href={detailHref}
             className="block break-words rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <FileText
@@ -187,6 +191,7 @@ function PurchaseOrderRow({
 
 export default function PurchaseOrdersTable({
   purchaseOrders,
+  detailHref,
   hasFilters,
   onClearFilters,
   canManage,
@@ -196,6 +201,7 @@ export default function PurchaseOrdersTable({
   onDeleted,
 }: {
   purchaseOrders: PurchaseOrderListItem[];
+  detailHref: (id: string) => string;
   hasFilters: boolean;
   onClearFilters: () => void;
   canManage: boolean;
@@ -234,6 +240,7 @@ export default function PurchaseOrdersTable({
           <PurchaseOrderMobileCard
             key={purchaseOrder.id}
             purchaseOrder={purchaseOrder}
+            detailHref={detailHref(purchaseOrder.id)}
             canManage={canManage}
             actionDisabled={actionDisabled}
             amountsUnavailable={amountsUnavailable}
@@ -270,6 +277,7 @@ export default function PurchaseOrdersTable({
               <PurchaseOrderRow
                 key={purchaseOrder.id}
                 purchaseOrder={purchaseOrder}
+                detailHref={detailHref(purchaseOrder.id)}
                 canManage={canManage}
                 actionDisabled={actionDisabled}
             amountsUnavailable={amountsUnavailable}

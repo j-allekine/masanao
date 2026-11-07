@@ -1,7 +1,7 @@
 "use client";
 
 import { Expand } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
@@ -29,6 +29,8 @@ export default function WorkspaceLayout({
   const layoutRef = useRef<HTMLDivElement>(null);
   const chromeRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const hasFooter = Boolean(footer);
 
   useLayoutEffect(() => {
     const layout = layoutRef.current;
@@ -36,16 +38,25 @@ export default function WorkspaceLayout({
     const body = bodyRef.current;
     if (!layout || !chrome || !body) return;
 
+    const footerElement = footerRef.current;
     const measureChrome = () => {
-      layout.style.setProperty("--workspace-chrome-height", `${chrome.getBoundingClientRect().height}px`);
+      const chromeHeight = chrome.getBoundingClientRect().height;
+      layout.style.setProperty("--workspace-chrome-height", `${chromeHeight}px`);
+      if (mode === "bounded") {
+        const footerHeight = footerElement?.getBoundingClientRect().height ?? 0;
+        // If there is too little room to work, let the whole editor scroll.
+        const enoughRoom = window.innerHeight - chromeHeight - footerHeight >= 112;
+        layout.toggleAttribute("data-bounded-scroll", enoughRoom);
+      }
     };
     measureChrome();
     const observer = new ResizeObserver(measureChrome);
     observer.observe(chrome, { box: "border-box" });
+    if (footerElement) observer.observe(footerElement, { box: "border-box" });
+    if (mode === "bounded") window.addEventListener("resize", measureChrome);
 
-    const focusViewport = mode === "bounded" ? body : null;
     let focusFrame = 0;
-    function revealFocus(event: FocusEvent) {
+    const revealFocus = (event: FocusEvent) => {
       if (!(event.target instanceof HTMLElement)) return;
       const target = event.target;
       cancelAnimationFrame(focusFrame);
@@ -54,29 +65,32 @@ export default function WorkspaceLayout({
       focusFrame = requestAnimationFrame(() => {
         if (target !== document.activeElement) return;
         const clearance = Number.parseFloat(getComputedStyle(target).scrollMarginBlockStart);
-        const viewportTop = focusViewport?.getBoundingClientRect().top ?? 0;
+        const viewportTop = layout.hasAttribute("data-bounded-scroll")
+          ? body.getBoundingClientRect().top
+          : 0;
         if (target.getBoundingClientRect().top < viewportTop + clearance) {
           target.scrollIntoView({ block: "start", inline: "nearest" });
         }
       });
-    }
+    };
     body.addEventListener("focusin", revealFocus);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("resize", measureChrome);
       cancelAnimationFrame(focusFrame);
       body.removeEventListener("focusin", revealFocus);
     };
-  }, [mode]);
+  }, [mode, hasFooter]);
 
   return (
     <div
       {...props}
       ref={layoutRef}
       data-slot="workspace-layout"
+      data-bounded-scroll={mode === "bounded" ? true : undefined}
       className={cn(
         styles.layout,
-        mode === "bounded" && styles.bounded,
         "flex min-h-svh min-w-0 flex-col bg-card",
         className,
       )}
@@ -89,7 +103,7 @@ export default function WorkspaceLayout({
         {children}
       </div>
       {footer && (
-        <footer className="shrink-0 border-t bg-card px-4 py-2 sm:px-6">
+        <footer ref={footerRef} className="shrink-0 border-t bg-card px-4 py-2 sm:px-6">
           {footer}
         </footer>
       )}
@@ -118,39 +132,19 @@ export function WorkspaceTaskHeader({
 
 /** Keep the heading compact while making the complete record name available on demand. */
 export function WorkspaceRecordTitle({ title }: { title: string }) {
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const [clipped, setClipped] = useState(false);
-
-  useLayoutEffect(() => {
-    const heading = headingRef.current;
-    if (!heading) return;
-
-    const measure = () => setClipped(heading.scrollHeight > heading.clientHeight + 1);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(heading);
-    document.fonts.addEventListener("loadingdone", measure);
-    return () => {
-      observer.disconnect();
-      document.fonts.removeEventListener("loadingdone", measure);
-    };
-  }, [title]);
-
   return (
-    <div className="flex min-w-0 flex-[1_1_14ch] items-center gap-1">
-      <h1 ref={headingRef} className="line-clamp-2 min-w-0 text-heading-3 font-semibold wrap-anywhere">
+    <div className="flex min-w-[min(100%,14ch)] flex-1 items-center gap-1">
+      <h1 className="line-clamp-2 min-w-0 text-heading-3 font-semibold wrap-anywhere">
         {title}
       </h1>
-      {clipped && (
-        <Popover>
-          <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Show full title" />}>
-            <Expand aria-hidden="true" />
-          </PopoverTrigger>
-          <PopoverContent align="start" className="max-h-[min(14rem,50svh)] max-w-[calc(100vw-2rem)] overflow-y-auto">
-            <PopoverTitle className="wrap-anywhere">{title}</PopoverTitle>
-          </PopoverContent>
-        </Popover>
-      )}
+      <Popover>
+        <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Show full title" />}>
+          <Expand aria-hidden="true" />
+        </PopoverTrigger>
+        <PopoverContent align="start" className="max-h-[min(14rem,50svh)] max-w-[calc(100vw-2rem)] overflow-y-auto">
+          <PopoverTitle className="wrap-anywhere">{title}</PopoverTitle>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

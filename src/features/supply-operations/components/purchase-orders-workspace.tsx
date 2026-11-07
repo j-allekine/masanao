@@ -253,6 +253,7 @@ export default function PurchaseOrdersWorkspace({
         />
       </FieldSet>
       <PurchaseOrdersTable
+        detailHref={(id) => getPurchaseOrderListUrl(`/purchase-orders/${id}`, "", { search: searchInput, page: currentPage })}
         purchaseOrders={visibleAmounts.records}
         amountsUnavailable={visibleAmounts.amountsUnavailable}
         hasFilters={filtersAreActive}
