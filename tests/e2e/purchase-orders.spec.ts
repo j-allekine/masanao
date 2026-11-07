@@ -849,3 +849,107 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
     withE2eDatabase((database) => database.prepare("DELETE FROM purchase_order WHERE id LIKE ?").run(`${prefix}%`));
   }
 });
+
+test("keeps long Purchase Order context and the receiving controls reachable", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  const id = `layout-receiving-${randomUUID()}`;
+  const number = `PO-${"MUNICIPAL".repeat(10)}`;
+  const vendorId = "e2e-vendor-acme";
+
+  withE2eDatabase((database) => {
+    database.prepare(`INSERT INTO purchase_order
+      (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt)
+      VALUES (?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`).run(id, number, number.toLowerCase(), vendorId);
+    const insert = database.prepare(`INSERT INTO delivery_receipt
+      (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate,postedAt)
+      VALUES (?,?,?,'Acme Foods',?,?,?,'2026-10-25T00:00:00.000Z',CURRENT_TIMESTAMP)`);
+    for (let index = 1; index <= 26; index++) {
+      const receipt = `LAYOUT-RECEIPT-${String(index).padStart(2, "0")}`;
+      insert.run(`${id}-${index}`, id, vendorId, number, receipt, receipt.toLowerCase());
+    }
+  });
+  try {
+    await signIn(page);
+    const detailPath = `/purchase-orders/${id}`;
+    await page.goto(detailPath);
+    const main = page.getByRole("main");
+    const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const heading = main.getByRole("heading", { name: number, level: 1, exact: true });
+    const delivery = main.getByRole("link", { name: "Record delivery", exact: true });
+    const table = page.getByRole("table", { name: "Delivery Receipt history and delivered amounts", exact: true });
+    await expect(main).toHaveCount(1);
+    await expect(table.getByRole("row")).toHaveCount(28);
+    for (const { width, height } of supplyViewports) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((enlarge) => {
+        document.documentElement.style.fontSize = enlarge ? "150%" : "";
+        document.body.style.letterSpacing = enlarge ? ".02em" : "";
+        window.scrollTo(0, 0);
+      }, width === 768 || height === 480);
+      await expect(heading).toBeInViewport({ ratio: 1 });
+      for (const fraction of [0.5, 1]) {
+        await scrollSupplyDocument(page, fraction);
+        await expect(heading).toBeInViewport({ ratio: 1 });
+        await expect(toggle).toBeInViewport({ ratio: 1 });
+        await expect(delivery).toBeInViewport({ ratio: 1 });
+      }
+      if (width >= 640) {
+        const amount = table.getByRole("columnheader", { name: "Amount", exact: true });
+        await expect(amount).toBeInViewport();
+        if (width === 768) {
+          await expectPannedColumns(amount, table.getByRole("row").nth(26).getByRole("cell").nth(3));
+        }
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`purchase-order-detail-scrolled-${width}x${height}.png`) });
+    }
+
+    const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
+    await fullTitle.focus();
+    await page.keyboard.press("Enter");
+    const titleDialog = page.getByRole("dialog", { name: number, exact: true });
+    await expect(titleDialog.getByText(number, { exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(titleDialog).toBeHidden();
+
+    await delivery.click();
+    await expect(page).toHaveURL(`${detailPath}/record-delivery`);
+    await page.reload();
+    await page.evaluate(() => { document.documentElement.style.fontSize = "150%"; });
+    const dialog = page.getByRole("dialog", { name: "Record delivery", exact: true });
+    await expect(dialog.getByText(`Purchase Order: ${number}`, { exact: true })).toBeInViewport();
+    await expect(dialog.getByText("Vendor: Acme Foods", { exact: true })).toBeInViewport();
+    const receipt = dialog.getByRole("textbox", { name: "Receipt number", exact: true });
+    const submit = dialog.getByRole("button", { name: "Post delivery", exact: true });
+    await receipt.fill("LAYOUT-UNPOSTED");
+    for (let index = 0; index < 7; index++) {
+      await dialog.getByRole("button", { name: "Add line", exact: true }).click();
+    }
+    const lastLine = dialog.getByRole("row", { name: "Delivery line 8", exact: true });
+    await expect(lastLine.getByRole("combobox", { name: "Item", exact: true })).toBeFocused();
+    const note = dialog.getByRole("textbox", { name: "Receipt note", exact: true });
+    await note.focus();
+    await expect(note).toBeInViewport();
+    await expect(submit).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByRole("heading", { name: "Record delivery", exact: true })).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+    await page.screenshot({ path: info.outputPath("record-delivery-scrolled-320x480.png") });
+
+    await page.keyboard.press("Escape");
+    const discard = page.getByRole("alertdialog", { name: "Discard changes?", exact: true });
+    await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(discard).toBeHidden();
+    await expect(receipt).toHaveValue("LAYOUT-UNPOSTED");
+    await expect(note).toBeFocused();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
+    await expect(page).toHaveURL(detailPath);
+    await expect(heading).toBeInViewport();
+    await expect(table.getByRole("row")).toHaveCount(28);
+  } finally {
+    withE2eDatabase((database) => {
+      database.prepare("DELETE FROM delivery_receipt WHERE purchaseOrderId = ?").run(id);
+      database.prepare("DELETE FROM purchase_order WHERE id = ?").run(id);
+    });
+  }
+});
