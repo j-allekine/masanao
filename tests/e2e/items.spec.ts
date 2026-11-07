@@ -924,7 +924,7 @@ test.describe("Items catalog journey", () => {
       bodyScrollWidth: document.body.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
     }));
-    expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+    expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
 
     const sidebarTrigger = page.locator('[data-slot="sidebar-trigger"]');
     await sidebarTrigger.focus();

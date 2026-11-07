@@ -18,8 +18,10 @@ const e2ePort =
     ? requestedPort
     : 3019;
 const e2eBaseUrl = `http://localhost:${e2ePort}`;
-const production = process.env.MASANAO_E2E_PRODUCTION === "1";
+const productionMode = process.env.MASANAO_E2E_PRODUCTION;
+const production = productionMode === "1" || productionMode === "start";
 const serverOptions = `--hostname 127.0.0.1 --port ${e2ePort}`;
+const serverCommand = `pnpm exec next ${production ? "start" : "dev"} ${serverOptions}`;
 
 process.env.MASANAO_E2E_TSCONFIG_CONTENT = readFileSync(
   join(process.cwd(), "tsconfig.json"),
@@ -42,9 +44,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: production
-      ? `pnpm build && pnpm exec next start ${serverOptions}`
-      : `pnpm exec next dev ${serverOptions}`,
+    command: productionMode === "1" ? `pnpm build && ${serverCommand}` : serverCommand,
     env: {
       DATABASE_URL: e2eDatabaseUrl,
       MASANAO_E2E_DATABASE_PATH: e2eDatabasePath,

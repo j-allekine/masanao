@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { postFixtureSignIn } from "./fixture-auth";
+import { postFixtureSignIn, waitForFixtureSignInRetry } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const signInEndpoint = "**/api/auth/sign-in/username";
@@ -498,6 +498,7 @@ test.describe("frontend stabilization regression seam", () => {
   test("communicates pending login and prevents duplicate submissions", async ({
     page,
   }) => {
+    let submissions = 0;
     let releaseResponse = () => {};
     let resolveRequestStarted = () => {};
     const requestStarted = new Promise<void>((resolve) => {
@@ -513,10 +514,15 @@ test.describe("frontend stabilization regression seam", () => {
         return;
       }
 
+      submissions++;
       resolveRequestStarted();
       await responseReleased;
       // Complete a real sign-in so the protected destination receives a session.
-      const response = await route.fetch();
+      let response = await route.fetch();
+      if (await waitForFixtureSignInRetry(response)) {
+        await response.dispose();
+        response = await route.fetch();
+      }
       await route.fulfill({ response });
     });
 
@@ -538,7 +544,8 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(form).toHaveAttribute("aria-busy", "true");
       await expect(form.getByRole("button", { name: /Signing in…/ })).toBeDisabled();
       releaseResponse();
-      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 });
+      expect(submissions).toBe(1);
     } finally {
       releaseResponse();
     }

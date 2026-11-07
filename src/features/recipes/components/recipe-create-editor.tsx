@@ -64,7 +64,7 @@ function createIngredientDraft(): IngredientDraft {
 function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
   if (!errors?.length) return null;
 
-  return <FieldError id={id} errors={errors.map((message) => ({ message }))} />;
+  return <FieldError id={id} className="whitespace-normal wrap-anywhere" errors={errors.map((message) => ({ message }))} />;
 }
 
 function getDraftSignature(name: string, preparationNote: string, baselinePax: string, ingredients: IngredientDraft[]) {

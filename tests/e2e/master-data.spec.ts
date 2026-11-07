@@ -206,7 +206,10 @@ function masterDataRouteRequests(page: Page) {
   const requests: string[] = [];
 
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/master-data") {
+    if (
+      new URL(request.url()).pathname === "/master-data" &&
+      !request.headers()["next-router-prefetch"]
+    ) {
       requests.push(request.url());
     }
   });

@@ -71,6 +71,52 @@ test("shared header restores keyboard focus after mobile sidebar dismissal", asy
   await expect(toggle).toBeFocused();
 });
 
+for (const { route, link, title } of [
+  { route: "/inventory", link: "Inventory", title: "Inventory" },
+  { route: "/dashboard", link: "Dashboard", title: "Budget accounting" },
+]) {
+  test(`${link} keeps workspace orientation while navigation is loading`, async ({ page }, info) => {
+    test.skip(!["1", "start"].includes(process.env.MASANAO_E2E_PRODUCTION ?? ""), "Route prefetch requires the production server");
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    expect((await postFixtureSignIn(page.request, {
+      data: { username: "municipal.admin", password: "administrator-password" },
+      headers: { origin: process.env.BETTER_AUTH_URL! },
+    })).status()).toBe(200);
+    const prefetched = (headers: Record<string, string>) =>
+      Boolean(headers["next-router-prefetch"] || headers["next-router-segment-prefetch"]);
+    const fallbackResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === route && prefetched(response.request().headers()),
+    );
+    await page.goto("/items");
+    const destination = page.getByRole("link", { name: link, exact: true });
+    await destination.hover();
+    await (await fallbackResponse).finished();
+
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route((url) => url.pathname === route, async (requestRoute) => {
+      const headers = requestRoute.request().headers();
+      if (headers.rsc === "1" && !prefetched(headers)) await gate;
+      await requestRoute.continue();
+    });
+    try {
+      await destination.click();
+      await expect(page.getByRole("status").filter({ hasText: "Loading workspace" })).toBeVisible();
+      const toggle = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
+      await expect(toggle).toBeInViewport({ ratio: 1 });
+      await expect(page.getByRole("button", { name: "Municipal Administrator account menu", exact: true })).toHaveCount(0);
+      const loadingBounds = await toggle.boundingBox();
+      await page.screenshot({ path: info.outputPath(`${link.toLowerCase()}-loading.png`) });
+      release();
+      await expect(page.getByRole("heading", { name: title, level: 1, exact: true })).toBeVisible();
+      expect(await toggle.boundingBox()).toEqual(loadingBounds);
+    } finally {
+      release();
+    }
+  });
+}
+
 test("Inventory and Dashboard keep workspace orientation while recovering a failed read", async ({ page }) => {
   expect((await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },

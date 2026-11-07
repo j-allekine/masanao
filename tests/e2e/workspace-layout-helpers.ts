@@ -10,10 +10,16 @@ export const workspaceViewports = [
 ];
 
 export async function scrollWorkspaceDocument(page: Page, fraction: number) {
-  const scrollRange = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  const scrollRange = await page.evaluate((target) => {
+    const range = document.documentElement.scrollHeight - innerHeight;
+    window.scrollTo(0, Math.floor(range * target));
+    return range;
+  }, fraction);
   expect(scrollRange).toBeGreaterThan(50);
-  await page.evaluate((position) => window.scrollTo(0, position), Math.floor(scrollRange * fraction));
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThanOrEqual(Math.floor(scrollRange * fraction) - 1);
+  await expect.poll(() => page.evaluate((target) => {
+    const range = document.documentElement.scrollHeight - innerHeight;
+    return scrollY >= Math.floor(range * target) - 1;
+  }, fraction)).toBe(true);
 }
 
 export async function expectPannedColumns(column: Locator, cell: Locator) {
