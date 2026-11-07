@@ -21,6 +21,9 @@ import type {
   VendorListItem,
 } from "../types";
 import CategoriesWorkspace from "./categories-workspace";
+import type { CategoryDialogState } from "./category-dialog";
+import type { OfficeDialogState } from "./office-dialog";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import CatalogPagination, {
   getCatalogPageAfterDeletion,
   getCatalogPageContainingItem,
@@ -134,6 +137,8 @@ export default function MasterDataWorkspace({
       : emptyCatalogListState,
   );
   const [dialogState, setDialogState] = useState<UnitDialogState | null>(null);
+  const [categoryDialogState, setCategoryDialogState] = useState<CategoryDialogState | null>(null);
+  const [officeDialogState, setOfficeDialogState] = useState<OfficeDialogState | null>(null);
   const [vendorDialogState, setVendorDialogState] =
     useState<VendorDialogState | null>(null);
   const [pendingVendorFocusRequest, setPendingVendorFocusRequest] =
@@ -141,6 +146,13 @@ export default function MasterDataWorkspace({
   const [isUnitMutating, startUnitMutation] = useTransition();
   const [isVendorMutating, startVendorMutation] = useTransition();
   const searchUrlSyncTimeoutRef = useRef<number | null>(null);
+
+  function selectTab(tab: MasterDataTab) {
+    setActiveTab(tab);
+    // These dialogs are owned by their panels and close when the panel is left.
+    if (tab !== "categories") setCategoryDialogState(null);
+    if (tab !== "offices") setOfficeDialogState(null);
+  }
 
   function clearPendingSearchUrlSync() {
     if (searchUrlSyncTimeoutRef.current === null) return;
@@ -172,7 +184,7 @@ export default function MasterDataWorkspace({
     // replay an old page over newer local navigation or a successful creation.
     function applyHistoryView(historyState: ReturnType<typeof getMasterDataListState>) {
       clearPendingSearchUrlSync();
-      setActiveTab(historyState.tab);
+      selectTab(historyState.tab);
       if (historyState.tab === "units") {
         setUnitListState({
           search: historyState.search,
@@ -617,7 +629,7 @@ export default function MasterDataWorkspace({
             : value === "units"
               ? unitListState
               : emptyCatalogListState;
-    setActiveTab(value);
+    selectTab(value);
     replaceListUrl({
       tab: value,
       search: nextListState.search,
@@ -625,20 +637,46 @@ export default function MasterDataWorkspace({
     });
   }
 
+  const createActions = {
+    units: canManageUnits ? { id: "new-unit", label: "Create Unit", onClick: openCreateDialog } : null,
+    categories: canManageCategories ? {
+      id: "new-category",
+      label: "Create Category",
+      onClick: () => setCategoryDialogState({ mode: "create" }),
+    } : null,
+    offices: canManageOffices ? {
+      id: "new-office",
+      label: "Create Office",
+      onClick: () => setOfficeDialogState({ mode: "create" }),
+    } : null,
+    vendors: canManageVendors ? { id: "new-vendor", label: "Create Vendor", onClick: openCreateVendorDialog } : null,
+  };
+  const createAction = createActions[activeTab];
+
   return (
     <div
-      className="flex flex-col gap-0"
       data-client-ready={isHydrated && historyReady ? "true" : undefined}
     >
-      <MasterDataTabs activeTab={activeTab} onTabChange={changeTab}>
+      <MasterDataTabs
+        activeTab={activeTab}
+        onTabChange={changeTab}
+        actions={createAction && (
+          <WorkspacePrimaryAction
+            id={createAction.id}
+            size="default"
+            className="h-auto min-h-8 whitespace-normal py-1.5"
+            onClick={createAction.onClick}
+          >
+            {createAction.label}
+          </WorkspacePrimaryAction>
+        )}
+      >
         <MasterDataTabContent value="units">
           <MasterDataCatalogLayout
             resourceKey="unit"
             resourceLabels={{ singular: "Unit", plural: "Units" }}
             search={filters.search}
             onSearchChange={updateSearch}
-            canCreate={canManageUnits}
-            onCreate={openCreateDialog}
           >
             <UnitTable
               units={paginatedUnits}
@@ -679,6 +717,8 @@ export default function MasterDataWorkspace({
               revealCreatedRecord("categories", filterCategories([...categories.filter((row) => row.id !== category.id), category], { search }), category.id, search);
             }}
             canManage={canManageCategories}
+            dialogState={categoryDialogState}
+            setDialogState={setCategoryDialogState}
           />
         </MasterDataTabContent>
         <MasterDataTabContent value="offices">
@@ -694,6 +734,8 @@ export default function MasterDataWorkspace({
             onClearFilters={clearFilters}
             onPageChange={changePage}
             canManage={canManageOffices}
+            dialogState={officeDialogState}
+            setDialogState={setOfficeDialogState}
             onCreated={(office) => {
               const search = filterOffices([office], { search: officeSearch }).length ? officeSearch : "";
               setCreatedOffice(office);
@@ -716,7 +758,6 @@ export default function MasterDataWorkspace({
             onClearFilters={clearFilters}
             onPageChange={changePage}
             canManage={canManageVendors}
-            onNew={openCreateVendorDialog}
             onEdit={openEditVendorDialog}
             onToggle={handleVendorToggle}
             onDeleted={handleVendorDeleted}

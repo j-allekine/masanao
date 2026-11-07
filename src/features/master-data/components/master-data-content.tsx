@@ -1,5 +1,3 @@
-import WorkspaceHeader from "@/components/workspace/workspace-header";
-
 import type {
   CategoryListItem,
   OfficeListItem,
@@ -30,22 +28,16 @@ export default function MasterDataContent({
   canManageVendors: boolean;
 }) {
   return (
-    <div className="flex min-h-svh flex-col bg-card">
-      <WorkspaceHeader title="Master Data" />
-
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <MasterDataWorkspace
-          units={units}
-          categories={categories}
-          offices={offices}
-          vendors={vendors}
-          initialQuery={initialQuery}
-          canManageUnits={canManageUnits}
-          canManageOffices={canManageOffices}
-          canManageCategories={canManageCategories}
-          canManageVendors={canManageVendors}
-        />
-      </div>
-    </div>
+    <MasterDataWorkspace
+      units={units}
+      categories={categories}
+      offices={offices}
+      vendors={vendors}
+      initialQuery={initialQuery}
+      canManageUnits={canManageUnits}
+      canManageOffices={canManageOffices}
+      canManageCategories={canManageCategories}
+      canManageVendors={canManageVendors}
+    />
   );
 }

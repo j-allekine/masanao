@@ -120,7 +120,7 @@ export default function CategoryTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Categories" className="min-w-[38rem]">
+    <WorkspaceTableFrame caption="Categories" stickyColumns className="min-w-[38rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">
