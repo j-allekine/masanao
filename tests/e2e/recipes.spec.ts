@@ -433,6 +433,8 @@ test.describe("overflowing Recipe routes", () => {
     const item = (index: number) => table.getByRole("row").filter({ hasText: layoutIngredientName(index) });
     for (const { width, height } of layoutViewports) {
       await page.setViewportSize({ width, height });
+      const chrome = main.locator('[data-slot="workspace-chrome"]');
+      await expect.poll(async () => height - (await chrome.boundingBox())!.height).toBeGreaterThan(100);
       await page.evaluate(() => window.scrollTo(0, 0));
       await item(1).scrollIntoViewIfNeeded();
       await expect(item(1)).toBeInViewport();

@@ -49,7 +49,7 @@ for (const width of [1280, 320]) {
     const isInventoryResponse = (response: import("@playwright/test").Response) => response.request().headers()["rsc"] === "1" && new URL(response.url()).pathname === "/inventory";
     const entryResponse = page.waitForResponse(isInventoryResponse);
     await page.goto("/inventory?q=Brown");
-    await (await entryResponse).finished();
+    await entryResponse;
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const refresh = page.getByRole("button", { name: "Refresh", exact: true });
     await expect(refresh).toBeEnabled();
@@ -197,9 +197,7 @@ for (const width of [1280, 320]) {
       await expect(search).toHaveValue("  bRoWn  ");
       await expect(page.getByText("White Rice", { exact: true })).toHaveCount(0);
       db.prepare("UPDATE item SET reorderLevel='3' WHERE id='search-251-brown'").run();
-      const refreshed = page.waitForResponse((response) => response.request().headers()["rsc"] === "1" && new URL(response.url()).pathname === "/inventory");
       releaseRefresh();
-      await (await refreshed).finished();
       const list = page.locator(width === 320 ? '[data-inventory-mobile]' : '[data-inventory-desktop]');
       await expect(list.locator('[data-item-id="search-251-brown"]')).toContainText("Reorder now");
       await expect(search).toHaveValue("  bRoWn  ");

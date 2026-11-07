@@ -10,15 +10,15 @@ export const workspaceViewports = [
 ];
 
 export async function scrollWorkspaceDocument(page: Page, fraction: number) {
-  const scrollRange = await page.evaluate((target) => {
-    const range = document.documentElement.scrollHeight - innerHeight;
-    window.scrollTo(0, Math.floor(range * target));
-    return range;
-  }, fraction);
+  const scrollRange = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
   expect(scrollRange).toBeGreaterThan(50);
-  await expect.poll(() => page.evaluate((target) => {
-    const range = document.documentElement.scrollHeight - innerHeight;
-    return scrollY >= Math.floor(range * target) - 1;
+  await expect.poll(() => page.evaluate(async (target) => {
+    // Resize and table measurement can settle on a later frame.
+    const scroller = document.scrollingElement!;
+    const position = Math.floor((scroller.scrollHeight - scroller.clientHeight) * target);
+    window.scrollTo(0, position);
+    await new Promise(requestAnimationFrame);
+    return scrollY >= position - 1;
   }, fraction)).toBe(true);
 }
 

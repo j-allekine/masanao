@@ -38,7 +38,7 @@ export default function RecipeDetailContent({
     <WorkspaceLayout
       workspaceTitle="Supply Operations"
       task={(
-        <WorkspaceTaskHeader actions={<>
+        <WorkspaceTaskHeader actions={<div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap [&_a]:text-center [&_a]:whitespace-normal [&_button]:whitespace-normal max-sm:[&_a]:h-auto max-sm:[&_a]:min-h-8 max-sm:[&_button]:h-auto max-sm:[&_button]:min-h-8">
           <Link href={catalogHref} className={buttonVariants({ variant: "outline" })}>
             <ClipboardList data-icon="inline-start" aria-hidden="true" className="hidden sm:inline" />
             Back to Recipes
@@ -49,7 +49,7 @@ export default function RecipeDetailContent({
             </Link>
           ) : null}
           {canManageRecipes ? <RecipeLifecycleActions id={recipe.id} isActive={recipe.isActive} catalogHref={catalogHref} /> : null}
-        </>}>
+        </div>}>
           <div className="flex min-w-0 flex-1 flex-col">
             <p className="text-label font-medium uppercase tracking-label text-primary">Recipe</p>
             <WorkspaceRecordTitle title={recipe.name} />

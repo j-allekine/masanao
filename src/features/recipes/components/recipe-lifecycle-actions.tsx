@@ -22,7 +22,7 @@ export default function RecipeLifecycleActions({ id, isActive, catalogHref }: { 
     });
   }
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="contents sm:flex sm:flex-wrap sm:gap-2">
       <Button variant="outline" disabled={isPending} onClick={() => run(() => setRecipeActiveAction(id, !isActive))}>
         {isActive ? "Deactivate" : "Reactivate"}
       </Button>
