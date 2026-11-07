@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export const supplyViewports = [
+export const workspaceViewports = [
   { width: 1280, height: 720 },
   { width: 1024, height: 768 },
   { width: 768, height: 1024 },
@@ -9,7 +9,7 @@ export const supplyViewports = [
   { width: 320, height: 480 },
 ];
 
-export async function scrollSupplyDocument(page: Page, fraction: number) {
+export async function scrollWorkspaceDocument(page: Page, fraction: number) {
   const scrollRange = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
   expect(scrollRange).toBeGreaterThan(50);
   await page.evaluate((position) => window.scrollTo(0, position), Math.floor(scrollRange * fraction));

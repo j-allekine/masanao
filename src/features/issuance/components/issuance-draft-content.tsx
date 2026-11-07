@@ -595,7 +595,10 @@ export default function IssuanceDraftContent({
       footer={
         <div className="grid grid-cols-2 gap-2 [&>button]:h-auto [&>button]:min-h-8 [&>button]:min-w-0 [&>button]:whitespace-normal sm:flex sm:flex-wrap">
           {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
-          <Button id="issuance-review" variant="outline" className={dirty ? undefined : "col-span-2"} disabled={pending} onClick={openReview}>Review quantities and stock</Button>
+          <Button id="issuance-review" variant="outline" className={dirty ? undefined : "col-span-2"} disabled={pending} onClick={openReview} aria-label="Review quantities and stock">
+            <span className="sm:hidden">Review quantities</span>
+            <span className="hidden sm:inline">Review quantities and stock</span>
+          </Button>
           <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
           <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
         </div>

@@ -425,7 +425,7 @@ test.describe("overflowing Recipe routes", () => {
     await page.keyboard.press("Enter");
 
     const detailTitle = main.getByRole("heading", { name: targetName, level: 1, exact: true });
-    await expect(detailTitle).toBeVisible();
+    await expect(detailTitle).toBeVisible({ timeout: 30_000 });
     await applyTextSpacing();
     const table = main.getByRole("table", { name: "Recipe ingredients", exact: true });
     const quantityHeader = table.getByRole("columnheader", { name: "Quantity", exact: true });

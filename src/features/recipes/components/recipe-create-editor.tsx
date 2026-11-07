@@ -239,7 +239,7 @@ export default function RecipeCreateEditor({
         </WorkspaceTaskHeader>
       )}
       footer={(
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-end gap-2">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 items-center justify-end gap-2 [&>button]:h-auto [&>button]:min-h-8 [&>button]:min-w-0 [&>button]:whitespace-normal sm:flex sm:flex-wrap">
           <WorkspaceFormActionButtons
             form={recipeFormId}
             onCancel={cancelEditor}

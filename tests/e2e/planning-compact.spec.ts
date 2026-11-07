@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { postFixtureSignIn } from "./fixture-auth";
-import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 
 const design = "/activity-designs/e2e-issuance-compact-design-11";
 const detailedActivity = `${design}/activities/e2e-issuance-compact-detailed`;
@@ -59,7 +59,7 @@ test("Planning catalogs and child records retain their identity through long lis
     const heading = main.getByRole("heading", { name: title, level: 1, exact: true });
     const table = main.getByRole("table", { name: caption, exact: true });
     const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
-    for (const viewport of supplyViewports) {
+    for (const viewport of workspaceViewports) {
       await page.setViewportSize(viewport);
       await page.evaluate((enlarge) => {
         document.documentElement.style.fontSize = enlarge ? "150%" : "";
@@ -68,7 +68,7 @@ test("Planning catalogs and child records retain their identity through long lis
       }, viewport.width === 768 || viewport.height === 480);
       await expect(heading).toBeInViewport();
       for (const fraction of [0.5, 1]) {
-        await scrollSupplyDocument(page, fraction);
+        await scrollWorkspaceDocument(page, fraction);
         await expect(toggle).toBeInViewport({ ratio: 1 });
         await expect(heading).toBeInViewport({ ratio: 1 });
       }

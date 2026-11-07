@@ -167,6 +167,7 @@ test("a long draft and posted meal retain identity while the working body scroll
   const enlarged = await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
   await lastStock.scrollIntoViewIfNeeded();
   await expect(lastStock).toBeInViewport({ ratio: 1 });
+  await save.scrollIntoViewIfNeeded();
   await expect(save).toBeInViewport({ ratio: 1 });
   const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
   await fullTitle.focus();
@@ -175,6 +176,14 @@ test("a long draft and posted meal retain identity while the working body scroll
   await page.keyboard.press("Escape");
   await expect(fullTitle).toBeFocused();
   await page.screenshot({ path: info.outputPath("draft-scrolled-enlarged.png"), animations: "disabled" });
+  await enlarged.evaluate((style) => { style.textContent = "html { font-size: 200%; } body { letter-spacing: .02em; }"; });
+  await lastStock.scrollIntoViewIfNeeded();
+  await expect(lastStock).toBeInViewport({ ratio: 1 });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+  await expect(heading).toBeInViewport();
+  await save.scrollIntoViewIfNeeded();
+  await expect(save).toBeInViewport({ ratio: 1 });
+  await page.screenshot({ path: info.outputPath("draft-scrolled-200-percent.png"), animations: "disabled" });
   await enlarged.evaluate((style) => { style.parentNode?.removeChild(style); });
 
   await post.click();

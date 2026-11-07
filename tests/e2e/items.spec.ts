@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -1312,7 +1312,7 @@ test("keeps the Item catalog and permitted actions visible during document scrol
     await expect(create).toBeEnabled();
     await expect(main).toHaveCount(1);
 
-    for (const { width, height } of supplyViewports) {
+    for (const { width, height } of workspaceViewports) {
       await page.setViewportSize({ width, height });
       await page.evaluate((enlarge) => {
         document.documentElement.style.fontSize = enlarge ? "150%" : "";
@@ -1322,7 +1322,7 @@ test("keeps the Item catalog and permitted actions visible during document scrol
       await expect(title).toBeInViewport({ ratio: 1 });
       const originalTitle = await title.boundingBox();
       for (const fraction of [0.5, 1]) {
-        await scrollSupplyDocument(page, fraction);
+        await scrollWorkspaceDocument(page, fraction);
         await expect(toggle).toBeInViewport({ ratio: 1 });
         await expect(create).toBeInViewport({ ratio: 1 });
         await expect(title).toBeInViewport({ ratio: 1 });

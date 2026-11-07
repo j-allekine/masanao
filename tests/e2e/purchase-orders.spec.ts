@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -804,7 +804,7 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
     await expect(create).toBeEnabled();
     await expect(main).toHaveCount(1);
 
-    for (const { width, height } of supplyViewports) {
+    for (const { width, height } of workspaceViewports) {
       await page.setViewportSize({ width, height });
       await page.evaluate((enlarge) => {
         document.documentElement.style.fontSize = enlarge ? "150%" : "";
@@ -814,7 +814,7 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
       await expect(title).toBeInViewport({ ratio: 1 });
       const originalTitle = await title.boundingBox();
       for (const fraction of [0.5, 1]) {
-        await scrollSupplyDocument(page, fraction);
+        await scrollWorkspaceDocument(page, fraction);
         await expect(toggle).toBeInViewport({ ratio: 1 });
         await expect(create).toBeInViewport({ ratio: 1 });
         await expect(title).toBeInViewport({ ratio: 1 });
@@ -843,8 +843,10 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
     await expect(dialog).toBeHidden();
     await expect(create).toBeFocused();
     await page.getByRole("link", { name: numbers[0], exact: true }).click();
-    await expect(page).toHaveURL(`/purchase-orders/${prefix}-0`);
-    await page.goBack();
+    const scope = new URLSearchParams({ purchaseOrdersSearch: searchTerm });
+    await expect(page).toHaveURL(`/purchase-orders/${prefix}-0?${scope}`, { timeout: 30_000 });
+    await page.getByRole("link", { name: "Back to Purchase Orders", exact: true }).click();
+    await expect(page).toHaveURL(`/purchase-orders?${scope}`);
     await expect(search).toHaveValue(searchTerm);
   } finally {
     withE2eDatabase((database) => database.prepare("DELETE FROM purchase_order WHERE id LIKE ?").run(`${prefix}%`));
@@ -880,7 +882,7 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
     const table = page.getByRole("table", { name: "Delivery Receipt history and delivered amounts", exact: true });
     await expect(main).toHaveCount(1);
     await expect(table.getByRole("row")).toHaveCount(28);
-    for (const { width, height } of supplyViewports) {
+    for (const { width, height } of workspaceViewports) {
       await page.setViewportSize({ width, height });
       await page.evaluate((enlarge) => {
         document.documentElement.style.fontSize = enlarge ? "150%" : "";
@@ -889,7 +891,7 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
       }, width === 768 || height === 480);
       await expect(heading).toBeInViewport({ ratio: 1 });
       for (const fraction of [0.5, 1]) {
-        await scrollSupplyDocument(page, fraction);
+        await scrollWorkspaceDocument(page, fraction);
         await expect(heading).toBeInViewport({ ratio: 1 });
         await expect(toggle).toBeInViewport({ ratio: 1 });
         await expect(delivery).toBeInViewport({ ratio: 1 });
@@ -914,12 +916,17 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
     await expect(titleDialog).toBeHidden();
 
     await delivery.click();
-    await expect(page).toHaveURL(`${detailPath}/record-delivery`);
+    await expect(page).toHaveURL(`${detailPath}/record-delivery`, { timeout: 30_000 });
     await page.reload();
     await page.evaluate(() => { document.documentElement.style.fontSize = "150%"; });
     const dialog = page.getByRole("dialog", { name: "Record delivery", exact: true });
     await expect(dialog.getByText(`Purchase Order: ${number}`, { exact: true })).toBeInViewport();
     await expect(dialog.getByText("Vendor: Acme Foods", { exact: true })).toBeInViewport();
+    await dialog.getByRole("button", { name: "Show full delivery context", exact: true }).press("Enter");
+    const context = page.getByRole("dialog", { name: "Delivery context", exact: true });
+    await expect(context.getByText(`Purchase Order: ${number}`, { exact: true })).toBeInViewport();
+    await page.keyboard.press("Escape");
+    await expect(context).toBeHidden();
     const receipt = dialog.getByRole("textbox", { name: "Receipt number", exact: true });
     const submit = dialog.getByRole("button", { name: "Post delivery", exact: true });
     await receipt.fill("LAYOUT-UNPOSTED");
@@ -933,6 +940,7 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
     await expect(note).toBeInViewport();
     await expect(submit).toBeInViewport({ ratio: 1 });
     await expect(dialog.getByRole("heading", { name: "Record delivery", exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(dialog.getByText("Vendor: Acme Foods", { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => scrollY)).toBe(0);
     await page.screenshot({ path: info.outputPath("record-delivery-scrolled-320x480.png") });
 

@@ -103,19 +103,19 @@ function CatalogPaginationContent({
   onPageChange: (page: number) => void;
 }) {
   return (
-    <PaginationContent className={cn("gap-1", className)}>
+    <PaginationContent className={cn("flex-wrap justify-center gap-1", className)}>
       <PaginationItem>
         <Button
           type="button"
           variant="outline"
           size="default"
-          className="min-w-9 px-2 sm:min-w-[5.5rem]"
+          className="min-w-9 px-2 @lg/catalog-pagination:min-w-[5.5rem]"
           disabled={page === 1}
           aria-label="Previous page"
           onClick={() => onPageChange(page - 1)}
         >
           <ChevronLeft data-icon="inline-start" aria-hidden="true" />
-          <span className="hidden sm:inline">Previous</span>
+          <span className="hidden @lg/catalog-pagination:inline">Previous</span>
         </Button>
       </PaginationItem>
       {pageItems.map((item, index) =>
@@ -147,12 +147,12 @@ function CatalogPaginationContent({
           type="button"
           variant="outline"
           size="default"
-          className="min-w-9 px-2 sm:min-w-[5.5rem]"
+          className="min-w-9 px-2 @lg/catalog-pagination:min-w-[5.5rem]"
           disabled={page === pageCount}
           aria-label="Next page"
           onClick={() => onPageChange(page + 1)}
         >
-          <span className="hidden sm:inline">Next</span>
+          <span className="hidden @lg/catalog-pagination:inline">Next</span>
           <ChevronRight data-icon="inline-end" aria-hidden="true" />
         </Button>
       </PaginationItem>
@@ -186,26 +186,28 @@ export default function CatalogPagination({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 pt-2 text-body-sm sm:flex-row sm:items-center sm:justify-between">
-      <p className="min-w-0 text-body-sm text-muted-foreground" aria-live="polite">
-        {resultsSummary}
-      </p>
-      <Pagination className="mx-0 w-full shrink-0 justify-center sm:w-auto sm:justify-end">
-        <CatalogPaginationContent
-          className="sm:hidden"
-          page={page}
-          pageCount={pageCount}
-          pageItems={getMobileCatalogPageItems(page, pageCount)}
-          onPageChange={onPageChange}
-        />
-        <CatalogPaginationContent
-          className="hidden sm:flex"
-          page={page}
-          pageCount={pageCount}
-          pageItems={getCatalogPageItems(page, pageCount)}
-          onPageChange={onPageChange}
-        />
-      </Pagination>
+    <div className="@container/catalog-pagination min-w-0 pt-2 text-body-sm">
+      <div className="flex min-w-0 flex-col gap-3 @lg/catalog-pagination:flex-row @lg/catalog-pagination:items-center @lg/catalog-pagination:justify-between">
+        <p className="min-w-0 text-body-sm text-muted-foreground" aria-live="polite">
+          {resultsSummary}
+        </p>
+        <Pagination className="mx-0 w-full min-w-0 justify-center @lg/catalog-pagination:w-auto @lg/catalog-pagination:shrink-0 @lg/catalog-pagination:justify-end">
+          <CatalogPaginationContent
+            className="@lg/catalog-pagination:hidden"
+            page={page}
+            pageCount={pageCount}
+            pageItems={getMobileCatalogPageItems(page, pageCount)}
+            onPageChange={onPageChange}
+          />
+          <CatalogPaginationContent
+            className="hidden @lg/catalog-pagination:flex"
+            page={page}
+            pageCount={pageCount}
+            pageItems={getCatalogPageItems(page, pageCount)}
+            onPageChange={onPageChange}
+          />
+        </Pagination>
+      </div>
     </div>
   );
 }

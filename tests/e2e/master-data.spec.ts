@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
-import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 
 let restoreCatalogFixture: (() => void) | undefined;
 test.beforeEach(() => { restoreCatalogFixture = isolateMasterDataFixture(test.info().title); });
@@ -75,7 +75,7 @@ test("all Master Data tabs and permitted actions stay available during catalog s
     const search = page.getByRole("searchbox");
     await expect(selected).toHaveAttribute("aria-selected", "true");
     await expect(search).toHaveValue("Layout sample");
-    for (const viewport of supplyViewports) {
+    for (const viewport of workspaceViewports) {
       await page.setViewportSize(viewport);
       await page.evaluate((height) => {
         document.documentElement.style.fontSize = height === 480 ? "125%" : "";
@@ -85,13 +85,14 @@ test("all Master Data tabs and permitted actions stay available during catalog s
           document.body.style.letterSpacing = ".04em";
         }
       }, viewport.height);
-      await scrollSupplyDocument(page, 0.5);
+      await scrollWorkspaceDocument(page, 0.5);
       await expect(selected).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole("button", { name: action, exact: true })).toBeInViewport({ ratio: 1 });
-      await scrollSupplyDocument(page, 1);
+      await scrollWorkspaceDocument(page, 1);
       await expect(selected).toBeInViewport({ ratio: 1 });
       const table = page.getByRole("table", { name: label, exact: true });
       if (await table.isVisible() && viewport.width >= 768) {
+        await table.evaluate((element) => { element.parentElement!.scrollLeft = 0; });
         const column = table.getByRole("columnheader").first();
         await expect(column).toBeInViewport();
         const horizontalOverflow = await table.evaluate((element) => element.parentElement!.scrollWidth > element.parentElement!.clientWidth);

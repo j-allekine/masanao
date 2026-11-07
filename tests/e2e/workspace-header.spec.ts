@@ -25,9 +25,10 @@ test("every workspace family retains one shared header and usable mobile navigat
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
   const routes = [
-    ["/dashboard", "Dashboard"], ["/activity-designs", "Planning"], ["/activities", "Planning"],
+    ["/dashboard", "Dashboard"], ["/overview", "Dashboard"], ["/activity-designs", "Planning"], ["/activities", "Planning"],
     ["/activity-designs/e2e-issuance-header-design", "Planning"], [activity, "Planning"],
     [`${activity}/meal-schedules/e2e-issuance-header-meal`, "Planning"],
+    [`${activity}/meal-schedules/e2e-issuance-header-meal/issuance`, "Planning"],
     ["/inventory", "Supply Operations"], ["/items", "Supply Operations"], ["/recipes", "Supply Operations"],
     ["/recipes/e2e-recipe-active", "Supply Operations"], ["/recipes/new", "Supply Operations"],
     ["/recipes/e2e-recipe-active/edit", "Supply Operations"],
@@ -39,8 +40,8 @@ test("every workspace family retains one shared header and usable mobile navigat
     for (const [index, [path, title]] of routes.entries()) {
       await page.goto(path);
       await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-      // Master Data retains its existing subsection-based body in this header-only PR.
-      if (path !== "/master-data") await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.getByRole("main")).toHaveCount(1);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       const header = page.locator('[data-slot="workspace-header"]');
       await expect(header).toHaveCount(1);
       await expect(header.getByText(title, { exact: true })).toBeVisible();
