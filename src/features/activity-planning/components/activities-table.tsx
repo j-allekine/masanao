@@ -121,7 +121,7 @@ export default function ActivitiesTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Activities" className="min-w-[44rem]">
+    <WorkspaceTableFrame caption="Activities" stickyColumns className="min-w-[44rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

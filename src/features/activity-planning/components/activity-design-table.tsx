@@ -150,6 +150,7 @@ export default function ActivityDesignTable({
   return (
     <WorkspaceTableFrame
       caption="Activity Designs"
+      stickyColumns
       className="min-w-[52rem]"
     >
       <TableHeader className="bg-muted/60">
