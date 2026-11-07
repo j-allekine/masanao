@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const activity = "/activity-designs/e2e-issuance-layout-design/activities/e2e-issuance-layout-activity";
 const meal = `${activity}/meal-schedules/e2e-issuance-layout-meal`;
@@ -23,7 +24,7 @@ test("long Meal Schedule breadcrumbs wrap without hiding controls at narrow widt
   db.prepare("UPDATE activity_design SET activityDesignNo=? WHERE id='e2e-issuance-layout-design'").run(designNo);
   db.close();
   try {
-    expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+    expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
     await page.goto(meal);
     await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
     for (const width of [320, 406, 768, 1024]) {
@@ -41,7 +42,7 @@ test("long Meal Schedule breadcrumbs wrap without hiding controls at narrow widt
 
 test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links and guarded navigation", async ({ page }, info) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   for (const [path, heading, screenshot] of [
     [activity, "Community kitchen", "01-activity-record.png"],
     ["/purchase-orders/e2e-issuance-layout-po", "PO-LAYOUT", "02-purchase-order.png"],
@@ -124,7 +125,7 @@ test("a long draft and posted meal retain identity while the working body scroll
     db.close();
   }
 
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
@@ -170,7 +171,7 @@ test("a long draft and posted meal retain identity while the working body scroll
   const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
   await fullTitle.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("dialog", { name: "Full title", exact: true })).toHaveText(title);
+  await expect(page.getByRole("dialog", { name: title, exact: true })).toHaveText(title);
   await page.keyboard.press("Escape");
   await expect(fullTitle).toBeFocused();
   await page.screenshot({ path: info.outputPath("draft-scrolled-enlarged.png"), animations: "disabled" });

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -24,7 +25,7 @@ test.afterAll(() => {
 });
 
 test.beforeEach(async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
 });
 
 async function ready(page: Page, url = "/inventory") {

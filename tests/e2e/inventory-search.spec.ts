@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -41,7 +42,7 @@ test.afterAll(() => {
 for (const width of [1280, 320]) {
   test(`manual Refresh stays pending until its changed snapshot arrives at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
@@ -88,7 +89,7 @@ for (const width of [1280, 320]) {
     const scriptsGate = new Promise<void>((resolve) => { releaseScripts = resolve; });
     await page.route("**/_next/static/**/*.js*", async (route) => { await scriptsGate; await route.continue(); });
     try {
-      expect((await page.request.post("/api/auth/sign-in/username", {
+      expect((await postFixtureSignIn(page.request, {
         data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
         headers: { origin: process.env.BETTER_AUTH_URL! },
       })).status()).toBe(200);
@@ -109,7 +110,7 @@ for (const width of [1280, 320]) {
 
   test(`sidebar re-entry refreshes a cached stock snapshot at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
@@ -140,7 +141,7 @@ for (const width of [1280, 320]) {
 
   test(`sidebar Inventory entry clears the previous query at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
@@ -164,7 +165,7 @@ for (const width of [1280, 320]) {
 
   test(`typing remains intact while entry refresh is pending at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
@@ -217,7 +218,7 @@ for (const width of [1280, 320]) {
   test(`name search preserves stock and offers keyboard clearing at ${width}px`, async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);

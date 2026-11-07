@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -11,7 +12,7 @@ async function signIn(
   username = "kitchen.staff",
   password = staffPassword,
 ) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username,
       password,
@@ -821,7 +822,7 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
       }
       if (width >= 640) {
         const column = table.getByRole("columnheader", { name: "Total delivered", exact: true });
-        await expect(column).toBeInViewport();
+        await expect(table.getByRole("columnheader").first()).toBeInViewport();
         expect((await column.boundingBox())!.y).toBeGreaterThan((await title.boundingBox())!.y);
         if (width === 768) {
           await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell").nth(2));
@@ -895,7 +896,7 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
       }
       if (width >= 640) {
         const amount = table.getByRole("columnheader", { name: "Amount", exact: true });
-        await expect(amount).toBeInViewport();
+        await expect(table.getByRole("columnheader").first()).toBeInViewport();
         if (width === 768) {
           await expectPannedColumns(amount, table.getByRole("row").nth(26).getByRole("cell").nth(3));
         }

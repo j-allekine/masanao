@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 
 const activity = "/activity-designs/e2e-issuance-header-design/activities/e2e-issuance-header-activity";
@@ -19,7 +20,7 @@ test.afterAll(cleanupIssuanceFixtures);
 
 test("every workspace family retains one shared header and usable mobile navigation", async ({ page }, info) => {
   test.setTimeout(180_000);
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
@@ -52,7 +53,7 @@ test("every workspace family retains one shared header and usable mobile navigat
  });
 
 test("shared header restores keyboard focus after mobile sidebar dismissal", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto("/dashboard");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
@@ -70,7 +71,7 @@ test("shared header restores keyboard focus after mobile sidebar dismissal", asy
 });
 
 test("Inventory and Dashboard keep workspace orientation while recovering a failed read", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
@@ -106,7 +107,7 @@ test("Inventory and Dashboard keep workspace orientation while recovering a fail
 });
 
 test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/dashboard");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.locator('[data-slot="workspace-header"]').getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
@@ -117,4 +118,42 @@ test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => 
   await expect(page.getByRole("tooltip").getByText("Planning", { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("tooltip")).toBeHidden();
+});
+
+test("workspace transitions clear account context on sign-out and session expiry", async ({ page }) => {
+  const headers = { origin: process.env.BETTER_AUTH_URL! };
+  expect((await postFixtureSignIn(page.request, {
+    data: { username: "municipal.admin", password: "administrator-password" },
+    headers,
+  })).status()).toBe(200);
+  await page.goto("/items");
+  const admin = page.getByRole("button", { name: "Municipal Administrator account menu", exact: true });
+  const create = page.getByRole("button", { name: "Create Item", exact: true });
+  await expect(create).toBeVisible();
+  await admin.click();
+  await page.getByRole("menuitem", { name: "Log out", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(admin).toHaveCount(0);
+  await expect(create).toHaveCount(0);
+
+  const signIn = await postFixtureSignIn(page.request, {
+    data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+    headers,
+  });
+  expect(signIn.status()).toBe(200);
+  const { token } = await signIn.json() as { token: string };
+  await page.goto("/items");
+  await expect(page.getByRole("button", { name: "Kitchen Staff account menu", exact: true })).toBeVisible();
+  await expect(admin).toHaveCount(0);
+  await expect(create).toHaveCount(0);
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    expect(db.prepare("UPDATE session SET expiresAt = ? WHERE token = ?").run("2000-01-01T00:00:00.000Z", token).changes).toBe(1);
+  } finally {
+    db.close();
+  }
+  await page.reload();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("button", { name: "Toggle Sidebar", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("form", { name: "Masanao staff sign in" })).toBeVisible();
 });

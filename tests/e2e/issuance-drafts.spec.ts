@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath =
   "/activity-designs/e2e-issuance-design/activities/e2e-issuance-activity/meal-schedules/e2e-issuance-meal";
@@ -18,7 +19,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: "correct-horse-battery-staple",

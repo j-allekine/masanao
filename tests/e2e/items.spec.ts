@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -11,7 +12,7 @@ async function signIn(
   username = "kitchen.staff",
   password = staffPassword,
 ) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username,
       password,
@@ -1329,7 +1330,7 @@ test("keeps the Item catalog and permitted actions visible during document scrol
       }
       if (width >= 640) {
         const column = table.getByRole("columnheader", { name: "Reorder level", exact: true });
-        await expect(column).toBeInViewport();
+        await expect(table.getByRole("columnheader").first()).toBeInViewport();
         expect((await column.boundingBox())!.y).toBeGreaterThan((await title.boundingBox())!.y);
         if (width === 768) {
           await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell", { name: "2 kg" }));

@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = "/activity-designs/e2e-stock-design/activities/e2e-stock-activity/meal-schedules/e2e-stock-meal";
 test.beforeAll(() => {
@@ -13,7 +14,7 @@ test.beforeAll(() => {
 
 test("staff adds exact alternate Stock quantity, reopens unchanged factors, edits and removes with mobile validation", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(mealPath);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");

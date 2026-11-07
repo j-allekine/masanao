@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const evidence = process.env.MASANAO_E2E_EVIDENCE_PATH ?? "test-results/item-reorder-level";
 test.afterEach(() => {
@@ -12,7 +13,7 @@ test.afterEach(() => {
 test("administrator configures exact levels and staff view the catalog on desktop and mobile", async ({ page }) => {
   test.setTimeout(90_000);
   mkdirSync(evidence, { recursive: true });
-  const response = await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
+  const response = await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
   expect(response.status()).toBe(200);
   await page.goto("/items");
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
@@ -54,7 +55,7 @@ test("administrator configures exact levels and staff view the catalog on deskto
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.screenshot({ path: `${evidence}/items-desktop.png` });
   await page.request.post("/api/auth/sign-out", { headers: { origin: process.env.BETTER_AUTH_URL! } });
-  await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
+  await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } });
   await page.goto("/items");
   await page.getByLabel("Search Items").fill("Reorder Browser Test");
   await expect(page.locator("[data-items-table-desktop]")).toContainText("2.5 pc");

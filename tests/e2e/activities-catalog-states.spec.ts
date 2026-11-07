@@ -1,11 +1,12 @@
 import Database from "better-sqlite3";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const designId = "e2e-activities-catalog-states";
 
 async function signIn(page: Page, username = "kitchen.staff") {
   await page.context().clearCookies();
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username,
       password: username === "kitchen.staff" ? "correct-horse-battery-staple" : "administrator-password",

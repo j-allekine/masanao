@@ -593,9 +593,9 @@ export default function IssuanceDraftContent({
         </WorkspaceTaskHeader>
       }
       footer={
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 [&>button]:h-auto [&>button]:min-h-8 [&>button]:min-w-0 [&>button]:whitespace-normal sm:flex sm:flex-wrap">
           {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
-          <Button id="issuance-review" variant="outline" className="h-auto min-h-8 max-w-full whitespace-normal" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
+          <Button id="issuance-review" variant="outline" className={dirty ? undefined : "col-span-2"} disabled={pending} onClick={openReview}>Review quantities and stock</Button>
           <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
           <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
         </div>

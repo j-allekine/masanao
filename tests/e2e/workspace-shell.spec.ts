@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
 async function signIn(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,

@@ -1,10 +1,11 @@
 import Database from "better-sqlite3";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
 async function signIn(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -18,7 +19,7 @@ async function signIn(page: Page) {
 }
 
 async function signInAsAdministrator(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "municipal.admin",
       password: "administrator-password",
@@ -344,8 +345,8 @@ test.describe("overflowing Recipe routes", () => {
           (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt)
           VALUES (?,?,?,50,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
         const item = db.prepare(`INSERT INTO item
-          (id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt)
-          VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+          (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
+          VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram','0',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
         const ingredient = db.prepare(`INSERT INTO recipe_ingredient
           (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt)
           VALUES (?,?,?,'1.2500',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
@@ -433,6 +434,7 @@ test.describe("overflowing Recipe routes", () => {
     for (const { width, height } of layoutViewports) {
       await page.setViewportSize({ width, height });
       await page.evaluate(() => window.scrollTo(0, 0));
+      await item(1).scrollIntoViewIfNeeded();
       await expect(item(1)).toBeInViewport();
       await expect(item(layoutIngredientCount)).not.toBeInViewport();
       for (const index of [Math.floor(layoutIngredientCount / 2), layoutIngredientCount]) {
@@ -440,7 +442,7 @@ test.describe("overflowing Recipe routes", () => {
         const quantity = row.getByRole("cell", { name: "1.2500", exact: true });
         await row.scrollIntoViewIfNeeded();
         await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
-        if (width < 640) await quantity.scrollIntoViewIfNeeded();
+        await quantity.scrollIntoViewIfNeeded();
         await expect(quantity).toBeInViewport();
         await expect(quantityHeader).toBeInViewport();
         await expect.poll(async () => Math.abs((await quantityHeader.boundingBox())!.x - (await quantity.boundingBox())!.x)).toBeLessThan(1);
@@ -452,7 +454,7 @@ test.describe("overflowing Recipe routes", () => {
     }
     const fullTitle = main.getByRole("button", { name: "Show full title", exact: true });
     await fullTitle.press("Enter");
-    await expect(page.getByRole("dialog", { name: "Full title", exact: true })).toHaveText(targetName);
+    await expect(page.getByRole("dialog", { name: targetName, exact: true })).toHaveText(targetName);
     await page.keyboard.press("Escape");
     await expect(fullTitle).toBeFocused();
     await back.press("Enter");

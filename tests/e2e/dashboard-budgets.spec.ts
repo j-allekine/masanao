@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -41,7 +42,7 @@ test.afterAll(() => {
 
 test("budget figures, persistent navigation and Activity row navigation work on desktop and mobile", async ({ page }, info) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/dashboard?start=2020-10-01&end=2020-10-31");
   await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
@@ -135,7 +136,7 @@ test("budget figures, persistent navigation and Activity row navigation work on 
 });
 
 test("pagination waits for a pending period change without restoring the previous dates", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/dashboard?start=2020-10-01&end=2020-10-31");
   const next = page.getByLabel("Activity budget pagination").getByRole("button", { name: "Next page", exact: true });
   await expect(next).toBeEnabled();

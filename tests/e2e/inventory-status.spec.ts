@@ -3,6 +3,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -33,7 +34,7 @@ test.beforeAll(() => {
 for (const width of [1280, 320]) {
   test(`Stock status filters and clears at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 800 });
-    expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+    expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
@@ -69,7 +70,7 @@ for (const width of [1280, 320]) {
 
 test("fresh reads use edited levels and posted stock, and no-match can be cleared", async ({ page }) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try {
     // Simulate a persisted level edit; the next server read must calculate again.

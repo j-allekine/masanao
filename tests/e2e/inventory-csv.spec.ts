@@ -2,13 +2,14 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.use({ actionTimeout: 30_000 });
 const itemName = "CSV Journey Eggs";
 const mealPath = "/activity-designs/csv256-design/activities/csv256-activity/meal-schedules/csv256-meal";
 async function login(page: Page, admin = false) {
   await page.request.post("/api/auth/sign-out", { headers: { origin: process.env.BETTER_AUTH_URL! } });
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: admin ? "municipal.admin" : "kitchen.staff", password: admin ? "administrator-password" : "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: admin ? "municipal.admin" : "kitchen.staff", password: admin ? "administrator-password" : "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
 }
 async function evidence(page: Page, info: TestInfo, name: string) {
   const dir = process.env.MASANAO_INVENTORY_CSV_EVIDENCE_DIR;

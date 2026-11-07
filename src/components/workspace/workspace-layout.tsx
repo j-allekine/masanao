@@ -137,7 +137,7 @@ export function WorkspaceRecordTitle({ title }: { title: string }) {
   }, [title]);
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-1">
+    <div className="flex min-w-0 flex-[1_1_14ch] items-center gap-1">
       <h1 ref={headingRef} className="line-clamp-2 min-w-0 text-heading-3 font-semibold wrap-anywhere">
         {title}
       </h1>
@@ -146,7 +146,7 @@ export function WorkspaceRecordTitle({ title }: { title: string }) {
           <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Show full title" />}>
             <Expand aria-hidden="true" />
           </PopoverTrigger>
-          <PopoverContent align="start" aria-label="Full title" className="max-h-[min(14rem,50svh)] max-w-[calc(100vw-2rem)] overflow-y-auto">
+          <PopoverContent align="start" className="max-h-[min(14rem,50svh)] max-w-[calc(100vw-2rem)] overflow-y-auto">
             <PopoverTitle className="wrap-anywhere">{title}</PopoverTitle>
           </PopoverContent>
         </Popover>
