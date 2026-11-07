@@ -300,7 +300,6 @@ function ItemsWorkspaceContent({
         <WorkspacePrimaryAction
           id="new-item"
           disabled={!hydrated}
-          className="sm:min-w-[8rem]"
           onClick={openCreateDialog}
         >
           Create Item
@@ -317,9 +316,6 @@ function ItemsWorkspaceContent({
       data-can-manage-items={canManageItems ? "true" : "false"}
       data-items-ready={hydrated ? "true" : undefined}
     >
-      <p className="text-body text-muted-foreground">
-        View the ingredients and supplies available to municipal kitchen operations.
-      </p>
       <FieldSet disabled={!hydrated} className="min-w-0">
         <FieldLegend className="sr-only">Item catalog controls</FieldLegend>
         <ItemToolbar

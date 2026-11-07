@@ -41,7 +41,7 @@ function UnitRow({
         <TableCell className="max-w-[28rem]">
           <span tabIndex={-1} data-master-data-record-id={unit.id} className="block whitespace-normal wrap-anywhere">{unit.name}</span>
         </TableCell>
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell>
           {unit.abbreviation}
         </TableCell>
         <TableCell className="text-center">

@@ -242,9 +242,6 @@ export default function PurchaseOrdersWorkspace({
       data-can-manage-purchase-orders={canManagePurchaseOrders ? "true" : "false"}
       data-client-ready={isHydrated ? "true" : undefined}
     >
-      <p className="text-body text-muted-foreground">
-        View the orders under which supplies are expected and received.
-      </p>
       <FieldSet disabled={!isHydrated} className="min-w-0">
         <FieldLegend className="sr-only">Purchase Order catalog controls</FieldLegend>
         <PurchaseOrderToolbar

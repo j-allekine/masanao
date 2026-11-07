@@ -43,7 +43,7 @@ function ActivityDesignRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell className="tabular-nums">
           {activityDesign.activityDesignNo}
         </TableCell>
         <TableCell className="max-w-[28rem] whitespace-normal wrap-anywhere">

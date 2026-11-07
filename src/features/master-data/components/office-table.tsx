@@ -81,7 +81,7 @@ function OfficeRow({
             {office.name}
           </span>
         </TableCell>
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell>
           {office.abbreviation ?? "—"}
         </TableCell>
         <TableCell>
