@@ -1,3 +1,4 @@
+import Database from "better-sqlite3";
 import { expect, test, type Page } from "@playwright/test";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -320,4 +321,142 @@ test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) =
     scrollWidth: body.scrollWidth,
   }));
   expect(bodyWidths.scrollWidth).toBeLessThanOrEqual(bodyWidths.clientWidth);
+});
+
+const layoutViewports = [
+  { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 768, height: 1024 },
+  { width: 390, height: 640 }, { width: 320, height: 640 }, { width: 320, height: 480 },
+];
+const layoutRecipeName = (index: number) =>
+  `Layout Recipe ${String(index).padStart(2, "0")} for Municipal Kitchen Workshop Volunteer Meal Preparation and Training`;
+const layoutIngredientName = (index: number) => `Layout ingredient ${String(index).padStart(2, "0")}`;
+const layoutRecipeId = "e2e-recipe-layout-20";
+const layoutIngredientCount = 34;
+const layoutCatalog = "/recipes?recipesSearch=Layout+Recipe&recipesPage=2";
+
+test.describe("overflowing Recipe routes", () => {
+  test.beforeAll(() => {
+    const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+    try {
+      db.transaction(() => {
+        const recipe = db.prepare(`INSERT INTO recipe
+          (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt)
+          VALUES (?,?,?,50,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+        const item = db.prepare(`INSERT INTO item
+          (id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt)
+          VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+        const ingredient = db.prepare(`INSERT INTO recipe_ingredient
+          (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt)
+          VALUES (?,?,?,'1.2500',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+        for (let index = 1; index <= 20; index++) {
+          const name = layoutRecipeName(index);
+          recipe.run(`e2e-recipe-layout-${index}`, name, name.toLowerCase());
+        }
+        for (let index = 1; index <= layoutIngredientCount; index++) {
+          const name = layoutIngredientName(index);
+          const itemId = `e2e-recipe-layout-item-${index}`;
+          item.run(itemId, name, name.toLowerCase());
+          ingredient.run(`e2e-recipe-layout-line-${index}`, layoutRecipeId, itemId);
+        }
+      })();
+    } finally {
+      db.close();
+    }
+  });
+
+  test.afterAll(() => {
+    const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+    try {
+      db.exec(`
+        DELETE FROM recipe_ingredient WHERE recipeId LIKE 'e2e-recipe-layout-%';
+        DELETE FROM recipe WHERE id LIKE 'e2e-recipe-layout-%';
+        DELETE FROM item WHERE id LIKE 'e2e-recipe-layout-item-%';
+      `);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("keeps Recipe catalog and ingredient columns reachable and restores the filtered catalog", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    await signInAsAdministrator(page);
+    await page.goto(layoutCatalog);
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    const main = page.getByRole("main");
+    const sidebar = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const catalogTitle = main.getByRole("heading", { name: "Recipes", level: 1, exact: true });
+    const create = main.getByRole("link", { name: "Create Recipe", exact: true });
+    const targetName = layoutRecipeName(20);
+    const target = main.getByRole("link", { name: targetName, exact: true });
+    const opener = main.getByRole("button", { name: `Actions for ${targetName}`, exact: true });
+    const catalogTable = main.getByRole("table", { name: "Recipes", exact: true });
+    const applyTextSpacing = () => page.addStyleTag({
+      content: "html { font-size: 150%; } body { letter-spacing: .02em; }",
+    });
+    await applyTextSpacing();
+    await expect(main).toHaveCount(1);
+    await expect(target).toBeVisible();
+    for (const { width, height } of layoutViewports) {
+      await page.setViewportSize({ width, height });
+      const range = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+      expect(range, `Recipe catalog must overflow at ${width}×${height}`).toBeGreaterThan(0);
+      for (const offset of [0, Math.floor(range / 2), range]) {
+        await page.evaluate((y) => window.scrollTo(0, y), offset);
+        await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(offset, 0);
+        await expect(sidebar).toBeInViewport({ ratio: 1 });
+        await expect(catalogTitle).toBeInViewport({ ratio: 1 });
+        await expect(create).toBeInViewport({ ratio: 1 });
+      }
+      await expect(catalogTable.getByRole("columnheader", { name: "Recipe", exact: true })).toBeInViewport();
+      await page.screenshot({ path: info.outputPath(`recipes-catalog-scrolled-${width}x${height}.png`), animations: "disabled" });
+    }
+
+    await opener.focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("menuitem", { name: "View", exact: true }).press("Enter");
+    const preview = page.getByRole("dialog", { name: targetName, exact: true });
+    await expect(preview).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(preview).toBeHidden();
+    await expect(opener).toBeFocused();
+    await target.focus();
+    await page.keyboard.press("Enter");
+
+    const detailTitle = main.getByRole("heading", { name: targetName, level: 1, exact: true });
+    await expect(detailTitle).toBeVisible();
+    await applyTextSpacing();
+    const table = main.getByRole("table", { name: "Recipe ingredients", exact: true });
+    const quantityHeader = table.getByRole("columnheader", { name: "Quantity", exact: true });
+    const back = main.getByRole("link", { name: "Back to Recipes", exact: true });
+    const item = (index: number) => table.getByRole("row").filter({ hasText: layoutIngredientName(index) });
+    for (const { width, height } of layoutViewports) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(item(1)).toBeInViewport();
+      await expect(item(layoutIngredientCount)).not.toBeInViewport();
+      for (const index of [Math.floor(layoutIngredientCount / 2), layoutIngredientCount]) {
+        const row = item(index);
+        const quantity = row.getByRole("cell", { name: "1.2500", exact: true });
+        await row.scrollIntoViewIfNeeded();
+        await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+        if (width < 640) await quantity.scrollIntoViewIfNeeded();
+        await expect(quantity).toBeInViewport();
+        await expect(quantityHeader).toBeInViewport();
+        await expect.poll(async () => Math.abs((await quantityHeader.boundingBox())!.x - (await quantity.boundingBox())!.x)).toBeLessThan(1);
+        await expect(sidebar).toBeInViewport({ ratio: 1 });
+        await expect(detailTitle).toBeInViewport({ ratio: 1 });
+        await expect(back).toBeInViewport({ ratio: 1 });
+      }
+      await page.screenshot({ path: info.outputPath(`recipe-ingredients-scrolled-${width}x${height}.png`), animations: "disabled" });
+    }
+    const fullTitle = main.getByRole("button", { name: "Show full title", exact: true });
+    await fullTitle.press("Enter");
+    await expect(page.getByRole("dialog", { name: "Full title", exact: true })).toHaveText(targetName);
+    await page.keyboard.press("Escape");
+    await expect(fullTitle).toBeFocused();
+    await back.press("Enter");
+    await expect(page).toHaveURL(layoutCatalog);
+    await expect(main.getByLabel("Search Recipes")).toHaveValue("Layout Recipe");
+    await expect(main.getByText("Showing 11 to 20 of 20 results")).toBeVisible();
+  });
 });

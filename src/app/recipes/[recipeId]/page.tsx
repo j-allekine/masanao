@@ -15,9 +15,10 @@ export const metadata: Metadata = {
 export default async function RecipeDetailRoute(
   props: PageProps<"/recipes/[recipeId]">,
 ) {
-  const [session, { recipeId }] = await Promise.all([
+  const [session, { recipeId }, searchParams] = await Promise.all([
     auth.api.getSession({ headers: await headers() }),
     props.params,
+    props.searchParams,
   ]);
 
   if (!session) redirect("/");
@@ -36,7 +37,7 @@ export default async function RecipeDetailRoute(
       }}
       activeSection="recipes"
     >
-      <RecipeDetailContent recipe={recipe} canManageRecipes={canManageRecipeTemplates} />
+      <RecipeDetailContent recipe={recipe} canManageRecipes={canManageRecipeTemplates} searchParams={searchParams} />
     </WorkspaceShell>
   );
 }
