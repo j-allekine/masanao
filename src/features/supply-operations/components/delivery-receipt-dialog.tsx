@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Expand } from "lucide-react";
 
@@ -24,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+import { useEditorNavigationGuard } from "@/hooks/use-editor-navigation-guard";
 
 import type { ItemListItem } from "../types";
 import DeliveryReceiptForm from "./delivery-receipt-form";
@@ -50,15 +52,7 @@ export default function DeliveryReceiptDialog({
   const [posting, setPosting] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
-  useEffect(() => {
-    if (!open || !dirty) return;
-    function confirmNavigation(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-    window.addEventListener("beforeunload", confirmNavigation);
-    return () => window.removeEventListener("beforeunload", confirmNavigation);
-  }, [open, dirty]);
+  const guard = useEditorNavigationGuard(open && dirty, posting);
 
   function close() {
     setConfirmDiscard(false);
@@ -112,8 +106,15 @@ export default function DeliveryReceiptDialog({
           onCancel={requestClose}
           onDirty={() => setDirty(true)}
           onPostingChange={setPosting}
+          onBeforeLeave={guard.release}
         />
-        <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+        <AlertDialog
+          open={confirmDiscard || guard.exitRequest !== null}
+          onOpenChange={(isOpen) => {
+            setConfirmDiscard(isOpen);
+            if (!isOpen) guard.dismissExit();
+          }}
+        >
           <AlertDialogContent size="sm" className="max-w-[calc(100%-2rem)]">
             <AlertDialogHeader>
               <AlertDialogTitle>Discard changes?</AlertDialogTitle>
@@ -121,7 +122,10 @@ export default function DeliveryReceiptDialog({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep editing</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={close}>Discard changes</AlertDialogAction>
+              <AlertDialogAction variant="destructive" onClick={() => {
+                setConfirmDiscard(false);
+                void guard.confirmExit(close);
+              }}>Discard changes</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

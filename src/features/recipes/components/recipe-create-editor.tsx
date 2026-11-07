@@ -33,6 +33,7 @@ import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions"
 import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useEditorNavigationGuard } from "@/hooks/use-editor-navigation-guard";
 import {
   isPositiveExactDecimal,
   multiplyExactPositiveDecimals,
@@ -124,17 +125,7 @@ export default function RecipeCreateEditor({
     [baselinePax, ingredients, initialDraftSignature, name, preparationNote],
   );
 
-  useEffect(() => {
-    if (!isDirty) return;
-
-    function warnBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    window.addEventListener("beforeunload", warnBeforeUnload);
-    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
-  }, [isDirty]);
+  const guard = useEditorNavigationGuard(isDirty, isSubmitting);
 
   useEffect(() => {
     if (formError) formErrorRef.current?.focus();
@@ -210,6 +201,7 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
+        await guard.release();
         router.push(getRecipeListUrl(`/recipes/${result.recipe.id}`, "", catalogState));
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
@@ -487,7 +479,13 @@ export default function RecipeCreateEditor({
           </Card>
         </div>
       </form>
-      <AlertDialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
+      <AlertDialog
+        open={isDiscardDialogOpen || guard.exitRequest !== null}
+        onOpenChange={(open) => {
+          setIsDiscardDialogOpen(open);
+          if (!open) guard.dismissExit();
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
@@ -497,7 +495,10 @@ export default function RecipeCreateEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => router.push(catalogHref)}>
+            <AlertDialogAction variant="destructive" onClick={() => {
+              setIsDiscardDialogOpen(false);
+              void guard.confirmExit(() => router.push(catalogHref));
+            }}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
