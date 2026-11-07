@@ -97,7 +97,7 @@ for (const cancel of ["cancel", "escape"] as const) {
       if (route.request().method() !== "POST") return route.continue();
       requested();
       await released;
-      await route.continue();
+      await route.fulfill({ response: await route.fetch() });
     }, { times: 1 });
     await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
     await requestStarted;
@@ -107,7 +107,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
     const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}`));
     release();
-    await (await response).finished();
+    expect((await response).ok()).toBe(true);
     await expect(picker.getByLabel("Quantity", { exact: true })).toBeEnabled();
     await picker.getByLabel("Quantity", { exact: true }).fill("7");
     await expect(picker).toBeVisible();
