@@ -69,6 +69,42 @@ test("shared header restores keyboard focus after mobile sidebar dismissal", asy
   await expect(toggle).toBeFocused();
 });
 
+test("Inventory and Dashboard keep workspace orientation while recovering a failed read", async ({ page }) => {
+  expect((await page.request.post("/api/auth/sign-in/username", {
+    data: { username: "municipal.admin", password: "administrator-password" },
+    headers: { origin: process.env.BETTER_AUTH_URL! },
+  })).status()).toBe(200);
+  await page.setViewportSize({ width: 320, height: 480 });
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    for (const { route, table, title, orientation } of [
+      { route: "/inventory", table: "item", title: "Inventory", orientation: "Supply Operations" },
+      { route: "/dashboard", table: "activity", title: "Budget accounting", orientation: "Dashboard" },
+    ]) {
+      await page.goto(route);
+      const heading = page.getByRole("heading", { level: 1, name: title });
+      const toggle = page.getByRole("button", { name: "Toggle Sidebar", exact: true });
+      await expect(heading).toBeVisible();
+      const readyToggle = await toggle.boundingBox();
+      db.exec(`ALTER TABLE "${table}" RENAME TO "unavailable_${table}"`);
+      try {
+        await page.reload();
+        await expect(page.getByRole("alert").filter({ hasText: "Unable to load" })).toBeVisible();
+        await expect(page.getByText(orientation, { exact: true })).toBeInViewport();
+        await expect(toggle).toHaveCount(1);
+        expect(await toggle.boundingBox()).toEqual(readyToggle);
+      } finally {
+        db.exec(`ALTER TABLE "unavailable_${table}" RENAME TO "${table}"`);
+      }
+      await page.getByRole("button", { name: "Retry", exact: true }).click();
+      await expect(heading).toBeVisible();
+      await expect(toggle).toHaveCount(1);
+    }
+  } finally {
+    db.close();
+  }
+});
+
 test("collapsed desktop sidebar retains keyboard tooltips", async ({ page }) => {
   expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/dashboard");

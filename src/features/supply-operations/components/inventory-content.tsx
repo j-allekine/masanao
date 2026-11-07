@@ -75,10 +75,10 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
   const taskHeader = (
     <WorkspaceTaskHeader actions={<>
       <Button type="button" variant="outline" disabled={!hydrated || refreshing} aria-busy={refreshing} onClick={requestRefresh}>
-        <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
+        <RefreshCw data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
       </Button>
       <Button variant="outline" disabled={!hydrated} nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
-        <Download data-icon="inline-start" aria-hidden="true" />Export CSV
+        <Download data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />Export CSV
       </Button>
     </>}>
       <h1 className="text-heading-3 font-semibold">Inventory</h1>
