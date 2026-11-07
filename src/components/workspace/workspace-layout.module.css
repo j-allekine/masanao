@@ -1,0 +1,25 @@
+:global(html):has(.layout:not([data-bounded-scroll])) {
+  scrollbar-gutter: stable;
+}
+
+.body :where([id], :focus) {
+  scroll-margin-block-start: calc(
+    var(--workspace-chrome-height, 0px) + var(--workspace-column-label-height, 0px) + 0.25rem
+  );
+}
+
+.layout[data-bounded-scroll] {
+  height: 100svh;
+  min-height: 0;
+}
+
+.layout[data-bounded-scroll] > .body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
+.layout[data-bounded-scroll] > .body :where([id], :focus) {
+  scroll-margin-block-start: calc(var(--workspace-column-label-height, 0px) + 0.25rem);
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -27,6 +27,8 @@ export default function OfficesWorkspace({
   onPageChange,
   canManage,
   onCreated,
+  dialogState,
+  setDialogState,
 }: {
   offices: OfficeListItem[];
   total: number;
@@ -40,17 +42,12 @@ export default function OfficesWorkspace({
   onPageChange: (page: number) => void;
   canManage: boolean;
   onCreated: (office: OfficeListItem) => void;
+  dialogState: OfficeDialogState | null;
+  setDialogState: (state: OfficeDialogState | null) => void;
 }) {
   const router = useRouter();
-  const [dialogState, setDialogState] = useState<OfficeDialogState | null>(
-    null,
-  );
   const [isMutating, startMutation] = useTransition();
   const filters: OfficeFilters = { search };
-
-  function openCreateDialog() {
-    setDialogState({ mode: "create" });
-  }
 
   function openEditDialog(office: OfficeListItem) {
     setDialogState({ mode: "edit", office });
@@ -130,8 +127,6 @@ export default function OfficesWorkspace({
       resourceLabels={{ singular: "Office", plural: "Offices" }}
       search={search}
       onSearchChange={onSearchChange}
-      canCreate={canManage}
-      onCreate={openCreateDialog}
     >
       <OfficeTable
         offices={offices}

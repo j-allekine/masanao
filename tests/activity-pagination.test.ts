@@ -76,17 +76,6 @@ describe("Activities pagination", () => {
     expect(getMobileCatalogPageItems(1, 12)).toEqual([1, 2, 12]);
     expect(getMobileCatalogPageItems(6, 12)).toEqual([1, 6, 12]);
     expect(getMobileCatalogPageItems(12, 12)).toEqual([1, 11, 12]);
-
-    const markup = renderPagination({
-      page: 6,
-      pageCount: 12,
-      start: 51,
-      end: 60,
-      total: 120,
-    });
-
-    expect(markup).toContain("sm:hidden");
-    expect(markup).toContain("hidden sm:flex");
   });
 
   it.each([

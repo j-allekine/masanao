@@ -43,6 +43,8 @@ export default function CategoriesWorkspace({
   onDeleted,
   onCreated,
   canManage,
+  dialogState,
+  setDialogState,
 }: {
   categories: CategoryListItem[];
   total: number;
@@ -57,11 +59,10 @@ export default function CategoriesWorkspace({
   onDeleted: () => void;
   onCreated: (category: CategoryListItem) => void;
   canManage: boolean;
+  dialogState: CategoryDialogState | null;
+  setDialogState: (state: CategoryDialogState | null) => void;
 }) {
   const router = useRouter();
-  const [dialogState, setDialogState] = useState<CategoryDialogState | null>(
-    null,
-  );
   const [pendingFocusRequest, setPendingFocusRequest] =
     useState<CategoryFocusRequest | null>(null);
   const [isMutating, startMutation] = useTransition();
@@ -77,10 +78,6 @@ export default function CategoriesWorkspace({
 
     return () => window.clearTimeout(timeoutId);
   }, [categories, pendingFocusRequest]);
-
-  function openCreateDialog() {
-    setDialogState({ mode: "create" });
-  }
 
   function openEditDialog(category: CategoryListItem) {
     setDialogState({ mode: "edit", category });
@@ -150,8 +147,6 @@ export default function CategoriesWorkspace({
       resourceLabels={{ singular: "Category", plural: "Categories" }}
       search={search}
       onSearchChange={onSearchChange}
-      canCreate={canManage}
-      onCreate={openCreateDialog}
     >
       <CategoryTable
         categories={categories}

@@ -10,44 +10,53 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
-import { WorkspacePrimaryLink } from "@/components/workspace/catalog-controls";
-import { cn } from "@/lib/utils";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 
 import type { PurchaseOrderDetailItem } from "../types";
+import { getPurchaseOrderListStateFromRoute, getPurchaseOrderListUrl } from "./purchase-order-list-state";
 import DeliveryReceiptHistory from "./delivery-receipt-history";
 import PurchaseOrderDeliveredAmount from "./purchase-order-delivered-amount";
 
 export default function PurchaseOrderDetailContent({
   purchaseOrder,
+  searchParams = {},
 }: {
   purchaseOrder: PurchaseOrderDetailItem;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
-  return (
-    <div className="flex min-h-svh min-w-0 flex-col bg-card">
-      <WorkspaceHeader title="Supply Operations" />
+  const catalogState = getPurchaseOrderListStateFromRoute(searchParams);
+  const task = (
+    <WorkspaceTaskHeader actions={
+      <>
+        <Link
+          href={getPurchaseOrderListUrl("/purchase-orders", "", catalogState)}
+          aria-label="Back to Purchase Orders"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <ClipboardList data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />
+          <span className="sm:hidden">Purchase Orders</span>
+          <span className="hidden sm:inline">Back to Purchase Orders</span>
+        </Link>
+        <Link
+          id="record-delivery-link"
+          href={getPurchaseOrderListUrl(`/purchase-orders/${purchaseOrder.id}/record-delivery`, "", catalogState)}
+          className={buttonVariants({ size: "sm" })}
+        >
+          <FilePlus2 data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />
+          Record delivery
+        </Link>
+      </>
+    }>
+      <WorkspaceRecordTitle title={purchaseOrder.purchaseOrderNo} />
+    </WorkspaceTaskHeader>
+  );
 
-      <main className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-label text-primary">
-              Purchase Order
-            </p>
-            <h1 className="break-words text-heading-1 font-semibold">
-              {purchaseOrder.purchaseOrderNo}
-            </h1>
-            <p className="text-body text-muted-foreground">
-              Review deliveries recorded for this Purchase Order.
-            </p>
-          </div>
-          <Link
-            href="/purchase-orders"
-            className={cn(buttonVariants({ variant: "outline" }), "self-start sm:self-auto")}
-          >
-            <ClipboardList data-icon="inline-start" aria-hidden="true" />
-            Back to Purchase Orders
-          </Link>
-        </div>
+  return (
+    <WorkspaceLayout workspaceTitle="Supply Operations" task={task}>
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+        <p className="text-body text-muted-foreground">
+          Review deliveries recorded for this Purchase Order.
+        </p>
 
         <div className="flex min-w-0 flex-col gap-2">
           <RecordFacts fields={[
@@ -62,21 +71,13 @@ export default function PurchaseOrderDetailContent({
         </div>
 
         <section aria-labelledby="delivery-receipt-history-title" className="flex min-w-0 flex-col gap-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
+          <div>
             <h2 id="delivery-receipt-history-title" className="text-heading-2 font-semibold">
               Delivery Receipt history
             </h2>
             <p className="text-body text-muted-foreground">
               Posted receipts will remain visible here as this order is received.
             </p>
-            </div>
-            <WorkspacePrimaryLink
-              href={`/purchase-orders/${purchaseOrder.id}/record-delivery`}
-              icon={<FilePlus2 data-icon="inline-start" aria-hidden="true" />}
-            >
-              Record delivery
-            </WorkspacePrimaryLink>
           </div>
           {purchaseOrder.deliveryReceipts.length === 0 ? <Empty className="min-h-60 rounded-lg border bg-background" data-delivery-receipt-history="empty">
             <EmptyHeader>
@@ -90,7 +91,7 @@ export default function PurchaseOrderDetailContent({
             </EmptyHeader>
           </Empty> : <DeliveryReceiptHistory deliveryReceipts={purchaseOrder.deliveryReceipts} />}
         </section>
-      </main>
-    </div>
+      </div>
+    </WorkspaceLayout>
   );
 }

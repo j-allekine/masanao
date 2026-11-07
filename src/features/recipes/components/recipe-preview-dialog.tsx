@@ -34,18 +34,20 @@ function displayUnit(ingredient: RecipeDetailItem["ingredients"][number]) {
 export default function RecipePreviewDialog({
   preview,
   onClose,
+  finalFocus,
 }: {
   preview: RecipePreviewState;
   onClose: () => void;
+  finalFocus: () => HTMLElement | null;
 }) {
   const recipe = preview.status === "ready" ? preview.recipe : null;
   const title = recipe?.name ?? "Recipe preview";
 
   return (
     <Dialog open={preview.status !== "closed"} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent finalFocus={finalFocus} className="max-h-[calc(100svh-2rem)] min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
+        <DialogHeader className="min-w-0 pr-8">
+          <DialogTitle className="wrap-anywhere">{title}</DialogTitle>
           <DialogDescription>Read-only Recipe preview.</DialogDescription>
         </DialogHeader>
 
@@ -62,7 +64,7 @@ export default function RecipePreviewDialog({
         ) : null}
 
         {recipe ? (
-          <div className="max-h-[min(32rem,calc(100vh-13rem))] overflow-y-auto pr-1">
+          <div className="min-h-0 overflow-y-auto pr-1">
             <section aria-labelledby="recipe-preview-ingredients" className="flex flex-col gap-3">
               <div>
                 <h2 id="recipe-preview-ingredients" className="text-heading-3 font-semibold">

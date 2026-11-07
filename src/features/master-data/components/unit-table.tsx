@@ -39,7 +39,7 @@ function UnitRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[28rem]">
-          <span tabIndex={-1} data-master-data-record-id={unit.id} className="block truncate">{unit.name}</span>
+          <span tabIndex={-1} data-master-data-record-id={unit.id} className="block whitespace-normal wrap-anywhere">{unit.name}</span>
         </TableCell>
         <TableCell className="font-mono text-mono tracking-mono text-primary">
           {unit.abbreviation}
@@ -117,7 +117,7 @@ export default function UnitTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Units" className="min-w-[36rem]">
+    <WorkspaceTableFrame caption="Units" stickyColumns className="min-w-[36rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

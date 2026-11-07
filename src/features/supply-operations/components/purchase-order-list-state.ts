@@ -26,6 +26,17 @@ export function getPurchaseOrderListState(
   };
 }
 
+export function getPurchaseOrderListStateFromRoute(
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  return getPurchaseOrderListState({
+    get: (key) => {
+      const value = searchParams[key];
+      return typeof value === "string" ? value : null;
+    },
+  });
+}
+
 export function getPurchaseOrderListQuery(
   currentQuery: string,
   updates: { search?: string; page?: number },

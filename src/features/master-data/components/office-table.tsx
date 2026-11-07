@@ -163,7 +163,7 @@ export default function OfficeTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Offices" className="min-w-[60rem]">
+    <WorkspaceTableFrame caption="Offices" stickyColumns className="min-w-[60rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

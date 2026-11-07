@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -39,6 +40,9 @@ import {
 
 import { createRecipeAction, updateRecipeAction } from "../actions";
 import type { RecipeDetailItem, RecipeFieldErrors, RecipeIngredientField, RecipeIngredientOption } from "../types";
+import { getRecipeListState, getRecipeListUrl } from "./recipe-list-state";
+
+const recipeFormId = "recipe-editor";
 
 type IngredientDraft = {
   id: string;
@@ -83,12 +87,15 @@ export default function RecipeCreateEditor({
   recipe?: RecipeDetailItem;
 }) {
   const router = useRouter();
+  const catalogState = getRecipeListState(useSearchParams());
+  const catalogHref = getRecipeListUrl("/recipes", "", catalogState);
   const [name, setName] = useState(recipe?.name ?? "");
   const [preparationNote, setPreparationNote] = useState(recipe?.preparationNote ?? "");
   const [baselinePax, setBaselinePax] = useState(recipe?.baselinePax?.toString() ?? "");
   const [ingredients, setIngredients] = useState<IngredientDraft[]>(() => recipe?.ingredients.map((ingredient) => ({ id: ingredient.id, itemId: ingredient.itemId, itemUnitConversionId: ingredient.itemUnitConversionId, quantity: ingredient.enteredQuantity })) ?? [createIngredientDraft()]);
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const formErrorRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, startTransition] = useTransition();
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
   const [initialDraftSignature] = useState(() =>
@@ -128,6 +135,10 @@ export default function RecipeCreateEditor({
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, [isDirty]);
+
+  useEffect(() => {
+    if (formError) formErrorRef.current?.focus();
+  }, [formError]);
 
   function clearFieldError(field: keyof RecipeFieldErrors) {
     setFieldErrors((currentErrors) => {
@@ -199,7 +210,7 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
-        router.push(`/recipes/${result.recipe.id}`);
+        router.push(getRecipeListUrl(`/recipes/${result.recipe.id}`, "", catalogState));
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
       }
@@ -212,24 +223,42 @@ export default function RecipeCreateEditor({
       return;
     }
 
-    router.push("/recipes");
+    router.push(catalogHref);
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-1 font-semibold">{recipe ? "Edit Recipe" : "New Recipe"}</h1>
-          <p className="text-body text-muted-foreground">
-            Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
-          </p>
+    <WorkspaceLayout
+      workspaceTitle="Supply Operations"
+      mode="bounded"
+      task={(
+        <WorkspaceTaskHeader>
+          <div className="flex min-w-0 flex-1 flex-col">
+            {recipe && <p className="text-label font-medium uppercase tracking-label text-primary">Edit Recipe</p>}
+            <WorkspaceRecordTitle title={recipe?.name ?? "New Recipe"} />
+          </div>
+        </WorkspaceTaskHeader>
+      )}
+      footer={(
+        <div className="mx-auto grid max-w-5xl grid-cols-2 items-center justify-end gap-2 [&>button]:h-auto [&>button]:min-h-8 [&>button]:min-w-0 [&>button]:whitespace-normal sm:flex sm:flex-wrap">
+          <WorkspaceFormActionButtons
+            form={recipeFormId}
+            onCancel={cancelEditor}
+            isPending={isSubmitting}
+            submitDisabled={items.length === 0}
+            pendingLabel="Saving..."
+            submitLabel={recipe ? "Save Recipe" : "Create Recipe"}
+            submitIcon={recipe ? undefined : <Plus data-icon="inline-start" />}
+          />
         </div>
-      </div>
-
-      <form aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
+      )}
+    >
+      <form id={recipeFormId} className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6" aria-label={recipe ? "Edit Recipe" : "Create Recipe"} aria-busy={isSubmitting} noValidate onSubmit={handleSubmit}>
+        <p className="text-body text-muted-foreground">
+          Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
+        </p>
         <div className="flex flex-col gap-6">
           {formError ? (
-            <Alert variant="destructive">
+            <Alert ref={formErrorRef} tabIndex={-1} variant="destructive">
               <AlertTitle>Could not save Recipe</AlertTitle>
               <AlertDescription>{formError}</AlertDescription>
             </Alert>
@@ -453,18 +482,6 @@ export default function RecipeCreateEditor({
                   <Plus data-icon="inline-start" />
                   Add Ingredient
                 </Button>
-                <div className="flex flex-wrap items-center gap-2">
-                  <WorkspaceFormActionButtons
-                    onCancel={cancelEditor}
-                    isPending={isSubmitting}
-                    submitDisabled={items.length === 0}
-                    pendingLabel="Saving..."
-                    submitLabel={recipe ? "Save Recipe" : "Create Recipe"}
-                    submitIcon={
-                      recipe ? undefined : <Plus data-icon="inline-start" />
-                    }
-                  />
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -480,12 +497,12 @@ export default function RecipeCreateEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => router.push("/recipes")}>
+            <AlertDialogAction variant="destructive" onClick={() => router.push(catalogHref)}>
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </main>
+    </WorkspaceLayout>
   );
 }

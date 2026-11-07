@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const signInEndpoint = "**/api/auth/sign-in/username";
@@ -12,7 +13,7 @@ type ActivityDesign = {
 };
 
 async function authenticate(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -238,7 +239,7 @@ test.describe("frontend stabilization regression seam", () => {
           };
         });
 
-        expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+        expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
         expect(metrics.tableRegions).toBe(1);
         expect(metrics.tableParentOverflowX).toBe("visible");
         if (viewport.name === "mobile") {

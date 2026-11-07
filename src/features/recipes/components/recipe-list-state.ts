@@ -22,6 +22,15 @@ export function getRecipeListState(searchParams: Pick<URLSearchParams, "get">) {
   };
 }
 
+export function getRecipeListStateFromRoute(searchParams: Record<string, string | string[] | undefined>) {
+  return getRecipeListState({
+    get: (key) => {
+      const value = searchParams[key];
+      return typeof value === "string" ? value : null;
+    },
+  });
+}
+
 export function getRecipeListQuery(
   currentQuery: string,
   updates: { search?: string; page?: number },

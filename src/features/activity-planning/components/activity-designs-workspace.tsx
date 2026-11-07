@@ -20,6 +20,7 @@ import {
 import ActivityDesignTable from "./activity-design-table";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivityDesignToolbar from "./activity-design-toolbar";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
   getPlanningListState,
@@ -140,44 +141,45 @@ export default function ActivityDesignsWorkspace({
   }
 
   return (
-    <main
-      className="flex min-w-0 flex-col gap-6"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
       data-client-ready={isHydrated ? "true" : undefined}
-    >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-2 font-semibold">Activity Designs</h1>
-        </div>
-        <WorkspacePrimaryAction
-          id="new-activity-design"
-          className="sm:min-w-[12rem]"
-          onClick={openCreateDialog}
+      task={
+        <WorkspaceTaskHeader
+          actions={
+            <WorkspacePrimaryAction id="new-activity-design" onClick={openCreateDialog}>
+              Create Activity Design
+            </WorkspacePrimaryAction>
+          }
         >
-          Create Activity Design
-        </WorkspacePrimaryAction>
+          <h1 className="text-heading-3 font-semibold">Activity Designs</h1>
+        </WorkspaceTaskHeader>
+      }
+    >
+      <div className="mx-auto flex w-full max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
+        <ActivityDesignToolbar
+          search={filters.search}
+          onSearchChange={updateSearch}
+        />
+        <ActivityDesignTable
+          activityDesigns={paginatedActivityDesigns}
+          catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
+          filters={filters}
+          onClearFilters={clearFilters}
+          onEdit={(activityDesign) =>
+            setDialogState({ mode: "edit", activityDesign })
+          }
+          onAddActivity={setActivityDesignForCreate}
+        />
+        <CatalogPagination
+          page={currentPage}
+          pageCount={pageCount}
+          start={resultStart}
+          end={resultEnd}
+          total={filteredActivityDesigns.length}
+          onPageChange={changePage}
+        />
       </div>
-      <ActivityDesignToolbar
-        search={filters.search}
-        onSearchChange={updateSearch}
-      />
-      <ActivityDesignTable
-        activityDesigns={paginatedActivityDesigns}
-        catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
-        filters={filters}
-        onClearFilters={clearFilters}
-        onEdit={(activityDesign) =>
-          setDialogState({ mode: "edit", activityDesign })
-        }
-        onAddActivity={setActivityDesignForCreate}
-      />
-      <CatalogPagination
-        page={currentPage}
-        pageCount={pageCount}
-        start={resultStart}
-        end={resultEnd}
-        total={filteredActivityDesigns.length}
-        onPageChange={changePage}
-      />
       <ActivityDesignDialog
         dialogState={dialogState}
         onClose={closeDialog}
@@ -206,6 +208,6 @@ export default function ActivityDesignsWorkspace({
           }
         }}
       />
-    </main>
+    </WorkspaceLayout>
   );
 }

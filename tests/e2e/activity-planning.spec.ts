@@ -1,11 +1,12 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
 async function signIn(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -679,12 +680,9 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByRole("link", { name: "Activity Designs", exact: true }),
         ).toBeVisible();
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() =>
+          document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        )).toBe(true);
 
         await page.getByRole("button", { name: "Create Activity", exact: true }).click();
         const createDialog = page.getByRole("dialog");
@@ -706,12 +704,9 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByRole("button", { name: "Create Activity", exact: true }),
         ).toHaveCount(1);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() =>
+          document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        )).toBe(true);
       }
 
       await page.goto("/activity-designs/missing-record");
@@ -914,24 +909,18 @@ test.describe("Activity planning journey", () => {
         await expect(
           page.getByText("Stock availability", { exact: true }),
         ).toHaveCount(0);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() =>
+          document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        )).toBe(true);
         await backToActivity.focus();
         await expect(backToActivity).toBeFocused();
         await page.keyboard.press("Enter");
         await expect(page).toHaveURL(
           new RegExp(`/activity-designs/${design.id}/activities/${populatedActivity.id}$`),
         );
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() =>
+          document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        )).toBe(true);
 
         await page.goto(
           `/activity-designs/${design.id}/activities/${emptyActivity.id}`,
@@ -941,12 +930,9 @@ test.describe("Activity planning journey", () => {
         ).toBeVisible();
         await expect(page.getByText("Not recorded", { exact: true })).toHaveCount(1);
         await expect(page.getByRole("button", { name: "Additional details", exact: true })).toHaveCount(0);
-        expect(
-          await page.evaluate(() => ({
-            scrollWidth: document.documentElement.scrollWidth,
-            clientWidth: document.documentElement.clientWidth,
-          })),
-        ).toEqual({ scrollWidth: viewport.width, clientWidth: viewport.width });
+        expect(await page.evaluate(() =>
+          document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        )).toBe(true);
       }
 
       await page.setViewportSize({ width: 1280, height: 800 });

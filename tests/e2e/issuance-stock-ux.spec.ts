@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = (suffix: string) => `/activity-designs/e2e-stock-ux-design/activities/e2e-stock-ux-activity/meal-schedules/e2e-stock-ux-${suffix}`;
 test.beforeAll(() => {
@@ -29,7 +30,7 @@ test("typing a different Item query cannot add the previously selected Item", as
 });
 
 async function openPicker(page: Page, suffix: string) {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);

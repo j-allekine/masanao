@@ -13,6 +13,7 @@ export function WorkspaceFormActionButtons({
   pendingLabel,
   submitIcon,
   cancelLabel = "Cancel",
+  form,
 }: {
   onCancel?: () => void;
   isPending: boolean;
@@ -21,6 +22,7 @@ export function WorkspaceFormActionButtons({
   pendingLabel: string;
   submitIcon?: ReactNode;
   cancelLabel?: string;
+  form?: string;
 }) {
   return (
     <>
@@ -34,7 +36,7 @@ export function WorkspaceFormActionButtons({
           {cancelLabel}
         </Button>
       ) : null}
-      <Button type="submit" disabled={isPending || submitDisabled}>
+      <Button type="submit" form={form} disabled={isPending || submitDisabled}>
         {isPending ? <Spinner data-icon="inline-start" /> : submitIcon}
         {isPending ? pendingLabel : submitLabel}
       </Button>

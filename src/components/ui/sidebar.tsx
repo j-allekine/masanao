@@ -32,6 +32,18 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
+const subscribeToSidebarPreference = () => () => {}
+const noSidebarPreference = () => undefined
+
+function readSidebarPreference() {
+  const preference = document.cookie
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+  if (preference === `${SIDEBAR_COOKIE_NAME}=false`) return false
+  if (preference === `${SIDEBAR_COOKIE_NAME}=true`) return true
+}
+
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -55,6 +67,7 @@ function useSidebar() {
 
 function SidebarProvider({
   defaultOpen = true,
+  restoreOpen = false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -63,6 +76,7 @@ function SidebarProvider({
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean
+  restoreOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }) {
@@ -71,15 +85,20 @@ function SidebarProvider({
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
-  const open = openProp ?? _open
+  const [localOpen, setLocalOpen] = React.useState<boolean>()
+  const savedOpen = React.useSyncExternalStore(
+    subscribeToSidebarPreference,
+    restoreOpen ? readSidebarPreference : noSidebarPreference,
+    noSidebarPreference,
+  )
+  const open = openProp ?? localOpen ?? savedOpen ?? defaultOpen
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value
       if (setOpenProp) {
         setOpenProp(openState)
       } else {
-        _setOpen(openState)
+        setLocalOpen(openState)
       }
 
       // This sets the cookie to keep the sidebar state.

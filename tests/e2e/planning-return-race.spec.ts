@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test("record links retain the current typed search while catalog navigation is pending", async ({ page }) => {
   const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -11,7 +12,7 @@ test("record links retain the current typed search while catalog navigation is p
   const pending = new Promise<void>((resolve) => { release = resolve; });
 
   try {
-    const signIn = await page.request.post("/api/auth/sign-in/username", {
+    const signIn = await postFixtureSignIn(page.request, {
       data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     });

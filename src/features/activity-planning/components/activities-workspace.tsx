@@ -15,6 +15,7 @@ import ActivitiesTable from "./activities-table";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
 import ActivitiesToolbar from "./activities-toolbar";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import ActivityCreateDialog from "./activity-create-dialog";
 import {
@@ -210,42 +211,43 @@ export default function ActivitiesWorkspace({
   }
 
   return (
-    <main
-      className="flex min-w-0 flex-col gap-6"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
       data-client-ready={isHydrated ? "true" : undefined}
-    >
-      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-2 font-semibold">Activities</h1>
-        </div>
-        <WorkspacePrimaryAction
-          id="new-activity"
-          className="sm:min-w-[12rem]"
-          onClick={() => setIsCreateDialogOpen(true)}
+      task={
+        <WorkspaceTaskHeader
+          actions={
+            <WorkspacePrimaryAction id="new-activity" onClick={() => setIsCreateDialogOpen(true)}>
+              Create Activity
+            </WorkspacePrimaryAction>
+          }
         >
-          Create Activity
-        </WorkspacePrimaryAction>
+          <h1 className="text-heading-3 font-semibold">Activities</h1>
+        </WorkspaceTaskHeader>
+      }
+    >
+      <div className="mx-auto flex w-full max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
+        <ActivitiesToolbar
+          search={search}
+          onSearchChange={updateSearch}
+        />
+        <ActivitiesTable
+          activities={paginatedActivities}
+          catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
+          filters={filters}
+          onClearSearch={() => updateSearch("")}
+          onEdit={setActivityForEdit}
+          onDeleted={handleActivityDeleted}
+        />
+        <CatalogPagination
+          page={currentPage}
+          pageCount={pageCount}
+          start={resultStart}
+          end={resultEnd}
+          total={filteredActivities.length}
+          onPageChange={changePage}
+        />
       </div>
-      <ActivitiesToolbar
-        search={search}
-        onSearchChange={updateSearch}
-      />
-      <ActivitiesTable
-        activities={paginatedActivities}
-        catalogUrl={getPlanningReturnUrl(`${pathname}?${currentQuery}`)}
-        filters={filters}
-        onClearSearch={() => updateSearch("")}
-        onEdit={setActivityForEdit}
-        onDeleted={handleActivityDeleted}
-      />
-      <CatalogPagination
-        page={currentPage}
-        pageCount={pageCount}
-        start={resultStart}
-        end={resultEnd}
-        total={filteredActivities.length}
-        onPageChange={changePage}
-      />
       <ActivityCreateDialog
         activityDesign={null}
         activityDesigns={activityDesigns}
@@ -267,6 +269,6 @@ export default function ActivitiesWorkspace({
         onClose={closeEditDialog}
         onSuccess={handleEditSuccess}
       />
-    </main>
+    </WorkspaceLayout>
   );
 }

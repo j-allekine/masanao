@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test("Purchase Order controls wait for hydration before accepting an interaction", async ({ page }, testInfo) => {
   const id = randomUUID();
@@ -10,7 +11,7 @@ test("Purchase Order controls wait for hydration before accepting an interaction
   let release!: () => void;
   const scripts = new Promise<void>((resolve) => { release = resolve; });
   try {
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "municipal.admin", password: "administrator-password" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);

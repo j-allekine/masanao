@@ -1,0 +1,7 @@
+.stickyColumns [data-slot="table-header"] {
+  position: relative;
+  z-index: 1;
+  transform: translateY(var(--workspace-column-label-offset, 0px));
+  background-color: var(--muted);
+  box-shadow: 0 1px var(--border);
+}

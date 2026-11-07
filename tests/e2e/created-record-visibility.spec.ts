@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 function database() {
   const path = process.env.MASANAO_E2E_DATABASE_PATH;
@@ -9,7 +10,7 @@ function database() {
 }
 
 async function signIn(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   });

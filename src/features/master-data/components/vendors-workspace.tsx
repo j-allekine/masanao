@@ -18,7 +18,6 @@ export default function VendorsWorkspace({
   onClearFilters,
   onPageChange,
   canManage,
-  onNew,
   onEdit,
   onToggle,
   onDeleted,
@@ -35,7 +34,6 @@ export default function VendorsWorkspace({
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
   canManage: boolean;
-  onNew: () => void;
   onEdit: (vendor: VendorListItem) => void;
   onToggle: (vendor: VendorListItem) => void;
   onDeleted: (vendor: VendorListItem) => void;
@@ -49,8 +47,6 @@ export default function VendorsWorkspace({
       resourceLabels={{ singular: "Vendor", plural: "Vendors" }}
       search={search}
       onSearchChange={onSearchChange}
-      canCreate={canManage}
-      onCreate={onNew}
     >
       <VendorTable
         vendors={vendors}

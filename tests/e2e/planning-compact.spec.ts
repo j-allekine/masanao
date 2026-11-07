@@ -1,6 +1,8 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
+import { postFixtureSignIn } from "./fixture-auth";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 
 const design = "/activity-designs/e2e-issuance-compact-design-11";
 const detailedActivity = `${design}/activities/e2e-issuance-compact-detailed`;
@@ -21,11 +23,70 @@ test.beforeAll(() => {
     })();
   } finally { db.close(); }
 });
+
+test("Planning catalogs and child records retain their identity through long lists", async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const prefix = "e2e-issuance-compact-scroll";
+  const longName = "Community kitchen operations and municipal supply coordination for emergency response volunteers";
+  const nameFor = (index: number) => `Scroll ${String(index).padStart(2, "0")} ${longName}`;
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.transaction(() => {
+      const insertDesign = db.prepare("INSERT INTO activity_design (id,activityDesignNo,title,fiscalYear,createdAt,updatedAt) VALUES (?,?,?,2026,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+      const insertActivity = db.prepare("INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,createdAt,updatedAt) VALUES (?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+      const insertMeal = db.prepare("INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES (?,?,?, ?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+      for (let index = 0; index < 24; index++) {
+        insertDesign.run(`${prefix}-design-${index}`, `SCROLL-AD-${index}`, nameFor(index));
+        insertActivity.run(`${prefix}-activity-${index}`, `${prefix}-design-0`, nameFor(index), longName);
+        insertMeal.run(`${prefix}-meal-${index}`, `${prefix}-activity-0`, nameFor(index), `12:${String(index).padStart(2, "0")}`);
+      }
+    })();
+  } finally { db.close(); }
+
+  expect((await postFixtureSignIn(page.request, {
+    data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+    headers: { origin: process.env.BETTER_AUTH_URL! },
+  })).status()).toBe(200);
+  const record = `/activity-designs/${prefix}-design-0`;
+  for (const [route, title, caption, screenshot] of [
+    ["/activity-designs?activityDesignsSearch=Scroll", "Activity Designs", "Activity Designs", "designs"],
+    ["/activities?activitiesSearch=Scroll", "Activities", "Activities", "activities"],
+    [record, nameFor(0), "Activities under this Activity Design", "design"],
+    [`${record}/activities/${prefix}-activity-0`, nameFor(0), "Meal Schedules under this Activity", "activity"],
+  ]) {
+    await page.goto(route);
+    const main = page.getByRole("main");
+    const heading = main.getByRole("heading", { name: title, level: 1, exact: true });
+    const table = main.getByRole("table", { name: caption, exact: true });
+    const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    for (const viewport of workspaceViewports) {
+      await page.setViewportSize(viewport);
+      await page.evaluate((enlarge) => {
+        document.documentElement.style.fontSize = enlarge ? "150%" : "";
+        document.body.style.letterSpacing = enlarge ? ".02em" : "";
+        scrollTo(0, 0);
+      }, viewport.width === 768 || viewport.height === 480);
+      await expect(heading).toBeInViewport();
+      for (const fraction of [0.5, 1]) {
+        await scrollWorkspaceDocument(page, fraction);
+        await expect(toggle).toBeInViewport({ ratio: 1 });
+        await expect(heading).toBeInViewport({ ratio: 1 });
+      }
+      if (viewport.width >= 768) {
+        const column = table.getByRole("columnheader").first();
+        await expect(column).toBeInViewport();
+        if (viewport.width === 768) await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell").first());
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`planning-${screenshot}-${viewport.width}x${viewport.height}.png`) });
+    }
+  }
+});
 test.afterAll(cleanupIssuanceFixtures);
 
 test("Planning shows useful information once, reveals optional facts and preserves catalog return state", async ({ page }, info) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username:"kitchen.staff", password:"correct-horse-battery-staple" },headers:{origin:process.env.BETTER_AUTH_URL!} })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username:"kitchen.staff", password:"correct-horse-battery-staple" },headers:{origin:process.env.BETTER_AUTH_URL!} })).status()).toBe(200);
   for (const width of [1280,320]) {
     await page.setViewportSize({width,height:800});
     await page.goto(catalog);

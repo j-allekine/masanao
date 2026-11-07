@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test("budget-only Dashboard keeps authentication, dated bookmarks, pending period changes and validation usable", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/$/);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/overview?start=2020-10-01&end=2020-10-31&view=stock");
   await expect(page).toHaveURL(/\/dashboard\?start=2020-10-01&end=2020-10-31&view=stock$/);
   await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();

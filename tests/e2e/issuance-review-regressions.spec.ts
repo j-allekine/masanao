@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = (suffix: string) => `/activity-designs/e2e-regression-design/activities/e2e-regression-activity/meal-schedules/e2e-regression-${suffix}`;
 
@@ -20,7 +21,7 @@ test.beforeAll(() => {
 });
 
 async function signIn(page: Page) {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);

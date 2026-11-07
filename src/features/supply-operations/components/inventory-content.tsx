@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ListEmptyState from "@/components/workspace/list-empty-state";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
       </Card>)}
     </div>
     <div className="hidden sm:block" data-inventory-desktop>
-      <WorkspaceTableFrame caption="Inventory" className="w-full table-fixed">
+      <WorkspaceTableFrame caption="Inventory" stickyColumns className="min-w-[46rem] table-fixed">
         <TableHeader className="bg-muted/60"><TableRow>{["Item", "Category", "On hand", "Reorder level", "Stock status"].map((label) => <TableHead key={label} scope="col" className="whitespace-normal">{label}</TableHead>)}</TableRow></TableHeader>
         <TableBody>{items.map((item) => <TableRow key={item.id} data-item-id={item.id}>
           <TableCell className="whitespace-normal break-words align-top">{item.name}</TableCell>
@@ -72,21 +72,23 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
 
   function clearFilters() { navigate({ search: "", categoryId: "", stockStatus: "", page: 1 }); }
 
-  return <div className="flex min-h-svh flex-col bg-card" data-inventory-ready={hydrated ? "true" : "false"}>
-    <WorkspaceHeader title="Supply Operations" />
-    <FieldSet disabled={!hydrated} className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+  const taskHeader = (
+    <WorkspaceTaskHeader actions={<>
+      <Button type="button" variant="outline" disabled={!hydrated || refreshing} aria-busy={refreshing} onClick={requestRefresh}>
+        <RefreshCw data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
+      </Button>
+      <Button variant="outline" disabled={!hydrated} nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
+        <Download data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />Export CSV
+      </Button>
+    </>}>
+      <h1 className="text-heading-3 font-semibold">Inventory</h1>
+    </WorkspaceTaskHeader>
+  );
+
+  return <WorkspaceLayout workspaceTitle="Supply Operations" task={taskHeader} data-inventory-ready={hydrated ? "true" : "false"}>
+    <FieldSet disabled={!hydrated} className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <FieldLegend className="sr-only">Inventory controls and results</FieldLegend>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-2"><h1 className="text-heading-1 font-semibold">Inventory</h1><p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p></div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={refreshing} aria-busy={refreshing} onClick={requestRefresh}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
-          </Button>
-          <Button variant="outline" disabled={!hydrated} nativeButton={false} render={<a href={`/inventory/export${currentQuery ? `?${currentQuery}` : ""}`} download />}>
-            <Download data-icon="inline-start" aria-hidden="true" />Export CSV
-          </Button>
-        </div>
-      </header>
+      <p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p>
       <InventorySearch
         search={state.search}
         onSearchChange={(search) => navigate({ search, page: 1 }, true)}
@@ -100,6 +102,6 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
       <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
       <CatalogPagination {...pagination} onPageChange={(page) => navigate({ page })} />
     </FieldSet>
-  </div>;
+  </WorkspaceLayout>;
 }
 

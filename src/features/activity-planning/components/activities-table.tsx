@@ -43,16 +43,16 @@ function ActivityRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-      <TableCell className="max-w-[28rem]">
+      <TableCell className="max-w-[28rem] whitespace-normal wrap-anywhere">
         <Link
           href={withPlanningReturn(`/activity-designs/${activity.activityDesignId}/activities/${activity.id}`, catalogUrl)}
-          className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {activity.name}
         </Link>
       </TableCell>
-      <TableCell className="max-w-[28rem]">
-        <span className="block truncate">{activity.activityDesignTitle}</span>
+      <TableCell className="max-w-[28rem] whitespace-normal wrap-anywhere">
+        <span className="block">{activity.activityDesignTitle}</span>
       </TableCell>
       <TableCell
         className="text-center tabular-nums"
@@ -121,7 +121,7 @@ export default function ActivitiesTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Activities" className="min-w-[44rem]">
+    <WorkspaceTableFrame caption="Activities" stickyColumns className="min-w-[44rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

@@ -2,6 +2,8 @@ import { isolateMasterDataFixture } from "./master-data-fixtures";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 
 let restoreCatalogFixture: (() => void) | undefined;
 test.beforeEach(() => { restoreCatalogFixture = isolateMasterDataFixture(test.info().title); });
@@ -11,7 +13,7 @@ const adminPassword = "administrator-password";
 const staffPassword = "correct-horse-battery-staple";
 
 async function signIn(page: Page, username: string, password: string) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: { username, password },
     headers: {
       origin: process.env.BETTER_AUTH_URL ?? "http://localhost:3019",
@@ -42,6 +44,73 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
     database.close();
   }
 }
+
+test("all Master Data tabs and permitted actions stay available during catalog scrolling", async ({ page }, info) => {
+  test.setTimeout(180_000);
+  const sections = [
+    { tab: "units", label: "Units", action: "Create Unit" },
+    { tab: "categories", label: "Categories", action: "Create Category" },
+    { tab: "offices", label: "Offices", action: "Create Office" },
+    { tab: "vendors", label: "Vendors", action: "Create Vendor" },
+  ];
+  withE2eDatabase((db) => db.transaction(() => {
+    const unit = db.prepare("INSERT INTO unit (id,name,normalizedName,abbreviation,normalizedAbbreviation,active,createdAt,updatedAt) VALUES (?,?,?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+    const category = db.prepare("INSERT INTO category (id,name,normalizedName,description,isActive,createdAt,updatedAt) VALUES (?,?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+    const office = db.prepare("INSERT INTO office (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES (?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+    const vendor = db.prepare("INSERT INTO vendor (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES (?,?,?,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+    for (let index = 0; index < 10; index++) {
+      const name = `Layout sample ${index} for community kitchen supply preparation and municipal response volunteers`;
+      unit.run(`layout-unit-${index}`, name, name.toLowerCase(), `lt${index}`, `lt${index}`);
+      category.run(`layout-category-${index}`, name, name.toLowerCase(), name.repeat(3));
+      office.run(`layout-office-${index}`, name, name.toLowerCase());
+      vendor.run(`layout-vendor-${index}`, name, name.toLowerCase());
+    }
+  })());
+
+  await signIn(page, "municipal.admin", adminPassword);
+  for (const { tab, label, action } of sections) {
+    await page.goto(`/master-data?tab=${tab}&search=Layout+sample`);
+    const tabList = page.getByRole("tablist", { name: "Master Data sections" });
+    const selected = tabList.getByRole("tab", { name: label, exact: true });
+    const search = page.getByRole("searchbox");
+    await expect(selected).toHaveAttribute("aria-selected", "true");
+    await expect(search).toHaveValue("Layout sample");
+    for (const viewport of workspaceViewports) {
+      await page.setViewportSize(viewport);
+      await page.evaluate((height) => {
+        document.documentElement.style.fontSize = height === 480 ? "125%" : "";
+        scrollTo(0, 0);
+        if (document.documentElement.scrollHeight < innerHeight + 60) {
+          document.documentElement.style.fontSize = "150%";
+          document.body.style.letterSpacing = ".04em";
+        }
+      }, viewport.height);
+      await scrollWorkspaceDocument(page, 0.5);
+      await expect(selected).toBeInViewport({ ratio: 1 });
+      await expect(page.getByRole("button", { name: action, exact: true })).toBeInViewport({ ratio: 1 });
+      await scrollWorkspaceDocument(page, 1);
+      await expect(selected).toBeInViewport({ ratio: 1 });
+      const table = page.getByRole("table", { name: label, exact: true });
+      if (await table.isVisible() && viewport.width >= 768) {
+        await table.evaluate((element) => { element.parentElement!.scrollLeft = 0; });
+        const column = table.getByRole("columnheader").first();
+        await expect(column).toBeInViewport();
+        const horizontalOverflow = await table.evaluate((element) => element.parentElement!.scrollWidth > element.parentElement!.clientWidth);
+        if (horizontalOverflow) await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell").first());
+      }
+      await expect(search).toHaveValue("Layout sample");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`master-data-${tab}-${viewport.width}x${viewport.height}.png`) });
+    }
+  }
+  await page.context().clearCookies();
+  await signIn(page, "kitchen.staff", staffPassword);
+  for (const { tab, label, action } of sections) {
+    await page.goto(`/master-data?tab=${tab}&search=Layout+sample`);
+    await expect(page.getByRole("tab", { name: label, exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("button", { name: action, exact: true })).toHaveCount(0);
+  }
+});
 
 function createReferencedCategoryFixture(): ItemReferenceFixture {
   const categoryId = randomUUID();

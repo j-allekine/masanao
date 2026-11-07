@@ -19,7 +19,7 @@ import {
 import { RecordDetails } from "@/components/workspace/record-details";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import {
   TableBody,
   TableCell,
@@ -59,7 +59,7 @@ function ActivityRows({
   onDeleted: (activity: ActivityDesignDetailActivity) => void;
 }) {
   return (
-    <WorkspaceTableFrame caption="Activities under this Activity Design" className="w-full">
+    <WorkspaceTableFrame caption="Activities under this Activity Design" stickyColumns className="sm:min-w-[42rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col">Activity</TableHead>
@@ -105,7 +105,7 @@ function ActivityRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] whitespace-normal font-medium">
+        <TableCell className="max-w-[24rem] whitespace-normal wrap-anywhere font-medium">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}/activities/${activity.id}`, returnUrl)}
             aria-label={`Open Activity: ${activity.name}`}
@@ -201,39 +201,34 @@ export default function ActivityDesignDetailContent({
   }
 
   return (
-    <div
-      className="flex min-h-svh flex-col bg-card"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
       data-client-ready={isHydrated ? "true" : undefined}
+      task={
+        <WorkspaceTaskHeader
+          actions={
+            <Button id="new-activity" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              Create Activity
+            </Button>
+          }
+        >
+          <WorkspaceRecordTitle title={activityDesign.title} />
+        </WorkspaceTaskHeader>
+      }
     >
-      <WorkspaceHeader title="Planning" />
-
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         <Breadcrumb><BreadcrumbList className="break-words">
           <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage className="break-words">{activityDesign.activityDesignNo}</BreadcrumbPage></BreadcrumbItem>
         </BreadcrumbList></Breadcrumb>
-        <div className="flex flex-col gap-2">
-          <h1 className="break-words text-heading-2 font-semibold">{activityDesign.title}</h1>
-          <p className="text-body-sm text-muted-foreground">Fiscal year: {activityDesign.fiscalYear}</p>
-        </div>
+        <p className="text-body-sm text-muted-foreground">Fiscal year: {activityDesign.fiscalYear}</p>
         <RecordDetails disabled={!isHydrated} fields={activityDesign.aipReferenceCode ? [{ label: "AIP reference", value: activityDesign.aipReferenceCode }] : []} />
 
         <section aria-labelledby="activity-design-activities-title" className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 id="activity-design-activities-title" className="text-heading-3 font-semibold">
-                Activities ({activityDesign.activityCount})
-              </h2>
-            </div>
-            <Button
-              id="new-activity"
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
-            >
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              Create Activity
-            </Button>
-          </div>
+          <h2 id="activity-design-activities-title" className="text-heading-3 font-semibold">
+            Activities ({activityDesign.activityCount})
+          </h2>
           {activityDesign.activities.length === 0 ? (
             <ActivitiesEmptyState />
           ) : (
@@ -251,7 +246,7 @@ export default function ActivityDesignDetailContent({
             />
           )}
         </section>
-      </main>
+      </div>
 
       <ActivityCreateDialog
         activityDesign={createParent}
@@ -275,6 +270,6 @@ export default function ActivityDesignDetailContent({
           toast.success("Activity updated");
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 }

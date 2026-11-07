@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const id = "e2e-design-interactions";
 const title = "Design interaction verification";
@@ -28,7 +29,7 @@ test.afterAll(() => {
 });
 
 test.beforeEach(async ({ page }) => {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   });

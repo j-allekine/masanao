@@ -2,6 +2,7 @@ import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 import type { IssuanceWorkspace } from "../../src/features/issuance/types";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const path = "/activity-designs/fifo-design/activities/fifo-activity/meal-schedules/fifo-meal";
 test.beforeAll(() => {
@@ -26,7 +27,7 @@ test.beforeAll(() => {
 
 test("posted FIFO sources split across POs and remain accessible and immutable", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
@@ -161,7 +162,7 @@ test("posted repeating calculation keeps approximation separate from exact issue
     INSERT INTO recipe_ingredient (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES ('fifo-repeat-ingredient','fifo-repeat-recipe','fifo-salt','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
   `);
   db.close();
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path.replace("fifo-meal", "fifo-repeat-meal"));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByLabel("Meal pax", { exact: true }).fill("1");
