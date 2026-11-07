@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import WorkspaceTableSkeleton from "@/components/workspace/workspace-table-skeleton";
 
 import type {
@@ -19,29 +19,25 @@ export default function PurchaseOrdersContent({
   canManagePurchaseOrders: boolean;
 }) {
   return (
-    <div className="flex min-h-svh flex-col bg-card">
-      <WorkspaceHeader title="Supply Operations" />
-
-      <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-6 sm:px-6">
-        <Suspense
-          fallback={
-            <WorkspaceTableSkeleton
-              columnLabels={[
-                "Purchase Order No.",
-                "Vendor",
-                "Reference",
-                "Last updated",
-              ]}
-            />
-          }
+    <Suspense
+      fallback={
+        <WorkspaceLayout
+          workspaceTitle="Supply Operations"
+          task={<WorkspaceTaskHeader><h1 className="text-heading-3 font-semibold">Purchase Orders</h1></WorkspaceTaskHeader>}
         >
-          <PurchaseOrdersWorkspace
-            purchaseOrders={purchaseOrders}
-            vendors={vendors}
-            canManagePurchaseOrders={canManagePurchaseOrders}
-          />
-        </Suspense>
-      </div>
-    </div>
+          <div className="mx-auto w-full max-w-content px-4 py-6 sm:px-6">
+            <WorkspaceTableSkeleton
+              columnLabels={["Purchase Order No.", "Vendor", "Total delivered", "Last updated"]}
+            />
+          </div>
+        </WorkspaceLayout>
+      }
+    >
+      <PurchaseOrdersWorkspace
+        purchaseOrders={purchaseOrders}
+        vendors={vendors}
+        canManagePurchaseOrders={canManagePurchaseOrders}
+      />
+    </Suspense>
   );
 }

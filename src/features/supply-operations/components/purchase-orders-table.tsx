@@ -243,7 +243,7 @@ export default function PurchaseOrdersTable({
         ))}
       </div>
       <div className="hidden sm:block" data-purchase-orders-table-desktop>
-        <WorkspaceTableFrame caption="Purchase Orders" className="min-w-[42rem]">
+        <WorkspaceTableFrame caption="Purchase Orders" stickyColumns className="min-w-[42rem]">
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead scope="col" className="text-left">

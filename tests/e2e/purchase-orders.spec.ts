@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { expectPannedColumns, scrollSupplyDocument, supplyViewports } from "./supply-layout-helpers";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -774,4 +775,77 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       });
     }
   });
+});
+
+test("keeps Purchase Order catalog context and actions visible while scrolling", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  const prefix = `layout-po-${randomUUID()}`;
+  const searchTerm = "PO-LAYOUT";
+  const numbers = Array.from({ length: 10 }, (_, index) =>
+    `${searchTerm}-${index + 1}-${"MUNICIPAL".repeat(9)}`,
+  );
+
+  withE2eDatabase((database) => {
+    const insert = database.prepare(`INSERT INTO purchase_order
+      (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt)
+      VALUES (?,?,?,'e2e-vendor-acme',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+    numbers.forEach((number, index) => insert.run(`${prefix}-${index}`, number, number.toLowerCase()));
+  });
+  try {
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/purchase-orders?purchaseOrdersSearch=PO-LAYOUT");
+    const main = page.getByRole("main");
+    const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const title = main.getByRole("heading", { name: "Purchase Orders", level: 1, exact: true });
+    const create = main.getByRole("button", { name: "Create Purchase Order", exact: true });
+    const search = page.getByLabel("Search Purchase Orders", { exact: true });
+    const table = page.getByRole("table", { name: "Purchase Orders", exact: true });
+    await expect(create).toBeEnabled();
+    await expect(main).toHaveCount(1);
+
+    for (const { width, height } of supplyViewports) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((enlarge) => {
+        document.documentElement.style.fontSize = enlarge ? "150%" : "";
+        document.body.style.letterSpacing = enlarge ? ".02em" : "";
+        window.scrollTo(0, 0);
+      }, width === 768 || height === 480);
+      await expect(title).toBeInViewport({ ratio: 1 });
+      const originalTitle = await title.boundingBox();
+      for (const fraction of [0.5, 1]) {
+        await scrollSupplyDocument(page, fraction);
+        await expect(toggle).toBeInViewport({ ratio: 1 });
+        await expect(create).toBeInViewport({ ratio: 1 });
+        await expect(title).toBeInViewport({ ratio: 1 });
+        expect((await title.boundingBox())!.y).toBeCloseTo(originalTitle!.y, 0);
+      }
+      if (width >= 640) {
+        const column = table.getByRole("columnheader", { name: "Total delivered", exact: true });
+        await expect(column).toBeInViewport();
+        expect((await column.boundingBox())!.y).toBeGreaterThan((await title.boundingBox())!.y);
+        if (width === 768) {
+          await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell").nth(2));
+        }
+      } else {
+        await expect(table).toHaveCount(0);
+      }
+      await expect(search).toHaveValue(searchTerm);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`purchase-orders-scrolled-${width}x${height}.png`) });
+    }
+
+    await create.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Create Purchase Order", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(create).toBeFocused();
+    await page.getByRole("link", { name: numbers[0], exact: true }).click();
+    await expect(page).toHaveURL(`/purchase-orders/${prefix}-0`);
+    await page.goBack();
+    await expect(search).toHaveValue(searchTerm);
+  } finally {
+    withE2eDatabase((database) => database.prepare("DELETE FROM purchase_order WHERE id LIKE ?").run(`${prefix}%`));
+  }
 });
