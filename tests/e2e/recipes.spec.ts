@@ -96,7 +96,8 @@ test("lets an administrator open the Recipe editor from the catalog action menu"
   await expect(page.getByRole("menuitem", { name: "Delete Recipe", exact: true })).toBeVisible();
   await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes\/e2e-recipe-active\/edit$/);
-  await expect(page.getByRole("heading", { name: "Edit Recipe", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chicken Tinola", level: 1, exact: true })).toBeVisible();
+  await expect(page.getByText("Edit Recipe", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page).toHaveURL(/\/recipes$/);
 });
@@ -458,5 +459,89 @@ test.describe("overflowing Recipe routes", () => {
     await expect(page).toHaveURL(layoutCatalog);
     await expect(main.getByLabel("Search Recipes")).toHaveValue("Layout Recipe");
     await expect(main.getByText("Showing 11 to 20 of 20 results")).toBeVisible();
+  });
+
+  test("keeps Recipe editor actions reachable through long drafts and validation", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    await signInAsAdministrator(page);
+    await page.goto(`/recipes/${layoutRecipeId}/edit?recipesSearch=Layout+Recipe&recipesPage=2`);
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    const main = page.getByRole("main");
+    const sidebar = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const title = main.getByRole("heading", { name: layoutRecipeName(20), level: 1, exact: true });
+    const save = main.getByRole("button", { name: "Save Recipe", exact: true });
+    const cancel = main.getByRole("button", { name: "Cancel", exact: true });
+    const first = main.getByLabel("Ingredient 1 quantity", { exact: true });
+    const last = main.getByLabel(`Ingredient ${layoutIngredientCount} quantity`, { exact: true });
+    const pax = main.getByLabel("Ingredients for ___ pax");
+    await expect(main).toHaveCount(1);
+    await expect(pax).toHaveValue("50");
+    await last.fill("2.5000");
+
+    for (const { width, height } of layoutViewports) {
+      await page.setViewportSize({ width, height });
+      await first.scrollIntoViewIfNeeded();
+      await expect(first).toBeInViewport({ ratio: 1 });
+      await expect(first).toHaveValue("1.2500");
+      await expect(last).not.toBeInViewport();
+      for (const index of [Math.floor(layoutIngredientCount / 2), layoutIngredientCount]) {
+        const quantity = main.getByLabel(`Ingredient ${index} quantity`, { exact: true });
+        await quantity.scrollIntoViewIfNeeded();
+        await expect(quantity).toBeInViewport({ ratio: 1 });
+        for (const fixed of [title, sidebar, save, cancel]) await expect(fixed).toBeInViewport({ ratio: 1 });
+        expect(await page.evaluate(() => scrollY)).toBe(0);
+      }
+      await expect(last).toHaveValue("2.5000");
+      await page.screenshot({ path: info.outputPath(`recipe-edit-scrolled-${width}x${height}.png`), animations: "disabled" });
+    }
+
+    await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport({ ratio: 1 });
+    await expect(save).toBeInViewport({ ratio: 1 });
+    await last.fill("0");
+    await save.press("Enter");
+    const summary = main.getByRole("alert").filter({ hasText: "Could not save Recipe" });
+    await expect(summary).toBeFocused();
+    await expect(summary).toBeInViewport();
+    await expect(last).toHaveAttribute("aria-invalid", "true");
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport({ ratio: 1 });
+    await expect(last).toHaveValue("0");
+    await expect(pax).toHaveValue("50");
+    await expect(save).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: info.outputPath("recipe-edit-validation-enlarged.png"), animations: "disabled" });
+
+    await cancel.press("Enter");
+    const discard = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
+    await expect(discard).toBeInViewport({ ratio: 1 });
+    await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(cancel).toBeFocused();
+    await expect(last).toHaveValue("0");
+    await cancel.press("Enter");
+    await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
+    await expect(page).toHaveURL(layoutCatalog);
+
+    await main.getByRole("link", { name: "Create Recipe", exact: true }).click();
+    await expect(main.getByRole("heading", { name: "New Recipe", level: 1, exact: true })).toBeVisible();
+    await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
+    const create = main.getByRole("button", { name: "Create Recipe", exact: true });
+    const add = main.getByRole("button", { name: "Add Ingredient", exact: true });
+    await main.getByLabel("Recipe name").fill("Layout draft");
+    for (let index = 1; index < 6; index++) await add.click();
+    const newLast = main.getByLabel("Ingredient 6 quantity", { exact: true });
+    await newLast.fill("1.2500");
+    await newLast.scrollIntoViewIfNeeded();
+    await expect(newLast).toBeInViewport({ ratio: 1 });
+    await expect(first).not.toBeInViewport();
+    await expect(create).toBeInViewport({ ratio: 1 });
+    await expect(cancel).toBeInViewport({ ratio: 1 });
+    await expect(sidebar).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+    await page.screenshot({ path: info.outputPath("recipe-new-scrolled-enlarged-320x480.png"), animations: "disabled" });
+    await create.press("Enter");
+    await expect(summary).toBeFocused();
+    await expect(pax).toHaveAttribute("aria-invalid", "true");
+    await expect(newLast).toHaveValue("1.2500");
   });
 });
