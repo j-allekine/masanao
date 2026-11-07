@@ -87,3 +87,113 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${activity}$`));
 });
+
+test("a long draft and posted meal retain identity while the working body scrolls", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  const itemCount = 24;
+  const itemName = (number: number) => `Layout pantry supply ${String(number).padStart(2, "0")}`;
+  const label = "Community kitchen luncheon for municipal operations and emergency response volunteer training";
+  const title = `${label} \u00b7 12:00`;
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    db.transaction(() => {
+      db.prepare("UPDATE meal_schedule SET label=? WHERE id='e2e-issuance-layout-meal'").run(label);
+      db.exec(`
+        INSERT INTO issuance_record (id,mealScheduleId,mealPax,createdAt,updatedAt) VALUES ('e2e-issuance-layout-draft','e2e-issuance-layout-meal',75,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+        INSERT INTO delivery_receipt (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate,postedAt) VALUES ('e2e-issuance-layout-receipt','e2e-issuance-layout-po','e2e-vendor-acme','Acme Foods','PO-LAYOUT','DR-LAYOUT','dr-layout',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+      `);
+      const item = db.prepare(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,createdAt,updatedAt)
+        VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-piece',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+      const stock = db.prepare(`INSERT INTO issuance_stock_item (id,issuanceRecordId,itemId,itemName,enteredQuantity,conversionFactor,selectedUnitId,selectedUnitName,selectedUnitAbbreviation,baseUnitId,baseUnitName,baseUnitAbbreviation)
+        VALUES (?,'e2e-issuance-layout-draft',?,?,'1','1','default-unit-piece','Piece','pc','default-unit-piece','Piece','pc')`);
+      const receiptLine = db.prepare(`INSERT INTO delivery_receipt_line (id,deliveryReceiptId,itemId,selectedUnitId,baseUnitId,itemName,selectedUnitName,baseUnitName,enteredQuantity,conversionFactor,calculatedBaseUnitQuantity)
+        VALUES (?,'e2e-issuance-layout-receipt',?,'default-unit-piece','default-unit-piece',?,'Piece','Piece','10','1','10')`);
+      const movement = db.prepare(`INSERT INTO inventory_ledger_movement (id,deliveryReceiptLineId,itemId,baseUnitId,quantity,movementType,occurredAt)
+        VALUES (?,?,?,'default-unit-piece','10','stock-in',CURRENT_TIMESTAMP)`);
+      for (let number = 1; number <= itemCount; number++) {
+        const suffix = String(number).padStart(2, "0");
+        const itemId = `e2e-issuance-layout-item-${suffix}`;
+        const lineId = `e2e-issuance-layout-receipt-${suffix}`;
+        item.run(itemId, itemName(number), itemName(number).toLowerCase());
+        stock.run(`e2e-issuance-layout-stock-${suffix}`, itemId, itemName(number));
+        receiptLine.run(lineId, itemId, itemName(number));
+        movement.run(`e2e-issuance-layout-in-${suffix}`, lineId, itemId);
+      }
+    })();
+  } finally {
+    db.close();
+  }
+
+  expect((await page.request.post("/api/auth/sign-in/username", {
+    data: { username: "municipal.admin", password: "administrator-password" },
+    headers: { origin: process.env.BETTER_AUTH_URL! },
+  })).status()).toBe(200);
+  await page.goto(meal);
+  await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
+
+  const heading = page.getByRole("heading", { name: title, level: 1, exact: true });
+  const sidebar = page.getByRole("button", { name: "Toggle Sidebar", exact: true });
+  const pax = page.getByLabel("Meal pax", { exact: true });
+  const review = page.getByRole("button", { name: "Review quantities and stock", exact: true });
+  const save = page.getByRole("button", { name: "Save draft", exact: true });
+  const post = page.getByRole("button", { name: "Post issuance", exact: true });
+  const lastStock = page.getByRole("button", { name: `Actions for Stock item ${itemName(itemCount)}`, exact: true });
+  const viewports = [
+    { width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 768, height: 1024 },
+    { width: 390, height: 640 }, { width: 320, height: 640 }, { width: 320, height: 480 },
+  ];
+
+  await pax.fill("76");
+  await expect(save).toBeEnabled();
+  await expect(page.getByRole("main")).toHaveCount(1);
+  for (const { width, height } of viewports) {
+    await page.setViewportSize({ width, height });
+    await pax.scrollIntoViewIfNeeded();
+    await expect(pax).toBeInViewport({ ratio: 1 });
+    await expect(pax).toHaveValue("76");
+    await expect(lastStock).not.toBeInViewport();
+    for (const number of [Math.floor(itemCount / 2), itemCount]) {
+      const rowAction = page.getByRole("button", { name: `Actions for Stock item ${itemName(number)}`, exact: true });
+      await rowAction.scrollIntoViewIfNeeded();
+      await expect(rowAction).toBeInViewport({ ratio: 1 });
+      for (const fixed of [heading, sidebar, review, save, post]) await expect(fixed).toBeInViewport({ ratio: 1 });
+      expect(await page.evaluate(() => scrollY)).toBe(0);
+    }
+    await expect(pax).not.toBeInViewport();
+    await page.screenshot({ path: info.outputPath(`draft-scrolled-${width}x${height}.png`), animations: "disabled" });
+  }
+
+  const enlarged = await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
+  await lastStock.scrollIntoViewIfNeeded();
+  await expect(lastStock).toBeInViewport({ ratio: 1 });
+  await expect(save).toBeInViewport({ ratio: 1 });
+  const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
+  await fullTitle.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Full title", exact: true })).toHaveText(title);
+  await page.keyboard.press("Escape");
+  await expect(fullTitle).toBeFocused();
+  await page.screenshot({ path: info.outputPath("draft-scrolled-enlarged.png"), animations: "disabled" });
+  await enlarged.evaluate((style) => { style.parentNode?.removeChild(style); });
+
+  await post.click();
+  const confirmation = page.getByRole("dialog", { name: "Post issuance?", exact: true });
+  await confirmation.getByRole("button", { name: "Confirm and post issuance", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Issuance posted");
+
+  const lastIssued = page.getByText(itemName(itemCount), { exact: true });
+  const totals = page.getByRole("button", { name: "View issued totals", exact: true });
+  for (const { width, height } of viewports) {
+    await page.setViewportSize({ width, height });
+    await totals.scrollIntoViewIfNeeded();
+    await expect(totals).toBeInViewport({ ratio: 1 });
+    await expect(lastIssued).not.toBeInViewport();
+    await lastIssued.scrollIntoViewIfNeeded();
+    await expect(lastIssued).toBeInViewport({ ratio: 1 });
+    await expect(heading).toBeInViewport({ ratio: 1 });
+    await expect(sidebar).toBeInViewport({ ratio: 1 });
+    await expect(page.getByText("Posted", { exact: true })).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+    await page.screenshot({ path: info.outputPath(`posted-scrolled-${width}x${height}.png`), animations: "disabled" });
+  }
+});

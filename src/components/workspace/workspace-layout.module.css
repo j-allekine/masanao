@@ -1,4 +1,4 @@
-:global(html):has(.layout) {
+:global(html):has(.layout:not(.bounded)) {
   scrollbar-gutter: stable;
 }
 
@@ -6,4 +6,20 @@
   scroll-margin-block-start: calc(
     var(--workspace-chrome-height, 0px) + var(--workspace-column-label-height, 0px) + 0.25rem
   );
+}
+
+.bounded {
+  height: 100svh;
+  min-height: 0;
+}
+
+.bounded > .body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+}
+
+.bounded > .body :where([id], :focus) {
+  scroll-margin-block-start: calc(var(--workspace-column-label-height, 0px) + 0.25rem);
 }

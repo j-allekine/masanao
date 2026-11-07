@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import PaxField from "./pax-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Empty, EmptyHeader, EmptyDescription } from "@/components/ui/empty";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import { MealScheduleDetails } from "@/features/activity-planning/ui";
 import type { MealScheduleDetailItem } from "@/features/activity-planning/types";
 import {
   Dialog,
@@ -581,114 +582,195 @@ export default function IssuanceDraftContent({
   }
 
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col bg-card"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
+      mode="bounded"
       data-issuance-ready={hydrated ? "true" : undefined}
-    >
-      <main className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
-          <MealScheduleHeader mealSchedule={mealSchedule} ready={hydrated} disabled={pending}
-            status={<Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>} />
-          <FieldGroup className="max-w-sm">
-            <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
-              description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
-          </FieldGroup>
-          {review.some((row) => row.warning) ? (
-            <Alert variant="destructive">
-              <AlertTriangle aria-label="Quantity review needed" />
-              <AlertDescription>
-                Some combined Item quantities require confirmation.{" "}
-                <Button variant="link" onClick={openReview}>
-                  Review quantities
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {review.some((row) => row.adjusted) ? (
-            <p className="flex items-start gap-2 text-body-sm">
-              <LockKeyhole
-                aria-label="Adjusted demand locked"
-                className="size-4 shrink-0"
-              />
-              <span>
-                Adjusted Item demand is locked. Reset its confirmation in{" "}
-                <Button variant="link" onClick={openReview}>
-                  combined review
-                </Button>{" "}
-                before changing affected Recipes, pax, or Stock items.
-              </span>
-            </p>
-          ) : null}
-          {error ? (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
-          {notice ? (
-            <p role="status" className="text-body-sm">
-              {notice}
-            </p>
-          ) : null}
+      task={
+        <WorkspaceTaskHeader>
+          <WorkspaceRecordTitle title={`${mealSchedule.label} · ${mealSchedule.mealTime}`} />
+          <Badge variant="secondary">{dirty ? "Unsaved changes" : saved.draft.id ? "Draft" : "New draft"}</Badge>
+        </WorkspaceTaskHeader>
+      }
+      footer={
+        <div className="flex flex-wrap gap-2">
+          {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
+          <Button id="issuance-review" variant="outline" className="h-auto min-h-8 max-w-full whitespace-normal" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
+          <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
+          <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
         </div>
-        <section
-          aria-labelledby="recipes-heading"
-          className="px-4 py-5 sm:px-6"
-        >
+      }
+    >
+      <div className="flex shrink-0 flex-col gap-4 border-b px-4 py-4 sm:px-6">
+        <MealScheduleDetails mealSchedule={mealSchedule} ready={hydrated} disabled={pending} />
+        <FieldGroup className="max-w-sm">
+          <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
+            description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
+        </FieldGroup>
+        <div className="text-body-sm text-muted-foreground">
+          <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
+          {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
+          {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
+        </div>
+        {review.some((row) => row.warning) ? (
+          <Alert variant="destructive">
+            <AlertTriangle aria-label="Quantity review needed" />
+            <AlertDescription>
+              Some combined Item quantities require confirmation.{" "}
+              <Button variant="link" onClick={openReview}>
+                Review quantities
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {review.some((row) => row.adjusted) ? (
+          <p className="flex items-start gap-2 text-body-sm">
+            <LockKeyhole
+              aria-label="Adjusted demand locked"
+              className="size-4 shrink-0"
+            />
+            <span>
+              Adjusted Item demand is locked. Reset its confirmation in{" "}
+              <Button variant="link" onClick={openReview}>
+                combined review
+              </Button>{" "}
+              before changing affected Recipes, pax, or Stock items.
+            </span>
+          </p>
+        ) : null}
+        {error ? (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+        {notice ? (
+          <p role="status" className="text-body-sm">
+            {notice}
+          </p>
+        ) : null}
+      </div>
+      <section
+        aria-labelledby="recipes-heading"
+        className="px-4 py-5 sm:px-6"
+      >
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
+          <Button id="issuance-add-recipe" variant="outline" disabled={pending} onClick={openPicker}><Plus data-icon="inline-start" />Add Recipes</Button>
+        </div>
+        {recipes.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyDescription>
+                No Recipes selected. Add a Recipe to prepare this draft.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {recipes.map((recipe) => (
+              <li
+                key={recipe.id}
+                className="flex min-w-0 items-center gap-2 px-3 py-3"
+              >
+                <Button
+                  variant="ghost"
+                  className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left"
+                  aria-label={`View ingredients for ${recipe.recipeName}`}
+                  onClick={() => setViewId(recipe.id)}
+                >
+                  <span className="flex min-w-0 flex-col gap-1"><span>{recipe.recipeName}</span><span className="text-muted-foreground">View ingredients</span></span>
+                </Button>
+                <div className="min-w-0 text-right text-body-sm tabular-nums">
+                  <p>{recipe.targetPax === null ? "Pax pending" : `${recipe.targetPax} pax`}</p>
+                  <p className="text-muted-foreground">{recipe.targetMode === "meal" ? "Following meal" : "Custom target"}</p>
+                </div>
+                <WorkspaceRowActionMenu
+                  actionButtonId={`issuance-actions-${recipe.id}`}
+                  ariaLabel={`Actions for ${recipe.recipeName}`}
+                  disabled={pending}
+                  groups={[
+                    {
+                      actions: [
+                        {
+                          label: "Adjust target pax",
+                          onSelect: () => {
+                            setAdjustId(recipe.id);
+                            setAdjustPax(recipe.targetPax?.toString() ?? "");
+                          },
+                        },
+                        {
+                          label: "Remove Recipe",
+                          variant: "destructive",
+                          onSelect: () => {
+                            const next = recipes.filter(
+                              (row) => row.id !== recipe.id,
+                            );
+                            if (!changeDemand({ recipes: next })) return;
+                            setRecipes(next);
+                            setDirty(true);
+                            setNotice("");
+                          },
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <section aria-labelledby="stock-heading" className="mt-6">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
-            <Button id="issuance-add-recipe" variant="outline" disabled={pending} onClick={openPicker}><Plus data-icon="inline-start" />Add Recipes</Button>
+            <h2 id="stock-heading" className="text-heading-3 font-semibold">Stock <span className="text-muted-foreground">({stockItems.length})</span></h2>
+            <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => { setError(""); setStockPicker({ line: null }); }}><Plus data-icon="inline-start" />Add Stock item</Button>
           </div>
-          {recipes.length === 0 ? (
+          {stockItems.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyDescription>
-                  No Recipes selected. Add a Recipe to prepare this draft.
+                  No Stock items selected. Add a Stock item for direct
+                  issuance.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
             <ul className="divide-y rounded-lg border">
-              {recipes.map((recipe) => (
+              {stockItems.map((line) => (
                 <li
-                  key={recipe.id}
+                  key={line.id}
                   className="flex min-w-0 items-center gap-2 px-3 py-3"
                 >
-                  <Button
-                    variant="ghost"
-                    className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left"
-                    aria-label={`View ingredients for ${recipe.recipeName}`}
-                    onClick={() => setViewId(recipe.id)}
-                  >
-                    <span className="flex min-w-0 flex-col gap-1"><span>{recipe.recipeName}</span><span className="text-muted-foreground">View ingredients</span></span>
-                  </Button>
-                  <div className="min-w-0 text-right text-body-sm tabular-nums">
-                    <p>{recipe.targetPax === null ? "Pax pending" : `${recipe.targetPax} pax`}</p>
-                    <p className="text-muted-foreground">{recipe.targetMode === "meal" ? "Following meal" : "Custom target"}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-body-sm font-medium">
+                      {line.itemName}
+                    </p>
+                    <p className="break-words text-body-sm text-muted-foreground tabular-nums">
+                      {line.enteredQuantity} {line.selectedUnitAbbreviation}
+                      {line.conversionId
+                        ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}`
+                        : ""}
+                    </p>
                   </div>
                   <WorkspaceRowActionMenu
-                    actionButtonId={`issuance-actions-${recipe.id}`}
-                    ariaLabel={`Actions for ${recipe.recipeName}`}
+                    actionButtonId={`stock-actions-${line.id}`}
+                    ariaLabel={`Actions for Stock item ${line.itemName}`}
                     disabled={pending}
                     groups={[
                       {
                         actions: [
                           {
-                            label: "Adjust target pax",
-                            onSelect: () => {
-                              setAdjustId(recipe.id);
-                              setAdjustPax(recipe.targetPax?.toString() ?? "");
-                            },
+                            label: "Edit Stock item",
+                            onSelect: () => { setError(""); setStockPicker({ line }); },
                           },
                           {
-                            label: "Remove Recipe",
+                            label: "Remove Stock item",
                             variant: "destructive",
                             onSelect: () => {
-                              const next = recipes.filter(
-                                (row) => row.id !== recipe.id,
+                              const next = stockItems.filter(
+                                (row) => row.id !== line.id,
                               );
-                              if (!changeDemand({ recipes: next })) return;
-                              setRecipes(next);
+                              if (!changeDemand({ stockItems: next })) return;
+                              setStockItems(next);
                               setDirty(true);
                               setNotice("");
                             },
@@ -701,87 +783,8 @@ export default function IssuanceDraftContent({
               ))}
             </ul>
           )}
-          <section aria-labelledby="stock-heading" className="mt-6">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 id="stock-heading" className="text-heading-3 font-semibold">Stock <span className="text-muted-foreground">({stockItems.length})</span></h2>
-              <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => { setError(""); setStockPicker({ line: null }); }}><Plus data-icon="inline-start" />Add Stock item</Button>
-            </div>
-            {stockItems.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyDescription>
-                    No Stock items selected. Add a Stock item for direct
-                    issuance.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <ul className="divide-y rounded-lg border">
-                {stockItems.map((line) => (
-                  <li
-                    key={line.id}
-                    className="flex min-w-0 items-center gap-2 px-3 py-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="break-words text-body-sm font-medium">
-                        {line.itemName}
-                      </p>
-                      <p className="break-words text-body-sm text-muted-foreground tabular-nums">
-                        {line.enteredQuantity} {line.selectedUnitAbbreviation}
-                        {line.conversionId
-                          ? ` · 1 ${line.selectedUnitAbbreviation} = ${line.conversionFactor} ${line.baseUnitAbbreviation}`
-                          : ""}
-                      </p>
-                    </div>
-                    <WorkspaceRowActionMenu
-                      actionButtonId={`stock-actions-${line.id}`}
-                      ariaLabel={`Actions for Stock item ${line.itemName}`}
-                      disabled={pending}
-                      groups={[
-                        {
-                          actions: [
-                            {
-                              label: "Edit Stock item",
-                              onSelect: () => { setError(""); setStockPicker({ line }); },
-                            },
-                            {
-                              label: "Remove Stock item",
-                              variant: "destructive",
-                              onSelect: () => {
-                                const next = stockItems.filter(
-                                  (row) => row.id !== line.id,
-                                );
-                                if (!changeDemand({ stockItems: next })) return;
-                                setStockItems(next);
-                                setDirty(true);
-                                setNotice("");
-                              },
-                            },
-                          ],
-                        },
-                      ]}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </section>
-        </div>
-        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-card px-4 py-4 sm:px-6">
-          <div className="text-body-sm text-muted-foreground">
-            <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
-            {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
-            {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
-            <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>Review quantities and stock</Button>
-            <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
-            <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
-          </div>
-        </footer>
-      </main>
+      </section>
       <Dialog
         open={Boolean(confirmation)}
         onOpenChange={(open) => {
@@ -1159,6 +1162,6 @@ export default function IssuanceDraftContent({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </WorkspaceLayout>
   );
 }
