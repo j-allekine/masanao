@@ -26,7 +26,7 @@ test.describe("workspace shell", () => {
     await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     const sidebar = page.locator('[data-slot="sidebar"][data-state]');
     await expect(sidebar).toHaveAttribute("data-state", "expanded");
-    await page.getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+    await page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
     await expect(sidebar).toHaveAttribute("data-state", "collapsed");
     await page.getByRole("link", { name: "Planning", exact: true }).click();
     await expect(page).toHaveURL(/\/activity-designs$/);
