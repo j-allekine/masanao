@@ -46,10 +46,10 @@ function ActivityDesignRow({
         <TableCell className="font-mono text-mono tracking-mono text-primary">
           {activityDesign.activityDesignNo}
         </TableCell>
-        <TableCell className="max-w-[28rem]">
+        <TableCell className="max-w-[28rem] whitespace-normal wrap-anywhere">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}`, catalogUrl)}
-            className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="block font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activityDesign.title}
           </Link>
