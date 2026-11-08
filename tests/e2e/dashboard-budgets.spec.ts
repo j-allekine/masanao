@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -39,9 +40,9 @@ test.afterAll(() => {
   })(); } finally { db.close(); }
 });
 
-test("budget figures, sticky header and Activity row navigation work on desktop and mobile", async ({ page }, info) => {
+test("budget figures, persistent navigation and Activity row navigation work on desktop and mobile", async ({ page }, info) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/dashboard?start=2020-10-01&end=2020-10-31");
   await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
@@ -67,10 +68,15 @@ test("budget figures, sticky header and Activity row navigation work on desktop 
   await page.mouse.move(1200, 550);
   await page.mouse.wheel(0, 900);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  const lockedHeader = page.locator('[data-dashboard-header]');
-  expect((await lockedHeader.boundingBox())!.y).toBeGreaterThanOrEqual(0);
-  expect((await lockedHeader.boundingBox())!.y).toBeLessThanOrEqual(1);
-  await expect(page.getByRole("button", { name: "Reporting period", exact: true })).toBeInViewport();
+  const workspaceToggle = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
+  const reportTitle = page.getByRole("heading", { name: "Budget accounting", exact: true });
+  const period = page.getByRole("button", { name: "Reporting period", exact: true });
+  const refresh = page.getByRole("button", { name: "Refresh", exact: true });
+  await expect(workspaceToggle).toBeInViewport({ ratio: 1 });
+  await expect(reportTitle).not.toBeInViewport();
+  await expect(period).not.toBeInViewport();
+  await expect(refresh).not.toBeInViewport();
+  await page.screenshot({ path: info.outputPath("budget-desktop-scrolled.png") });
   await page.mouse.wheel(0, -2000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await under.getByRole("cell", { name: "42.0%", exact: true }).click();
@@ -97,8 +103,11 @@ test("budget figures, sticky header and Activity row navigation work on desktop 
   await page.mouse.move(280, 700);
   await page.mouse.wheel(0, 800);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  expect((await lockedHeader.boundingBox())!.y).toBeLessThanOrEqual(1);
-  await expect(page.getByRole("button", { name: "Reporting period", exact: true })).toBeInViewport();
+  await expect(workspaceToggle).toBeInViewport({ ratio: 1 });
+  await expect(reportTitle).not.toBeInViewport();
+  await expect(period).not.toBeInViewport();
+  await expect(refresh).not.toBeInViewport();
+  await page.screenshot({ path: info.outputPath("budget-mobile-scrolled.png") });
   await page.mouse.wheel(0, -2000);
   await mobileUnder.getByText("+₱2,900.00", { exact: true }).click();
   await expect(page).toHaveURL(/\/activities\/bvar-under$/, { timeout: 30_000 });
@@ -127,7 +136,7 @@ test("budget figures, sticky header and Activity row navigation work on desktop 
 });
 
 test("pagination waits for a pending period change without restoring the previous dates", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/dashboard?start=2020-10-01&end=2020-10-31");
   const next = page.getByLabel("Activity budget pagination").getByRole("button", { name: "Next page", exact: true });
   await expect(next).toBeEnabled();

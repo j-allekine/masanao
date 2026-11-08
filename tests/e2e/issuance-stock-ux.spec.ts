@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = (suffix: string) => `/activity-designs/e2e-stock-ux-design/activities/e2e-stock-ux-activity/meal-schedules/e2e-stock-ux-${suffix}`;
 test.beforeAll(() => {
@@ -29,7 +30,7 @@ test("typing a different Item query cannot add the previously selected Item", as
 });
 
 async function openPicker(page: Page, suffix: string) {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
@@ -109,9 +110,10 @@ test("canceling a pending searchable Stock addition leaves the draft unchanged",
   const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
   const released = new Promise<void>((resolve) => { release = resolve; });
   await page.route(`**${mealPath("cancel")}`, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
     requested();
     await released;
-    await route.continue();
+    await route.fulfill({ response: await route.fetch() });
   }, { times: 1 });
   await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
   await requestStarted;
@@ -120,7 +122,7 @@ test("canceling a pending searchable Stock addition leaves the draft unchanged",
   await picker.getByRole("button", { name: "Cancel", exact: true }).click();
   const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath("cancel")}`));
   release();
-  await (await response).finished();
+  expect((await response).ok()).toBe(true);
   await expect(page.getByText("No Stock items selected. Add a Stock item for direct issuance.")).toBeVisible();
   await expect(page.getByLabel("Actions for Stock item Rice")).toHaveCount(0);
 });

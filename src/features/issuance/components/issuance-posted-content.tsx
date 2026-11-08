@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { RecordDetails } from "@/components/workspace/record-details";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import { MealScheduleDetails } from "@/features/activity-planning/ui";
 import type { MealScheduleDetailItem } from "@/features/activity-planning/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -51,43 +52,44 @@ export default function IssuancePostedContent({
     if (focusAfterPosting) document.getElementById("view-issued-totals")?.focus();
   }, [focusAfterPosting]);
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col bg-card"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
+      mode="bounded"
       data-issuance-ready={hydrated ? "true" : undefined}
+      task={
+        <WorkspaceTaskHeader>
+          <WorkspaceRecordTitle title={`${context.mealLabel} · ${context.mealTime}`} />
+          <Badge>Posted</Badge>
+        </WorkspaceTaskHeader>
+      }
     >
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        <MealScheduleHeader
-          mealSchedule={mealSchedule}
-          ready={hydrated}
-          showDetails={false}
-          title={`${context.mealLabel} · ${context.mealTime}`}
-          summary={`${draft.mealPax} pax`}
-          status={<>
-            <Badge>Posted</Badge>
-            <Button id="view-issued-totals" disabled={!hydrated} variant="outline" onClick={() => setTotalsOpen(true)}>View issued totals</Button>
-            <Dialog open={postingDetailsOpen} onOpenChange={setPostingDetailsOpen}>
-              <Tooltip>
-                <TooltipTrigger render={<DialogTrigger disabled={!hydrated} render={<Button variant="ghost" size="icon-lg" aria-label="Posting details" />} />}>
-                  <Info aria-hidden="true" />
-                </TooltipTrigger>
-                <TooltipContent>Posting details</TooltipContent>
-              </Tooltip>
-              <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
-                <DialogHeader className="pr-8">
-                  <DialogTitle>Posting details</DialogTitle>
-                  <DialogDescription>Posted issuance is read-only.</DialogDescription>
-                </DialogHeader>
-                <dl className="grid gap-4 text-body-sm sm:grid-cols-2">
-                  <div className="min-w-0"><dt className="text-muted-foreground">Posted by</dt><dd className="break-words">{posted?.actorName} ({posted?.actorUsername})</dd></div>
-                  <div className="min-w-0"><dt className="text-muted-foreground">Posted at</dt><dd><time dateTime={posted?.postedAt}>{posted ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "long", timeZone: "Asia/Manila" }).format(new Date(posted.postedAt)) : ""}</time></dd></div>
-                  <div className="min-w-0"><dt className="text-muted-foreground">Activity Design at posting</dt><dd className="break-words">{context.activityDesignNo} · {context.activityDesignTitle}</dd></div>
-                  <div className="min-w-0"><dt className="text-muted-foreground">Activity at posting</dt><dd className="break-words">{context.activityName}</dd></div>
-                  {`${mealSchedule.label} · ${mealSchedule.mealTime}` !== `${context.mealLabel} · ${context.mealTime}` ? <div className="min-w-0 sm:col-span-2"><dt className="text-muted-foreground">Current planning meal</dt><dd className="break-words">{mealSchedule.label} · {mealSchedule.mealTime}</dd></div> : null}
-                </dl>
-              </DialogContent>
-            </Dialog>
-          </>}
-        />
+      <div className="px-4 py-5 sm:px-6">
+        <MealScheduleDetails mealSchedule={mealSchedule} ready={hydrated} showDetails={false} />
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <p className="mr-auto text-body-sm text-muted-foreground">{draft.mealPax} pax</p>
+          <Button id="view-issued-totals" disabled={!hydrated} variant="outline" onClick={() => setTotalsOpen(true)}>View issued totals</Button>
+          <Dialog open={postingDetailsOpen} onOpenChange={setPostingDetailsOpen}>
+            <Tooltip>
+              <TooltipTrigger render={<DialogTrigger disabled={!hydrated} render={<Button variant="ghost" size="icon-lg" aria-label="Posting details" />} />}>
+                <Info aria-hidden="true" />
+              </TooltipTrigger>
+              <TooltipContent>Posting details</TooltipContent>
+            </Tooltip>
+            <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg">
+              <DialogHeader className="pr-8">
+                <DialogTitle>Posting details</DialogTitle>
+                <DialogDescription>Posted issuance is read-only.</DialogDescription>
+              </DialogHeader>
+              <dl className="grid gap-4 text-body-sm sm:grid-cols-2">
+                <div className="min-w-0"><dt className="text-muted-foreground">Posted by</dt><dd className="break-words">{posted?.actorName} ({posted?.actorUsername})</dd></div>
+                <div className="min-w-0"><dt className="text-muted-foreground">Posted at</dt><dd><time dateTime={posted?.postedAt}>{posted ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "long", timeZone: "Asia/Manila" }).format(new Date(posted.postedAt)) : ""}</time></dd></div>
+                <div className="min-w-0"><dt className="text-muted-foreground">Activity Design at posting</dt><dd className="break-words">{context.activityDesignNo} · {context.activityDesignTitle}</dd></div>
+                <div className="min-w-0"><dt className="text-muted-foreground">Activity at posting</dt><dd className="break-words">{context.activityName}</dd></div>
+                {`${mealSchedule.label} · ${mealSchedule.mealTime}` !== `${context.mealLabel} · ${context.mealTime}` ? <div className="min-w-0 sm:col-span-2"><dt className="text-muted-foreground">Current planning meal</dt><dd className="break-words">{mealSchedule.label} · {mealSchedule.mealTime}</dd></div> : null}
+              </dl>
+            </DialogContent>
+          </Dialog>
+        </div>
         <p role="status" className="sr-only">Issuance posted. Stock was deducted.</p>
         <Dialog open={totalsOpen} onOpenChange={setTotalsOpen}>
           <DialogContent finalFocus={() => document.getElementById("view-issued-totals")} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
@@ -170,7 +172,7 @@ export default function IssuancePostedContent({
             </li>)}
           </ul>
         </section> : null}
-      </main>
+      </div>
       <Sheet
         open={Boolean(view)}
         onOpenChange={(open) => {
@@ -263,6 +265,6 @@ export default function IssuancePostedContent({
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </WorkspaceLayout>
   );
 }

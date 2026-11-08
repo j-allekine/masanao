@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const path = "/activity-designs/e2e-ux-design/activities/e2e-ux-activity/meal-schedules/e2e-ux-meal";
 
@@ -20,7 +21,7 @@ test.beforeAll(() => {
 
 test("whole Recipe cards, digits-only pax, persistent added list and save from review", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   const meal = page.getByLabel("Meal pax", { exact: true });
@@ -118,7 +119,7 @@ test("pending Meal pax can be completed without leaving the Recipe picker", asyn
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec("INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('e2e-ux-pending','e2e-ux-activity','Dinner','18:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
   db.close();
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path.replace("e2e-ux-meal", "e2e-ux-pending"));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByLabel("Meal pax", { exact: true }).fill("");

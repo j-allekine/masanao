@@ -1,9 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
 async function signIn(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -21,13 +22,20 @@ test.describe("workspace shell", () => {
     test.setTimeout(120_000);
     await signIn(page);
     await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto("/dashboard");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    const sidebar = page.locator('[data-slot="sidebar"][data-state]');
+    await expect(sidebar).toHaveAttribute("data-state", "expanded");
+    await page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true }).click();
+    await expect(sidebar).toHaveAttribute("data-state", "collapsed");
+    await page.getByRole("link", { name: "Planning", exact: true }).click();
+    await expect(page).toHaveURL(/\/activity-designs$/);
+    await expect(page.getByRole("heading", { name: "Activity Designs", exact: true })).toBeVisible();
+    await expect(sidebar).toHaveAttribute("data-state", "collapsed");
+
     for (const path of ["/dashboard", "/activity-designs", "/activities", "/inventory", "/items", "/recipes", "/purchase-orders", "/master-data"]) {
       await page.goto(path);
       await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-      const sidebar = page.locator('[data-slot="sidebar"][data-state]');
-      if (await sidebar.getAttribute("data-state") !== "collapsed") {
-        await page.locator('[data-slot="sidebar-trigger"]').click();
-      }
       await expect(sidebar).toHaveAttribute("data-state", "collapsed");
       const brand = page.getByRole("link", { name: "Masanao Municipal kitchen", exact: true });
       await expect(brand).toBeVisible();
@@ -101,5 +109,14 @@ test.describe("workspace shell", () => {
     await expect(page.getByRole("link", { name: "Planning", exact: true })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("link", { name: "Activities", exact: true })).toHaveCount(0);
     await expect(page.getByText("Coming later", { exact: true })).toHaveCount(0);
+
+    await page.setViewportSize({ width: 320, height: 480 });
+    const toggle = page.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const drawer = page.getByRole("dialog", { name: "Sidebar", exact: true });
+    await toggle.click();
+    await drawer.getByRole("link", { name: "Dashboard", exact: true }).click();
+    await expect(drawer).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Budget accounting", exact: true })).toBeVisible();
+    await expect(toggle).toBeInViewport();
   });
 });

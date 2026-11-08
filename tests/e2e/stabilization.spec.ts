@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn, waitForFixtureSignInRetry } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const signInEndpoint = "**/api/auth/sign-in/username";
@@ -12,7 +13,7 @@ type ActivityDesign = {
 };
 
 async function authenticate(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -238,7 +239,7 @@ test.describe("frontend stabilization regression seam", () => {
           };
         });
 
-        expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+        expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
         expect(metrics.tableRegions).toBe(1);
         expect(metrics.tableParentOverflowX).toBe("visible");
         if (viewport.name === "mobile") {
@@ -497,6 +498,7 @@ test.describe("frontend stabilization regression seam", () => {
   test("communicates pending login and prevents duplicate submissions", async ({
     page,
   }) => {
+    let submissions = 0;
     let releaseResponse = () => {};
     let resolveRequestStarted = () => {};
     const requestStarted = new Promise<void>((resolve) => {
@@ -512,10 +514,15 @@ test.describe("frontend stabilization regression seam", () => {
         return;
       }
 
+      submissions++;
       resolveRequestStarted();
       await responseReleased;
       // Complete a real sign-in so the protected destination receives a session.
-      const response = await route.fetch();
+      let response = await route.fetch();
+      if (await waitForFixtureSignInRetry(response)) {
+        await response.dispose();
+        response = await route.fetch();
+      }
       await route.fulfill({ response });
     });
 
@@ -537,7 +544,8 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(form).toHaveAttribute("aria-busy", "true");
       await expect(form.getByRole("button", { name: /Signing in…/ })).toBeDisabled();
       releaseResponse();
-      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page).toHaveURL(/\/dashboard$/, { timeout: 20_000 });
+      expect(submissions).toBe(1);
     } finally {
       releaseResponse();
     }

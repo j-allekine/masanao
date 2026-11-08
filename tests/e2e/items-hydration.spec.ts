@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test("Item filters wait for hydration before accepting an interaction", async ({ page }) => {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);

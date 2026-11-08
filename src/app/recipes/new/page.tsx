@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import WorkspaceHeader from "@/components/workspace/workspace-header";
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { RecipeCreateEditor } from "@/features/recipes/ui";
 import {
@@ -37,7 +36,7 @@ export default async function NewRecipeRoute() {
       }}
       activeSection="recipes"
     >
-      <WorkspaceHeader title="Supply Operations" /><RecipeCreateEditor items={items} />
+      <RecipeCreateEditor items={items} />
     </WorkspaceShell>
   );
 }

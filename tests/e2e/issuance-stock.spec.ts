@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = "/activity-designs/e2e-stock-design/activities/e2e-stock-activity/meal-schedules/e2e-stock-meal";
 test.beforeAll(() => {
@@ -13,7 +14,7 @@ test.beforeAll(() => {
 
 test("staff adds exact alternate Stock quantity, reopens unchanged factors, edits and removes with mobile validation", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(mealPath);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
@@ -40,13 +41,17 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await expect(page.getByRole("status")).toContainText("Draft saved");
   expect(db.prepare("SELECT stock.conversionFactor FROM issuance_stock_item AS stock JOIN issuance_record AS record ON record.id = stock.issuanceRecordId WHERE record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ conversionFactor: "0.001" });
   await page.setViewportSize({ width: 320, height: 720 });
-  await page.getByLabel("Actions for Stock item Rice").click();
-  await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
-  await page.keyboard.press("Escape");
-  await expect(page.getByLabel("Actions for Stock item Rice")).toBeFocused();
-  await page.getByLabel("Actions for Stock item Rice").click();
-  await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
+  const rowActions = page.getByLabel("Actions for Stock item Rice");
   const edit = page.getByRole("dialog", { name: "Edit Stock item" });
+  await rowActions.click();
+  await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
+  await expect(edit).toBeVisible();
+  await expect.poll(() => edit.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(edit).toBeHidden();
+  await expect(rowActions).toBeFocused();
+  await rowActions.click();
+  await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
   await expect(edit.getByLabel("Quantity", { exact: true })).toHaveValue("1250.123456789123");
   await edit.getByLabel("Quantity", { exact: true }).fill("0");
   await expect(edit.getByRole("button", { name: "Apply changes" })).toBeDisabled();

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { closeCatalogFilters, openCatalogFilters } from "./catalog-filter-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 test.use({ actionTimeout: 30_000 });
 
@@ -34,7 +35,7 @@ test("returning through browser history sees posted receiving, unchanged drafts,
   test.setTimeout(180_000);
   await page.goto("/inventory");
   await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/inventory");
   const eggs = page.getByRole("row").filter({ hasText: "Refresh Eggs" });
   await expect(eggs).toContainText("Out of stock");
@@ -144,7 +145,7 @@ for (const width of [1280, 320]) {
         insertLine.run(id, prefix, id, name);
         insertMovement.run(id, id, id);
       }
-      expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+      expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
       await page.setViewportSize({ width, height: 800 });
       const url = `/inventory?q=Refresh+Pantry+${width}&category=default-category-staples-dry-goods&status=good&page=3`;
       const entryRefresh = page.waitForResponse((response) => response.url().includes("/inventory?") && response.request().headers()["rsc"] === "1");

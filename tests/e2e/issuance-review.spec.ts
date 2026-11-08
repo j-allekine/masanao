@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath =
   "/activity-designs/e2e-review-design/activities/e2e-review-activity/meal-schedules/e2e-review-meal";
@@ -21,7 +22,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   test.setTimeout(120_000);
   expect(
     (
-      await page.request.post("/api/auth/sign-in/username", {
+      await postFixtureSignIn(page.request, {
         data: {
           username: "kitchen.staff",
           password: "correct-horse-battery-staple",

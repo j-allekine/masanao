@@ -14,9 +14,9 @@ vi.mock("@/components/ui/sidebar", () => ({
     }),
 }));
 
-vi.mock("@/features/activity-planning/components/activity-designs-workspace", () => ({
-  default: () =>
-    createElement("div", { "data-testid": "activity-designs-workspace" }),
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/activity-designs",
+  useRouter: () => ({}),
 }));
 
 import ActivityDesignsContent from "@/features/activity-planning/components/activity-designs-content";
@@ -33,7 +33,7 @@ describe("Activity Designs header", () => {
 
     expect(markup).not.toContain("Notifications");
     expect(markup).not.toContain("Unread notifications");
-    expect(markup.match(/<button/g) ?? []).toHaveLength(1);
+    expect(markup.match(/aria-label="Open sidebar"/g) ?? []).toHaveLength(1);
   });
 
   it("retains the sidebar trigger and Planning identity", () => {

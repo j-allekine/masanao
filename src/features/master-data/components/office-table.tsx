@@ -81,7 +81,7 @@ function OfficeRow({
             {office.name}
           </span>
         </TableCell>
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell>
           {office.abbreviation ?? "—"}
         </TableCell>
         <TableCell>
@@ -163,7 +163,7 @@ export default function OfficeTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Offices" className="min-w-[60rem]">
+    <WorkspaceTableFrame caption="Offices" stickyColumns className="min-w-[60rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

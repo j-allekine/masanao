@@ -15,10 +15,12 @@ export default function RecipeCatalogActions({
   recipe,
   onView,
   canManageRecipes,
+  editHref,
 }: {
   recipe: RecipeCatalogItem;
   onView: () => void;
   canManageRecipes: boolean;
+  editHref: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -68,7 +70,7 @@ export default function RecipeCatalogActions({
                     {
                       label: "Edit",
                       icon: <FilePenLine />,
-                      onSelect: () => router.push(`/recipes/${recipe.id}/edit`),
+                      onSelect: () => router.push(editHref),
                     },
                   ]
                 : []),

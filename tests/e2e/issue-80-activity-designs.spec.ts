@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
@@ -10,7 +11,7 @@ type ActivityDesign = {
 };
 
 async function authenticate(page: Page) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username: "kitchen.staff",
       password: staffPassword,
@@ -197,7 +198,8 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(desktopBox!.x).toBeGreaterThan(0);
       expect(desktopBox!.y).toBeGreaterThan(0);
       expect(desktopBox!.x + desktopBox!.width).toBeLessThanOrEqual(1458);
-      expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - 1458 / 2)).toBeLessThanOrEqual(1);
+      const desktopContentWidth = await page.locator('[data-slot="dialog-overlay"]').evaluate((overlay) => overlay.getBoundingClientRect().width);
+      expect(Math.abs(desktopBox!.x + desktopBox!.width / 2 - desktopContentWidth / 2)).toBeLessThanOrEqual(1);
       expect(Math.abs(desktopBox!.y + desktopBox!.height / 2 - 986 / 2)).toBeLessThanOrEqual(1);
       const desktopOrigin = page.getByRole("button", {
         name: `Actions for ${title}`,
@@ -236,7 +238,8 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       expect(box!.x).toBeGreaterThan(0);
       expect(box!.y).toBeGreaterThan(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-      expect(Math.abs(box!.x + box!.width / 2 - 390 / 2)).toBeLessThanOrEqual(1);
+      const mobileContentWidth = await page.locator('[data-slot="dialog-overlay"]').evaluate((overlay) => overlay.getBoundingClientRect().width);
+      expect(Math.abs(box!.x + box!.width / 2 - mobileContentWidth / 2)).toBeLessThanOrEqual(1);
       expect(Math.abs(box!.y + box!.height / 2 - 844 / 2)).toBeLessThanOrEqual(1);
       await expect(dialog.locator('[data-slot="dialog-footer"]')).toBeVisible();
       await expect(

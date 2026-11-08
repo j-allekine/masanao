@@ -224,7 +224,7 @@ export default function ItemsTable({
         ))}
       </div>
       <div className="hidden sm:block" data-items-table-desktop>
-        <WorkspaceTableFrame caption="Items" className="min-w-[40rem]">
+        <WorkspaceTableFrame caption="Items" stickyColumns className="min-w-[40rem]">
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead scope="col" className="text-left">

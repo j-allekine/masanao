@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const designId = "e2e-issuance-activities-return";
 const activityId = `${designId}-01`;
@@ -26,7 +27,7 @@ test.beforeAll(() => {
 test.afterAll(cleanupIssuanceFixtures);
 
 test.beforeEach(async ({ page }) => {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   });

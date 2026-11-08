@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const prefix = `PO-AMOUNTS-${randomUUID()}`;
 const cases = [
@@ -60,7 +61,7 @@ for (const width of [1280, 320]) {
   test(`shows matching delivered amounts and receipt counts on PO list and detail at ${width}px`, async ({ page }, info) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 900 });
-    const signedIn = await page.request.post("/api/auth/sign-in/username", {
+    const signedIn = await postFixtureSignIn(page.request, {
       data: { username: "municipal.admin", password: "administrator-password" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     });
@@ -79,7 +80,10 @@ for (const width of [1280, 320]) {
       await expect(row.getByText(scenario.label, { exact: true })).toBeVisible();
       await expect(row.getByText(`REF-${scenario.key}`, { exact: true })).toHaveCount(0);
       await row.getByRole("link", { name: id, exact: true }).click();
-      await expect(page).toHaveURL(new RegExp(`/purchase-orders/${id}$`));
+      await expect(page).toHaveURL((url) =>
+        url.pathname === `/purchase-orders/${id}` &&
+        url.searchParams.get("purchaseOrdersSearch") === prefix,
+      );
       await expect(page.getByRole("heading", { name: id, exact: true })).toBeVisible();
       await expect(page.locator('[data-po-total-delivered]')).toHaveText(scenario.label);
       await expect(page.locator('[data-po-receipt-count]')).toHaveText(String(scenario.receipts.length));

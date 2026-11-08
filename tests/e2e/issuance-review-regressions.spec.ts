@@ -1,6 +1,7 @@
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = (suffix: string) => `/activity-designs/e2e-regression-design/activities/e2e-regression-activity/meal-schedules/e2e-regression-${suffix}`;
 
@@ -20,7 +21,7 @@ test.beforeAll(() => {
 });
 
 async function signIn(page: Page) {
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);
@@ -96,7 +97,7 @@ for (const cancel of ["cancel", "escape"] as const) {
       if (route.request().method() !== "POST") return route.continue();
       requested();
       await released;
-      await route.continue();
+      await route.fulfill({ response: await route.fetch() });
     }, { times: 1 });
     await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
     await requestStarted;
@@ -106,7 +107,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
     const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}`));
     release();
-    await (await response).finished();
+    expect((await response).ok()).toBe(true);
     await expect(picker.getByLabel("Quantity", { exact: true })).toBeEnabled();
     await picker.getByLabel("Quantity", { exact: true }).fill("7");
     await expect(picker).toBeVisible();

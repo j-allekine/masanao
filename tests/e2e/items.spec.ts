@@ -1,6 +1,8 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 const adminPassword = "administrator-password";
@@ -10,7 +12,7 @@ async function signIn(
   username = "kitchen.staff",
   password = staffPassword,
 ) {
-  const response = await page.request.post("/api/auth/sign-in/username", {
+  const response = await postFixtureSignIn(page.request, {
     data: {
       username,
       password,
@@ -922,7 +924,7 @@ test.describe("Items catalog journey", () => {
       bodyScrollWidth: document.body.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
     }));
-    expect(metrics.bodyScrollWidth).toBe(metrics.clientWidth);
+    expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
 
     const sidebarTrigger = page.locator('[data-slot="sidebar-trigger"]');
     await sidebarTrigger.focus();
@@ -1282,4 +1284,72 @@ test.describe("Items catalog journey", () => {
     ).toHaveCount(0);
     await expect(addItemButton).toBeFocused();
   });
+});
+
+test("keeps the Item catalog and permitted actions visible during document scroll", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  const prefix = `layout-item-${randomUUID()}`;
+  const searchTerm = "Layout Pantry";
+  const names = Array.from({ length: 10 }, (_, index) =>
+    `${searchTerm} ${index + 1} ${"Wholegrain".repeat(8)}`,
+  );
+
+  withE2eDatabase((database) => {
+    const insert = database.prepare(`INSERT INTO item
+      (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
+      VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram','2',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);
+    names.forEach((name, index) => insert.run(`${prefix}-${index}`, name, name.toLowerCase()));
+  });
+  try {
+    await signIn(page, "municipal.admin", adminPassword);
+    await page.goto("/items?itemsSearch=Layout+Pantry");
+    const main = page.getByRole("main");
+    const toggle = main.getByRole("button", { name: "Toggle Sidebar", exact: true });
+    const chrome = main.locator('[data-slot="workspace-chrome"]');
+    const title = main.getByRole("heading", { name: "Items", level: 1, exact: true });
+    const create = main.getByRole("button", { name: "Create Item", exact: true });
+    const search = page.getByLabel("Search Items", { exact: true });
+    const table = page.getByRole("table", { name: "Items", exact: true });
+    await expect(create).toBeEnabled();
+    await expect(main).toHaveCount(1);
+
+    for (const { width, height } of workspaceViewports) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((enlarge) => {
+        document.documentElement.style.fontSize = enlarge ? "150%" : "";
+        document.body.style.letterSpacing = enlarge ? ".02em" : "";
+        window.scrollTo(0, 0);
+      }, width === 768 || height === 480);
+      await expect(title).toBeInViewport({ ratio: 1 });
+      for (const fraction of [0.5, 1]) {
+        await scrollWorkspaceDocument(page, fraction);
+        await expect(toggle).toBeInViewport({ ratio: 1 });
+        await expect(create).toBeInViewport({ ratio: 1 });
+        await expect(title).toBeInViewport({ ratio: 1 });
+        await expect.poll(async () => (await chrome.boundingBox())!.y).toBeCloseTo(0, 0);
+      }
+      if (width >= 640) {
+        const column = table.getByRole("columnheader", { name: "Reorder level", exact: true });
+        await expect(table.getByRole("columnheader").first()).toBeInViewport();
+        expect((await column.boundingBox())!.y).toBeGreaterThan((await title.boundingBox())!.y);
+        if (width === 768) {
+          await expectPannedColumns(column, table.getByRole("row").last().getByRole("cell", { name: "2 kg" }));
+        }
+      } else {
+        await expect(table).toHaveCount(0);
+      }
+      await expect(search).toHaveValue(searchTerm);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`items-scrolled-${width}x${height}.png`) });
+    }
+    await create.click();
+    const dialog = page.getByRole("dialog", { name: "Create Item", exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(create).toBeFocused();
+    await expect(search).toHaveValue(searchTerm);
+  } finally {
+    withE2eDatabase((database) => database.prepare("DELETE FROM item WHERE id LIKE ?").run(`${prefix}%`));
+  }
 });

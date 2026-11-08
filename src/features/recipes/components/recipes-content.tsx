@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import {
   WorkspaceCatalogToolbar,
   WorkspacePrimaryLink,
@@ -49,6 +49,7 @@ export default function RecipesContent({
   const latestQueryRef = useRef(currentQuery);
   const searchNavigationTimeoutRef = useRef<number | null>(null);
   const previewRequestRef = useRef(0);
+  const previewOpenerRef = useRef<string | null>(null);
   const [recipePreview, setRecipePreview] = useState<RecipePreviewState>({
     status: "closed",
   });
@@ -74,6 +75,7 @@ export default function RecipesContent({
   const resultStart = paginatedRecipes.length === 0 ? 0 : firstRecipeIndex + 1;
   const resultEnd = firstRecipeIndex + paginatedRecipes.length;
   const filtersAreActive = hasRecipeListFilters(filters);
+  const catalogState = { search: searchInput, page: currentPage };
 
   useEffect(() => {
     const syncSearchInputTimeout = window.setTimeout(() => {
@@ -149,6 +151,7 @@ export default function RecipesContent({
   async function openRecipePreview(recipeId: string) {
     const requestId = previewRequestRef.current + 1;
     previewRequestRef.current = requestId;
+    previewOpenerRef.current = `recipe-actions-${recipeId}`;
     setRecipePreview({ status: "loading" });
 
     try {
@@ -170,29 +173,23 @@ export default function RecipesContent({
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-card">
-      <WorkspaceHeader title="Supply Operations" />
-
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-heading-1 font-semibold">Recipes</h1>
-            <p className="text-body text-muted-foreground">
-              Reusable food templates and their usual ingredients.
-            </p>
-          </div>
-          {canManageRecipes ? (
+    <WorkspaceLayout
+      workspaceTitle="Supply Operations"
+      task={(
+        <WorkspaceTaskHeader actions={canManageRecipes ? (
             <WorkspacePrimaryLink
               id="new-recipe"
-              href="/recipes/new"
-              fullWidth
+              href={getRecipeListUrl("/recipes/new", "", catalogState)}
               icon={<Plus data-icon="inline-start" />}
             >
               Create Recipe
             </WorkspacePrimaryLink>
-          ) : null}
-        </div>
-
+        ) : null}>
+          <h1 className="text-heading-3 font-semibold">Recipes</h1>
+        </WorkspaceTaskHeader>
+      )}
+    >
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
         <WorkspaceCatalogToolbar
           ariaLabel="Recipe catalog search"
           searchId="recipe-search"
@@ -233,7 +230,7 @@ export default function RecipesContent({
               }}
             />
           ) : (
-            <WorkspaceTableFrame caption={canManageRecipes ? "Recipes" : "Active Recipes"} className="min-w-[32rem]">
+            <WorkspaceTableFrame caption={canManageRecipes ? "Recipes" : "Active Recipes"} className="min-w-[32rem]" stickyColumns>
               <TableHeader className="bg-muted/60">
                 <TableRow>
                   <TableHead scope="col">Recipe</TableHead>
@@ -247,7 +244,7 @@ export default function RecipesContent({
                   <TableRow key={recipe.id} data-recipe-id={recipe.id}>
                     <TableCell className="max-w-[40rem] whitespace-normal">
                       <Link
-                        href={`/recipes/${recipe.id}`}
+                        href={getRecipeListUrl(`/recipes/${recipe.id}`, "", catalogState)}
                         className="block break-words font-medium underline-offset-4 hover:underline focus-visible:underline"
                       >
                         {recipe.name}
@@ -263,6 +260,7 @@ export default function RecipesContent({
                       <RecipeCatalogActions
                         recipe={recipe}
                         canManageRecipes={canManageRecipes}
+                        editHref={getRecipeListUrl(`/recipes/${recipe.id}/edit`, "", catalogState)}
                         onView={() => void openRecipePreview(recipe.id)}
                       />
                     </TableCell>
@@ -280,8 +278,12 @@ export default function RecipesContent({
             onPageChange={changePage}
           />
         </>}
-        <RecipePreviewDialog preview={recipePreview} onClose={closeRecipePreview} />
-      </main>
-    </div>
+        <RecipePreviewDialog
+          preview={recipePreview}
+          onClose={closeRecipePreview}
+          finalFocus={() => previewOpenerRef.current ? document.getElementById(previewOpenerRef.current) : null}
+        />
+      </div>
+    </WorkspaceLayout>
   );
 }

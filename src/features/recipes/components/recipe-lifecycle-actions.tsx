@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { deleteRecipeAction, setRecipeActiveAction } from "../actions";
 
-export default function RecipeLifecycleActions({ id, isActive }: { id: string; isActive: boolean }) {
+export default function RecipeLifecycleActions({ id, isActive, catalogHref }: { id: string; isActive: boolean; catalogHref: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   function run(operation: () => Promise<{ status: string; message?: string; error?: string }>, returnToCatalog = false) {
@@ -17,12 +17,12 @@ export default function RecipeLifecycleActions({ id, isActive }: { id: string; i
       const result = await operation();
       if (result.status === "success") {
         toast.success(result.message);
-        if (returnToCatalog) router.push("/recipes"); else router.refresh();
+        if (returnToCatalog) router.push(catalogHref); else router.refresh();
       } else toast.error(result.error);
     });
   }
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="contents sm:flex sm:flex-wrap sm:gap-2">
       <Button variant="outline" disabled={isPending} onClick={() => run(() => setRecipeActiveAction(id, !isActive))}>
         {isActive ? "Deactivate" : "Reactivate"}
       </Button>

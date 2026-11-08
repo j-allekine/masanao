@@ -15,9 +15,10 @@ export const metadata: Metadata = {
 export default async function PurchaseOrderDetailRoute(
   props: PageProps<"/purchase-orders/[id]">,
 ) {
-  const [{ id }, session] = await Promise.all([
+  const [{ id }, session, searchParams] = await Promise.all([
     props.params,
     auth.api.getSession({ headers: await headers() }),
+    props.searchParams,
   ]);
 
   if (!session) {
@@ -35,7 +36,7 @@ export default async function PurchaseOrderDetailRoute(
       }}
       activeSection="purchase-orders"
     >
-      <PurchaseOrderDetailContent purchaseOrder={purchaseOrder} />
+      <PurchaseOrderDetailContent purchaseOrder={purchaseOrder} searchParams={searchParams} />
     </WorkspaceShell>
   );
 }

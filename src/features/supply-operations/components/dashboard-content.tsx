@@ -6,7 +6,7 @@ import { Info, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout from "@/components/workspace/workspace-layout";
 import WorkspaceShell, { type WorkspaceUser } from "@/components/workspace/workspace-shell";
 import type { DashboardResult } from "../dashboard-types";
 import DashboardPeriodPicker from "./dashboard-period-picker";
@@ -41,18 +41,17 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
   }
 
   return <WorkspaceShell user={user} activeSection="overview">
-    <div className="flex min-h-svh min-w-0 flex-col bg-card" data-dashboard-surface>
-      <div className="sticky top-0 z-10 border-b bg-card" data-dashboard-header>
-        <WorkspaceHeader title="Dashboard" />
-        <header className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <h1 className="text-heading-1 font-semibold">Budget accounting</h1>
+    <WorkspaceLayout workspaceTitle="Dashboard" data-dashboard-surface>
+      <header className="border-b">
+        <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <h1 className="text-heading-3 font-semibold">Budget accounting</h1>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <DashboardPeriodPicker period={period} disabled={disabled} onApply={(next) => navigate({ ...next, budgetPage: 1 })} />
             <Button variant="outline" disabled={disabled} onClick={() => startTransition(() => router.refresh())}><RefreshCw data-icon="inline-start" aria-hidden="true" />{pending ? "Updating…" : "Refresh"}</Button>
           </div>
-        </header>
-      </div>
-      <div className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
+        </div>
+      </header>
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
         {!result.ok ? <Alert variant="destructive"><AlertTitle>Report unavailable</AlertTitle><AlertDescription>{result.error}</AlertDescription></Alert> : report && <>
           {report.sampleData && <Alert data-dashboard-sample><AlertTitle>Sample data (preview only)</AlertTitle></Alert>}
           <DashboardBudgetReport key={`${period.start}/${period.end}/${report.budgets.search}`} report={report.budgets} disabled={disabled}
@@ -72,6 +71,6 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
           </footer>
         </>}
       </div>
-    </div>
+    </WorkspaceLayout>
   </WorkspaceShell>;
 }

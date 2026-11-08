@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/empty";
 import { RecordDetails, RecordFacts } from "@/components/workspace/record-details";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import {
   TableBody,
   TableCell,
@@ -64,7 +64,8 @@ function MealScheduleRows({
   return (
     <WorkspaceTableFrame
       caption="Meal Schedules under this Activity"
-      className="w-full"
+      stickyColumns
+      className="sm:min-w-[36rem]"
     >
       <TableHeader className="bg-muted/60">
         <TableRow>
@@ -110,7 +111,7 @@ function MealScheduleRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="max-w-[24rem] font-medium">
+        <TableCell className="max-w-[24rem] whitespace-normal wrap-anywhere font-medium">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesignId}/activities/${activityId}/meal-schedules/${schedule.id}`, returnUrl)}
             aria-label={`Open Meal Schedule: ${schedule.label}`}
@@ -120,7 +121,7 @@ function MealScheduleRow({
           </Link>
           <p className="mt-1 text-body-sm text-muted-foreground sm:hidden">Time: {schedule.mealTime}</p>
         </TableCell>
-        <TableCell className="hidden font-mono tabular-nums sm:table-cell">
+        <TableCell className="hidden tabular-nums sm:table-cell">
           {schedule.mealTime}
         </TableCell>
         <TableCell className="text-center">
@@ -191,13 +192,22 @@ export default function ActivityDetailContent({
   }
 
   return (
-    <div
-      className="flex min-h-svh flex-col bg-card"
+    <WorkspaceLayout
+      workspaceTitle="Planning"
       data-client-ready={isHydrated ? "true" : undefined}
+      task={
+        <WorkspaceTaskHeader
+          actions={
+            <WorkspacePrimaryAction id="new-meal-schedule" onClick={() => setIsCreateDialogOpen(true)}>
+              Add Meal Schedule
+            </WorkspacePrimaryAction>
+          }
+        >
+          <WorkspaceRecordTitle title={activity.name} />
+        </WorkspaceTaskHeader>
+      }
     >
-      <WorkspaceHeader title="Planning" />
-
-      <main className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -217,14 +227,11 @@ export default function ActivityDetailContent({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex flex-col gap-3">
-          <h1 className="break-words text-heading-2 font-semibold">{activity.name}</h1>
-          <RecordFacts fields={[
-            { label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) },
-            { label: "Office", value: activity.officeName },
-            { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) },
-          ]} />
-        </div>
+        <RecordFacts fields={[
+          { label: "Scheduled date", value: dateFormatter.format(new Date(activity.scheduledDate)) },
+          { label: "Office", value: activity.officeName },
+          { label: "Planned pax", value: activity.plannedParticipantCount === null ? "Not recorded" : integerFormatter.format(activity.plannedParticipantCount) },
+        ]} />
         <RecordDetails disabled={!isHydrated} fields={[
           ...(activity.venue ? [{ label: "Venue", value: activity.venue }] : []),
           ...(activity.plannedBudgetCentavos !== null ? [{ label: "Planned budget", value: formatCentavosAsPesos(activity.plannedBudgetCentavos) }] : []),
@@ -232,21 +239,9 @@ export default function ActivityDetailContent({
         ]} />
 
         <section aria-labelledby="activity-meal-schedules-title" className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 id="activity-meal-schedules-title" className="text-heading-3 font-semibold">
-                Meal Schedules ({activity.mealSchedules.length})
-              </h2>
-            </div>
-            <Button
-              id="new-meal-schedule"
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto"
-            >
-              <Plus data-icon="inline-start" aria-hidden="true" />
-              Add Meal Schedule
-            </Button>
-          </div>
+          <h2 id="activity-meal-schedules-title" className="text-heading-3 font-semibold">
+            Meal Schedules ({activity.mealSchedules.length})
+          </h2>
           {activity.mealSchedules.length === 0 ? (
             <MealSchedulesEmptyState />
           ) : (
@@ -267,7 +262,7 @@ export default function ActivityDetailContent({
             />
           )}
         </section>
-      </main>
+      </div>
 
       <MealScheduleCreateDialog
         activity={activity}
@@ -292,6 +287,6 @@ export default function ActivityDetailContent({
           toast.success("Meal Schedule updated");
         }}
       />
-    </div>
+    </WorkspaceLayout>
   );
 }

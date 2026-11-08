@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-import WorkspaceHeader from "@/components/workspace/workspace-header";
+import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { getMealSchedule } from "@/features/activity-planning/server";
-import { MealScheduleHeader } from "@/features/activity-planning/ui";
+import { MealScheduleDetails } from "@/features/activity-planning/ui";
 import { getIssuanceWorkspace } from "@/features/issuance/server";
 import { IssuanceDraftContent } from "@/features/issuance/ui";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -43,15 +43,19 @@ export default async function MealScheduleDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      <div className="flex h-svh min-h-0 flex-col bg-card">
-        <WorkspaceHeader title="Planning" />
-      {issuance.ok ? <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} /> : (
-        <main className="flex flex-col gap-6 px-4 py-5 sm:px-6">
-          <MealScheduleHeader mealSchedule={mealSchedule}  />
-          <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
-        </main>
+      {issuance.ok ? (
+        <IssuanceDraftContent key={mealSchedule.id} workspace={issuance.value} mealSchedule={mealSchedule} />
+      ) : (
+        <WorkspaceLayout
+          workspaceTitle="Planning"
+          task={<WorkspaceTaskHeader><WorkspaceRecordTitle title={`${mealSchedule.label} · ${mealSchedule.mealTime}`} /></WorkspaceTaskHeader>}
+        >
+          <div className="flex flex-col gap-6 px-4 py-5 sm:px-6">
+            <MealScheduleDetails mealSchedule={mealSchedule} />
+            <Alert><AlertDescription>Issuance is available to kitchen staff and administrators.</AlertDescription></Alert>
+          </div>
+        </WorkspaceLayout>
       )}
-      </div>
     </WorkspaceShell>
   );
 }

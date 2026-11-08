@@ -231,7 +231,7 @@ export default function VendorTable({
         ))}
       </div>
       <div className="hidden sm:block">
-        <WorkspaceTableFrame caption="Vendors" className="min-w-[52rem]">
+        <WorkspaceTableFrame caption="Vendors" stickyColumns className="min-w-[52rem]">
           <TableHeader className="bg-muted/60">
             <TableRow>
               <TableHead scope="col" className="text-left">

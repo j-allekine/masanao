@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const mealPath = "/activity-designs/inv-design/activities/inv-activity/meal-schedules/inv-meal";
 test.beforeAll(() => {
@@ -23,7 +24,7 @@ test("staff reads exact stock from converted receiving through draft and posted 
   test.setTimeout(180_000);
   await page.goto("/inventory");
   await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
-  expect((await page.request.post("/api/auth/sign-in/username", { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/inventory");
   const eggs = page.getByRole("row").filter({ hasText: "Inventory Eggs" });
   await expect(eggs).toContainText("Out of stock");

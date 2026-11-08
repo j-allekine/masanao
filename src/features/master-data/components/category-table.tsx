@@ -40,7 +40,7 @@ function CategoryRow({
     <>
       <TableRow className="hover:bg-muted/35">
         <TableCell className="max-w-[24rem]">
-          <span tabIndex={-1} data-master-data-record-id={category.id} className="block truncate">{category.name}</span>
+          <span tabIndex={-1} data-master-data-record-id={category.id} className="block whitespace-normal wrap-anywhere">{category.name}</span>
         </TableCell>
         <TableCell className="max-w-[36rem]">
           <span className="block truncate text-muted-foreground">
@@ -120,7 +120,7 @@ export default function CategoryTable({
   }
 
   return (
-    <WorkspaceTableFrame caption="Categories" className="min-w-[38rem]">
+    <WorkspaceTableFrame caption="Categories" stickyColumns className="min-w-[38rem]">
       <TableHeader className="bg-muted/60">
         <TableRow>
           <TableHead scope="col" className="text-left">

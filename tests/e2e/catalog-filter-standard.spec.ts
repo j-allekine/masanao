@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
+import { postFixtureSignIn } from "./fixture-auth";
 
 const catalogs = [
   ["inventory", "/inventory", "Search Inventory by Item name"],
@@ -20,7 +21,7 @@ for (const width of [1280, 1024, 320]) {
   test(`catalog filters share visible labels and keyboard clearing at ${width}px`, async ({ page }, testInfo) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width, height: 900 });
-    expect((await page.request.post("/api/auth/sign-in/username", {
+    expect((await postFixtureSignIn(page.request, {
       data: { username: "municipal.admin", password: "administrator-password" },
       headers: { origin: process.env.BETTER_AUTH_URL! },
     })).status()).toBe(200);
@@ -59,7 +60,7 @@ for (const width of [1280, 1024, 320]) {
 test("compact filters preserve selections, reset and focus while the available width changes", async ({ page }, testInfo) => {
   const evidence = process.env.MASANAO_FILTER_EVIDENCE_DIR;
   if (evidence) mkdirSync(evidence, { recursive: true });
-  expect((await page.request.post("/api/auth/sign-in/username", {
+  expect((await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
     headers: { origin: process.env.BETTER_AUTH_URL! },
   })).status()).toBe(200);

@@ -43,13 +43,13 @@ function ActivityDesignRow({
   return (
     <>
       <TableRow className="hover:bg-muted/35">
-        <TableCell className="font-mono text-mono tracking-mono text-primary">
+        <TableCell className="tabular-nums">
           {activityDesign.activityDesignNo}
         </TableCell>
-        <TableCell className="max-w-[28rem]">
+        <TableCell className="max-w-[28rem] whitespace-normal wrap-anywhere">
           <Link
             href={withPlanningReturn(`/activity-designs/${activityDesign.id}`, catalogUrl)}
-            className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="block font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {activityDesign.title}
           </Link>
@@ -150,6 +150,7 @@ export default function ActivityDesignTable({
   return (
     <WorkspaceTableFrame
       caption="Activity Designs"
+      stickyColumns
       className="min-w-[52rem]"
     >
       <TableHeader className="bg-muted/60">

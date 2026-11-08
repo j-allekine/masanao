@@ -14,7 +14,7 @@ export default function WorkspaceShell({
   activeSection,
   children,
 }: {
-  user: WorkspaceUser;
+  user?: WorkspaceUser;
   activeSection: WorkspaceSectionId;
   children: React.ReactNode;
 }) {
@@ -27,6 +27,7 @@ export default function WorkspaceShell({
   return (
     <TooltipProvider>
       <SidebarProvider
+        restoreOpen
         data-shell-client-ready={isHydrated ? "true" : undefined}
         style={{
           "--sidebar-width": "15.5rem",
