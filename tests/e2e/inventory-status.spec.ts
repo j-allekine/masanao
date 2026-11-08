@@ -39,6 +39,25 @@ for (const width of [1280, 320]) {
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
     await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
+    const overview = page.getByRole("region", { name: "Stock overview" });
+    const summary = await overview.innerText();
+    const search = page.getByRole("searchbox", { name: "Search Inventory by Item name" });
+    await search.fill("Status Review Item");
+    await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
+    await expect(overview).toHaveText(summary, { useInnerText: true });
+    for (const [name, status, itemId, label] of [
+      [/^\d+ out of stock$/, "out-of-stock", "status-out", "Out of stock"],
+      [/^\d+ reorder now$/, "reorder-now", "status-reorder", "Reorder now"],
+    ] as const) {
+      await overview.getByRole("button", { name }).click();
+      await expect(page).toHaveURL(`/inventory?status=${status}`);
+      await expect(search).toHaveValue("");
+      await expect(list.locator(`[data-item-id="${itemId}"]`)).toBeVisible();
+      await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
+      await expect(page.getByText(`Showing items marked “${label}”.`, { exact: false })).toBeFocused();
+      await expect(overview).toHaveText(summary, { useInnerText: true });
+    }
+    await resetCatalogFilters(page);
     await openCatalogFilters(page);
     const filter = page.getByRole("combobox", { name: "Stock status", exact: true });
     await expect(filter).toContainText("All stock statuses");

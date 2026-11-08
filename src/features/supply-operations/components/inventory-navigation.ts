@@ -23,6 +23,7 @@ export function createInventoryNavigation(initialItems: InventoryListItem[], ini
     return {
       currentQuery: query,
       state,
+      snapshotItems: items,
       pagination: paginateInventory(filterInventory(items, state), state.page),
       hasFilters: Boolean(state.search.trim() || state.categoryId || state.stockStatus),
       refreshing,

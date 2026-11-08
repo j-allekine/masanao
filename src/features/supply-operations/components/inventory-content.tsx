@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,9 @@ import InventorySearch from "./inventory-search";
 import { inventoryCategories } from "../domain/inventory-category-filter";
 import { InventoryCategoryFilter } from "./inventory-category-filter";
 import { InventoryStatusFilter } from "./inventory-status-filter";
+import InventoryStockOverview from "./inventory-stock-overview";
 import { useInventoryNavigation } from "./use-inventory-navigation";
+import type { InventoryStatusFilterValue } from "../domain/inventory-list-state";
 
 function StockBadge({ item }: { item: InventoryListItem }) {
   const tone = item.stockStatus === "good"
@@ -68,9 +71,18 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
 }
 
 export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
-  const { currentQuery, state, pagination, hasFilters, refreshing, hydrated, navigate, requestRefresh } = useInventoryNavigation(items);
+  const { currentQuery, state, snapshotItems, pagination, hasFilters, refreshing, hydrated, navigate, requestRefresh } = useInventoryNavigation(items);
+  const resultsNote = useRef<HTMLParagraphElement>(null);
 
   function clearFilters() { navigate({ search: "", categoryId: "", stockStatus: "", page: 1 }); }
+
+  function showStockStatus(stockStatus: InventoryStatusFilterValue) {
+    navigate({ search: "", categoryId: "", stockStatus, page: 1 });
+    requestAnimationFrame(() => {
+      resultsNote.current?.focus({ preventScroll: true });
+      resultsNote.current?.scrollIntoView({ block: "start" });
+    });
+  }
 
   const taskHeader = (
     <WorkspaceTaskHeader actions={<>
@@ -88,18 +100,20 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
   return <WorkspaceLayout workspaceTitle="Supply Operations" task={taskHeader} data-inventory-ready={hydrated ? "true" : "false"}>
     <FieldSet disabled={!hydrated} className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <FieldLegend className="sr-only">Inventory controls and results</FieldLegend>
+      <InventoryStockOverview items={snapshotItems} onFilter={showStockStatus} />
       <InventorySearch
         search={state.search}
         onSearchChange={(search) => navigate({ search, page: 1 }, true)}
         activeFilterCount={Number(Boolean(state.categoryId)) + Number(Boolean(state.stockStatus))}
         onClearFilters={clearFilters}
         filterContent={<>
-          <InventoryCategoryFilter categories={inventoryCategories(items)} value={state.categoryId} onValueChange={(categoryId) => navigate({ categoryId, page: 1 })} />
+          <InventoryCategoryFilter categories={inventoryCategories(snapshotItems)} value={state.categoryId} onValueChange={(categoryId) => navigate({ categoryId, page: 1 })} />
           <InventoryStatusFilter value={state.stockStatus} onChange={(stockStatus) => navigate({ stockStatus, page: 1 })} />
         </>}
       />
       <div className="flex min-w-0 flex-col gap-3">
-        <p className="text-body-sm text-muted-foreground">
+        <p ref={resultsNote} tabIndex={-1} className="text-body-sm text-muted-foreground">
+          {state.stockStatus && <>Showing items marked “{stockStatusLabels[state.stockStatus]}”. </>}
           On hand is shown in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.
         </p>
         <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
