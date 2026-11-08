@@ -1,0 +1,86 @@
+name: Windows installer
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windows-installer.yml'
+      - 'scripts/windows/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Installer version, for example 0.1.0-preview.1
+        required: true
+        type: string
+      publish:
+        description: Publish a GitHub prerelease from the default branch
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      INSTALLER_VERSION: ${{ inputs.version || format('0.0.0-pr.{0}.{1}', github.run_number, github.run_attempt) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.15.0
+          architecture: x64
+          cache: pnpm
+      - name: Install pinned Inno Setup compiler
+        shell: pwsh
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          $compilerDir = Join-Path $env:RUNNER_TEMP 'inno'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $setup
+          if ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash -ne '9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732') {
+            throw 'Unexpected Inno Setup download checksum.'
+          }
+          $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT /NORESTART /CURRENTUSER /DIR=`"$compilerDir`"" -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno Setup installation failed ($($process.ExitCode))." }
+          "INNO_COMPILER=$(Join-Path $compilerDir 'ISCC.exe')" >> $env:GITHUB_ENV
+      - name: Build installer
+        shell: pwsh
+        run: ./scripts/windows/build-installer.ps1 -Version $env:INSTALLER_VERSION -Compiler $env:INNO_COMPILER
+      - name: Test installation, sign-in, and reinstall
+        shell: pwsh
+        run: node scripts/windows/verify-installer.mjs "build/windows/Masanao-Setup-$env:INSTALLER_VERSION-x64.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Masanao-Windows-x64
+          path: build/windows/Masanao-Setup-${{ env.INSTALLER_VERSION }}-x64.exe
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    needs: build
+    if: ${{ inputs.publish && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      INSTALLER_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Masanao-Windows-x64
+          path: release
+      - name: Publish Windows preview
+        shell: bash
+        run: |
+          tag="windows-v$INSTALLER_VERSION"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$tag" -f sha="$GITHUB_SHA" --silent
+          gh release create "$tag" "release/Masanao-Setup-$INSTALLER_VERSION-x64.exe" \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --prerelease --latest=false --title "Masanao Windows $INSTALLER_VERSION" \
+            --notes "Offline Windows x64 installer for guided production testing."
