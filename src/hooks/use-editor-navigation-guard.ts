@@ -3,27 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
-type ExitRequest = { kind: "traverse"; key: string } | { kind: "link"; href: string };
-
-// The project's DOM types do not yet include the Navigation API.
-type BrowserNavigation = EventTarget & {
-  currentEntry: { key: string } | null;
-  traverseTo(key: string): { finished: Promise<unknown> };
-};
-
-type HistoryNavigationEvent = Event & {
-  navigationType: string;
-  destination: { key: string; sameDocument: boolean };
-};
-
-function getBrowserNavigation() {
-  return (window as Window & { navigation?: BrowserNavigation }).navigation;
-}
+type ExitRequest = { kind: "traverse"; offset: number } | { kind: "link"; href: string };
 
 export function useEditorNavigationGuard(dirty: boolean, pending: boolean) {
   const router = useRouter();
   const [exitRequest, setExitRequest] = useState<ExitRequest | null>(null);
-  const confirmedEntry = useRef<string | null>(null);
+  const confirmedPosition = useRef<number | null>(null);
 
   const requestExit = useEffectEvent((request: ExitRequest) => {
     if (!pending) setExitRequest(request);
@@ -32,20 +17,8 @@ export function useEditorNavigationGuard(dirty: boolean, pending: boolean) {
   useLayoutEffect(() => {
     if (!dirty) return;
 
-    const navigation = getBrowserNavigation();
-    const editorEntry = navigation?.currentEntry?.key;
-    let interruptedEntry: string | null = null;
-
-    function handleNavigate(event: Event) {
-      const { navigationType, destination } = event as HistoryNavigationEvent;
-      if (
-        navigationType !== "traverse" || !destination.sameDocument || !event.cancelable ||
-        destination.key === editorEntry || destination.key === confirmedEntry.current
-      ) return;
-
-      event.preventDefault();
-      requestExit({ kind: "traverse", key: destination.key });
-    }
+    const editorPosition: number | undefined = window.history.state?.masanaoHistoryPosition;
+    let interruptedPosition: number | null = null;
 
     function warnBeforeUnload(event: BeforeUnloadEvent) {
       event.preventDefault();
@@ -66,41 +39,37 @@ export function useEditorNavigationGuard(dirty: boolean, pending: boolean) {
       requestExit({ kind: "link", href: destination.href });
     }
 
-    function restoreAfterTraversal(event: PopStateEvent) {
-      const destination = navigation?.currentEntry?.key;
-      if (!navigation || !editorEntry || !destination) return;
-      if (destination === confirmedEntry.current) {
-        confirmedEntry.current = null;
+    function restoreAfterTraversal(event: Event) {
+      const destination = (event as CustomEvent<number>).detail;
+      if (editorPosition === undefined) return;
+      if (destination === confirmedPosition.current) {
+        confirmedPosition.current = null;
         return;
       }
 
-      if (destination === editorEntry) {
-        if (!interruptedEntry) return;
-        event.stopImmediatePropagation();
-        const key = interruptedEntry;
-        interruptedEntry = null;
-        requestExit({ kind: "traverse", key });
+      if (destination === editorPosition) {
+        if (interruptedPosition === null) return;
+        event.preventDefault();
+        const offset = interruptedPosition - editorPosition;
+        interruptedPosition = null;
+        requestExit({ kind: "traverse", offset });
         return;
       }
 
-      // Restore the existing editor entry before Next applies the new route.
-      // Traversing by key leaves both Back and Forward entries intact.
-      event.stopImmediatePropagation();
-      interruptedEntry = destination;
-      void navigation.traverseTo(editorEntry).finished.catch(() => {
-        interruptedEntry = null;
-      });
+      // Return to the existing editor entry before the router applies the new route.
+      event.preventDefault();
+      interruptedPosition = destination;
+      window.history.go(editorPosition - destination);
     }
 
-    navigation?.addEventListener("navigate", handleNavigate);
+    window.addEventListener("masanao:editor-traversal", restoreAfterTraversal);
     window.addEventListener("beforeunload", warnBeforeUnload);
-    window.addEventListener("popstate", restoreAfterTraversal, true);
     document.addEventListener("click", handleLink, true);
     return () => {
-      navigation?.removeEventListener("navigate", handleNavigate);
+      window.removeEventListener("masanao:editor-traversal", restoreAfterTraversal);
       window.removeEventListener("beforeunload", warnBeforeUnload);
-      window.removeEventListener("popstate", restoreAfterTraversal, true);
       document.removeEventListener("click", handleLink, true);
+      confirmedPosition.current = null;
     };
   }, [dirty]);
 
@@ -112,14 +81,8 @@ export function useEditorNavigationGuard(dirty: boolean, pending: boolean) {
     if (pending) return;
     dismissExit();
     if (exitRequest?.kind === "traverse") {
-      const navigation = getBrowserNavigation();
-      if (!navigation) return;
-      const { key } = exitRequest;
-      confirmedEntry.current = key;
-      void navigation.traverseTo(key).finished.catch(() => {
-        // A superseding navigation can remove the requested entry.
-        if (confirmedEntry.current === key) confirmedEntry.current = null;
-      });
+      confirmedPosition.current = window.history.state.masanaoHistoryPosition + exitRequest.offset;
+      window.history.go(exitRequest.offset);
       return;
     }
 

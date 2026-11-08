@@ -4,6 +4,12 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { postFixtureSignIn } from "./fixture-auth";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "navigation", { configurable: true, value: undefined });
+  });
+});
+
 async function signInAsAdministrator(page: Page) {
   const response = await postFixtureSignIn(page.request, {
     data: { username: "municipal.admin", password: "administrator-password" },
@@ -43,7 +49,7 @@ test("dirty Recipe survives Back and can be discarded through the workspace side
   await expect(page).toHaveURL(/\/recipes$/);
 });
 
-test("editing after Back preserves the Recipe in Forward history", async ({ page, browserName }) => {
+test("editing after Back preserves the Recipe in Forward history without the Navigation API", async ({ page }) => {
   await signInAsAdministrator(page);
   const recipe = "/recipes/e2e-recipe-active";
   const editor = `${recipe}/edit`;
@@ -62,28 +68,14 @@ test("editing after Back preserves the Recipe in Forward history", async ({ page
   await expect(name).toHaveValue("Unsaved Tinola");
   await expect.poll(() => page.evaluate(() => history.length)).toBe(historyLength);
 
-  // Use Chromium's browser history control for repeated multi-entry traversals.
-  const browserSession = browserName === "chromium" ? await page.context().newCDPSession(page) : null;
-  async function goForwardToRecipe() {
-    if (!browserSession) {
-      await page.evaluate(() => history.go(2));
-      return;
-    }
-
-    const { currentIndex, entries } = await browserSession.send("Page.getNavigationHistory");
-    const destination = entries[currentIndex + 2];
-    expect(new URL(destination.url).pathname).toBe(recipe);
-    await browserSession.send("Page.navigateToHistoryEntry", { entryId: destination.id });
-  }
-
   const discard = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
-  await goForwardToRecipe();
+  await page.evaluate(() => history.go(2));
   await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(discard).toBeHidden();
   await expect(page).toHaveURL(editor);
   await expect(name).toHaveValue("Unsaved Tinola");
 
-  await goForwardToRecipe();
+  await page.evaluate(() => history.go(2));
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(recipe);
 });
