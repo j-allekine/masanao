@@ -13,12 +13,8 @@ async function signInAsAdministrator(page: Page) {
 }
 
 async function goBack(page: Page) {
-  try {
-    await page.goBack({ waitUntil: "domcontentloaded" });
-  } catch (error) {
-    // Restoring the editor entry can supersede the original navigation.
-    if (!(error instanceof Error) || !error.message.includes("net::ERR_ABORTED")) throw error;
-  }
+  // A guarded traversal may stop before any page navigation commits.
+  await page.evaluate(() => history.back());
 }
 
 test("dirty Recipe survives Back and can be discarded through the workspace sidebar", async ({ page }) => {
@@ -33,6 +29,7 @@ test("dirty Recipe survives Back and can be discarded through the workspace side
 
   const discard = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
   await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(discard).toBeHidden();
   await expect(page).toHaveURL(/\/recipes\/new$/);
   await expect(name).toHaveValue("Unsaved Recipe");
 
@@ -44,6 +41,51 @@ test("dirty Recipe survives Back and can be discarded through the workspace side
   await expect(name).toHaveValue("");
   await goBack(page);
   await expect(page).toHaveURL(/\/recipes$/);
+});
+
+test("editing after Back preserves the Recipe in Forward history", async ({ page, browserName }) => {
+  await signInAsAdministrator(page);
+  const recipe = "/recipes/e2e-recipe-active";
+  const editor = `${recipe}/edit`;
+  await page.goto(editor);
+  const name = page.getByRole("textbox", { name: "Recipe name", exact: true });
+  await expect(name).toHaveValue("Chicken Tinola");
+
+  await page.getByRole("link", { name: "Recipes", exact: true }).click();
+  await page.getByRole("link", { name: "Chicken Tinola", exact: true }).click();
+  await expect(page).toHaveURL(recipe);
+  await page.evaluate(() => history.go(-2));
+  await expect(page).toHaveURL(editor);
+
+  const historyLength = await page.evaluate(() => history.length);
+  await name.fill("Unsaved Tinola");
+  await expect(name).toHaveValue("Unsaved Tinola");
+  await expect.poll(() => page.evaluate(() => history.length)).toBe(historyLength);
+
+  // Use Chromium's browser history control for repeated multi-entry traversals.
+  const browserSession = browserName === "chromium" ? await page.context().newCDPSession(page) : null;
+  async function goForwardToRecipe() {
+    if (!browserSession) {
+      await page.evaluate(() => history.go(2));
+      return;
+    }
+
+    const { currentIndex, entries } = await browserSession.send("Page.getNavigationHistory");
+    const destination = entries[currentIndex + 2];
+    expect(new URL(destination.url).pathname).toBe(recipe);
+    await browserSession.send("Page.navigateToHistoryEntry", { entryId: destination.id });
+  }
+
+  const discard = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
+  await goForwardToRecipe();
+  await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(discard).toBeHidden();
+  await expect(page).toHaveURL(editor);
+  await expect(name).toHaveValue("Unsaved Tinola");
+
+  await goForwardToRecipe();
+  await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(page).toHaveURL(recipe);
 });
 
 test("dirty receiving Back can keep entry or resume the Purchase Order", async ({ page }) => {
@@ -66,6 +108,7 @@ test("dirty receiving Back can keep entry or resume the Purchase Order", async (
     const discard = page.getByRole("alertdialog", { name: "Discard changes?", exact: true });
     await goBack(page);
     await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(discard).toBeHidden();
     await expect(page).toHaveURL(`/purchase-orders/${id}/record-delivery`);
     await expect(receipt).toHaveValue("Unsaved receipt");
 

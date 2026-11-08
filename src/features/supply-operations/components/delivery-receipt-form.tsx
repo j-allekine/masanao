@@ -111,7 +111,6 @@ export default function DeliveryReceiptForm({
   onCancel,
   onDirty,
   onPostingChange,
-  onBeforeLeave,
 }: {
   purchaseOrderId: string;
   items: ItemListItem[];
@@ -120,7 +119,6 @@ export default function DeliveryReceiptForm({
   onCancel?: () => void;
   onDirty?: () => void;
   onPostingChange?: (posting: boolean) => void;
-  onBeforeLeave?: () => Promise<void>;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -262,7 +260,6 @@ export default function DeliveryReceiptForm({
     startTransition(async () => {
       const result = await postDeliveryReceiptAction(data);
       if (result.status === "success") {
-        await onBeforeLeave?.();
         router.push(`${recordHref}#delivery-receipt-${result.receipt.id}`);
         return;
       }

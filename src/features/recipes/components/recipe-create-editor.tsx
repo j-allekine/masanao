@@ -201,7 +201,6 @@ export default function RecipeCreateEditor({
         }
 
         toast.success(`Recipe “${result.recipe.name}” ${recipe ? "updated" : "created"}`);
-        await guard.release();
         router.push(getRecipeListUrl(`/recipes/${result.recipe.id}`, "", catalogState));
       } catch {
         setFormError("The Recipe could not be saved. Check your connection and try again.");
@@ -497,7 +496,7 @@ export default function RecipeCreateEditor({
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={() => {
               setIsDiscardDialogOpen(false);
-              void guard.confirmExit(() => router.push(catalogHref));
+              guard.confirmExit(() => router.push(catalogHref));
             }}>
               Discard changes
             </AlertDialogAction>
