@@ -106,7 +106,6 @@ export default function DeliveryReceiptDialog({
           onCancel={requestClose}
           onDirty={() => setDirty(true)}
           onPostingChange={setPosting}
-          onBeforeLeave={guard.release}
         />
         <AlertDialog
           open={confirmDiscard || guard.exitRequest !== null}
@@ -124,7 +123,7 @@ export default function DeliveryReceiptDialog({
               <AlertDialogCancel>Keep editing</AlertDialogCancel>
               <AlertDialogAction variant="destructive" onClick={() => {
                 setConfirmDiscard(false);
-                void guard.confirmExit(close);
+                guard.confirmExit(close);
               }}>Discard changes</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
