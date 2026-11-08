@@ -190,10 +190,6 @@ export default function RecipesContent({
       )}
     >
       <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <p className="text-body text-muted-foreground">
-          Reusable food templates and their usual ingredients.
-        </p>
-
         <WorkspaceCatalogToolbar
           ariaLabel="Recipe catalog search"
           searchId="recipe-search"

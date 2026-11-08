@@ -88,7 +88,6 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
   return <WorkspaceLayout workspaceTitle="Supply Operations" task={taskHeader} data-inventory-ready={hydrated ? "true" : "false"}>
     <FieldSet disabled={!hydrated} className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
       <FieldLegend className="sr-only">Inventory controls and results</FieldLegend>
-      <p className="text-body-sm text-muted-foreground">Available stock in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.</p>
       <InventorySearch
         search={state.search}
         onSearchChange={(search) => navigate({ search, page: 1 }, true)}
@@ -99,7 +98,12 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
           <InventoryStatusFilter value={state.stockStatus} onChange={(stockStatus) => navigate({ stockStatus, page: 1 })} />
         </>}
       />
-      <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
+      <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-body-sm text-muted-foreground">
+          On hand is shown in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.
+        </p>
+        <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
+      </div>
       <CatalogPagination {...pagination} onPageChange={(page) => navigate({ page })} />
     </FieldSet>
   </WorkspaceLayout>;

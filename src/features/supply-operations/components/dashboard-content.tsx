@@ -44,14 +44,14 @@ export default function KitchenDashboard({ user, result }: { user: WorkspaceUser
     <WorkspaceLayout workspaceTitle="Dashboard" data-dashboard-surface>
       <header className="border-b">
         <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <h1 className="text-heading-1 font-semibold">Budget accounting</h1>
+          <h1 className="text-heading-3 font-semibold">Budget accounting</h1>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <DashboardPeriodPicker period={period} disabled={disabled} onApply={(next) => navigate({ ...next, budgetPage: 1 })} />
             <Button variant="outline" disabled={disabled} onClick={() => startTransition(() => router.refresh())}><RefreshCw data-icon="inline-start" aria-hidden="true" />{pending ? "Updating…" : "Refresh"}</Button>
           </div>
         </div>
       </header>
-      <div className="mx-auto flex w-full min-w-0 max-w-[90rem] flex-1 flex-col gap-6 px-4 py-6 sm:px-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-6 px-4 py-6 sm:px-6" aria-busy={pending} data-dashboard-ready={hydrated ? "true" : undefined}>
         {!result.ok ? <Alert variant="destructive"><AlertTitle>Report unavailable</AlertTitle><AlertDescription>{result.error}</AlertDescription></Alert> : report && <>
           {report.sampleData && <Alert data-dashboard-sample><AlertTitle>Sample data (preview only)</AlertTitle></Alert>}
           <DashboardBudgetReport key={`${period.start}/${period.end}/${report.budgets.search}`} report={report.budgets} disabled={disabled}

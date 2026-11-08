@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -121,7 +121,7 @@ function MealScheduleRow({
           </Link>
           <p className="mt-1 text-body-sm text-muted-foreground sm:hidden">Time: {schedule.mealTime}</p>
         </TableCell>
-        <TableCell className="hidden font-mono tabular-nums sm:table-cell">
+        <TableCell className="hidden tabular-nums sm:table-cell">
           {schedule.mealTime}
         </TableCell>
         <TableCell className="text-center">
@@ -198,17 +198,16 @@ export default function ActivityDetailContent({
       task={
         <WorkspaceTaskHeader
           actions={
-            <Button id="new-meal-schedule" onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
+            <WorkspacePrimaryAction id="new-meal-schedule" onClick={() => setIsCreateDialogOpen(true)}>
               Add Meal Schedule
-            </Button>
+            </WorkspacePrimaryAction>
           }
         >
           <WorkspaceRecordTitle title={activity.name} />
         </WorkspaceTaskHeader>
       }
     >
-      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>

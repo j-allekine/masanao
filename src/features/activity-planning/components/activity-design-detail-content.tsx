@@ -5,10 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import {
   Inbox,
-  Plus,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { WorkspacePrimaryAction } from "@/components/workspace/catalog-controls";
 import {
   Empty,
   EmptyDescription,
@@ -207,17 +206,16 @@ export default function ActivityDesignDetailContent({
       task={
         <WorkspaceTaskHeader
           actions={
-            <Button id="new-activity" onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus data-icon="inline-start" aria-hidden="true" />
+            <WorkspacePrimaryAction id="new-activity" onClick={() => setIsCreateDialogOpen(true)}>
               Create Activity
-            </Button>
+            </WorkspacePrimaryAction>
           }
         >
           <WorkspaceRecordTitle title={activityDesign.title} />
         </WorkspaceTaskHeader>
       }
     >
-      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-content flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
         <Breadcrumb><BreadcrumbList className="break-words">
           <BreadcrumbItem><BreadcrumbLink render={<Link href={returnUrl} />}>{returnUrl.startsWith("/activities") ? "Activities" : "Activity Designs"}</BreadcrumbLink></BreadcrumbItem>
           <BreadcrumbSeparator /><BreadcrumbItem><BreadcrumbPage className="break-words">{activityDesign.activityDesignNo}</BreadcrumbPage></BreadcrumbItem>

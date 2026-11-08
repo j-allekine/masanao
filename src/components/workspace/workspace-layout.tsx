@@ -120,7 +120,7 @@ export function WorkspaceTaskHeader({
 }) {
   return (
     <header data-slot="workspace-task-header" className="border-b">
-      <div className="mx-auto flex w-full max-w-content flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
+      <div className="mx-auto flex min-h-13 w-full max-w-content flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:px-6">
         <div className="flex min-w-0 flex-auto flex-wrap items-center gap-x-2 gap-y-1 [overflow-wrap:anywhere]">
           {children}
         </div>
