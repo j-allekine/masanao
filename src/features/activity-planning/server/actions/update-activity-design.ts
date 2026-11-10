@@ -41,7 +41,10 @@ export async function executeUpdateActivityDesign(
     if (!result.ok) {
       return {
         status: "error",
-        error: result.error,
+        error:
+          result.kind === "duplicate"
+            ? `${result.error} Enter a different Activity Design No.`
+            : result.error,
         fields: result.fields,
       };
     }

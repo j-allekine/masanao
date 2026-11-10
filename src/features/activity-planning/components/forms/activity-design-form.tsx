@@ -76,13 +76,8 @@ function ActivityDesignFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={required}>
         {label}
-        {required ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       <Input
         id={inputId}
@@ -94,7 +89,11 @@ function ActivityDesignFieldInput({
         aria-describedby={hasError ? errorId : undefined}
       />
       {hasError ? (
-        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
+        <FieldError
+          id={errorId}
+          errors={error?.map((message) => ({ message }))}
+          visuallyHidden
+        />
       ) : null}
     </Field>
   );
@@ -223,11 +222,8 @@ export default function ActivityDesignForm({
             mode={mode}
           />
           <Field data-invalid={Boolean(fieldErrors.fiscalYear?.length)}>
-            <FieldLabel htmlFor={`${mode}-activity-design-fiscalYear`}>
+            <FieldLabel htmlFor={`${mode}-activity-design-fiscalYear`} required>
               Fiscal Year
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>
             </FieldLabel>
             <FiscalYearPicker
               id={`${mode}-activity-design-fiscalYear`}
@@ -240,6 +236,7 @@ export default function ActivityDesignForm({
               <FieldError
                 id={`${mode}-activity-design-fiscalYear-error`}
                 errors={fieldErrors.fiscalYear.map((message) => ({ message }))}
+                visuallyHidden
               />
             ) : null}
             <input
