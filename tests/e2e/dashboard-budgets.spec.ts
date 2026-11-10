@@ -135,6 +135,84 @@ test("budget figures, persistent navigation and Activity row navigation work on 
   expect(await page.locator('[data-inventory-ready]').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(dashboardBackground);
 });
 
+for (const viewport of [
+  { width: 1440, height: 1000 },
+  { width: 320, height: 800 },
+]) {
+  test(`corrects missing reporting dates at ${viewport.width}px`, async ({ page }) => {
+    expect((await postFixtureSignIn(page.request, {
+      data: { username: "kitchen.staff", password: "correct-horse-battery-staple" },
+      headers: { origin: process.env.BETTER_AUTH_URL! },
+    })).status()).toBe(200);
+    await page.setViewportSize(viewport);
+    const appliedQuery = "/dashboard?start=2020-10-01&end=2020-10-31&budgetPage=2";
+    await page.goto(appliedQuery);
+    await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
+
+    const trigger = page.getByRole("button", { name: "Reporting period", exact: true });
+    const appliedPeriod = (await trigger.textContent())!;
+    await trigger.click();
+    const picker = page.getByRole("dialog", { name: "Reporting period" });
+    const from = picker.getByLabel("From", { exact: true });
+    const to = picker.getByLabel("To", { exact: true });
+    const apply = picker.getByRole("button", { name: "Apply period", exact: true });
+    const destructiveColor = await picker.evaluate((element) => {
+      const probe = document.createElement("span");
+      probe.style.color = "var(--destructive)";
+      element.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    for (const input of [from, to]) {
+      const marker = input.locator("..").getByText("*", { exact: true });
+      await expect(marker).toBeVisible();
+      await expect(marker).toHaveCSS("color", destructiveColor);
+      await expect(marker).toHaveAttribute("aria-hidden", "true");
+      await expect(input).toHaveAttribute("required", "");
+    }
+    await expect(picker.locator("form")).toHaveAttribute("novalidate", "");
+
+    await from.clear();
+    await apply.click();
+    await expect(from).toBeFocused();
+    await expect(from).toHaveAttribute("aria-invalid", "true");
+    await expect(from).toHaveAccessibleDescription("From date is required");
+    await expect(from).toHaveCSS("border-top-color", destructiveColor);
+    await expect(to).toHaveAttribute("aria-invalid", "false");
+    await expect(page).toHaveURL(appliedQuery);
+    await expect(trigger).toHaveText(appliedPeriod);
+
+    await to.clear();
+    await apply.click();
+    await expect(from).toBeFocused();
+    await expect(picker.locator('[aria-invalid="true"]')).toHaveCount(2);
+    for (const detail of await picker.locator('[data-slot="field-error"]').all()) {
+      await expect(detail).toHaveCSS("position", "absolute");
+      await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+    }
+    await expect(page).toHaveURL(appliedQuery);
+
+    await from.fill("2020-08-01");
+    await expect(from).toHaveAttribute("aria-invalid", "false");
+    await expect(from).toHaveAccessibleDescription("");
+    await apply.click();
+    await expect(to).toBeFocused();
+    await expect(to).toHaveAttribute("aria-invalid", "true");
+    await expect(to).toHaveAccessibleDescription("To date is required");
+    await expect(to).toHaveCSS("border-top-color", destructiveColor);
+    await expect(page).toHaveURL(appliedQuery);
+    await expect(trigger).toHaveText(appliedPeriod);
+
+    await to.fill("2020-08-31");
+    await expect(to).toHaveAttribute("aria-invalid", "false");
+    await apply.click();
+    await expect(picker).toHaveCount(0);
+    await expect(page).toHaveURL("/dashboard?start=2020-08-01&end=2020-08-31");
+    await expect(page.getByText("No Activities scheduled in this period", { exact: true })).toBeVisible();
+  });
+}
+
 test("pagination waits for a pending period change without restoring the previous dates", async ({ page }) => {
   expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto("/dashboard?start=2020-10-01&end=2020-10-31");
