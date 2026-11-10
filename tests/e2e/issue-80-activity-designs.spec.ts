@@ -1,12 +1,13 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
 
 type ActivityDesign = {
   id: string;
+  activityDesignNo: string;
   title: string;
 };
 
@@ -41,7 +42,7 @@ function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
 function createDesign(title: string): ActivityDesign {
   const activityDesign = {
     id: randomUUID(),
-    activityDesignNo: `E2E-80-${randomUUID()}`,
+    activityDesignNo: `e2e-80-${randomUUID()}`,
     title,
   };
 
@@ -110,6 +111,140 @@ async function openActivityDialog(page: Page, title: string) {
   await page.getByRole("menuitem", { name: "Add Activity", exact: true }).click();
 
   return page.getByRole("dialog").filter({ hasText: `Add Activity to “${title}”` });
+}
+
+async function expectHiddenFieldError(
+  control: Locator,
+  description: string | RegExp,
+  destructiveColor: string,
+) {
+  await expect(control).toHaveAttribute("aria-invalid", "true");
+  await expect(control).toHaveCSS("border-top-color", destructiveColor);
+  await expect(control).toHaveAccessibleDescription(description);
+  const field = control.locator("..");
+  const detail = field.locator('[data-slot="field-error"]');
+  await expect(detail).toHaveCSS("position", "absolute");
+  await expect(detail).toHaveCSS("clip", "rect(0px, 0px, 0px, 0px)");
+  await expect(detail).toHaveCSS("height", "1px");
+}
+
+for (const viewport of [
+  { width: 1458, height: 986 },
+  { width: 390, height: 844 },
+]) {
+  test(`corrects Activity Design validation at ${viewport.width}px`, async ({ page }) => {
+    const duplicate = createDesign("E2E existing Activity Design");
+    const newNumber = `e2e-306-${randomUUID()}`;
+    const title = `E2E validated Activity Design ${newNumber}`;
+    await page.setViewportSize(viewport);
+    await page.clock.setFixedTime(new Date("2026-09-15T04:00:00.000Z"));
+
+    try {
+      await authenticate(page);
+      await page.goto("/activity-designs");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByRole("button", { name: "Create Activity Design", exact: true }).click();
+
+      const createDialog = page.getByRole("dialog", { name: "Create Activity Design" });
+      const designNumber = createDialog.getByRole("textbox", { name: "Activity Design No.", exact: true });
+      const fiscalYear = createDialog.getByRole("button", { name: "Fiscal Year", exact: true });
+      const titleInput = createDialog.getByRole("textbox", { name: "Title", exact: true });
+      const aipCode = createDialog.getByRole("textbox", { name: "AIP Reference Code", exact: true });
+      const submit = createDialog.getByRole("button", { name: "Create Activity Design", exact: true });
+      const markers = createDialog.getByText("*", { exact: true });
+      await expect(markers).toHaveCount(3);
+      const destructiveColor = await markers.first().evaluate((marker) => {
+        const probe = document.createElement("span");
+        probe.style.color = "var(--destructive)";
+        marker.append(probe);
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      });
+      for (const control of [designNumber, fiscalYear, titleInput]) {
+        const marker = control.locator("..").getByText("*", { exact: true });
+        await expect(marker).toBeVisible();
+        await expect(marker).toHaveCSS("color", destructiveColor);
+        await expect(marker).toHaveAttribute("aria-hidden", "true");
+      }
+      await expect(aipCode.locator("..").getByText("*", { exact: true })).toHaveCount(0);
+      await expect(createDialog.getByRole("form")).toHaveAttribute("novalidate", "");
+      const titleField = titleInput.locator("..");
+      const untouchedTitleHeight = (await titleField.boundingBox())!.height;
+
+      await designNumber.fill(duplicate.activityDesignNo);
+      await titleInput.fill(title);
+      await submit.click();
+      await expect(fiscalYear).toBeFocused();
+      await expectHiddenFieldError(fiscalYear, /expected number/i, destructiveColor);
+      await fiscalYear.press("Enter");
+      await page.getByRole("button", { name: "2026", exact: true }).click();
+      await expect(fiscalYear).toHaveAttribute("aria-invalid", "false");
+
+      await titleInput.clear();
+      await submit.click();
+      await expect(titleInput).toBeFocused();
+      await expectHiddenFieldError(titleInput, "Title is required", destructiveColor);
+      expect((await titleField.boundingBox())!.height).toBe(untouchedTitleHeight);
+      await titleInput.fill(title);
+      await expect(titleInput).toHaveAttribute("aria-invalid", "false");
+      await expect(titleInput).toHaveAccessibleDescription("");
+
+      await aipCode.fill("X".repeat(101));
+      await submit.click();
+      await expect(aipCode).toBeFocused();
+      await expectHiddenFieldError(
+        aipCode,
+        "AIP Reference Code must be 100 characters or fewer",
+        destructiveColor,
+      );
+      await aipCode.clear();
+
+      await submit.click();
+      await expect(designNumber).toBeFocused();
+      await expectHiddenFieldError(
+        designNumber,
+        "An Activity Design with that number already exists.",
+        destructiveColor,
+      );
+      const feedback = createDialog.getByRole("alert");
+      await expect(feedback).toHaveCount(1);
+      await expect(feedback).toContainText(
+        "An Activity Design with that number already exists. Enter a different Activity Design No.",
+      );
+      await designNumber.fill(newNumber);
+      await expect(designNumber).toHaveAttribute("aria-invalid", "false");
+      await expect(feedback).toHaveCount(0);
+      await submit.click();
+      await expect(createDialog).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
+
+      await page.goto(`/activity-designs?activityDesignsSearch=${newNumber}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByRole("button", { name: `Actions for ${title}`, exact: true }).click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const editDialog = page.getByRole("dialog", { name: "Edit Activity Design" });
+      await expect(editDialog.getByText("*", { exact: true })).toHaveCount(3);
+      const editTitle = editDialog.getByRole("textbox", { name: "Title", exact: true });
+      const save = editDialog.getByRole("button", { name: "Save changes", exact: true });
+      await editTitle.clear();
+      await save.click();
+      await expect(editTitle).toBeFocused();
+      await expectHiddenFieldError(editTitle, "Title is required", destructiveColor);
+      const editedTitle = `${title} edited`;
+      await editTitle.fill(editedTitle);
+      await save.click();
+      await expect(editDialog).toHaveCount(0);
+      await expect(page.getByRole("row").filter({ hasText: editedTitle })).toBeVisible();
+    } finally {
+      const created = withE2eDatabase((database) =>
+        database
+          .prepare('SELECT id, activityDesignNo, title FROM "activity_design" WHERE "activityDesignNo" = ?')
+          .get(newNumber) as ActivityDesign | undefined,
+      );
+      deleteDesigns(created ? [duplicate, created] : [duplicate]);
+    }
+  });
 }
 
 test.describe("issue 80 Activity Designs cleanup", () => {

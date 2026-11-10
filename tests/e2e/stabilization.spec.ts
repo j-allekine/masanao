@@ -428,7 +428,8 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(designNo).toHaveAttribute("aria-invalid", "true");
       const designNoErrorId = await designNo.getAttribute("aria-describedby");
       expect(designNoErrorId).toBeTruthy();
-      await expect(dialog.locator(`#${designNoErrorId}`)).toBeVisible();
+      await expect(designNo).toHaveAccessibleDescription("Activity Design No. is required");
+      await expect(dialog.locator(`#${designNoErrorId}`)).toHaveCSS("position", "absolute");
       await expect(title).toHaveValue("E2E retained after validation");
 
       await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -483,7 +484,7 @@ test.describe("frontend stabilization regression seam", () => {
         .click();
       await expect(
         duplicateDialog.getByText(
-          "An Activity Design with that number already exists.",
+          "An Activity Design with that number already exists. Enter a different Activity Design No.",
           { exact: true },
         ).first(),
       ).toBeVisible();
