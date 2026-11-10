@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldRequiredMark } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -61,10 +61,10 @@ function createIngredientDraft(): IngredientDraft {
   };
 }
 
-function FieldMessages({ id, errors }: { id?: string; errors?: string[] }) {
+function FieldMessages({ id, errors, visuallyHidden = true }: { id: string; errors?: string[]; visuallyHidden?: boolean }) {
   if (!errors?.length) return null;
 
-  return <FieldError id={id} className="whitespace-normal wrap-anywhere" errors={errors.map((message) => ({ message }))} />;
+  return <FieldError id={id} visuallyHidden={visuallyHidden} className="whitespace-normal wrap-anywhere" errors={errors.map((message) => ({ message }))} />;
 }
 
 function getDraftSignature(name: string, preparationNote: string, baselinePax: string, ingredients: IngredientDraft[]) {
@@ -96,6 +96,7 @@ export default function RecipeCreateEditor({
   const [ingredients, setIngredients] = useState<IngredientDraft[]>(() => recipe?.ingredients.map((ingredient) => ({ id: ingredient.id, itemId: ingredient.itemId, itemUnitConversionId: ingredient.itemUnitConversionId, quantity: ingredient.enteredQuantity })) ?? [createIngredientDraft()]);
   const [fieldErrors, setFieldErrors] = useState<RecipeFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [duplicateNameError, setDuplicateNameError] = useState<string | null>(null);
   const formErrorRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, startTransition] = useTransition();
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
@@ -127,9 +128,15 @@ export default function RecipeCreateEditor({
 
   const guard = useEditorNavigationGuard(isDirty, isSubmitting);
 
+  const ingredientRecovery = [...new Set(ingredients.flatMap((ingredient, index) => [
+    ...(ingredient.itemId ? fieldErrors[`ingredients.${index}.itemId`] ?? [] : []),
+    ...(fieldErrors[`ingredients.${index}.itemUnitConversionId`] ?? []),
+  ]))].join(" ");
+  const visibleError = duplicateNameError || ingredientRecovery || formError;
+
   useEffect(() => {
-    if (formError) formErrorRef.current?.focus();
-  }, [formError]);
+    if (formError || duplicateNameError) formErrorRef.current?.focus();
+  }, [formError, duplicateNameError]);
 
   function clearFieldError(field: keyof RecipeFieldErrors) {
     setFieldErrors((currentErrors) => {
@@ -159,22 +166,36 @@ export default function RecipeCreateEditor({
     );
     const index = ingredients.findIndex((ingredient) => ingredient.id === id);
     clearFieldError(`ingredients.${index}.${field}` as RecipeIngredientField);
+    if (field === "itemId") clearFieldError(`ingredients.${index}.itemUnitConversionId`);
     clearFieldError("ingredients");
   }
 
   function removeIngredient(id: string) {
-    setIngredients((currentIngredients) =>
-      currentIngredients.length === 1
-        ? currentIngredients
-        : currentIngredients.filter((ingredient) => ingredient.id !== id),
-    );
-    clearFieldError("ingredients");
+    const index = ingredients.findIndex((ingredient) => ingredient.id === id);
+    if (ingredients.length === 1 || index < 0) return;
+
+    setIngredients((currentIngredients) => currentIngredients.filter((ingredient) => ingredient.id !== id));
+    setFieldErrors((currentErrors) => {
+      const nextErrors: RecipeFieldErrors = { ...currentErrors };
+      delete nextErrors.ingredients;
+      for (const field of ["itemId", "quantity", "itemUnitConversionId"] as const) {
+        for (let row = index; row < ingredients.length; row++) {
+          const key: RecipeIngredientField = `ingredients.${row}.${field}`;
+          const shiftedError = currentErrors[`ingredients.${row + 1}.${field}`];
+          if (shiftedError) nextErrors[key] = shiftedError;
+          else delete nextErrors[key];
+        }
+      }
+      return nextErrors;
+    });
+    setFormError(null);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFieldErrors({});
     setFormError(null);
+    setDuplicateNameError(null);
 
     const formData = new FormData();
     formData.set("name", name);
@@ -195,7 +216,11 @@ export default function RecipeCreateEditor({
       try {
         const result = recipe ? await updateRecipeAction(recipe.id, formData) : await createRecipeAction(formData);
         if (result.status === "error") {
-          setFormError(result.error);
+          if (result.kind === "duplicate") {
+            setDuplicateNameError(`${result.error} Enter a different Recipe name.`);
+          } else {
+            setFormError(result.fields.form?.join(" ") || result.error);
+          }
           setFieldErrors(result.fields);
           return;
         }
@@ -248,10 +273,10 @@ export default function RecipeCreateEditor({
           Add a reusable food template using each Item&apos;s Base Unit or configured alternate Unit.
         </p>
         <div className="flex flex-col gap-6">
-          {formError ? (
+          {visibleError ? (
             <Alert ref={formErrorRef} tabIndex={-1} variant="destructive">
               <AlertTitle>Could not save Recipe</AlertTitle>
-              <AlertDescription>{formError}</AlertDescription>
+              <AlertDescription>{visibleError}</AlertDescription>
             </Alert>
           ) : null}
 
@@ -259,13 +284,13 @@ export default function RecipeCreateEditor({
             <CardHeader>
               <CardTitle>Recipe details</CardTitle>
               <CardDescription>
-                Give this food template a clear name. The preparation note is optional.
+                Give this food template a clear name.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <FieldGroup>
                 <Field data-invalid={Boolean(fieldErrors.name?.length)}>
-                  <FieldLabel htmlFor="recipe-name">Recipe name <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
+                  <FieldLabel htmlFor="recipe-name" required>Recipe name</FieldLabel>
                   <Input
                     id="recipe-name"
                     value={name}
@@ -275,13 +300,14 @@ export default function RecipeCreateEditor({
                     aria-describedby={fieldErrors.name?.length ? "recipe-name-error" : undefined}
                     onChange={(event) => {
                       setName(event.target.value);
+                      setDuplicateNameError(null);
                       clearFieldError("name");
                     }}
                   />
                   <FieldMessages id="recipe-name-error" errors={fieldErrors.name} />
                 </Field>
                 <Field data-invalid={Boolean(fieldErrors.preparationNote?.length)}>
-                  <FieldLabel htmlFor="recipe-preparation-note">Preparation note <span className="text-muted-foreground">(optional)</span></FieldLabel>
+                  <FieldLabel htmlFor="recipe-preparation-note">Preparation note</FieldLabel>
                   <Textarea
                     id="recipe-preparation-note"
                     value={preparationNote}
@@ -309,7 +335,7 @@ export default function RecipeCreateEditor({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Field data-invalid={Boolean(fieldErrors.baselinePax?.length)}>
-                <FieldLabel htmlFor="recipe-baseline-pax">Ingredients for ___ pax <span className="text-destructive" aria-hidden="true">*</span></FieldLabel>
+                <FieldLabel htmlFor="recipe-baseline-pax" required>Ingredients for ___ pax</FieldLabel>
                 <Input id="recipe-baseline-pax" className="max-w-48" inputMode="numeric" pattern="[1-9][0-9]*" required value={baselinePax} aria-invalid={Boolean(fieldErrors.baselinePax?.length)} aria-describedby={fieldErrors.baselinePax?.length ? "recipe-baseline-pax-error recipe-baseline-pax-help" : "recipe-baseline-pax-help"} onChange={(event) => { setBaselinePax(event.target.value); clearFieldError("baselinePax"); }} />
                 <p id="recipe-baseline-pax-help" className="text-body-sm text-muted-foreground">The entered ingredient quantities serve this many people. Changing the baseline redefines this batch; it does not multiply or change ingredient quantities.</p>
                 <FieldMessages id="recipe-baseline-pax-error" errors={fieldErrors.baselinePax} />
@@ -319,8 +345,8 @@ export default function RecipeCreateEditor({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead scope="col">Item</TableHead>
-                      <TableHead scope="col" className="w-36">Quantity</TableHead>
+                      <TableHead scope="col">Item <FieldRequiredMark /></TableHead>
+                      <TableHead scope="col" className="w-36">Quantity <FieldRequiredMark /></TableHead>
                       <TableHead scope="col" className="w-52">Unit</TableHead>
                       <TableHead scope="col" className="w-44">Base Unit reference</TableHead>
                       <TableHead scope="col"><span className="sr-only">Remove</span></TableHead>
@@ -365,6 +391,7 @@ export default function RecipeCreateEditor({
                                 id={itemInputId}
                                 className="w-full"
                                 aria-label={`Ingredient ${index + 1} Item`}
+                                aria-required="true"
                                 aria-invalid={Boolean(itemErrors?.length)}
                                 aria-describedby={itemErrors?.length ? `${itemInputId}-error` : undefined}
                                 placeholder="Search active Items" />
@@ -379,6 +406,7 @@ export default function RecipeCreateEditor({
                               id={quantityInputId}
                               className="min-w-28"
                               inputMode="decimal"
+                              required
                               aria-label={`Ingredient ${index + 1} quantity`}
                               aria-invalid={Boolean(quantityErrors?.length)}
                               aria-describedby={quantityErrors?.length ? `${quantityInputId}-error` : undefined}
@@ -466,7 +494,7 @@ export default function RecipeCreateEditor({
                 </Table>
               </div>
               <Field data-invalid={Boolean(fieldErrors.ingredients?.length)}>
-                <FieldMessages id="recipe-ingredients-error" errors={fieldErrors.ingredients} />
+                <FieldMessages id="recipe-ingredients-error" errors={fieldErrors.ingredients} visuallyHidden={false} />
               </Field>
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setIngredients((currentIngredients) => [...currentIngredients, createIngredientDraft()])}>

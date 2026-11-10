@@ -114,7 +114,8 @@ test("completes a legacy Recipe baseline without changing its ingredients", asyn
   await expect(page.getByText(/redefines this batch; it does not multiply or change ingredient quantities/)).toBeVisible();
   await page.getByRole("button", { name: "Save Recipe" }).click();
   await expect(baseline).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByText("Enter the number of people these ingredients serve.")).toBeVisible();
+  await expect(baseline).toHaveAccessibleDescription(/Enter the number of people these ingredients serve\./);
+  await expect(page.locator("#recipe-baseline-pax-error")).toHaveCSS("clip-path", "inset(50%)");
   await baseline.focus();
   await page.keyboard.type("50");
   await page.getByRole("button", { name: "Save Recipe" }).click();
@@ -224,7 +225,8 @@ test("shows accessible baseline errors and keeps the Recipe editor usable at 320
   await page.getByRole("button", { name: "Create Recipe" }).click();
   const baseline = page.getByLabel("Ingredients for ___ pax");
   await expect(baseline).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByText("Enter the number of people these ingredients serve.", { exact: true })).toBeVisible();
+  await expect(baseline).toHaveAccessibleDescription(/Enter the number of people these ingredients serve\./);
+  await expect(page.locator("#recipe-baseline-pax-error")).toHaveCSS("clip-path", "inset(50%)");
   await baseline.focus();
   await page.keyboard.type("1");
   await expect(baseline).toHaveValue("1");
@@ -247,12 +249,12 @@ test("shows field errors for nonempty invalid baseline values without losing the
     await baseline.press("Tab");
     await page.getByRole("button", { name: "Create Recipe" }).click();
     await expect(baseline).toHaveAttribute("aria-invalid", "true");
-    await expect(page.locator("#recipe-baseline-pax-error")).toBeVisible();
+    await expect(page.locator("#recipe-baseline-pax-error")).toHaveCSS("clip-path", "inset(50%)");
     await expect(page.getByLabel("Recipe name")).toHaveValue("Invalid Baseline Soup");
     await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("1.2500");
     await expect(baseline).toHaveValue(invalidValue);
   }
-  await expect(page.getByText("Enter a whole number no greater than 2,147,483,647.")).toBeVisible();
+  await expect(baseline).toHaveAccessibleDescription(/Enter a whole number no greater than 2,147,483,647\./);
   const widths = await page.locator("body").evaluate((body) => ({ client: body.clientWidth, scroll: body.scrollWidth }));
   expect(widths.scroll).toBeLessThanOrEqual(widths.client);
 });
@@ -286,30 +288,105 @@ test("lets an administrator preview an alternate Unit Ingredient in its Base Uni
   await page.getByRole("option", { name: "Gram (0.001 kg)", exact: true }).click();
   await expect(page.getByText("0.5 kg", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Create Recipe" }).click();
+  const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  const setGramActive = database.prepare('UPDATE "unit" SET "active" = ? WHERE "id" = ?');
+  const create = page.getByRole("button", { name: "Create Recipe" });
+  const unit = page.getByLabel("Ingredient 1 Unit");
+  const unavailable = "Select an available Unit conversion for this Item.";
+  try {
+    setGramActive.run(0, "default-unit-gram");
+    await create.click();
+    await expect(unit).toHaveAttribute("aria-invalid", "true");
+    await expect(unit).toHaveAccessibleDescription(unavailable);
+    await expect(page.locator("#recipe-ingredient-0-unit-error")).toHaveCSS("clip-path", "inset(50%)");
+    const summary = page.getByRole("alert").filter({ hasText: "Could not save Recipe" });
+    await expect(summary.getByText(unavailable, { exact: true })).toBeVisible();
+    await unit.click();
+    await page.getByRole("option", { name: /Base Unit.*Kilogram/ }).click();
+    await expect(unit).toHaveAttribute("aria-invalid", "false");
+    await expect(summary).toHaveCount(0);
+  } finally {
+    setGramActive.run(1, "default-unit-gram");
+    database.close();
+  }
+
+  await unit.click();
+  await page.getByRole("option", { name: "Gram (0.001 kg)", exact: true }).click();
+  await create.click();
   await expect(page).toHaveURL(/\/recipes\/[^/]+$/);
   await expect(page.getByRole("heading", { name: "Gram Rice Porridge", exact: true })).toBeVisible();
   await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
   await page.screenshot({ path: test.info().outputPath("created-recipe-mobile.png"), fullPage: true });
 });
 
-test("shows Ingredient row errors without discarding entered Recipe fields", async ({ page }) => {
-  await signInAsAdministrator(page);
-  await page.goto("/recipes/new");
-  await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-  await page.getByLabel("Recipe name").fill("Validation Rice Porridge");
-  await page.getByLabel("Preparation note").fill("Keep this note after validation.");
-  await page.getByLabel("Ingredient 1 quantity").fill("0");
-  await page.getByRole("button", { name: "Create Recipe" }).click();
-  await expect(page.getByText("Could not save Recipe", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Ingredient 1 Item")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Ingredient 1 quantity")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByText("Select an Item.", { exact: true })).toBeVisible();
-  await expect(page.getByText("Enter a positive exact-decimal quantity.", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Recipe name")).toHaveValue("Validation Rice Porridge");
-  await expect(page.getByLabel("Preparation note")).toHaveValue("Keep this note after validation.");
-  await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("0");
-});
+for (const width of [1280, 320]) {
+  test(`shows Ingredient row errors and keeps other rows correctable at ${width}px`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width, height: 720 });
+    await signInAsAdministrator(page);
+    await page.goto("/recipes/new");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+    const recipeName = page.getByRole("textbox", { name: "Recipe name", exact: true });
+    const note = page.getByLabel("Preparation note", { exact: true });
+    const baseline = page.getByRole("textbox", { name: "Ingredients for ___ pax", exact: true });
+    const firstItem = page.getByRole("combobox", { name: "Ingredient 1 Item", exact: true });
+    const firstQuantity = page.getByRole("textbox", { name: "Ingredient 1 quantity", exact: true });
+    const secondQuantity = page.getByRole("textbox", { name: "Ingredient 2 quantity", exact: true });
+    const create = page.getByRole("button", { name: "Create Recipe", exact: true });
+    const summary = page.getByRole("alert").filter({ hasText: "Could not save Recipe" });
+    const nameMark = page.locator('label[for="recipe-name"]').getByText("*", { exact: true });
+    await expect(nameMark).toBeVisible();
+    await expect(nameMark).toHaveAttribute("aria-hidden", "true");
+    const destructive = await nameMark.evaluate((element) => getComputedStyle(element).color);
+    await expect(page.locator('label[for="recipe-name"]')).not.toHaveCSS("color", destructive);
+    await expect(page.locator('label[for="recipe-baseline-pax"]').getByText("*")).toHaveCSS("color", destructive);
+    for (const heading of ["Item", "Quantity"]) {
+      await expect(page.getByRole("columnheader", { name: heading, exact: true }).getByText("*")).toHaveCSS("color", destructive);
+    }
+    await expect(page.getByRole("columnheader", { name: "Unit", exact: true }).getByText("*")).toHaveCount(0);
+    await expect(firstItem).toHaveAttribute("aria-required", "true");
+    await expect(firstQuantity).toHaveAttribute("required", "");
+    await expect(note).not.toHaveAttribute("required", "");
+
+    await baseline.fill("50");
+    await note.fill("Keep this note after validation.");
+    await firstQuantity.fill("0");
+    await page.getByRole("button", { name: "Add Ingredient", exact: true }).click();
+    await create.click();
+    await expect(summary).toBeFocused();
+    for (const field of [recipeName, firstItem, firstQuantity, secondQuantity]) {
+      await expect(field).toHaveAttribute("aria-invalid", "true");
+      await expect(field).toHaveCSS("border-top-color", destructive);
+    }
+    await expect(recipeName).toHaveAccessibleDescription("Recipe name is required");
+    await expect(firstItem).toHaveAccessibleDescription("Select an Item.");
+    await expect(firstQuantity).toHaveAccessibleDescription("Enter a positive exact-decimal quantity.");
+    await expect(page.locator("#recipe-ingredient-0-item-error")).toHaveCSS("clip-path", "inset(50%)");
+    await expect(page.locator("#recipe-ingredient-0-quantity-error")).toHaveCSS("clip-path", "inset(50%)");
+    await expect(note).toHaveValue("Keep this note after validation.");
+    await expect(firstQuantity).toHaveValue("0");
+
+    await chooseIngredient(page, 1, "Rice");
+    await expect(page.getByLabel("Ingredient 1 Unit")).toContainText(/Base Unit.*Kilogram/);
+    await firstQuantity.fill("2");
+    await expect(firstItem).toHaveAttribute("aria-invalid", "false");
+    await expect(firstQuantity).toHaveAttribute("aria-invalid", "false");
+    await expect(secondQuantity).toHaveAttribute("aria-invalid", "true");
+    await page.getByRole("button", { name: "Remove Ingredient 2", exact: true }).click();
+
+    await recipeName.fill("Chicken Tinola");
+    await create.click();
+    await expect(recipeName).toHaveAccessibleDescription("A Recipe with that name already exists.");
+    await expect(recipeName).toHaveCSS("border-top-color", destructive);
+    await expect(summary).toContainText("A Recipe with that name already exists. Enter a different Recipe name.");
+    await expect(page.locator("#recipe-name-error")).toHaveCSS("clip-path", "inset(50%)");
+    const validName = `Validation Rice Porridge ${width}`;
+    await recipeName.fill(validName);
+    await expect(recipeName).toHaveAttribute("aria-invalid", "false");
+    await create.click();
+    await expect(page.getByRole("heading", { name: validName, exact: true })).toBeVisible();
+  });
+}
 
 test("keeps the Recipes catalog readable on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
