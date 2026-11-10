@@ -124,7 +124,7 @@ async function expectHiddenFieldError(
   const field = control.locator("..");
   const detail = field.locator('[data-slot="field-error"]');
   await expect(detail).toHaveCSS("position", "absolute");
-  await expect(detail).toHaveCSS("clip", "rect(0px, 0px, 0px, 0px)");
+  await expect(detail).toHaveCSS("clip-path", "inset(50%)");
   await expect(detail).toHaveCSS("height", "1px");
 }
 
