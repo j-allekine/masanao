@@ -387,11 +387,11 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       });
       const office = dialog.getByRole("textbox", { name: "Office", exact: true });
       const participantCount = dialog.getByRole("textbox", {
-        name: "Planned pax (optional)",
+        name: "Planned pax",
         exact: true,
       });
       const plannedBudget = dialog.getByRole("textbox", {
-        name: "Planned budget (optional)",
+        name: "Planned budget",
         exact: true,
       });
 
@@ -402,12 +402,39 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
       await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
 
+      const particulars = dialog.getByRole("textbox", { name: "Activity particulars", exact: true });
+      const venue = dialog.getByRole("textbox", { name: "Venue", exact: true });
+      await particulars.fill("x".repeat(2_001));
+      await venue.fill("x".repeat(301));
+      await participantCount.fill("-1");
       await plannedBudget.fill("1234.567");
       await dialog.getByRole("button", { name: "Create Activity", exact: true }).click();
       await expect(dialog).toBeVisible();
+      await expect(particulars).toBeFocused();
+      for (const [control, message] of [
+        [particulars, "Activity particulars must be 2000 characters or fewer"],
+        [venue, "Venue must be 300 characters or fewer"],
+        [participantCount, "Planned pax cannot be negative"],
+      ] as const) {
+        await expect(control).toHaveAttribute("aria-invalid", "true");
+        await expect(control).toHaveAccessibleDescription(message);
+        await expect(control).toHaveCSS("border-top-color", "rgb(157, 65, 55)");
+        const detailsId = await control.getAttribute("aria-describedby");
+        await expect(dialog.locator(`[id="${detailsId}"]`)).toHaveCSS("clip-path", "inset(50%)");
+      }
       await expect(plannedBudget).toHaveAttribute("aria-invalid", "true");
-      await expect(dialog).toContainText("up to two decimal places");
+      await expect(plannedBudget).toHaveAccessibleDescription(/up to two decimal places/);
+      await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("position", "absolute");
+      await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("clip-path", "inset(50%)");
+      await expect(
+        dialog.locator('[data-slot="input-group"]').filter({ has: plannedBudget }),
+      ).toHaveCSS("border-top-color", "rgb(157, 65, 55)");
 
+      await particulars.clear();
+      await expect(particulars).toHaveAttribute("aria-invalid", "false");
+      await expect(venue).toHaveAttribute("aria-invalid", "true");
+      await venue.clear();
+      await participantCount.fill("1221121");
       await plannedBudget.fill("1212121");
       await expect(plannedBudget).toHaveValue("1,212,121");
       await plannedBudget.blur();
