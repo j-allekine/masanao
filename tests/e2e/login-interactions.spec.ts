@@ -26,7 +26,7 @@ test.describe("production login interactions", () => {
   test("toggles password visibility without changing the entered value", async ({ page }) => {
     await openLogin(page);
 
-    const password = page.getByLabel("Password", { exact: true });
+    const password = page.getByLabel(/^Password/);
     const enteredPassword = "correct-horse-battery-staple";
 
     await password.fill(enteredPassword);
@@ -61,8 +61,8 @@ test.describe("production login interactions", () => {
 
     await openLogin(page);
 
-    const username = page.getByLabel("Username", { exact: true });
-    const password = page.getByLabel("Password", { exact: true });
+    const username = page.getByRole("textbox", { name: "Username", exact: true });
+    const password = page.getByLabel(/^Password/);
     const requestPromise = page.waitForRequest(
       (request) =>
         request.method() === "POST" &&
@@ -110,9 +110,9 @@ test.describe("production login interactions", () => {
     await openLogin(page);
 
     const usernameValue = "unknown.staff";
-    await page.getByLabel("Username", { exact: true }).fill(usernameValue);
-    await page.getByLabel("Password", { exact: true }).fill("wrong-password");
-    await page.getByLabel("Password", { exact: true }).press("Enter");
+    await page.getByRole("textbox", { name: "Username", exact: true }).fill(usernameValue);
+    await page.getByLabel(/^Password/).fill("wrong-password");
+    await page.getByLabel(/^Password/).press("Enter");
 
     const alert = loginForm(page).getByRole("alert");
     await expect(alert).toBeVisible();
@@ -192,9 +192,9 @@ for (const surface of signInSurfaces) {
       if (surface.path === "/") await openLogin(page);
       else await page.goto(surface.path);
 
-      const form = page.locator("form").filter({ has: page.getByLabel("Username", { exact: true }) });
-      const username = form.getByLabel("Username", { exact: true });
-      const password = form.getByLabel("Password", { exact: true });
+      const form = page.locator("form").filter({ has: page.getByRole("textbox", { name: "Username", exact: true }) });
+      const username = form.getByRole("textbox", { name: "Username", exact: true });
+      const password = form.getByLabel(/^Password/);
       const submit = form.getByRole("button", { name: surface.submit, exact: true });
 
       await expect(form).toHaveAttribute("novalidate", "");

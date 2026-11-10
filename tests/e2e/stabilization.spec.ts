@@ -534,9 +534,9 @@ test.describe("frontend stabilization regression seam", () => {
         exact: true,
       });
       await expect(form).toHaveAttribute("data-client-ready", "true");
-      await form.getByLabel("Username", { exact: true }).fill("kitchen.staff");
+      await form.getByRole("textbox", { name: "Username", exact: true }).fill("kitchen.staff");
       await form
-        .getByLabel("Password", { exact: true })
+        .getByLabel(/^Password/)
         .fill(staffPassword);
 
       const submit = form.getByRole("button", { name: "Sign in", exact: true });
@@ -595,9 +595,9 @@ test.describe("frontend stabilization regression seam", () => {
           exact: true,
         });
         await expect(form).toHaveAttribute("data-client-ready", "true");
-        await form.getByLabel("Username", { exact: true }).fill("failure.staff");
-        await form.getByLabel("Password", { exact: true }).fill("wrong-password");
-        await form.getByLabel("Password", { exact: true }).press("Enter");
+        await form.getByRole("textbox", { name: "Username", exact: true }).fill("failure.staff");
+        await form.getByLabel(/^Password/).fill("wrong-password");
+        await form.getByLabel(/^Password/).press("Enter");
         await expect(form.getByRole("alert")).toContainText(scenario.expected);
       }
     } finally {
