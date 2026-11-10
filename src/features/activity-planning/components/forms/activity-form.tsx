@@ -133,13 +133,8 @@ function ActivityTextField({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={id}>
+      <FieldLabel htmlFor={id} required={required}>
         {label}
-        {required ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       <Input
         id={id}
@@ -156,7 +151,7 @@ function ActivityTextField({
         aria-describedby={hasError ? errorId : undefined}
       />
       {hasError ? (
-        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
+        <FieldError visuallyHidden id={errorId} errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );
@@ -190,7 +185,7 @@ function ActivityParticipantCountField({
   return (
     <Field data-invalid={hasError}>
       <FieldLabel htmlFor="plannedParticipantCount">
-        Planned pax (optional)
+        Planned pax
       </FieldLabel>
       <Input
         ref={inputRef}
@@ -206,6 +201,7 @@ function ActivityParticipantCountField({
       />
       {hasError ? (
         <FieldError
+          visuallyHidden
           id={errorId}
           errors={error?.map((message) => ({ message }))}
         />
@@ -284,7 +280,7 @@ function ActivityFormFields({
         onChange={(value) => updateField("scheduledDate", value)}
       />
       <Field data-invalid={Boolean(fieldErrors.particulars?.length)}>
-        <FieldLabel htmlFor="particulars">Activity particulars (optional)</FieldLabel>
+        <FieldLabel htmlFor="particulars">Activity particulars</FieldLabel>
         <Textarea
           id="particulars"
           name="particulars"
@@ -297,6 +293,7 @@ function ActivityFormFields({
         />
         {fieldErrors.particulars?.length ? (
           <FieldError
+            visuallyHidden
             id="particulars-error"
             errors={fieldErrors.particulars.map((message) => ({ message }))}
           />
@@ -304,7 +301,7 @@ function ActivityFormFields({
       </Field>
       <ActivityTextField
         id="venue"
-        label="Venue (optional)"
+        label="Venue"
         value={formValues.venue}
         error={fieldErrors.venue}
         onChange={(event) => updateField("venue", event.target.value)}
@@ -377,7 +374,7 @@ export default function ActivityForm({
         "particulars",
         "venue",
         "plannedParticipantCount",
-      "plannedBudgetPesos",
+        "plannedBudgetPesos",
       ] as ActivityField[]
     ).find((field) => fieldErrors[field]?.length);
 

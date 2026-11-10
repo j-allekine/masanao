@@ -52,7 +52,7 @@ export default function PlannedBudgetField({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor="plannedBudgetPesos">Planned budget (optional)</FieldLabel>
+      <FieldLabel htmlFor="plannedBudgetPesos">Planned budget</FieldLabel>
       <InputGroup>
         <InputGroupAddon>
           <InputGroupText>₱</InputGroupText>
@@ -72,7 +72,7 @@ export default function PlannedBudgetField({
         />
       </InputGroup>
       {hasError ? (
-        <FieldError id="plannedBudgetPesos-error" errors={error?.map((message) => ({ message }))} />
+        <FieldError visuallyHidden id="plannedBudgetPesos-error" errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );

@@ -149,8 +149,8 @@ export default function MealScheduleCreateDialog({
             ) : null}
             <FieldGroup>
               <Field data-invalid={Boolean(fieldErrors.label?.length)}>
-                <FieldLabel htmlFor="mealScheduleLabel">
-                  Meal Schedule label <span aria-hidden="true">*</span>
+                <FieldLabel htmlFor="mealScheduleLabel" required>
+                  Meal Schedule label
                 </FieldLabel>
                 <Input
                   id="mealScheduleLabel"
@@ -167,13 +167,14 @@ export default function MealScheduleCreateDialog({
                   onChange={(event) => updateField("label", event.target.value)}
                 />
                 <FieldError
+                  visuallyHidden
                   id="mealScheduleLabel-error"
                   errors={fieldErrors.label?.map((message) => ({ message }))}
                 />
               </Field>
               <Field data-invalid={Boolean(fieldErrors.mealTime?.length)}>
-                <FieldLabel htmlFor="mealScheduleTime">
-                  Meal time <span aria-hidden="true">*</span>
+                <FieldLabel htmlFor="mealScheduleTime" required>
+                  Meal time
                 </FieldLabel>
                 <Input
                   id="mealScheduleTime"
@@ -190,6 +191,7 @@ export default function MealScheduleCreateDialog({
                   onChange={(event) => updateField("mealTime", event.target.value)}
                 />
                 <FieldError
+                  visuallyHidden
                   id="mealScheduleTime-error"
                   errors={fieldErrors.mealTime?.map((message) => ({ message }))}
                 />

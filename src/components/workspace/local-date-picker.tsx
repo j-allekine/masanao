@@ -27,7 +27,7 @@ export default function LocalDatePicker({ id, name, label, emptyLabel, value, er
   const selectedDate = parseLocalDate(value);
   const hasError = Boolean(error?.length);
   return <Field data-invalid={hasError}>
-    <FieldLabel htmlFor={id}>{label}{required ? <span className="text-destructive" aria-hidden="true">*</span> : null}</FieldLabel>
+    <FieldLabel htmlFor={id} required={required}>{label}</FieldLabel>
     <Popover>
       <PopoverTrigger render={<Button type="button" id={id} variant="outline" aria-invalid={hasError} aria-required={required || undefined} aria-describedby={hasError ? `${id}-error` : undefined} className="w-full justify-between font-normal" />}>
         <span className={value ? "text-foreground" : "text-muted-foreground"}>{formatDateLabel(value, emptyLabel)}</span>
@@ -37,6 +37,6 @@ export default function LocalDatePicker({ id, name, label, emptyLabel, value, er
     </Popover>
     {/* Native hidden input carries the selected date in standard form submission. */}
     <input type="hidden" name={name} value={value} />
-    {hasError ? <FieldError id={`${id}-error`} errors={error?.map((message) => ({ message }))} /> : null}
+    {hasError ? <FieldError visuallyHidden id={`${id}-error`} errors={error?.map((message) => ({ message }))} /> : null}
   </Field>;
 }
