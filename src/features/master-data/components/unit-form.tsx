@@ -65,11 +65,8 @@ function UnitFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required>
         {label}
-        <span className="text-destructive" aria-hidden="true">
-          *
-        </span>
       </FieldLabel>
       <Input
         id={inputId}
@@ -84,6 +81,7 @@ function UnitFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -145,7 +143,16 @@ export default function UnitForm({
 
   function handleResult(result: UnitFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      if (result.kind === "duplicate") {
+        const field = result.fields.name
+          ? "name"
+          : result.fields.abbreviation
+            ? "abbreviation"
+            : "name or abbreviation";
+        setFormError(`${result.error} Enter a different ${field}.`);
+      } else {
+        setFormError(result.error);
+      }
       setFieldErrors(result.fields);
       return;
     }

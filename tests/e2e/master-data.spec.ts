@@ -1,7 +1,7 @@
 import { isolateMasterDataFixture } from "./master-data-fixtures";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
 import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 
@@ -21,6 +21,134 @@ async function signIn(page: Page, username: string, password: string) {
   });
 
   expect(response.status()).toBe(200);
+}
+
+async function destructiveColor(locator: Locator) {
+  return locator.evaluate((element) => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--destructive)";
+    element.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+}
+
+async function expectFieldError(input: Locator, message: string) {
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(input).toHaveAccessibleDescription(message);
+  const detailId = await input.getAttribute("aria-describedby");
+  const detail = input.page().locator(`#${detailId}`);
+  await expect(detail).toHaveCSS("position", "absolute");
+  await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+  await expect(detail).toHaveCSS("height", "1px");
+  await expect(input).toHaveCSS("border-top-color", await destructiveColor(detail));
+}
+
+for (const viewport of [workspaceViewports[0]!, { width: 390, height: 844 }]) {
+  test(`corrects Master Data field validation at ${viewport.width}px`, async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize(viewport);
+    await openMasterData(page, "municipal.admin", adminPassword);
+    const tabs = page.getByRole("tablist", { name: "Master Data sections" });
+
+    for (const { entity, tab, optionalLabels, emailLabel } of [
+      { entity: "Unit", tab: "Units", optionalLabels: [] },
+      { entity: "Category", tab: "Categories", optionalLabels: ["Description"] },
+      {
+        entity: "Office",
+        tab: "Offices",
+        optionalLabels: [
+          "Abbreviation", "Head name", "Head designation", "Official email", "Contact number",
+        ],
+        emailLabel: "Official email",
+      },
+      {
+        entity: "Vendor",
+        tab: "Vendors",
+        optionalLabels: ["Contact person", "Contact number", "Email", "Address"],
+        emailLabel: "Email",
+      },
+    ]) {
+      const action = `Create ${entity}`;
+      await tabs.getByRole("tab", { name: tab, exact: true }).click();
+      await page.getByRole("button", { name: action, exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: action });
+      const form = dialog.getByRole("form");
+      const submit = dialog.getByRole("button", { name: action, exact: true });
+      const name = form.getByRole("textbox", { name: "Name", exact: true });
+      const nameLabel = form.locator('[data-slot="field-label"]').filter({ hasText: /^Name/ });
+      const nameMark = nameLabel.getByText("*", { exact: true });
+      await expect(nameMark).toBeVisible();
+      await expect(nameMark).toHaveAttribute("aria-hidden", "true");
+      await expect(nameMark).toHaveCSS("color", await destructiveColor(nameMark));
+      await expect(name).toHaveAttribute("required", "");
+      await expect(form).toHaveAttribute("novalidate", "");
+      for (const label of optionalLabels) {
+        const input = form.getByRole("textbox", { name: label, exact: true });
+        await expect(input).not.toHaveAttribute("required", "");
+        await expect(
+          form.locator('[data-slot="field-label"]').filter({ hasText: label }).first(),
+        ).toHaveText(label);
+      }
+
+      const nameValue = `E2E ${entity} validation ${viewport.width}`;
+      const abbreviation = form.getByRole("textbox", { name: "Abbreviation", exact: true });
+      const email = emailLabel
+        ? form.getByRole("textbox", { name: emailLabel, exact: true })
+        : null;
+      if (email) await email.fill("not-an-email");
+      await submit.click();
+      await expect(name).toBeFocused();
+      await expectFieldError(name, `${entity} name is required`);
+      await name.fill(nameValue);
+      await expect(name).toHaveAttribute("aria-invalid", "false");
+      if (entity === "Unit") {
+        const mark = form.locator('[data-slot="field-label"]').filter({ hasText: /^Abbreviation/ }).getByText("*", { exact: true });
+        await expect(mark).toHaveCSS("color", await destructiveColor(mark));
+        await expect(abbreviation).toHaveAttribute("required", "");
+        await expectFieldError(abbreviation, "Unit abbreviation is required");
+        await abbreviation.fill(`val${viewport.width}`);
+      }
+      if (email) {
+        await expect(email).toBeFocused();
+        await expectFieldError(email, `${emailLabel} must be a valid email address`);
+        await email.fill("validation@example.test");
+        await expect(email).toHaveAttribute("aria-invalid", "false");
+      }
+      await submit.click();
+      await expect(dialog).toHaveCount(0);
+
+      const editedName = `${nameValue} edited`;
+      await page.getByRole("button", { name: `Actions for ${nameValue}`, exact: true }).click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const editDialog = page.getByRole("dialog", { name: `Edit ${entity}` });
+      const editName = editDialog.getByRole("textbox", { name: "Name", exact: true });
+      const save = editDialog.getByRole("button", { name: "Save changes", exact: true });
+      await editName.clear();
+      await save.click();
+      await expect(editName).toBeFocused();
+      await expectFieldError(editName, `${entity} name is required`);
+      await editName.fill(editedName);
+      await save.click();
+      await expect(editDialog).toHaveCount(0);
+
+      if (entity === "Unit") {
+        await page.getByRole("button", { name: action, exact: true }).click();
+        await name.fill(editedName);
+        await abbreviation.fill(`alt${viewport.width}`);
+        await submit.click();
+        await expectFieldError(name, "A Unit with that name already exists.");
+        const feedback = form.getByRole("alert");
+        await expect(feedback).toHaveCount(1);
+        await expect(feedback).toContainText("A Unit with that name already exists. Enter a different name.");
+        await name.fill(`${nameValue} corrected`);
+        await expect(feedback).toHaveCount(0);
+        await submit.click();
+        await expect(dialog).toHaveCount(0);
+      }
+    }
+  });
 }
 
 type ItemReferenceFixture = {
@@ -583,7 +711,7 @@ test.describe("Master Data Units journey", () => {
     });
     await expect(nameInput).toBeFocused();
     await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
-    await expect(dialog.getByText("Unit name is required", { exact: true })).toBeVisible();
+    await expectFieldError(nameInput, "Unit name is required");
     await expect(nameInput).toBeFocused();
 
     await nameInput.fill("  Gram  ");
@@ -602,7 +730,7 @@ test.describe("Master Data Units journey", () => {
     await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
     await expect(
         dialog
-          .getByText("A Unit with that name already exists.", { exact: true })
+          .getByText("A Unit with that name already exists. Enter a different name.", { exact: true })
           .first(),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
@@ -620,7 +748,7 @@ test.describe("Master Data Units journey", () => {
     await dialog.getByRole("button", { name: "Create Unit", exact: true }).click();
     await expect(
         dialog
-          .getByText("A Unit with that abbreviation already exists.", {
+          .getByText("A Unit with that abbreviation already exists. Enter a different abbreviation.", {
             exact: true,
           })
           .first(),
@@ -779,12 +907,12 @@ test.describe("Master Data Units journey", () => {
     let dialog = page.getByRole("dialog");
     const nameInput = dialog.getByRole("textbox", { name: "Name", exact: true });
     const descriptionInput = dialog.getByRole("textbox", {
-      name: "Description (optional)",
+      name: "Description",
       exact: true,
     });
     await expect(nameInput).toBeFocused();
     await dialog.getByRole("button", { name: "Create Category", exact: true }).click();
-    await expect(dialog.getByText("Category name is required", { exact: true })).toBeVisible();
+    await expectFieldError(nameInput, "Category name is required");
     await expect(nameInput).toBeFocused();
 
     await nameInput.fill("  Rice   &   Grains  ");
@@ -816,7 +944,7 @@ test.describe("Master Data Units journey", () => {
     await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
     dialog = page.getByRole("dialog");
     await dialog
-      .getByRole("textbox", { name: "Description (optional)", exact: true })
+      .getByRole("textbox", { name: "Description", exact: true })
       .fill("Unrelated supplies");
     await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
     await expect(
@@ -830,10 +958,10 @@ test.describe("Master Data Units journey", () => {
     await page.locator("#new-category").click();
     dialog = page.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("RICE   &   GRAINS");
-    await dialog.getByRole("textbox", { name: "Description (optional)", exact: true }).fill("Duplicate");
+    await dialog.getByRole("textbox", { name: "Description", exact: true }).fill("Duplicate");
     await dialog.getByRole("button", { name: "Create Category", exact: true }).click();
     await expect(
-      dialog.getByText("A Category with that name already exists.", { exact: true }).first(),
+      dialog.getByText("A Category with that name already exists. Enter a different name.", { exact: true }).first(),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
       "RICE   &   GRAINS",
@@ -849,7 +977,7 @@ test.describe("Master Data Units journey", () => {
     );
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill("Rice   &   Pantry");
     await dialog
-      .getByRole("textbox", { name: "Description (optional)", exact: true })
+      .getByRole("textbox", { name: "Description", exact: true })
       .fill("Staple and pantry supplies");
     await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
     await expect(dialog).toHaveCount(0);
@@ -1120,7 +1248,7 @@ test.describe("Master Data Offices journey", () => {
     await expect(nameInput).toBeFocused();
     await expect(dialog.getByRole("textbox")).toHaveCount(6);
     await dialog.getByRole("button", { name: "Create Office", exact: true }).click();
-    await expect(dialog.getByText("Office name is required", { exact: true })).toBeVisible();
+    await expectFieldError(nameInput, "Office name is required");
     await expect(nameInput).toBeFocused();
 
     await nameInput.fill("  Municipal  Health Office  ");
@@ -1155,7 +1283,7 @@ test.describe("Master Data Offices journey", () => {
     await dialog.getByRole("button", { name: "Create Office", exact: true }).click();
     await expect(
       dialog
-        .getByText("An Office with that name already exists.", { exact: true })
+        .getByText("An Office with that name already exists. Enter a different name.", { exact: true })
         .first(),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
@@ -1174,7 +1302,7 @@ test.describe("Master Data Offices journey", () => {
     await dialog.getByRole("button", { name: "Create Office", exact: true }).click();
     await expect(
       dialog
-        .getByText("An Office with that abbreviation already exists.", {
+        .getByText("An Office with that abbreviation already exists. Enter a different abbreviation.", {
           exact: true,
         })
         .first(),
@@ -1190,13 +1318,10 @@ test.describe("Master Data Offices journey", () => {
       .getByRole("textbox", { name: "Official email", exact: true })
       .fill("not-an-email");
     await dialog.getByRole("button", { name: "Create Office", exact: true }).click();
-    await expect(
-      dialog
-        .getByText("Official email must be a valid email address", {
-          exact: true,
-        })
-        .first(),
-    ).toBeVisible();
+    await expectFieldError(
+      dialog.getByRole("textbox", { name: "Official email", exact: true }),
+      "Official email must be a valid email address",
+    );
     await expect(
       dialog.getByRole("textbox", { name: "Official email", exact: true }),
     ).toHaveValue("not-an-email");
@@ -1394,9 +1519,7 @@ test.describe("Master Data Vendors journey", () => {
     });
     await expect(nameInput).toBeFocused();
     await dialog.getByRole("button", { name: "Create Vendor", exact: true }).click();
-    await expect(
-      dialog.getByText("Vendor name is required", { exact: true }),
-    ).toBeVisible();
+    await expectFieldError(nameInput, "Vendor name is required");
     await expect(nameInput).toBeFocused();
 
     await nameInput.fill("  Demo Vendor  ");
@@ -1410,9 +1533,10 @@ test.describe("Master Data Vendors journey", () => {
       .getByRole("textbox", { name: "Email", exact: true })
       .fill("not-an-email");
     await dialog.getByRole("button", { name: "Create Vendor", exact: true }).click();
-    await expect(
-      dialog.getByText("Email must be a valid email address", { exact: true }),
-    ).toBeVisible();
+    await expectFieldError(
+      dialog.getByRole("textbox", { name: "Email", exact: true }),
+      "Email must be a valid email address",
+    );
     await expect(dialog.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
       "not-an-email",
     );
@@ -1492,7 +1616,7 @@ test.describe("Master Data Vendors journey", () => {
     await duplicateName.fill(" acme foods ");
     await dialog.getByRole("button", { name: "Create Vendor", exact: true }).click();
     await expect(
-      dialog.getByText("A Vendor with that name already exists.", {
+      dialog.getByText("A Vendor with that name already exists. Enter a different name.", {
         exact: true,
       }),
     ).toBeVisible();
@@ -1520,7 +1644,7 @@ test.describe("Master Data Vendors journey", () => {
       .fill(" acme foods ");
     await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
     await expect(
-      dialog.getByText("A Vendor with that name already exists.", { exact: true }),
+      dialog.getByText("A Vendor with that name already exists. Enter a different name.", { exact: true }),
     ).toBeVisible();
     await expect(dialog.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
       " acme foods ",

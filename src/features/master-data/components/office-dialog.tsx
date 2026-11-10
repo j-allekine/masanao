@@ -70,8 +70,8 @@ export default function OfficeDialog({
               <DialogTitle>{title}</DialogTitle>
               <DialogDescription>
                 {dialogState.mode === "edit"
-                  ? "Update the Office identity and directory context. Name and abbreviation conflicts are not allowed."
-                  : "Add an Office to the municipal directory. Name is required; the remaining directory fields are optional."}
+                  ? "Update the Office details in the municipal directory."
+                  : "Add an Office to the municipal directory."}
               </DialogDescription>
             </DialogHeader>
             <OfficeForm

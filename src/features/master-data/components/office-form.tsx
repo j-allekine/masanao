@@ -81,20 +81,8 @@ function OfficeFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={required}>
         {label}
-        {required ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : (
-          <span
-            className="font-normal text-muted-foreground"
-            aria-hidden="true"
-          >
-            (optional)
-          </span>
-        )}
       </FieldLabel>
       <Input
         id={inputId}
@@ -112,6 +100,7 @@ function OfficeFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -180,7 +169,16 @@ export default function OfficeForm({
 
   function handleResult(result: OfficeFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      if (result.kind === "duplicate") {
+        const field = result.fields.name
+          ? "name"
+          : result.fields.abbreviation
+            ? "abbreviation"
+            : "name or abbreviation";
+        setFormError(`${result.error} Enter a different ${field}.`);
+      } else {
+        setFormError(result.error);
+      }
       setFieldErrors(result.fields);
       return;
     }

@@ -76,13 +76,8 @@ function VendorFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={id === "name"}>
         {label}
-        {id === "name" ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       {multiline ? (
         <Textarea
@@ -110,6 +105,7 @@ function VendorFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -174,7 +170,11 @@ export default function VendorForm({
       const hasFieldError = Object.keys(result.fields).some(
         (field) => field !== "form",
       );
-      setFormError(hasFieldError && !result.fields.form ? null : result.error);
+      if (result.kind === "duplicate") {
+        setFormError(`${result.error} Enter a different name.`);
+      } else {
+        setFormError(hasFieldError && !result.fields.form ? null : result.error);
+      }
       setFieldErrors(result.fields);
       return;
     }

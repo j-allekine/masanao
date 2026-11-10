@@ -69,13 +69,8 @@ function CategoryFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={!isDescription}>
         {label}
-        {!isDescription ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       {isDescription ? (
         <Textarea
@@ -104,6 +99,7 @@ function CategoryFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -165,7 +161,11 @@ export default function CategoryForm({
 
   function handleResult(result: CategoryFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      setFormError(
+        result.kind === "duplicate"
+          ? `${result.error} Enter a different name.`
+          : result.error,
+      );
       setFieldErrors(result.fields);
       return;
     }
@@ -227,7 +227,7 @@ export default function CategoryForm({
           />
           <CategoryFieldInput
             id="description"
-            label="Description (optional)"
+            label="Description"
             value={formValues.description}
             error={fieldErrors.description}
             onChange={(event) =>
