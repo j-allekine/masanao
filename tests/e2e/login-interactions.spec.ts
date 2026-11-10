@@ -197,6 +197,15 @@ for (const surface of signInSurfaces) {
       const password = form.getByLabel(/^Password/);
       const submit = form.getByRole("button", { name: surface.submit, exact: true });
 
+      if (surface.path !== "/") {
+        await expect(async () => {
+          const showPassword = form.getByRole("button", { name: "Show password" });
+          if (await showPassword.isVisible()) await showPassword.click();
+          await expect(password).toHaveAttribute("type", "text", { timeout: 500 });
+        }).toPass({ timeout: 5_000 });
+        await form.getByRole("button", { name: "Hide password" }).click();
+      }
+
       await expect(form).toHaveAttribute("novalidate", "");
       const fields = await Promise.all(
         [
