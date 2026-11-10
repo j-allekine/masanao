@@ -39,7 +39,7 @@ const variants = [
 ] as const
 
 type LoginVariant = (typeof variants)[number]["key"]
-type LoginStatus = "idle" | "loading" | "success" | "error"
+type LoginStatus = "idle" | "loading" | "success"
 
 type LoginFormProps = {
   heading: string
@@ -95,6 +95,8 @@ function LoginForm({ heading, description, headingId, className, compact = false
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [usernameInvalid, setUsernameInvalid] = useState(false)
+  const [passwordInvalid, setPasswordInvalid] = useState(false)
   const [status, setStatus] = useState<LoginStatus>("idle")
   const [supportOpen, setSupportOpen] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -107,16 +109,19 @@ function LoginForm({ heading, description, headingId, className, compact = false
     }
   }, [])
 
-  const usernameInvalid = status === "error" && !username.trim()
-  const passwordInvalid = status === "error" && !password
   const isLoading = status === "loading"
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSupportOpen(false)
 
-    if (!username.trim() || !password) {
-      setStatus("error")
+    const missingUsername = !username.trim()
+    const missingPassword = !password
+    setUsernameInvalid(missingUsername)
+    setPasswordInvalid(missingPassword)
+
+    if (missingUsername || missingPassword) {
+      setStatus("idle")
       return
     }
 
@@ -129,12 +134,14 @@ function LoginForm({ heading, description, headingId, className, compact = false
   function resetForm() {
     setUsername("")
     setPassword("")
+    setUsernameInvalid(false)
+    setPasswordInvalid(false)
     setStatus("idle")
     setSupportOpen(false)
   }
 
   return (
-    <form className={className} onSubmit={handleSubmit} aria-busy={isLoading}>
+    <form className={className} onSubmit={handleSubmit} aria-busy={isLoading} noValidate>
       <div className="flex flex-col gap-2">
         <h2 id={headingId} className="text-heading-1 font-semibold tracking-heading-1">
           {heading}
@@ -144,7 +151,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
       <FieldGroup className={compact ? "mt-7 gap-4" : "mt-8 gap-5"}>
         <Field data-invalid={usernameInvalid ? "true" : undefined}>
-          <FieldLabel htmlFor="prototype-username">Username</FieldLabel>
+          <FieldLabel htmlFor="prototype-username" required>Username</FieldLabel>
           <InputGroup className="h-11 bg-card">
             <InputGroupAddon>
               <LockKeyhole aria-hidden="true" size={16} strokeWidth={1.7} />
@@ -156,22 +163,23 @@ function LoginForm({ heading, description, headingId, className, compact = false
               autoComplete="username"
               placeholder="Enter your username"
               value={username}
+              required
               aria-invalid={usernameInvalid || undefined}
+              aria-describedby={usernameInvalid ? "prototype-username-error" : "prototype-username-note"}
               onChange={(event) => {
                 setUsername(event.target.value)
-                if (status === "error") setStatus("idle")
+                setUsernameInvalid(false)
               }}
             />
           </InputGroup>
           {usernameInvalid ? (
-            <FieldError>Enter your username.</FieldError>
-          ) : (
-            <FieldDescription>Use the username issued for your municipal account.</FieldDescription>
-          )}
+            <FieldError id="prototype-username-error" visuallyHidden>Enter your username.</FieldError>
+          ) : null}
+          <FieldDescription id="prototype-username-note">Use the username issued for your municipal account.</FieldDescription>
         </Field>
 
         <Field data-invalid={passwordInvalid ? "true" : undefined}>
-          <FieldLabel htmlFor="prototype-password">Password</FieldLabel>
+          <FieldLabel htmlFor="prototype-password" required>Password</FieldLabel>
           <InputGroup className="h-11 bg-card">
             <InputGroupAddon>
               <LockKeyhole aria-hidden="true" size={16} strokeWidth={1.7} />
@@ -183,10 +191,12 @@ function LoginForm({ heading, description, headingId, className, compact = false
               autoComplete="current-password"
               placeholder="Enter your password"
               value={password}
+              required
               aria-invalid={passwordInvalid || undefined}
+              aria-describedby={passwordInvalid ? "prototype-password-error" : "prototype-password-note"}
               onChange={(event) => {
                 setPassword(event.target.value)
-                if (status === "error") setStatus("idle")
+                setPasswordInvalid(false)
               }}
             />
             <InputGroupAddon align="inline-end">
@@ -204,10 +214,9 @@ function LoginForm({ heading, description, headingId, className, compact = false
             </InputGroupAddon>
           </InputGroup>
           {passwordInvalid ? (
-            <FieldError>Enter your password.</FieldError>
-          ) : (
-            <FieldDescription>Keep your account details private.</FieldDescription>
-          )}
+            <FieldError id="prototype-password-error" visuallyHidden>Enter your password.</FieldError>
+          ) : null}
+          <FieldDescription id="prototype-password-note">Keep your account details private.</FieldDescription>
         </Field>
       </FieldGroup>
 

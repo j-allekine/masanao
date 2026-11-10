@@ -2,6 +2,10 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 const signInEndpoint = "**/api/auth/sign-in/username";
+const viewports = [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "mobile", width: 390, height: 844 },
+] as const;
 
 function loginMain(page: Page) {
   return page.getByRole("main", { name: "Masanao staff sign-in", exact: true });
@@ -120,11 +124,6 @@ test.describe("production login interactions", () => {
   });
 
   test("keeps the welcome area and sign-in form visible on desktop and mobile", async ({ page }) => {
-    const viewports = [
-      { name: "desktop", width: 1280, height: 800 },
-      { name: "mobile", width: 390, height: 844 },
-    ] as const;
-
     for (const viewport of viewports) {
       await test.step(viewport.name, async () => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -169,3 +168,81 @@ test.describe("production login interactions", () => {
     }
   });
 });
+
+const signInSurfaces = [
+  { path: "/", submit: "Sign in", focusesUsername: true },
+  {
+    path: "/prototype/login",
+    submit: "Sign in",
+    focusesUsername: true,
+    success: "Local session ready for kitchen.staff.",
+  },
+  {
+    path: "/prototype/login-new",
+    submit: "Continue",
+    focusesUsername: false,
+    success: "Access preview ready.",
+  },
+] as const;
+
+for (const surface of signInSurfaces) {
+  for (const viewport of viewports) {
+    test(`required sign-in fields on ${surface.path} at ${viewport.name} width`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      if (surface.path === "/") await openLogin(page);
+      else await page.goto(surface.path);
+
+      const form = page.locator("form").filter({ has: page.getByLabel("Username", { exact: true }) });
+      const username = form.getByLabel("Username", { exact: true });
+      const password = form.getByLabel("Password", { exact: true });
+      const submit = form.getByRole("button", { name: surface.submit, exact: true });
+
+      await expect(form).toHaveAttribute("novalidate", "");
+      const fields = await Promise.all(
+        [
+          { input: username, label: "Username", error: "Enter your username." },
+          { input: password, label: "Password", error: "Enter your password." },
+        ].map(async (field) => {
+          const group = field.input.locator("..");
+          const label = form.locator("label").filter({ hasText: field.label });
+          const mark = label.getByText("*", { exact: true });
+          await expect(field.input).toHaveAccessibleName(field.label);
+          await expect(field.input).toHaveAttribute("required", "");
+          await expect(mark).toBeVisible();
+          await expect(mark).toHaveAttribute("aria-hidden", "true");
+          const markColor = await mark.evaluate((element) => getComputedStyle(element).color);
+          await expect(label).not.toHaveCSS("color", markColor);
+          await expect(group).not.toHaveCSS("border-top-color", markColor);
+          const fieldHeight = await group.locator("..").evaluate((element) => element.offsetHeight);
+          return { ...field, group, markColor, fieldHeight };
+        }),
+      );
+
+      await submit.click();
+
+      for (const { input, group, markColor, fieldHeight, error } of fields) {
+        await expect(input).toHaveAttribute("aria-invalid", "true");
+        await expect(input).toHaveAccessibleDescription(error);
+        await expect(group).toHaveCSS("border-top-color", markColor);
+        await expect(form.getByText(error, { exact: true })).toHaveCSS("position", "absolute");
+        await expect(form.getByText(error, { exact: true })).toHaveCSS("overflow", "hidden");
+        await expect.poll(() => group.locator("..").evaluate((element) => element.offsetHeight)).toBe(fieldHeight);
+      }
+
+      if (surface.focusesUsername) await expect(username).toBeFocused();
+      await username.fill("kitchen.staff");
+      await expect(username).not.toHaveAttribute("aria-invalid", "true");
+      await expect(password).toHaveAttribute("aria-invalid", "true");
+      await password.press("Enter");
+      await expect(password).toHaveAccessibleDescription("Enter your password.");
+      if (surface.path === "/") await expect(password).toBeFocused();
+
+      await password.fill("test-password");
+      await expect(password).not.toHaveAttribute("aria-invalid", "true");
+      if ("success" in surface) {
+        await password.press("Enter");
+        await expect(form.getByRole("status")).toContainText(surface.success);
+      }
+    });
+  }
+}

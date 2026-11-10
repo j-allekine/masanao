@@ -115,7 +115,7 @@ function LoginFields({
         data-invalid={usernameError || undefined}
         data-disabled={disabled || undefined}
       >
-        <FieldLabel className={styles.fieldLabel} htmlFor={`${idPrefix}-username`}>
+        <FieldLabel className={styles.fieldLabel} htmlFor={`${idPrefix}-username`} required>
           Username
         </FieldLabel>
         <InputGroup className={styles.inputGroup}>
@@ -128,6 +128,7 @@ function LoginFields({
             spellCheck={false}
             placeholder="Enter your assigned username"
             value={username}
+            required
             disabled={disabled}
             aria-invalid={usernameError || undefined}
             aria-describedby={usernameError ? `${idPrefix}-username-error` : `${idPrefix}-username-note`}
@@ -138,14 +139,13 @@ function LoginFields({
           </InputGroupAddon>
         </InputGroup>
         {usernameError ? (
-          <FieldError className={styles.fieldError} id={`${idPrefix}-username-error`}>
+          <FieldError id={`${idPrefix}-username-error`} visuallyHidden>
             Enter your username.
           </FieldError>
-        ) : (
-          <FieldDescription className={styles.fieldDescription} id={`${idPrefix}-username-note`}>
-            Assigned by a system administrator.
-          </FieldDescription>
-        )}
+        ) : null}
+        <FieldDescription className={styles.fieldDescription} id={`${idPrefix}-username-note`}>
+          Assigned by a system administrator.
+        </FieldDescription>
       </Field>
 
       <Field
@@ -153,7 +153,7 @@ function LoginFields({
         data-invalid={passwordError || undefined}
         data-disabled={disabled || undefined}
       >
-        <FieldLabel className={styles.fieldLabel} htmlFor={`${idPrefix}-password`}>
+        <FieldLabel className={styles.fieldLabel} htmlFor={`${idPrefix}-password`} required>
           Password
         </FieldLabel>
         <InputGroup className={styles.inputGroup}>
@@ -164,6 +164,7 @@ function LoginFields({
             autoComplete="current-password"
             placeholder="Enter your password"
             value={password}
+            required
             disabled={disabled}
             aria-invalid={passwordError || undefined}
             aria-describedby={passwordError ? `${idPrefix}-password-error` : `${idPrefix}-password-note`}
@@ -185,14 +186,13 @@ function LoginFields({
           </InputGroupAddon>
         </InputGroup>
         {passwordError ? (
-          <FieldError className={styles.fieldError} id={`${idPrefix}-password-error`}>
+          <FieldError id={`${idPrefix}-password-error`} visuallyHidden>
             Enter your password.
           </FieldError>
-        ) : (
-          <FieldDescription className={styles.fieldDescription} id={`${idPrefix}-password-note`}>
-            Use the password assigned to your local account.
-          </FieldDescription>
-        )}
+        ) : null}
+        <FieldDescription className={styles.fieldDescription} id={`${idPrefix}-password-note`}>
+          Use the password assigned to your local account.
+        </FieldDescription>
       </Field>
     </FieldGroup>
   );
