@@ -5,9 +5,14 @@ import { expect, test } from "@playwright/test";
 import { chooseCatalogFilter, closeCatalogFilters, openCatalogFilters, resetCatalogFilters } from "./catalog-filter-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
+let otherActiveItems: { id: string }[] = [];
+
 test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try {
+    // Keep catalog-wide totals independent of fixtures from other specs.
+    otherActiveItems = db.prepare("SELECT id FROM item WHERE isActive=1").all() as { id: string }[];
+    db.exec("UPDATE item SET isActive=0 WHERE isActive=1");
     db.exec(`
       INSERT INTO vendor (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES ('status-vendor','Status Vendor','status vendor',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
       INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES ('status-po','STATUS-PO','status-po','status-vendor',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
@@ -38,7 +43,36 @@ for (const width of [1280, 320]) {
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
     const list = page.locator(width === 320 ? "[data-inventory-mobile]" : "[data-inventory-desktop]");
-    await expect(list.getByText("Status Review Item", { exact: true })).toBeVisible();
+    await expect(list.locator('[data-item-id="status-review"]')).toContainText("Review required");
+    const overview = page.getByRole("region", { name: "Stock overview" });
+    async function expectOverviewCounts() {
+      const cards = overview.locator('[data-slot="card"]');
+      // Four active fixtures, including the review item. Only the empty and low-stock items need restocking.
+      await expect(cards.filter({ hasText: "Items tracked" })).toHaveText("Items tracked 4", { useInnerText: true });
+      await expect(cards.filter({ hasText: "Good stock" })).toHaveText("Good stock 1", { useInnerText: true });
+      await expect(overview.getByText("2 need restocking", { exact: true })).toBeVisible();
+      await expect(overview.getByRole("button", { name: "1 out of stock", exact: true })).toBeVisible();
+      await expect(overview.getByRole("button", { name: "1 reorder now", exact: true })).toBeVisible();
+    }
+
+    await expectOverviewCounts();
+    const search = page.getByRole("searchbox", { name: "Search Inventory by Item name" });
+    await search.fill("Status Review Item");
+    await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
+    await expectOverviewCounts();
+    for (const [name, status, itemId, label] of [
+      ["1 out of stock", "out-of-stock", "status-out", "Out of stock"],
+      ["1 reorder now", "reorder-now", "status-reorder", "Reorder now"],
+    ] as const) {
+      await overview.getByRole("button", { name, exact: true }).click();
+      await expect(page).toHaveURL(`/inventory?status=${status}`);
+      await expect(search).toHaveValue("");
+      await expect(list.locator(`[data-item-id="${itemId}"]`)).toBeVisible();
+      await expect(list.locator('[data-item-id^="status-"]')).toHaveCount(1);
+      await expect(page.getByText(`Showing items marked “${label}”.`, { exact: false })).toBeFocused();
+      await expectOverviewCounts();
+    }
+    await resetCatalogFilters(page);
     await openCatalogFilters(page);
     const filter = page.getByRole("combobox", { name: "Stock status", exact: true });
     await expect(filter).toContainText("All stock statuses");
@@ -77,6 +111,8 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     db.prepare("UPDATE item SET reorderLevel='20' WHERE id='status-good'").run();
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
+    const overview = page.getByRole("region", { name: "Stock overview" });
+    await expect(overview.getByText("3 need restocking", { exact: true })).toBeVisible();
     await chooseCatalogFilter(page, "Stock status", "Good");
     await expect(page.getByText("No matching Items.", { exact: true })).toBeVisible();
     await expect(page.getByText("Try changing or clearing the filters.", { exact: true })).toBeVisible();
@@ -93,6 +129,8 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await expect(page).toHaveURL(/\/purchase-orders\/status-po#delivery-receipt-/, { timeout: 30_000 });
     await page.goto("/inventory");
     await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
+    await expect(overview.getByText("2 need restocking", { exact: true })).toBeVisible();
+    await expect(overview.getByRole("button", { name: "0 out of stock", exact: true })).toBeDisabled();
     await chooseCatalogFilter(page, "Stock status", "Good");
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-out"]')).toContainText("20 pc");
     await chooseCatalogFilter(page, "Stock status", "Out of stock");
@@ -103,6 +141,8 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
 test.afterAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   try {
+    const restore = db.prepare("UPDATE item SET isActive=1 WHERE id=?");
+    for (const { id } of otherActiveItems) restore.run(id);
     db.exec(`DELETE FROM inventory_ledger_movement WHERE itemId LIKE 'status-%';
       DELETE FROM delivery_receipt_line WHERE itemId LIKE 'status-%';
       DELETE FROM delivery_receipt WHERE purchaseOrderId='status-po';
