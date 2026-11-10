@@ -31,9 +31,9 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("100");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("100");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByLabel("Meal pax", { exact: true })).toHaveValue("100");
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("100");
   await page.getByLabel("Search Recipes").fill("Training Rice");
   const recipe = page.getByRole("checkbox", { name: "Training Rice" });
   await recipe.focus();
@@ -69,13 +69,13 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(
     page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Meal pax", { exact: true }).fill("125");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("125");
   await expect(page.getByText("125 pax", { exact: true })).toBeVisible();
   await page.getByLabel("Actions for Training Rice").click();
   await page.getByRole("menuitem", { name: "Adjust target pax" }).click();
-  await page.getByLabel("Target pax", { exact: true }).fill("75");
+  await page.getByRole("textbox", { name: "Target pax", exact: true }).fill("75");
   await page.getByRole("button", { name: "Apply target" }).click();
-  await page.getByLabel("Meal pax", { exact: true }).fill("");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("");
   await expect(page.getByText("75 pax", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
@@ -95,7 +95,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(
     page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeFocused();
-  await page.getByLabel("Meal pax", { exact: true }).fill("0");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("0");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
   await expect(
     page.getByRole("alert").filter({ hasText: "Enter a whole number" }),
@@ -126,7 +126,7 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
     .getByRole("dialog")
     .getByRole("button", { name: "Discard changes", exact: true })
     .click();
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("");
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   expect(
     db

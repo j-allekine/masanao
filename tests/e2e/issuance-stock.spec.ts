@@ -17,7 +17,7 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(mealPath);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("");
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add Stock item" });
   await dialog.getByRole("combobox", { name: "Item", exact: true }).fill("Rice");
@@ -36,7 +36,7 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await page.reload();
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/1 g = 0\.001 kg/)).toBeVisible();
-  await page.getByLabel("Meal pax", { exact: true }).fill("100");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("100");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   expect(db.prepare("SELECT stock.conversionFactor FROM issuance_stock_item AS stock JOIN issuance_record AS record ON record.id = stock.issuanceRecordId WHERE record.mealScheduleId = 'e2e-stock-meal'").get()).toEqual({ conversionFactor: "0.001" });

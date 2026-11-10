@@ -52,7 +52,7 @@ test("redundant confirmation follows changed demand before save", async ({ page 
   await openIssuance(page, "pax");
   await addRecipe(page);
   await confirmAutomatic(page, "10");
-  await page.getByLabel("Meal pax", { exact: true }).fill("20");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("20");
   await page.getByRole("button", { name: "Review quantities and stock" }).click();
   await expect(page.getByRole("dialog").getByText("20 pc", { exact: true }).first()).toBeVisible();
   await page.keyboard.press("Escape");
@@ -135,12 +135,12 @@ test("dirty browser Back resumes the actual previous page without reopening issu
   await page.goto("/activity-designs");
   await page.goto("/purchase-orders");
   await openIssuance(page, "history");
-  await page.getByLabel("Meal pax", { exact: true }).fill("11");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("11");
   await traverseHistory(page, "back");
   const discard = page.getByRole("dialog", { name: "Discard unsaved changes?" });
   await expect(discard).toBeVisible();
   await discard.getByRole("button", { name: "Keep editing" }).click();
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("11");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("11");
   await traverseHistory(page, "back");
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(/\/purchase-orders$/);
@@ -152,14 +152,14 @@ test("dirty browser Back resumes the actual previous page without reopening issu
   await expect(page).toHaveURL(/\/purchase-orders$/);
   await traverseHistory(page, "forward");
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("10");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("10");
 });
 
 test("saved draft preserves normal browser Back and Forward", async ({ page }) => {
   await signIn(page);
   await page.goto("/activity-designs");
   await openIssuance(page, "history");
-  await page.getByLabel("Meal pax", { exact: true }).fill("15");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("15");
   await addRecipe(page);
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");

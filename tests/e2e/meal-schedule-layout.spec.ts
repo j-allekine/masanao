@@ -78,12 +78,12 @@ test("one Meal Schedule workspace preserves breadcrumbs, details, legacy links a
     await expect(page.getByRole("button", { name: "Post issuance", exact: true })).toBeInViewport();
     await page.screenshot({ path: info.outputPath(`05-meal-workspace-${width}.png`), fullPage: true, animations: "disabled" });
   }
-  await page.getByLabel("Meal pax", { exact: true }).fill("80");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("80");
   await page.getByRole("link", { name: "Community kitchen", exact: true }).click();
   const discard = page.getByRole("dialog", { name: "Discard unsaved changes?" });
   await expect(discard).toBeVisible();
   await discard.getByRole("button", { name: "Keep editing", exact: true }).click();
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("80");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("80");
   await page.getByRole("link", { name: "Community kitchen", exact: true }).click();
   await discard.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${activity}$`));
@@ -134,7 +134,7 @@ test("a long draft and posted meal retain identity while the working body scroll
 
   const heading = page.getByRole("heading", { name: title, level: 1, exact: true });
   const sidebar = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
-  const pax = page.getByLabel("Meal pax", { exact: true });
+  const pax = page.getByRole("textbox", { name: "Meal pax", exact: true });
   const review = page.getByRole("button", { name: "Review quantities and stock", exact: true });
   const save = page.getByRole("button", { name: "Save draft", exact: true });
   const post = page.getByRole("button", { name: "Post issuance", exact: true });

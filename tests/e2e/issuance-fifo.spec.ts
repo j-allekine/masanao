@@ -165,7 +165,7 @@ test("posted repeating calculation keeps approximation separate from exact issue
   expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path.replace("fifo-meal", "fifo-repeat-meal"));
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
-  await page.getByLabel("Meal pax", { exact: true }).fill("1");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("1");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("FIFO repeating salt");
   await page.getByRole("checkbox", { name: "FIFO repeating salt", exact: true }).check();

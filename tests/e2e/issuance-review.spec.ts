@@ -106,8 +106,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByLabel("Meal pax", { exact: true }).fill("2");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("1");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("2");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("1");
   await expect(
     page
       .getByRole("alert")
@@ -124,8 +124,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     .getByRole("button", { name: "Reset adjustment for Review Eggs" })
     .click();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("2");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("2");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("2");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("2");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -184,8 +184,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     review.getByRole("button", { name: "Reset adjustment for Review Eggs" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("3");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("2");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("3");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("2");
   await page
     .getByRole("button", { name: "Review quantities and stock" })
     .click();
@@ -193,7 +193,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     .getByRole("button", { name: "Reset adjustment for Review Eggs" })
     .click();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("");
   await page
     .getByRole("button", { name: "Review quantities and stock" })
     .click();
@@ -207,7 +207,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("");
   await page.goBack();
   await page
     .getByRole("dialog", { name: "Discard unsaved changes?" })

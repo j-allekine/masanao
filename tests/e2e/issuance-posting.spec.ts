@@ -138,7 +138,7 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     page.getByRole("button", { name: "Post issuance", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Save draft" })).toHaveCount(0);
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveCount(0);
   expect(
     db
       .prepare(
