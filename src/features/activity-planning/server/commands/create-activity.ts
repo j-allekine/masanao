@@ -3,6 +3,7 @@ import "server-only";
 import {
   activityFieldErrors,
   activitySchema,
+  unavailableActivityOffice,
 } from "../../schemas/activity";
 import type { ActivityCreateResult } from "../../types";
 import { createActivityRecord } from "../db/activities";
@@ -34,12 +35,7 @@ export async function createActivityCommand(
   const activity = await createActivityRecord(activityDesignId, parsedInput.data);
 
   if (activity === "invalid-office") {
-    return {
-      ok: false,
-      kind: "validation",
-      error: "Please correct the highlighted Activity fields.",
-      fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
-    };
+    return unavailableActivityOffice;
   }
 
   if (!activity) {

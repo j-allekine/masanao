@@ -47,9 +47,7 @@ export default function ActivityOfficePicker({
         itemToStringLabel={(office) => office.name}
         itemToStringValue={(office) => office.id}
         isItemEqualToValue={(office, selection) => office.id === selection.id}
-        onValueChange={(office) => {
-          if (office) onChange(office.id);
-        }}
+        onValueChange={(office) => onChange(office?.id ?? "")}
       >
         <ComboboxInput
           id="officeId"

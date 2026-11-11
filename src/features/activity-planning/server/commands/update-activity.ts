@@ -2,7 +2,8 @@ import "server-only";
 
 import {
   activityFieldErrors,
-  activitySchema,
+  activityUpdateSchema,
+  unavailableActivityOffice,
 } from "../../schemas/activity";
 import type { ActivityUpdateResult } from "../../types";
 import { updateActivityRecord } from "../db/activities";
@@ -12,7 +13,7 @@ export async function updateActivityCommand(
   activityId: string,
   input: unknown,
 ): Promise<ActivityUpdateResult> {
-  const parsedInput = activitySchema.safeParse(input);
+  const parsedInput = activityUpdateSchema.safeParse(input);
 
   if (!parsedInput.success) {
     return {
@@ -44,12 +45,7 @@ export async function updateActivityCommand(
   );
 
   if (activity === "invalid-office") {
-    return {
-      ok: false,
-      kind: "validation",
-      error: "Please correct the highlighted Activity fields.",
-      fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
-    };
+    return unavailableActivityOffice;
   }
 
   if (!activity) {

@@ -4,9 +4,7 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import { findActiveOfficeName } from "@/features/master-data/server/db/offices";
 
-import { KEEP_SAVED_OFFICE } from "../../types";
-
-import type { ActivityInput } from "../../schemas/activity";
+import type { ActivityInput, ActivityUpdateInput } from "../../schemas/activity";
 import type {
   ActivityDetailItem,
   ActivityListItem,
@@ -185,7 +183,7 @@ export async function getActivityRecord(
 
 type ActivityWriteResult = ActivityListItem | "invalid-office" | null;
 
-function activityWriteData(input: ActivityInput) {
+function activityWriteData(input: ActivityInput | ActivityUpdateInput) {
   return {
     name: input.name,
     particulars: input.particulars ?? null,
@@ -208,7 +206,6 @@ export async function createActivityRecord(
       });
       if (!parent) return null;
 
-      if (input.officeId === KEEP_SAVED_OFFICE) return "invalid-office";
       const office = await findActiveOfficeName(db, input.officeId);
       if (!office) return "invalid-office";
 
@@ -233,7 +230,7 @@ export async function createActivityRecord(
 export async function updateActivityRecord(
   activityDesignId: string,
   activityId: string,
-  input: ActivityInput,
+  input: ActivityUpdateInput,
 ): Promise<ActivityWriteResult> {
   try {
     return await prisma.$transaction(async (db) => {
@@ -243,7 +240,7 @@ export async function updateActivityRecord(
       });
       if (!existing) return null;
 
-      const office = input.officeId === KEEP_SAVED_OFFICE
+      const office = input.officeId === null
         ? { name: existing.officeName }
         : await findActiveOfficeName(db, input.officeId);
       if (!office) return "invalid-office";

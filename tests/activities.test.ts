@@ -346,7 +346,6 @@ describe("Activity feature seams", () => {
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
     ["a negative budget", { plannedBudgetPesos: "-1" }, "plannedBudgetPesos"],
     ["an overlong activity name", { name: "x".repeat(201) }, "name"],
-
     ["overlong activity particulars", { particulars: "x".repeat(2_001) }, "particulars"],
     ["an overlong venue", { venue: "x".repeat(301) }, "venue"],
   ] as const)(

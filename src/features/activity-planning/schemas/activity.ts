@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { parsePesoStringToCentavos } from "../domain/planned-budget";
-import type { ActivityFieldErrors } from "../types";
+import {
+  KEEP_SAVED_OFFICE,
+  type ActivityCreateResult,
+  type ActivityFieldErrors,
+} from "../types";
 
 const optionalText = (label: string, max: number) =>
   z.preprocess(
@@ -106,7 +110,10 @@ const plannedBudgetPesosSchema = z.preprocess(
 
 export const activitySchema = z.object({
   name: nameSchema,
-  officeId: officeIdSchema,
+  officeId: officeIdSchema.refine(
+    (id) => id !== KEEP_SAVED_OFFICE,
+    "Office is required",
+  ),
   particulars: optionalText("Activity particulars", 2_000),
   scheduledDate: scheduledDateSchema,
   venue: optionalText("Venue", 300),
@@ -115,6 +122,17 @@ export const activitySchema = z.object({
   ),
   plannedBudgetPesos: plannedBudgetPesosSchema,
 });
+
+export const activityUpdateSchema = activitySchema.extend({
+  officeId: officeIdSchema.transform((id) => id === KEEP_SAVED_OFFICE ? null : id),
+});
+
+export const unavailableActivityOffice = {
+  ok: false,
+  kind: "validation",
+  error: "Please correct the highlighted Activity fields.",
+  fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
+} satisfies Extract<ActivityCreateResult, { ok: false }>;
 
 function normalizeGroupedInteger(value: string) {
   const trimmed = value.trim();
@@ -161,6 +179,7 @@ export function normalizeActivityFormInput(input: Record<string, unknown>) {
 }
 
 export type ActivityInput = z.infer<typeof activitySchema>;
+export type ActivityUpdateInput = z.infer<typeof activityUpdateSchema>;
 
 export function activityFieldErrors(error: z.ZodError): ActivityFieldErrors {
   const fields: ActivityFieldErrors = {};
