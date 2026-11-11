@@ -169,6 +169,7 @@ for (const viewport of [
       }
       await expect(aipCode.locator("..").getByText("*", { exact: true })).toHaveCount(0);
       await expect(createDialog.getByRole("form")).toHaveAttribute("novalidate", "");
+      await expect(fiscalYear).toHaveAccessibleDescription("Required");
       const titleField = titleInput.locator("..");
       const untouchedTitleHeight = (await titleField.boundingBox())!.height;
 
@@ -212,6 +213,9 @@ for (const viewport of [
       await expect(feedback).toContainText(
         "An Activity Design with that number already exists. Enter a different Activity Design No.",
       );
+      await aipCode.fill("AIP-306");
+      await expect(feedback).toContainText("Enter a different Activity Design No.");
+      await expect(designNumber).toHaveAttribute("aria-invalid", "true");
       await designNumber.fill(newNumber);
       await expect(designNumber).toHaveAttribute("aria-invalid", "false");
       await expect(feedback).toHaveCount(0);

@@ -26,15 +26,17 @@ function formatDateLabel(value: string, emptyLabel: string) {
 export default function LocalDatePicker({ id, name, label, emptyLabel, value, error, required = false, onChange }: { id: string; name: string; label: string; emptyLabel: string; value: string; error?: string[]; required?: boolean; onChange: (value: string) => void }) {
   const selectedDate = parseLocalDate(value);
   const hasError = Boolean(error?.length);
+  const describedBy = [required && `${id}-required`, hasError && `${id}-error`].filter(Boolean).join(" ") || undefined;
   return <Field data-invalid={hasError}>
     <FieldLabel htmlFor={id} required={required}>{label}</FieldLabel>
     <Popover>
-      <PopoverTrigger render={<Button type="button" id={id} variant="outline" aria-invalid={hasError} aria-required={required || undefined} aria-describedby={hasError ? `${id}-error` : undefined} className="w-full justify-between font-normal" />}>
+      <PopoverTrigger render={<Button type="button" id={id} variant="outline" aria-invalid={hasError} aria-describedby={describedBy} className="w-full justify-between font-normal" />}>
         <span className={value ? "text-foreground" : "text-muted-foreground"}>{formatDateLabel(value, emptyLabel)}</span>
         <CalendarDays data-icon="inline-end" />
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={selectedDate} defaultMonth={selectedDate} onSelect={(date) => onChange(date ? formatLocalDate(date) : "")} /></PopoverContent>
     </Popover>
+    {required && <span id={`${id}-required`} className="sr-only">Required</span>}
     {/* Native hidden input carries the selected date in standard form submission. */}
     <input type="hidden" name={name} value={value} />
     {hasError ? <FieldError visuallyHidden id={`${id}-error`} errors={error?.map((message) => ({ message }))} /> : null}

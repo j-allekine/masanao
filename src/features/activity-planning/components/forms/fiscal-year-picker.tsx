@@ -48,6 +48,8 @@ export default function FiscalYearPicker({
   const canMovePrevious = viewStart > MIN_FISCAL_YEAR;
   const canMoveNext = viewStart < decadeStart(MAX_FISCAL_YEAR);
 
+  const describedBy = [required && `${id}-required`, hasError && `${id}-error`].filter(Boolean).join(" ") || undefined;
+
   return (
     <Popover
       open={open}
@@ -63,8 +65,7 @@ export default function FiscalYearPicker({
             id={id}
             variant="outline"
             aria-invalid={hasError}
-            aria-required={required || undefined}
-            aria-describedby={hasError ? `${id}-error` : undefined}
+            aria-describedby={describedBy}
             className="w-full justify-between font-normal tabular-nums"
           />
         }
@@ -74,6 +75,7 @@ export default function FiscalYearPicker({
         </span>
         <CalendarDays data-icon="inline-end" />
       </PopoverTrigger>
+      {required && <span id={`${id}-required`} className="sr-only">Required</span>}
       <PopoverContent className="w-72 p-3" align="start">
         <div className="flex items-center justify-between gap-2">
           <Button

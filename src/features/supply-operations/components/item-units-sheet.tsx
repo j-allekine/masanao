@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { Save, XIcon } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
   const [alternateUnitId, setAlternateUnitId] = useState("");
   const [baseUnitQuantity, setBaseUnitQuantity] = useState("");
   const [errors, setErrors] = useState<ItemUnitConversionFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<"alternateUnitId" | "baseUnitQuantity"> | null>(null);
   const [isSaving, startSaving] = useTransition();
   const selectedItem = item;
   if (!selectedItem) return null;
@@ -48,12 +49,22 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
     startSaving(async () => {
       const result = await createItemUnitConversionAction(formData);
       if (result.status === "error") {
-        setErrors(result.fields);
-        setFormError(
-          result.kind === "duplicate"
-            ? `${result.error} Choose a different Unit or enter a different quantity.`
-            : result.error,
-        );
+        if (result.kind === "duplicate") {
+          setErrors({
+            ...result.fields,
+            baseUnitQuantity: result.fields.form,
+          });
+          setFormError({
+            message: `${result.error} Choose a different Unit or enter a different quantity.`,
+            fields: ["baseUnitQuantity"],
+          });
+        } else {
+          setErrors(result.fields);
+          setFormError({
+            message: result.error,
+            fields: alternateUnitId && result.fields.alternateUnitId?.length ? ["alternateUnitId"] : undefined,
+          });
+        }
         return;
       }
       closeDialog(); onSaved(result.conversion);
@@ -139,7 +150,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
     <Dialog open={dialogOpen} onOpenChange={(next) => next ? setDialogOpen(true) : closeDialog()}>
       <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Add alternate Unit</DialogTitle><DialogDescription>Set how many Base Units one package represents.</DialogDescription></DialogHeader>
       <form onSubmit={save} noValidate aria-busy={isSaving}><FieldGroup>
-        {formError ? <Alert variant="destructive"><AlertTitle>Could not save alternate Unit</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
+        {formError ? <Alert variant="destructive"><AlertTitle>Could not save alternate Unit</AlertTitle><AlertDescription>{formError.message}</AlertDescription></Alert> : null}
         <Field data-invalid={hasAlternateUnitError}>
           <FieldLabel htmlFor="alternate-unit" required>Alternate Unit</FieldLabel>
           <Select
@@ -147,7 +158,11 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
             value={alternateUnitId || null}
             onValueChange={(value) => {
               setAlternateUnitId(value ?? "");
-              setErrors((current) => ({ ...current, alternateUnitId: undefined }));
+              setErrors((current) => ({
+                ...current,
+                alternateUnitId: undefined,
+                baseUnitQuantity: current.form ? undefined : current.baseUnitQuantity,
+              }));
               setFormError(null);
             }}
             required
@@ -184,7 +199,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
             onChange={(event) => {
               setBaseUnitQuantity(event.target.value);
               setErrors((current) => ({ ...current, baseUnitQuantity: undefined }));
-              setFormError(null);
+              setFormError((current) => clearFeedbackForField(current, "baseUnitQuantity"));
             }}
             aria-invalid={hasQuantityError}
             aria-describedby={hasQuantityError ? "base-unit-quantity-error" : undefined}

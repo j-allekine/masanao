@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -176,7 +177,7 @@ export default function PurchaseOrderForm({
   const [formValues, setFormValues] =
     useState<PurchaseOrderFormValues>(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<PurchaseOrderFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<PurchaseOrderField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as PurchaseOrderField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -226,15 +227,15 @@ export default function PurchaseOrderForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: PurchaseOrderFormActionState) {
     if (result.status === "error") {
       setFormError(
         result.kind === "duplicate"
-          ? `${result.error} Enter a different Purchase Order No.`
-          : result.error,
+          ? { message: `${result.error} Enter a different Purchase Order No.`, fields: ["purchaseOrderNo"] }
+          : { message: result.error, fields: result.kind === "inactive" || result.kind === "locked" ? ["vendorId"] : undefined },
       );
       setFieldErrors(result.fields);
       return;
@@ -271,9 +272,7 @@ export default function PurchaseOrderForm({
             : await updatePurchaseOrderAction(formData);
         handleResult(result);
       } catch {
-        setFormError(
-          "The Purchase Order could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Purchase Order could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -305,7 +304,7 @@ export default function PurchaseOrderForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Purchase Order</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 

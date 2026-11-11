@@ -113,7 +113,11 @@ for (const viewport of [workspaceViewports[0]!, { width: 390, height: 844 }]) {
       if (email) {
         await expect(email).toBeFocused();
         await expectFieldError(email, `${emailLabel} must be a valid email address`);
+        const feedback = form.getByRole("alert");
+        await expect(feedback).toHaveCount(1);
+        await expect(feedback).toContainText("For example, name@example.com.");
         await email.fill("validation@example.test");
+        await expect(feedback).toHaveCount(0);
         await expect(email).toHaveAttribute("aria-invalid", "false");
       }
       await submit.click();

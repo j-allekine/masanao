@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 
 import { createUnitAction, updateUnitAction } from "../actions";
+import { duplicateIdentityFeedback } from "./duplicate-identity-feedback";
 import type {
   UnitField,
   UnitFieldErrors,
@@ -104,7 +106,7 @@ export default function UnitForm({
   const initialFormValues = initialValues(unit);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<UnitFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<UnitField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as UnitField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -138,20 +140,15 @@ export default function UnitForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: UnitFormActionState) {
     if (result.status === "error") {
       if (result.kind === "duplicate") {
-        const field = result.fields.name
-          ? "name"
-          : result.fields.abbreviation
-            ? "abbreviation"
-            : "name or abbreviation";
-        setFormError(`${result.error} Enter a different ${field}.`);
+        setFormError(duplicateIdentityFeedback(result.error, result.fields));
       } else {
-        setFormError(result.error);
+        setFormError({ message: result.error });
       }
       setFieldErrors(result.fields);
       return;
@@ -179,9 +176,7 @@ export default function UnitForm({
 
         handleResult(result);
       } catch {
-        setFormError(
-          "The Unit could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Unit could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -199,7 +194,7 @@ export default function UnitForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Unit</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 

@@ -20,7 +20,8 @@ async function expectHiddenFieldError(
   await expect(control).toHaveAttribute("aria-invalid", "true");
   await expect(control).toHaveAccessibleDescription(description);
   await expect(control).toHaveCSS("border-top-color", destructiveColor);
-  const errorId = await control.getAttribute("aria-describedby");
+  const descriptions = await control.getAttribute("aria-describedby");
+  const errorId = descriptions?.split(" ").find((id) => id.endsWith("-error"));
   const details = dialog.locator(`[id="${errorId}"]`);
   await expect(details).toHaveCSS("position", "absolute");
   await expect(details).toHaveCSS("clip-path", "inset(50%)");

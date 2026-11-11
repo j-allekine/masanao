@@ -420,7 +420,7 @@ test.describe("frontend stabilization regression seam", () => {
       });
 
       await expect(designNo).toHaveAttribute("required", "");
-      await expect(fiscalYear).toHaveAttribute("aria-required", "true");
+      await expect(fiscalYear).toHaveAccessibleDescription("Required");
       await expect(title).toHaveAttribute("required", "");
       await title.fill("E2E retained after validation");
       await submit.click();
@@ -452,7 +452,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(activityName).toHaveAttribute("required", "");
       await expect(
         sheet.getByRole("button", { name: "Scheduled date", exact: true }),
-      ).toHaveAttribute("aria-required", "true");
+      ).toHaveAccessibleDescription("Required");
       await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
       await expect(activityName).toBeFocused();
       await expect(activityName).toHaveAttribute("aria-invalid", "true");
