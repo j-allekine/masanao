@@ -51,12 +51,12 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await expect(page.getByText("New draft", { exact: true })).toBeVisible();
   await expect(page.getByText("No Recipes selected.", { exact: false })).toBeVisible();
   await expect(page.getByText("No Stock items selected.", { exact: false })).toBeVisible();
-  const review = page.getByRole("button", { name: "Review", exact: true });
-  await review.press("Enter");
+  const reviewButton = page.getByRole("button", { name: "Review", exact: true });
+  await reviewButton.press("Enter");
   const emptyReview = page.getByRole("dialog", { name: "Combined quantities and stock", exact: true });
   await expect(emptyReview.getByText("No calculated Item quantities yet.")).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(review).toBeFocused();
+  await expect(reviewButton).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath("empty-draft.png"), animations: "disabled" });
   const meal = page.getByRole("textbox", { name: "Meal pax", exact: true });
   await expectRequiredPax(page, meal);
@@ -160,7 +160,7 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await custom.fill("20");
   await expect(custom).toHaveAttribute("aria-invalid", "false");
   await page.getByRole("button", { name: "Apply target", exact: true }).click();
-  await page.getByRole("button", { name: "Review", exact: true }).click();
+  await reviewButton.click();
   const review = page.getByRole("dialog", { name: "Combined quantities and stock" });
   await review.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(review.getByRole("status")).toContainText("Draft saved");
