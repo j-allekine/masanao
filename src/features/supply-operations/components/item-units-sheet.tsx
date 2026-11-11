@@ -34,6 +34,8 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
   const conversions = selectedItem.unitConversions ?? [];
   const eligibleUnits = units.filter((unit) => unit.active && unit.id !== selectedItem.baseUnit.id);
   const selectedUnit = eligibleUnits.find((unit) => unit.id === alternateUnitId);
+  const hasAlternateUnitError = Boolean(errors.alternateUnitId?.length);
+  const hasQuantityError = Boolean(errors.baseUnitQuantity?.length);
   const preview = selectedUnit && baseUnitQuantity.trim() ? `${selectedUnit.name} (${baseUnitQuantity.trim()} ${selectedItem.baseUnit.abbreviation})` : null;
 
   function closeDialog() {
@@ -45,7 +47,15 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
     const formData = new FormData(); formData.set("itemId", itemId); formData.set("alternateUnitId", alternateUnitId); formData.set("baseUnitQuantity", baseUnitQuantity);
     startSaving(async () => {
       const result = await createItemUnitConversionAction(formData);
-      if (result.status === "error") { setErrors(result.fields); setFormError(result.error); return; }
+      if (result.status === "error") {
+        setErrors(result.fields);
+        setFormError(
+          result.kind === "duplicate"
+            ? `${result.error} Choose a different Unit or enter a different quantity.`
+            : result.error,
+        );
+        return;
+      }
       closeDialog(); onSaved(result.conversion);
     });
   }
@@ -130,8 +140,65 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
       <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Add alternate Unit</DialogTitle><DialogDescription>Set how many Base Units one package represents.</DialogDescription></DialogHeader>
       <form onSubmit={save} noValidate aria-busy={isSaving}><FieldGroup>
         {formError ? <Alert variant="destructive"><AlertTitle>Could not save alternate Unit</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
-        <Field data-invalid={Boolean(errors.alternateUnitId?.length)}><FieldLabel htmlFor="alternate-unit">Alternate Unit</FieldLabel><Select items={eligibleUnits.map((unit) => ({ value: unit.id, label: `${unit.name} (${unit.abbreviation})` }))} value={alternateUnitId || null} onValueChange={(value) => setAlternateUnitId(value ?? "")}><SelectTrigger id="alternate-unit" aria-invalid={Boolean(errors.alternateUnitId?.length)}><SelectValue placeholder="Select a Unit" /></SelectTrigger><SelectContent><SelectGroup>{eligibleUnits.map((unit) => <SelectItem key={unit.id} value={unit.id}>{unit.name} ({unit.abbreviation})</SelectItem>)}</SelectGroup></SelectContent></Select>{errors.alternateUnitId?.length ? <FieldError errors={errors.alternateUnitId.map((message) => ({ message }))} /> : null}</Field>
-        <Field data-invalid={Boolean(errors.baseUnitQuantity?.length)}><FieldLabel htmlFor="base-unit-quantity">Base Unit quantity</FieldLabel><Input id="base-unit-quantity" inputMode="decimal" value={baseUnitQuantity} onChange={(event) => setBaseUnitQuantity(event.target.value)} aria-invalid={Boolean(errors.baseUnitQuantity?.length)} placeholder={`e.g. 25 ${item.baseUnit.abbreviation}`} />{errors.baseUnitQuantity?.length ? <FieldError errors={errors.baseUnitQuantity.map((message) => ({ message }))} /> : null}</Field>
+        <Field data-invalid={hasAlternateUnitError}>
+          <FieldLabel htmlFor="alternate-unit" required>Alternate Unit</FieldLabel>
+          <Select
+            items={eligibleUnits.map((unit) => ({ value: unit.id, label: `${unit.name} (${unit.abbreviation})` }))}
+            value={alternateUnitId || null}
+            onValueChange={(value) => {
+              setAlternateUnitId(value ?? "");
+              setErrors((current) => ({ ...current, alternateUnitId: undefined }));
+              setFormError(null);
+            }}
+            required
+          >
+            <SelectTrigger
+              id="alternate-unit"
+              aria-invalid={hasAlternateUnitError}
+              aria-describedby={hasAlternateUnitError ? "alternate-unit-error" : undefined}
+            >
+              <SelectValue placeholder="Select a Unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {eligibleUnits.map((unit) => (
+                  <SelectItem key={unit.id} value={unit.id}>{unit.name} ({unit.abbreviation})</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {hasAlternateUnitError && (
+            <FieldError
+              id="alternate-unit-error"
+              errors={errors.alternateUnitId?.map((message) => ({ message }))}
+              visuallyHidden
+            />
+          )}
+        </Field>
+        <Field data-invalid={hasQuantityError}>
+          <FieldLabel htmlFor="base-unit-quantity" required>Base Unit quantity</FieldLabel>
+          <Input
+            id="base-unit-quantity"
+            inputMode="decimal"
+            value={baseUnitQuantity}
+            onChange={(event) => {
+              setBaseUnitQuantity(event.target.value);
+              setErrors((current) => ({ ...current, baseUnitQuantity: undefined }));
+              setFormError(null);
+            }}
+            aria-invalid={hasQuantityError}
+            aria-describedby={hasQuantityError ? "base-unit-quantity-error" : undefined}
+            placeholder={`e.g. 25 ${item.baseUnit.abbreviation}`}
+            required
+          />
+          {hasQuantityError && (
+            <FieldError
+              id="base-unit-quantity-error"
+              errors={errors.baseUnitQuantity?.map((message) => ({ message }))}
+              visuallyHidden
+            />
+          )}
+        </Field>
         {preview ? <p className="text-body-sm text-muted-foreground">Label preview: <span className="font-medium text-foreground">{preview}</span></p> : null}
       </FieldGroup><DialogFooter><WorkspaceFormActionButtons onCancel={closeDialog} isPending={isSaving} pendingLabel="Saving…" submitLabel="Save alternate Unit" submitIcon={<Save data-icon="inline-start" />} /></DialogFooter></form>
       </DialogContent>

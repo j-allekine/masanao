@@ -29,6 +29,11 @@ test("administrator configures exact levels and staff view the catalog on deskto
     await level.fill(invalid);
     await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(level).toHaveAttribute("aria-invalid", "true");
+    await expect(level).toHaveAccessibleDescription(/positive decimal Reorder level|greater than zero/);
+    const detail = level.locator("..").locator('[data-slot="field-error"]');
+    await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+    await expect(detail).toHaveCSS("position", "absolute");
+    await expect(level).toHaveCSS("border-top-color", await detail.evaluate((element) => getComputedStyle(element).color));
   }
   await level.fill("0.000000000000000001");
   await dialog.getByRole("button", { name: "Whole numbers only", exact: true }).click();
@@ -48,7 +53,13 @@ test("administrator configures exact levels and staff view the catalog on deskto
   await dialog.getByRole("combobox", { name: "Base Unit", exact: true }).click();
   await page.getByRole("option", { name: "Piece (pc)", exact: true }).click();
   await expect(level).toHaveValue("");
+  const save = dialog.getByRole("button", { name: "Save changes", exact: true });
+  await save.click();
+  await expect(level).toHaveAttribute("aria-invalid", "true");
+  await expect(level).toHaveAccessibleDescription(/positive decimal Reorder level|greater than zero/);
+  await expect(level.locator("..").locator('[data-slot="field-error"]')).toHaveCSS("position", "absolute");
   await level.fill("2.5");
+  await expect(level).toHaveAttribute("aria-invalid", "false");
   await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(mobile).toContainText("2.5 pc");

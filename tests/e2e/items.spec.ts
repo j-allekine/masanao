@@ -25,6 +25,16 @@ async function signIn(
   expect(response.status()).toBe(200);
 }
 
+async function expectItemFieldError(control: Locator, message: string) {
+  await expect(control).toHaveAttribute("aria-invalid", "true");
+  await expect(control).toHaveAccessibleDescription(message);
+  const errorId = await control.getAttribute("aria-describedby");
+  const detail = control.page().locator(`#${errorId}`);
+  await expect(detail).toHaveCSS("position", "absolute");
+  await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+  await expect(control).toHaveCSS("border-top-color", await detail.evaluate((element) => getComputedStyle(element).color));
+}
+
 async function expectOpenOptionIsClickable(page: Page, name: string) {
   const option = page.getByRole("option", { name, exact: true });
   await expect(option).toBeVisible();
@@ -641,121 +651,133 @@ test.describe("Items catalog journey", () => {
     await expect(dialog.getByText("Base Unit is locked because stock activity was posted for this Item.")).toBeVisible();
   });
 
-  test("keeps an Item Units Sheet open while staff view and administrators add alternate Units", async ({
-    page,
-  }) => {
-    test.setTimeout(120_000);
-    const fixtures = createItemFixtures();
-    fixturesToRemove = fixtures;
-    withE2eDatabase((database) => {
-      database
-        .prepare('UPDATE "item" SET "issuanceQuantityPolicy" = ? WHERE "id" = ?')
-        .run("whole-numbers-only", fixtures.activeItemId);
-    });
-
-    await signIn(page);
-    await page.goto("/items");
-    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-
-    const staffRow = page.getByRole("row").filter({
-      has: page.getByText("Alpha Beans", { exact: true }),
-    });
-    await staffRow
-      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
-      .click();
-    await page.getByRole("menuitem", { name: "Units", exact: true }).click();
-
-    const unitsSheet = page.getByRole("dialog").filter({
-      hasText: "Units for Alpha Beans",
-    });
-    await expect(unitsSheet).toBeVisible();
-    await expect(unitsSheet.getByText("Issuance quantities", { exact: true })).toBeVisible();
-    await expect(unitsSheet.getByText("Whole numbers only", { exact: true })).toBeVisible();
-    await expect(
-      unitsSheet.getByRole("button", { name: "Add alternate Unit", exact: true }),
-    ).toHaveCount(0);
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(unitsSheet).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.body.scrollWidth <= document.documentElement.clientWidth,
-      ),
-    ).toBe(true);
-
-    await page.context().clearCookies();
-    await signIn(page, "municipal.admin", adminPassword);
-    await page.goto("/items");
-    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-
-    const adminCard = page.locator(
-      `[data-items-mobile] [data-item-id="${fixtures.activeItemId}"]`,
-    );
-    await adminCard
-      .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
-      .click();
-    await page.getByRole("menuitem", { name: "Manage units", exact: true }).click();
-    await expect(unitsSheet).toBeVisible();
-
-    const addAlternateUnit = unitsSheet.getByRole("button", {
-      name: "Add alternate Unit",
-      exact: true,
-    });
-    await addAlternateUnit.click();
-    const addDialog = page.getByRole("dialog").filter({
-      hasText: "Set how many Base Units one package represents.",
-    });
-    await expect(addDialog).toBeVisible();
-    await addDialog.getByRole("button", { name: "Cancel", exact: true }).click();
-    await expect(addDialog).toBeHidden();
-    await expect(unitsSheet).toBeVisible();
-    await expect(addAlternateUnit).toBeFocused();
-
-    await page.keyboard.press("Enter");
-    await expect(addDialog).toBeVisible();
-    await addDialog.getByRole("combobox", { name: "Alternate Unit" }).click();
-    await expectOpenOptionIsClickable(
+  for (const width of [1280, 390]) {
+    test(`keeps an Item Units Sheet open while staff view and administrators add alternate Units at ${width}px`, async ({
       page,
-      `${fixtures.alternateUnitName} (e2esack)`,
-    );
-    await expect(
-      page.getByRole("option", {
-        name: `${fixtures.inactiveAlternateUnitName} (e2ersack)`,
-        exact: true,
-      }),
-    ).toHaveCount(0);
-    await page
-      .getByRole("option", {
-        name: `${fixtures.alternateUnitName} (e2esack)`,
-        exact: true,
-      })
-      .click();
-    await addDialog.getByLabel("Base Unit quantity").fill("0");
-    await addDialog
-      .getByRole("button", { name: "Save alternate Unit", exact: true })
-      .click();
-    await expect(
-      addDialog.getByText("Base Unit quantity must be greater than zero.", {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expect(
-      addDialog.getByRole("combobox", { name: "Alternate Unit" }),
-    ).toContainText(`${fixtures.alternateUnitName} (e2esack)`);
-    await expect(addDialog.getByLabel("Base Unit quantity")).toHaveValue("0");
+    }) => {
+      test.setTimeout(120_000);
+      const fixtures = createItemFixtures();
+      fixturesToRemove = fixtures;
+      withE2eDatabase((database) => {
+        database
+          .prepare('UPDATE "item" SET "issuanceQuantityPolicy" = ? WHERE "id" = ?')
+          .run("whole-numbers-only", fixtures.activeItemId);
+      });
 
-    await addDialog.getByLabel("Base Unit quantity").fill("25");
-    await addDialog
-      .getByRole("button", { name: "Save alternate Unit", exact: true })
-      .click();
-    await expect(addDialog).toBeHidden();
-    await expect(unitsSheet).toBeVisible();
-    await expect(
-      unitsSheet.getByText(`${fixtures.alternateUnitName} (25 kg)`, {
+      await signIn(page);
+      await page.goto("/items");
+      await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+      const staffRow = page.getByRole("row").filter({
+        has: page.getByText("Alpha Beans", { exact: true }),
+      });
+      await staffRow
+        .getByRole("button", { name: "Actions for Alpha Beans", exact: true })
+        .click();
+      await page.getByRole("menuitem", { name: "Units", exact: true }).click();
+
+      const unitsSheet = page.getByRole("dialog").filter({
+        hasText: "Units for Alpha Beans",
+      });
+      await expect(unitsSheet).toBeVisible();
+      await expect(unitsSheet.getByText("Issuance quantities", { exact: true })).toBeVisible();
+      await expect(unitsSheet.getByText("Whole numbers only", { exact: true })).toBeVisible();
+      await expect(
+        unitsSheet.getByRole("button", { name: "Add alternate Unit", exact: true }),
+      ).toHaveCount(0);
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(unitsSheet).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.body.scrollWidth <= document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
+
+      await page.context().clearCookies();
+      await page.setViewportSize({ width, height: 844 });
+      await signIn(page, "municipal.admin", adminPassword);
+      await page.goto("/items");
+      await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
+
+      await page.getByRole("button", { name: "Actions for Alpha Beans", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Manage units", exact: true }).click();
+      await expect(unitsSheet).toBeVisible();
+
+      const addAlternateUnit = unitsSheet.getByRole("button", {
+        name: "Add alternate Unit",
         exact: true,
-      }),
-    ).toBeVisible();
-  });
+      });
+      await addAlternateUnit.click();
+      const addDialog = page.getByRole("dialog").filter({
+        hasText: "Set how many Base Units one package represents.",
+      });
+      await expect(addDialog).toBeVisible();
+      await addDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(addDialog).toBeHidden();
+      await expect(unitsSheet).toBeVisible();
+      await expect(addAlternateUnit).toBeFocused();
+
+      await page.keyboard.press("Enter");
+      await expect(addDialog).toBeVisible();
+      const alternate = addDialog.getByRole("combobox", { name: "Alternate Unit", exact: true });
+      const quantity = addDialog.getByRole("textbox", { name: "Base Unit quantity", exact: true });
+      const save = addDialog.getByRole("button", { name: "Save alternate Unit", exact: true });
+      await expect(alternate).toHaveAttribute("aria-required", "true");
+      await expect(quantity).toHaveAttribute("required", "");
+      for (const marker of await addDialog.getByText("*", { exact: true }).all()) {
+        await expect(marker).toBeVisible();
+        await expect(marker).toHaveAttribute("aria-hidden", "true");
+        const red = await marker.evaluate((element) => {
+          const probe = document.createElement("span");
+          probe.style.color = "var(--destructive)";
+          element.append(probe);
+          const color = getComputedStyle(probe).color;
+          probe.remove();
+          return color;
+        });
+        await expect(marker).toHaveCSS("color", red);
+      }
+      await expect(addDialog.getByText("*", { exact: true })).toHaveCount(2);
+
+      await quantity.fill("0");
+      await save.click();
+      await expectItemFieldError(alternate, "Select an alternate Unit.");
+      await expectItemFieldError(quantity, "Base Unit quantity must be greater than zero.");
+      await alternate.click();
+      await expectOpenOptionIsClickable(
+        page,
+        `${fixtures.alternateUnitName} (e2esack)`,
+      );
+      await expect(
+        page.getByRole("option", {
+          name: `${fixtures.inactiveAlternateUnitName} (e2ersack)`,
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      await page
+        .getByRole("option", {
+          name: `${fixtures.alternateUnitName} (e2esack)`,
+          exact: true,
+        })
+        .click();
+      await expect(alternate).toHaveAttribute("aria-invalid", "false");
+      await expect(alternate).toHaveAccessibleDescription("");
+      await expectItemFieldError(quantity, "Base Unit quantity must be greater than zero.");
+      await expect(quantity).toHaveValue("0");
+
+      await quantity.fill("25");
+      await expect(quantity).toHaveAttribute("aria-invalid", "false");
+      await save.click();
+      await expect(addDialog).toBeHidden();
+      await expect(unitsSheet).toBeVisible();
+      await expect(
+        unitsSheet.getByText(`${fixtures.alternateUnitName} (25 kg)`, {
+          exact: true,
+        }),
+      ).toBeVisible();
+    });
+  }
 
   test("shows the correct empty-state action for empty and filtered Items", async ({
     page,
@@ -998,7 +1020,7 @@ test.describe("Items catalog journey", () => {
     await dialog.getByRole("combobox", { name: "Base Unit" }).click();
     await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
     await dialog.getByLabel("Reorder level").fill("10");
-    await dialog.getByLabel("Item Note (optional)").fill("Kitchen staple");
+    await dialog.getByRole("textbox", { name: "Item Note", exact: true }).fill("Kitchen staple");
     await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
 
     await expect(dialog).toBeHidden();
@@ -1031,7 +1053,7 @@ test.describe("Items catalog journey", () => {
       .getByRole("option", { name: "Piece (pc)", exact: true })
       .click();
     await editDialog.getByLabel("Reorder level").fill("12.5");
-    await editDialog.getByLabel("Item Note (optional)").fill("Updated note");
+    await editDialog.getByRole("textbox", { name: "Item Note", exact: true }).fill("Updated note");
     await editDialog
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
@@ -1060,9 +1082,10 @@ test.describe("Items catalog journey", () => {
     await validationDialog
       .getByRole("button", { name: "Save changes", exact: true })
       .click();
-    await expect(
-      validationDialog.getByText("Item name is required", { exact: true }),
-    ).toBeVisible();
+    await expectItemFieldError(
+      validationDialog.getByRole("textbox", { name: "Name", exact: true }),
+      "Item name is required",
+    );
     await expect(validationDialog.getByLabel("Name")).toHaveValue("");
     await validationDialog.getByLabel("Name").fill("Brown Rice Fixed");
     await validationDialog
@@ -1150,7 +1173,11 @@ test.describe("Items catalog journey", () => {
       duplicateDialog.locator(
         '[data-slot="alert"] [data-slot="alert-description"]',
       ),
-    ).toHaveText("An Item with that name already exists.");
+    ).toHaveText("An Item with that name already exists. Enter a different name.");
+    await expectItemFieldError(
+      duplicateDialog.getByRole("textbox", { name: "Name", exact: true }),
+      "An Item with that name already exists.",
+    );
     await expect(duplicateDialog.getByLabel("Name")).toHaveValue(
       "brown rice updated",
     );
