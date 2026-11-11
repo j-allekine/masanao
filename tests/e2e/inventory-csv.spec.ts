@@ -156,7 +156,7 @@ test("authenticated Item creation, alternate receiving, unchanged draft, posted 
   const picker = page.getByRole("dialog", { name: "Add Stock item" });
   await picker.getByRole("combobox", { name: "Item", exact: true }).fill(itemName);
   await page.getByRole("option", { name: itemName, exact: true }).click();
-  await picker.getByLabel("Quantity", { exact: true }).fill("10");
+  await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("10");
   await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
   await picker.getByRole("button", { name: "Done", exact: true }).click();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();

@@ -65,12 +65,19 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
     .click();
-  await review.getByLabel("Final quantity for Review Eggs").fill("0.5");
+  const finalQuantity = review.getByRole("textbox", { name: "Final quantity for Review Eggs", exact: true });
+  const mark = review.locator('label[for="final-e2e-review-eggs"]').getByText("*", { exact: true });
+  await expect(mark).toBeVisible();
+  await expect(finalQuantity).toHaveAttribute("required", "");
+  const invalidColor = await mark.evaluate((element) => getComputedStyle(element).color);
+  await finalQuantity.fill("0.5");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
-  await expect(
-    review.getByText("Enter a positive whole quantity for this Item."),
-  ).toBeVisible();
-  await review.getByLabel("Final quantity for Review Eggs").fill("1");
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
+  await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive whole quantity for this Item.");
+  await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
+  await expect(review.locator("#final-error-e2e-review-eggs")).toHaveCSS("clip-path", "inset(50%)");
+  await finalQuantity.fill("1");
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "false");
   await review.getByRole("button", { name: "Confirm quantity" }).focus();
   await page.keyboard.press("Enter");
   await expect(
@@ -143,9 +150,14 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
     .click();
-  await review
-    .getByLabel("Final quantity for Review Eggs")
-    .fill("0.987654321123456789");
+  await expect(mark).toBeVisible();
+  await finalQuantity.fill("0");
+  await review.getByRole("button", { name: "Confirm quantity" }).click();
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
+  await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive decimal quantity.");
+  await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
+  await expect(review.locator("#final-error-e2e-review-eggs")).toHaveCSS("clip-path", "inset(50%)");
+  await finalQuantity.fill("0.987654321123456789");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
   await expect(
     review.getByText("0.987654321123456789 pc", { exact: true }),

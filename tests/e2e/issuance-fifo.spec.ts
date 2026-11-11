@@ -34,12 +34,12 @@ test("posted FIFO sources split across POs and remain accessible and immutable",
   const picker = page.getByRole("dialog", { name: "Add Stock item" });
   await picker.getByRole("combobox", { name: "Item", exact: true }).fill("FIFO Rice");
   await page.getByRole("option", { name: "FIFO Rice", exact: true }).click();
-  await picker.getByLabel("Quantity", { exact: true }).fill("15.25");
+  await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("15.25");
   await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
   await expect(picker.getByRole("status")).toContainText("FIFO Rice added");
   await picker.getByRole("combobox", { name: "Item", exact: true }).fill("FIFO Salt");
   await page.getByRole("option", { name: "FIFO Salt", exact: true }).click();
-  await picker.getByLabel("Quantity", { exact: true }).fill("0.5");
+  await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("0.5");
   await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
   await picker.getByRole("button", { name: "Done", exact: true }).click();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();

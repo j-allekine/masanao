@@ -22,7 +22,7 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   const dialog = page.getByRole("dialog", { name: "Add Stock item" });
   await dialog.getByRole("combobox", { name: "Item", exact: true }).fill("Rice");
   await page.getByRole("option", { name: "Rice", exact: true }).click();
-  await dialog.getByLabel("Quantity", { exact: true }).fill("1250.123456789123");
+  await dialog.getByRole("textbox", { name: "Quantity", exact: true }).fill("1250.123456789123");
   await dialog.getByRole("combobox", { name: "Unit", exact: true }).click();
   await page.getByRole("option", { name: /Gram.*0\.001/ }).click();
   await page.screenshot({ path: testInfo.outputPath("desktop-stock-picker.png"), fullPage: true });
@@ -52,13 +52,13 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await expect(rowActions).toBeFocused();
   await rowActions.click();
   await page.getByRole("menuitem", { name: "Edit Stock item" }).click();
-  await expect(edit.getByLabel("Quantity", { exact: true })).toHaveValue("1250.123456789123");
-  await edit.getByLabel("Quantity", { exact: true }).fill("0");
+  await expect(edit.getByRole("textbox", { name: "Quantity", exact: true })).toHaveValue("1250.123456789123");
+  await edit.getByRole("textbox", { name: "Quantity", exact: true }).fill("0");
   await expect(edit.getByRole("button", { name: "Apply changes" })).toBeDisabled();
-  await expect(edit.getByText("Enter a positive decimal quantity, such as 0.25 or 2.")).toBeVisible();
-  await expect(edit.getByLabel("Quantity", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(edit.getByRole("textbox", { name: "Quantity", exact: true })).toHaveAccessibleDescription("Enter a positive decimal quantity, such as 0.25 or 2.");
+  await expect(edit.getByRole("textbox", { name: "Quantity", exact: true })).toHaveAttribute("aria-invalid", "true");
   await page.screenshot({ path: testInfo.outputPath("mobile-stock-validation.png"), fullPage: true });
-  await edit.getByLabel("Quantity", { exact: true }).fill("1500.987654321123");
+  await edit.getByRole("textbox", { name: "Quantity", exact: true }).fill("1500.987654321123");
   await edit.getByRole("button", { name: "Apply changes" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText(/1 g = 0\.002 kg/)).toBeVisible();

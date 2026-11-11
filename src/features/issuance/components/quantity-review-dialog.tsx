@@ -10,6 +10,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldDescription,
+  FieldError,
 } from "@/components/ui/field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -165,25 +166,26 @@ export default function QuantityReviewDialog({
                 {editing === row.itemId ? (
                   <FieldGroup>
                     <Field data-invalid={Boolean(error)}>
-                      <FieldLabel htmlFor={`final-${row.itemId}`}>
+                      <FieldLabel htmlFor={`final-${row.itemId}`} required>
                         Final quantity for {row.itemName}
                       </FieldLabel>
                       <Input
                         disabled={saving}
                         id={`final-${row.itemId}`}
                         inputMode="decimal"
+                        required
                         value={quantity}
                         aria-invalid={Boolean(error)}
-                        aria-describedby={`final-help-${row.itemId}`}
+                        aria-describedby={error ? `final-error-${row.itemId}` : `final-help-${row.itemId}`}
                         onChange={(event) => {
                           setQuantity(event.target.value);
                           setError("");
                         }}
                       />
                       <FieldDescription id={`final-help-${row.itemId}`}>
-                        {error ||
-                          `Enter the exact positive ${row.policy === "whole-only" ? "whole " : ""}quantity in ${row.baseUnitAbbreviation}.`}
+                        Enter the exact positive {row.policy === "whole-only" ? "whole " : ""}quantity in {row.baseUnitAbbreviation}.
                       </FieldDescription>
+                      {error ? <FieldError id={`final-error-${row.itemId}`} visuallyHidden>{error}</FieldError> : null}
                     </Field>
                     <div className="flex flex-wrap gap-2">
                       <Button disabled={saving} onClick={() => confirm(row)}>

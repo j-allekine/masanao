@@ -88,7 +88,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     const picker = page.getByRole("dialog", { name: "Add Stock item" });
     await picker.getByRole("combobox", { name: "Item", exact: true }).click();
     await page.getByRole("option", { name: "Rice", exact: true }).click();
-    await picker.getByLabel("Quantity", { exact: true }).fill("1");
+    await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("1");
     let release!: () => void;
     let requested!: () => void;
     const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
@@ -108,10 +108,10 @@ for (const cancel of ["cancel", "escape"] as const) {
     const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}`));
     release();
     expect((await response).ok()).toBe(true);
-    await expect(picker.getByLabel("Quantity", { exact: true })).toBeEnabled();
-    await picker.getByLabel("Quantity", { exact: true }).fill("7");
+    await expect(picker.getByRole("textbox", { name: "Quantity", exact: true })).toBeEnabled();
+    await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("7");
     await expect(picker).toBeVisible();
-    await expect(picker.getByLabel("Quantity", { exact: true })).toHaveValue("7");
+    await expect(picker.getByRole("textbox", { name: "Quantity", exact: true })).toHaveValue("7");
     await picker.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(page.getByText("No Stock items selected. Add a Stock item for direct issuance.")).toBeVisible();
     await expect(page.getByLabel("Actions for Stock item Rice")).toHaveCount(0);

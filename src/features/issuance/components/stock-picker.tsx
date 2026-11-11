@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, FieldLabel, FieldDescription } from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from "@/components/ui/select";
@@ -24,7 +24,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   onClose: () => void;
   onApply: (line: LocalStockItem, signal: AbortSignal) => Promise<boolean>;
 }) {
-  const [options, setOptions] = useState<IssuanceStockItemOption[]>([]);
+  const [loadedOptions, setOptions] = useState<IssuanceStockItemOption[] | null>(null);
   const [query, setQuery] = useState(line?.itemName ?? "");
   const [itemId, setItemId] = useState(line?.itemId ?? "");
   const [quantity, setQuantity] = useState(line?.enteredQuantity ?? "");
@@ -55,6 +55,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
     };
   }, []);
 
+  const options = loadedOptions ?? [];
   const item = options.find((option) => option.id === itemId);
   const itemOptions = options.map((option) => ({ value: option.id, label: option.name }));
   const conversion = item?.conversions.find((entry) => entry.id === unit);
@@ -63,9 +64,15 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
     ...item.conversions.map((entry) => ({ value: entry.id, label: `${entry.alternateUnit.name} (${entry.alternateUnit.abbreviation}) · ${entry.factor} ${item.baseUnit.abbreviation}` })),
   ] : [];
   const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
-  const unavailableSavedItem = Boolean(line && !loading && !item && !options.some((option) => option.id === line.itemId));
-  const itemHelp = loading ? "Loading available Items…" : unavailableSavedItem ? "This saved Item is no longer available. Select an available Item to edit the line." : options.length === 0 ? "No active Stock items are available." : null;
+  const unavailableSavedItem = Boolean(line && loadedOptions && !item && !options.some((option) => option.id === line.itemId));
+  const itemHelp = loading ? "Loading available Items…" : loadedOptions?.length === 0 ? "No active Stock items are available." : null;
   const validUnit = unit === "base" || Boolean(conversion);
+  const unavailableSavedUnit = Boolean(item && !validUnit);
+  const selectionError = unavailableSavedItem
+    ? "This saved Item is no longer available. Select an available Item to edit the line."
+    : unavailableSavedUnit
+      ? "This saved Unit is unavailable. Select a current Unit."
+      : null;
   const baseQuantity = item && isPositiveExactDecimal(quantity) && validUnit
     ? multiplyExactPositiveDecimals(quantity, conversion?.factor ?? "1")
     : null;
@@ -121,8 +128,8 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
         </DialogHeader>
         <div className="grid min-w-0 gap-6 sm:grid-cols-2">
           <FieldGroup className="gap-3">
-            <Field>
-              <FieldLabel htmlFor="stock-item">Item</FieldLabel>
+            <Field data-invalid={unavailableSavedItem}>
+              <FieldLabel htmlFor="stock-item" required>Item</FieldLabel>
               <Combobox items={itemOptions} filteredItems={itemOptions.filter((option) => option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))} inputValue={query} isItemEqualToValue={(a: ItemOption, b: ItemOption) => a.value === b.value}
                 onInputValueChange={(value, details) => {
                   setQuery(value);
@@ -138,7 +145,15 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
                 setError("");
                 setNotice("");
               }}>
-                <ComboboxInput ref={itemInput} id="stock-item" placeholder="Search active Items" className="w-full" aria-describedby={itemHelp ? "stock-item-help" : undefined} />
+                <ComboboxInput
+                  ref={itemInput}
+                  id="stock-item"
+                  placeholder="Search active Items"
+                  className="w-full"
+                  aria-required="true"
+                  aria-invalid={unavailableSavedItem}
+                  aria-describedby={unavailableSavedItem ? "stock-selection-error" : itemHelp ? "stock-item-help" : undefined}
+                />
                 <ComboboxContent>
                   <ComboboxList>{(option: ItemOption) => <ComboboxItem key={option.value} value={option}>{option.label}</ComboboxItem>}</ComboboxList>
                   <ComboboxEmpty>No active Items match your search.</ComboboxEmpty>
@@ -149,17 +164,23 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
             <FieldGroup className="gap-3">
               <FieldGroup className="gap-3">
                 <Field data-invalid={invalidQuantity}>
-                  <FieldLabel htmlFor="stock-quantity">Quantity</FieldLabel>
-                  <Input id="stock-quantity" inputMode="decimal" value={quantity} disabled={pending} aria-invalid={invalidQuantity} aria-describedby={invalidQuantity ? "stock-quantity-help" : undefined} onChange={(event) => { setQuantity(event.target.value); setError(""); }} />
-                  {invalidQuantity ? <FieldDescription id="stock-quantity-help">Enter a positive decimal quantity, such as 0.25 or 2.</FieldDescription> : null}
+                  <FieldLabel htmlFor="stock-quantity" required>Quantity</FieldLabel>
+                  <Input id="stock-quantity" required inputMode="decimal" value={quantity} disabled={pending} aria-invalid={invalidQuantity} aria-describedby={invalidQuantity ? "stock-quantity-error" : undefined} onChange={(event) => { setQuantity(event.target.value); setError(""); }} />
+                  {invalidQuantity ? <FieldError id="stock-quantity-error" visuallyHidden>Enter a positive decimal quantity, such as 0.25 or 2.</FieldError> : null}
                 </Field>
-                <Field>
+                <Field data-invalid={unavailableSavedUnit}>
                   <FieldLabel htmlFor="stock-unit">Unit</FieldLabel>
                   <Select items={units} value={units.some((entry) => entry.value === unit) ? unit : null} disabled={pending || !item} onValueChange={(value) => setUnit(value ?? "base")}>
-                    <SelectTrigger id="stock-unit" className="w-full"><SelectValue placeholder="Select Unit" /></SelectTrigger>
+                    <SelectTrigger
+                      id="stock-unit"
+                      className="w-full"
+                      aria-invalid={unavailableSavedUnit}
+                      aria-describedby={unavailableSavedUnit ? "stock-selection-error" : undefined}
+                    >
+                      <SelectValue placeholder="Select Unit" />
+                    </SelectTrigger>
                     <SelectContent><SelectGroup>{units.map((entry) => <SelectItem key={entry.value} value={entry.value}>{entry.label}</SelectItem>)}</SelectGroup></SelectContent>
                   </Select>
-                  {item && !validUnit ? <FieldDescription>This saved Unit is unavailable. Select a current Unit.</FieldDescription> : null}
                 </Field>
               </FieldGroup>
               {baseQuantity ? <FieldDescription className="break-words tabular-nums" aria-live="polite">Base quantity: {baseQuantity} {item!.baseUnit.abbreviation}</FieldDescription> : null}
@@ -187,6 +208,11 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
             ) : <Empty><EmptyHeader><EmptyDescription>No Stock lines added yet.</EmptyDescription></EmptyHeader></Empty>}
           </section>
         </div>
+        {selectionError ? (
+          <Alert variant="destructive">
+            <AlertDescription id="stock-selection-error">{selectionError}</AlertDescription>
+          </Alert>
+        ) : null}
         {error || submissionError ? <Alert variant="destructive"><AlertDescription>{error || submissionError}</AlertDescription></Alert> : null}
         {notice ? <p role="status" className="text-body-sm">{notice}</p> : null}
         <DialogFooter>
