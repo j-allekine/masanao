@@ -49,21 +49,21 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await page.goto(path);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await expect(page.getByText("New draft", { exact: true })).toBeVisible();
+  await expect(page.getByText("Add a Recipe or Stock item before saving your first draft.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("No stock has been issued.", { exact: true })).toHaveCount(0);
   await expect(page.getByText("No Recipes selected.", { exact: false })).toBeVisible();
   await expect(page.getByText("No Stock items selected.", { exact: false })).toBeVisible();
   const reviewButton = page.getByRole("button", { name: "Review", exact: true });
   await reviewButton.press("Enter");
   const emptyReview = page.getByRole("dialog", { name: "Combined quantities and stock", exact: true });
   await expect(emptyReview.getByText("No calculated Item quantities yet.")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await emptyReview.getByRole("button", { name: "Close review", exact: true }).press("Enter");
   await expect(reviewButton).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath("empty-draft.png"), animations: "disabled" });
   const meal = page.getByRole("textbox", { name: "Meal pax", exact: true });
   await expectRequiredPax(page, meal);
   await meal.fill("10");
   await expect(page.getByRole("button", { name: "Save draft", exact: true })).toBeDisabled();
-  await expect(page.getByText("Add a Recipe or Stock item before saving your first draft.", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("No stock has been issued.", { exact: true })).toHaveCount(0);
   await meal.press("End");
   await meal.press("a");
   await expect(meal).toHaveValue("10");
@@ -169,6 +169,9 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await expect(page.getByRole("button", { name: "View ingredients for Alpha Rice", exact: true })).toBeVisible();
   await expect(page.getByText("Custom target", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "View ingredients for Beta Rice", exact: true })).toBeVisible();
+  await expect(page.getByText("Draft", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Discard changes", exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("saved-draft.png"), animations: "disabled" });
 });
 
 test("pending Meal pax can be completed without leaving the Recipe picker", async ({ page }) => {
