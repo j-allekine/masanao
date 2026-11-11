@@ -72,6 +72,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   const invalidColor = await mark.evaluate((element) => getComputedStyle(element).color);
   await finalQuantity.fill("0.5");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
+  await expect(finalQuantity).toBeFocused();
   await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
   await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive whole quantity for this Item.");
   await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
@@ -153,6 +154,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(mark).toBeVisible();
   await finalQuantity.fill("0");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
+  await expect(finalQuantity).toBeFocused();
   await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
   await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive decimal quantity.");
   await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);

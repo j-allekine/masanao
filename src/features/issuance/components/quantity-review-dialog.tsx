@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { IssuanceReviewItem } from "../types";
 import { AlertTriangle, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ export default function QuantityReviewDialog({
   const [editing, setEditing] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
   const [error, setError] = useState("");
+  const quantityRef = useRef<HTMLInputElement>(null);
   function confirm(row: ReviewRow) {
     if (!isValidIssuanceFinalQuantity(quantity, row.policy)) {
       setError(
@@ -63,6 +64,7 @@ export default function QuantityReviewDialog({
           ? "Enter a positive whole quantity for this Item."
           : "Enter a positive decimal quantity.",
       );
+      requestAnimationFrame(() => quantityRef.current?.focus());
       return;
     }
     onConfirm(row.itemId, quantity);
@@ -172,6 +174,7 @@ export default function QuantityReviewDialog({
                       <Input
                         disabled={saving}
                         id={`final-${row.itemId}`}
+                        ref={quantityRef}
                         inputMode="decimal"
                         required
                         value={quantity}

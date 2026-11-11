@@ -170,17 +170,15 @@ test.describe("production login interactions", () => {
 });
 
 const signInSurfaces = [
-  { path: "/", submit: "Sign in", focusesUsername: true },
+  { path: "/", submit: "Sign in" },
   {
     path: "/prototype/login",
     submit: "Sign in",
-    focusesUsername: true,
     success: "Local session ready for kitchen.staff.",
   },
   {
     path: "/prototype/login-new",
     submit: "Continue",
-    focusesUsername: false,
     success: "Access preview ready.",
   },
 ] as const;
@@ -238,13 +236,14 @@ for (const surface of signInSurfaces) {
         await expect.poll(() => group.locator("..").evaluate((element) => element.getBoundingClientRect().height)).toBe(fieldHeight);
       }
 
-      if (surface.focusesUsername) await expect(username).toBeFocused();
+      await expect(username).toBeFocused();
       await username.fill("kitchen.staff");
       await expect(username).not.toHaveAttribute("aria-invalid", "true");
       await expect(password).toHaveAttribute("aria-invalid", "true");
-      await password.press("Enter");
+      if (surface.path === "/prototype/login-new") await submit.click();
+      else await password.press("Enter");
       await expect(password).toHaveAccessibleDescription("Enter your password.");
-      if (surface.path === "/") await expect(password).toBeFocused();
+      if (surface.path !== "/prototype/login") await expect(password).toBeFocused();
 
       await password.fill("test-password");
       await expect(password).not.toHaveAttribute("aria-invalid", "true");

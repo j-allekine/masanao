@@ -99,6 +99,8 @@ function LoginForm({ heading, description, headingId, className, compact = false
   const [passwordInvalid, setPasswordInvalid] = useState(false)
   const [status, setStatus] = useState<LoginStatus>("idle")
   const [supportOpen, setSupportOpen] = useState(false)
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -122,6 +124,8 @@ function LoginForm({ heading, description, headingId, className, compact = false
 
     if (missingUsername || missingPassword) {
       setStatus("idle")
+      const invalidField = missingUsername ? usernameRef : passwordRef
+      requestAnimationFrame(() => invalidField.current?.focus())
       return
     }
 
@@ -158,6 +162,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
             </InputGroupAddon>
             <InputGroupInput
               id="prototype-username"
+              ref={usernameRef}
               name="username"
               type="text"
               autoComplete="username"
@@ -186,6 +191,7 @@ function LoginForm({ heading, description, headingId, className, compact = false
             </InputGroupAddon>
             <InputGroupInput
               id="prototype-password"
+              ref={passwordRef}
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
