@@ -150,13 +150,17 @@ test("a long draft and posted meal retain identity while the working body scroll
   await expect(page.getByRole("main")).toHaveCount(1);
   const footer = page.locator("footer").filter({ has: review });
   const discardChanges = footer.getByRole("button", { name: "Discard changes", exact: true });
+  const reviewRequested = Promise.withResolvers<void>();
   const pendingReview = Promise.withResolvers<void>();
-  await page.route(meal, async (route) => {
-    if (route.request().method() === "POST") await pendingReview.promise;
-    await route.continue();
-  });
+  await page.route(`**${meal}`, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    reviewRequested.resolve();
+    await pendingReview.promise;
+    await route.fulfill({ response: await route.fetch() });
+  }, { times: 1 });
   try {
     await review.click();
+    await reviewRequested.promise;
     await expect(review).toBeDisabled();
     await expect(discardChanges).toBeDisabled();
     await expect(footer.getByRole("button", { name: "Working…", exact: true })).toBeDisabled();
@@ -164,7 +168,6 @@ test("a long draft and posted meal retain identity while the working body scroll
     await page.screenshot({ path: info.outputPath("draft-review-pending.png"), animations: "disabled" });
   } finally {
     pendingReview.resolve();
-    await page.unroute(meal);
   }
   const reviewDialog = page.getByRole("dialog", { name: "Combined quantities and stock", exact: true });
   await expect(reviewDialog).toBeVisible();
