@@ -482,7 +482,7 @@ export default function IssuanceDraftContent({
     setStockItems(result.value.draft.stockItems);
     setMealPax(result.value.draft.mealPax?.toString() ?? "");
     setDirty(false);
-    setNotice("Draft saved. No stock has been issued.");
+    setNotice("Draft saved.");
     return result.value;
   }
   function save() {
