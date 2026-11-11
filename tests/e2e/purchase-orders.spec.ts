@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
@@ -23,6 +23,18 @@ async function signIn(
   });
 
   expect(response.status()).toBe(200);
+}
+
+async function expectPurchaseOrderFieldError(control: Locator, description: string) {
+  await expect(control).toHaveAttribute("aria-invalid", "true");
+  await expect(control).toHaveAccessibleDescription(description);
+  const detail = control.locator("..").locator('[data-slot="field-error"]');
+  await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+  await expect(detail).toHaveCSS("position", "absolute");
+  await expect(control).toHaveCSS(
+    "border-top-color",
+    await detail.evaluate((element) => getComputedStyle(element).color),
+  );
 }
 
 function withE2eDatabase<T>(callback: (database: Database.Database) => T): T {
@@ -328,8 +340,8 @@ test.describe("Purchase Orders administration journey", () => {
       await expect(dialog.getByRole("combobox", { name: "Vendor", exact: true })).toBeDisabled();
       await expect(dialog.getByText("Vendor is locked after a Delivery Receipt is posted.", { exact: true })).toBeVisible();
       await dialog.getByRole("textbox", { name: "Purchase Order No.", exact: true }).fill("PO-E2E-LOCKED-CORRECTED");
-      await dialog.getByLabel("Reference number (optional)", { exact: true }).fill("ORS-E2E-LOCKED-CORRECTED");
-      await dialog.getByLabel("Note (optional)", { exact: true }).fill("Corrected note");
+      await dialog.getByLabel("Reference number", { exact: true }).fill("ORS-E2E-LOCKED-CORRECTED");
+      await dialog.getByLabel("Note", { exact: true }).fill("Corrected note");
       await dialog.getByRole("button", { name: "Save changes", exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(page.locator(
@@ -382,9 +394,41 @@ test.describe("Purchase Orders administration journey", () => {
           exact: true,
         }),
       ).toBeFocused();
-      await dialog
-        .getByRole("textbox", { name: "Purchase Order No.", exact: true })
-        .fill(" PO-E2E-CRUD-001 ");
+      const desktopViewport = page.viewportSize()!;
+      const number = dialog.getByRole("textbox", { name: "Purchase Order No.", exact: true });
+      const vendor = dialog.getByRole("combobox", { name: "Vendor", exact: true });
+      const submit = dialog.getByRole("button", { name: "Create Purchase Order", exact: true });
+      const markers = dialog.getByText("*", { exact: true });
+      await expect(markers).toHaveCount(2);
+      await expect(number).toHaveAttribute("required", "");
+      await expect(vendor).toHaveAttribute("aria-required", "true");
+      await expect(dialog.getByRole("form")).toHaveAttribute("novalidate", "");
+
+      for (const viewport of [desktopViewport, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        for (const marker of await markers.all()) {
+          await expect(marker).toBeVisible();
+          await expect(marker).toHaveAttribute("aria-hidden", "true");
+          const destructive = await marker.evaluate((element) => {
+            const probe = document.createElement("span");
+            probe.style.color = "var(--destructive)";
+            element.append(probe);
+            const color = getComputedStyle(probe).color;
+            probe.remove();
+            return color;
+          });
+          await expect(marker).toHaveCSS("color", destructive);
+        }
+        await submit.click();
+        await expect(number).toBeFocused();
+        await expectPurchaseOrderFieldError(number, "Purchase Order No. is required");
+        await expectPurchaseOrderFieldError(vendor, "Vendor is required");
+        await number.fill(" PO-E2E-CRUD-001 ");
+        await expect(number).toHaveAttribute("aria-invalid", "false");
+        await expectPurchaseOrderFieldError(vendor, "Vendor is required");
+        if (viewport.width === desktopViewport.width) await number.clear();
+      }
+      await page.setViewportSize(desktopViewport);
       await dialog.getByRole("combobox", { name: "Vendor", exact: true }).click();
       await expect(
         page.getByRole("option", { name: "Acme Foods", exact: true }),
@@ -396,10 +440,10 @@ test.describe("Purchase Orders administration journey", () => {
         .getByRole("option", { name: "Acme Foods", exact: true })
         .click();
       await dialog
-        .getByLabel("Reference number (optional)", { exact: true })
+        .getByLabel("Reference number", { exact: true })
         .fill(" ORS-E2E-CRUD-001 ");
       await dialog
-        .getByLabel("Note (optional)", { exact: true })
+        .getByLabel("Note", { exact: true })
         .fill("  Kitchen delivery  ");
       await dialog
         .getByRole("button", { name: "Create Purchase Order", exact: true })
@@ -422,12 +466,12 @@ test.describe("Purchase Orders administration journey", () => {
       await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
       const normalizedDialog = page.getByRole("dialog");
       await expect(
-        normalizedDialog.getByLabel("Reference number (optional)", {
+        normalizedDialog.getByLabel("Reference number", {
           exact: true,
         }),
       ).toHaveValue("ORS-E2E-CRUD-001");
       await expect(
-        normalizedDialog.getByLabel("Note (optional)", { exact: true }),
+        normalizedDialog.getByLabel("Note", { exact: true }),
       ).toHaveValue("Kitchen delivery");
       await normalizedDialog
         .getByRole("button", { name: "Cancel", exact: true })
@@ -457,7 +501,10 @@ test.describe("Purchase Orders administration journey", () => {
         duplicateDialog.locator(
           '[data-slot="alert"][role="alert"] [data-slot="alert-description"]',
         ),
-      ).toHaveText("A Purchase Order with that number already exists.");
+      ).toHaveText("A Purchase Order with that number already exists. Enter a different Purchase Order No.");
+      await expect(
+        duplicateDialog.getByRole("textbox", { name: "Purchase Order No.", exact: true }),
+      ).toHaveAccessibleDescription("A Purchase Order with that number already exists.");
       await expect(
         duplicateDialog.getByRole("textbox", {
           name: "Purchase Order No.",
@@ -493,8 +540,20 @@ test.describe("Purchase Orders administration journey", () => {
           exact: true,
         }),
       ).toHaveValue("PO-E2E-CRUD-001");
+      const editableNumber = editDialog.getByRole("textbox", { name: "Purchase Order No.", exact: true });
+      const saveChanges = editDialog.getByRole("button", { name: "Save changes", exact: true });
+      for (const viewport of [desktopViewport, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        await editableNumber.clear();
+        await saveChanges.click();
+        await expect(editableNumber).toBeFocused();
+        await expectPurchaseOrderFieldError(editableNumber, "Purchase Order No. is required");
+        await editableNumber.fill("PO-E2E-CRUD-001");
+        await expect(editableNumber).toHaveAttribute("aria-invalid", "false");
+      }
+      await page.setViewportSize(desktopViewport);
       await editDialog
-        .getByLabel("Reference number (optional)", { exact: true })
+        .getByLabel("Reference number", { exact: true })
         .fill("ORS-E2E-CRUD-UPDATED");
       await editDialog
         .getByRole("button", { name: "Save changes", exact: true })
