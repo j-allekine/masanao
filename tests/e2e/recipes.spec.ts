@@ -514,8 +514,12 @@ test.describe("overflowing Recipe routes", () => {
     for (const { width, height } of layoutViewports) {
       await page.setViewportSize({ width, height });
       const chrome = main.locator('[data-slot="workspace-chrome"]');
-      await expect.poll(async () => height - (await chrome.boundingBox())!.height).toBeGreaterThan(100);
-      await page.evaluate(() => window.scrollTo(0, 0));
+      const hasRoomForStickyHeader = height - (await chrome.boundingBox())!.height >= 112;
+      await expect(chrome).toHaveCSS("position", hasRoomForStickyHeader ? "sticky" : "static");
+      await expectFullRecordHeading(page, targetName);
+      await detailTitle.evaluate((element) => element.scrollIntoView({ block: "center" }));
+      await expect(detailTitle).toBeInViewport({ ratio: 1 });
+      await page.screenshot({ path: info.outputPath(`recipe-heading-${width}x${height}.png`), animations: "disabled" });
       await item(1).scrollIntoViewIfNeeded();
       await expect(item(1)).toBeInViewport();
       await expect(item(layoutIngredientCount)).not.toBeInViewport();
@@ -528,11 +532,12 @@ test.describe("overflowing Recipe routes", () => {
         await expect(quantity).toBeInViewport();
         await expect(quantityHeader).toBeInViewport();
         await expect.poll(async () => Math.abs((await quantityHeader.boundingBox())!.x - (await quantity.boundingBox())!.x)).toBeLessThan(1);
-        await expect(sidebar).toBeInViewport({ ratio: 1 });
-        await expect(detailTitle).toBeInViewport({ ratio: 1 });
-        await expect(back).toBeInViewport({ ratio: 1 });
+        if (hasRoomForStickyHeader) {
+          await expect(sidebar).toBeInViewport({ ratio: 1 });
+          await expect(detailTitle).toBeInViewport({ ratio: 1 });
+          await expect(back).toBeInViewport({ ratio: 1 });
+        }
       }
-      await expectFullRecordHeading(page, targetName);
       await page.screenshot({ path: info.outputPath(`recipe-ingredients-scrolled-${width}x${height}.png`), animations: "disabled" });
     }
     await back.press("Enter");
@@ -579,6 +584,8 @@ test.describe("overflowing Recipe routes", () => {
     await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
     await last.scrollIntoViewIfNeeded();
     await expect(last).toBeInViewport({ ratio: 1 });
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+    await save.scrollIntoViewIfNeeded();
     await expect(save).toBeInViewport({ ratio: 1 });
     await last.fill("0");
     await save.press("Enter");
@@ -590,6 +597,7 @@ test.describe("overflowing Recipe routes", () => {
     await expect(last).toBeInViewport({ ratio: 1 });
     await expect(last).toHaveValue("0");
     await expect(pax).toHaveValue("50");
+    await save.scrollIntoViewIfNeeded();
     await expect(save).toBeInViewport({ ratio: 1 });
     await page.screenshot({ path: info.outputPath("recipe-edit-validation-enlarged.png"), animations: "disabled" });
 

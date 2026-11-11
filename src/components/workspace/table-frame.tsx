@@ -35,7 +35,7 @@ export default function WorkspaceTableFrame({
       const bounds = labels.getBoundingClientRect();
       const naturalTop = bounds.top - offset;
       const tableEnd = table.getBoundingClientRect().bottom;
-      const chromeEnd = chrome.getBoundingClientRect().bottom;
+      const chromeEnd = Math.max(0, chrome.getBoundingClientRect().bottom);
       const nextOffset = Math.max(0, Math.min(chromeEnd - naturalTop, tableEnd - naturalTop - bounds.height));
       if (nextOffset !== offset) {
         offset = nextOffset;
