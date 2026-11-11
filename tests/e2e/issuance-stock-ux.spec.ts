@@ -82,7 +82,7 @@ test("searchable Stock picker keeps added lines visible and supports repeated ex
   await expect(mark).toBeVisible();
   await expect(quantity).toHaveAttribute("required", "");
   const invalidColor = await mark.evaluate((element) => getComputedStyle(element).color);
-  const fieldHeight = await quantity.locator("..").evaluate((element) => element.offsetHeight);
+  const fieldHeight = await quantity.locator("..").evaluate((element) => element.getBoundingClientRect().height);
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 720 });
     await quantity.fill("0");
@@ -91,7 +91,7 @@ test("searchable Stock picker keeps added lines visible and supports repeated ex
     await expect(quantity).toHaveAccessibleDescription("Enter a positive decimal quantity, such as 0.25 or 2.");
     await expect(quantity).toHaveCSS("border-top-color", invalidColor);
     await expect(picker.locator("#stock-quantity-error")).toHaveCSS("clip-path", "inset(50%)");
-    await expect.poll(() => quantity.locator("..").evaluate((element) => element.offsetHeight)).toBe(fieldHeight);
+    await expect.poll(() => quantity.locator("..").evaluate((element) => element.getBoundingClientRect().height)).toBe(fieldHeight);
   }
   await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("2.000000000000000001");
   await expect(picker.getByText("Base quantity: 2.000000000000000001 kg", { exact: true })).toBeVisible();
