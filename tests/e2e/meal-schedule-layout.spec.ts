@@ -171,7 +171,7 @@ test("a long draft and posted meal retain identity while the working body scroll
   }
   const reviewDialog = page.getByRole("dialog", { name: "Combined quantities and stock", exact: true });
   await expect(reviewDialog).toBeVisible();
-  await reviewDialog.getByRole("button", { name: "Close review", exact: true }).press("Enter");
+  await reviewDialog.getByRole("button", { name: "Close review", exact: true }).click();
   await expect(review).toBeFocused();
   for (const { width, height } of viewports) {
     await page.setViewportSize({ width, height });
