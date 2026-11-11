@@ -653,8 +653,11 @@ test.describe("Activity planning journey", () => {
 
   test("explains where to maintain Offices when no active choices exist", async ({ page }) => {
     const design = createDesignFixture("E2E Empty Office Directory");
-    const inactive = createActivityOfficeFixture("E2E Deactivated Office");
-    inactive.deactivate();
+    const activeIds = withE2eDatabase((db) => db.transaction(() => {
+      const offices = db.prepare("SELECT id FROM office WHERE isActive = 1").all() as { id: string }[];
+      db.prepare("UPDATE office SET isActive = 0 WHERE isActive = 1").run();
+      return offices;
+    })());
     try {
       await signIn(page);
       await page.goto(`/activity-designs/${design.id}`);
@@ -663,7 +666,7 @@ test.describe("Activity planning journey", () => {
       const dialog = page.getByRole("dialog");
       const office = dialog.getByRole("combobox", { name: "Office", exact: true });
       await expect(office).toHaveAccessibleDescription(/No active Offices.*Master Data/);
-      await office.fill("Deactivated Office");
+      await office.fill("Mayor");
       await expect(page.getByText("No active Offices available.", { exact: true })).toBeVisible();
       await expect(page.getByRole("option")).toHaveCount(0);
       await office.press("Escape");
@@ -671,7 +674,10 @@ test.describe("Activity planning journey", () => {
       await page.screenshot({ path: test.info().outputPath("activity-office-empty-directory.png") });
       await expect(dialog).toBeVisible();
     } finally {
-      inactive.remove();
+      withE2eDatabase((db) => db.transaction(() => {
+        const reactivate = db.prepare("UPDATE office SET isActive = 1 WHERE id = ?");
+        for (const { id } of activeIds) reactivate.run(id);
+      })());
       deleteDesigns([design]);
     }
   });

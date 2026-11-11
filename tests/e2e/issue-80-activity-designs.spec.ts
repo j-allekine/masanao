@@ -434,7 +434,9 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("position", "absolute");
       await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("clip-path", "inset(50%)");
       await expect(
-        dialog.locator('[data-slot="input-group"]').filter({ has: plannedBudget }),
+        dialog.locator('[data-slot="input-group"]').filter({
+          has: page.getByRole("textbox", { name: "Planned budget", exact: true }),
+        }),
       ).toHaveCSS("border-top-color", "rgb(157, 65, 55)");
 
       await particulars.clear();
