@@ -95,11 +95,11 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   await expect(
     page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeFocused();
-  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("0");
+  const mealPax = page.getByRole("textbox", { name: "Meal pax", exact: true });
+  await mealPax.fill("0");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Enter a whole number" }),
-  ).toContainText("Enter a whole number");
+  await expect(mealPax).toHaveAttribute("aria-invalid", "true");
+  await expect(mealPax).toHaveAccessibleDescription(/Enter a whole number/);
   await expect
     .poll(() =>
       page.evaluate(
