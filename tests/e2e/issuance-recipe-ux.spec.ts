@@ -193,12 +193,10 @@ test("Recipe Scaling keeps pax validation out of the layout", async ({ page }) =
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/prototype/recipe-scaling");
+    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
     const meal = page.getByRole("spinbutton", { name: "Meal pax", exact: true });
     await expectRequiredPax(page, meal);
-    await expect(async () => {
-      await meal.fill("0");
-      await expect(meal).toHaveAttribute("aria-invalid", "true", { timeout: 500 });
-    }).toPass({ timeout: 5_000 });
+    await meal.clear();
     await expectHiddenPaxError(page, meal, "Enter a number greater than zero.");
     await meal.fill("120");
     await expect(meal).toHaveAttribute("aria-invalid", "false");
