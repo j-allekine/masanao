@@ -33,6 +33,7 @@ import type {
   ActivityDesignDetailActivity,
   ActivityDesignDetailItem,
   ActivityDesignListItem,
+  ActivityOfficeOption,
 } from "../types";
 import ActivityActionsMenu from "./activity-actions-menu";
 import ActivityCreateDialog from "./activity-create-dialog";
@@ -163,8 +164,10 @@ function ActivitiesEmptyState() {
 }
 
 export default function ActivityDesignDetailContent({
+  offices,
   activityDesign,
 }: {
+  offices: ActivityOfficeOption[];
   activityDesign: ActivityDesignDetailItem;
 }) {
   const router = useRouter();
@@ -247,6 +250,7 @@ export default function ActivityDesignDetailContent({
       </div>
 
       <ActivityCreateDialog
+        offices={offices}
         activityDesign={createParent}
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
@@ -257,6 +261,7 @@ export default function ActivityDesignDetailContent({
         }}
       />
       <ActivityCreateDialog
+        offices={offices}
         activityDesign={createParent}
         activity={activityForEdit ?? undefined}
         mode="edit"

@@ -24,8 +24,10 @@ import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions"
 import { Textarea } from "@/components/ui/textarea";
 
 import { createActivityAction, updateActivityAction } from "../../actions";
+import { KEEP_SAVED_OFFICE } from "../../types";
 import type {
   ActivityField,
+  ActivityOfficeOption,
   ActivityFieldErrors,
   ActivityDesignListItem,
   ActivityEditableListItem,
@@ -36,6 +38,7 @@ import {
   formatCentavosAsPesoInput,
   normalizePesoInput,
 } from "../../domain/planned-budget";
+import ActivityOfficePicker from "./activity-office-picker";
 import LocalDatePicker from "./local-date-picker";
 import PlannedBudgetField from "./planned-budget-field";
 import {
@@ -50,7 +53,7 @@ export type ActivityFormMode = "create" | "edit";
 const emptyFormValues: ActivityFormValues = {
   activityDesignId: "",
   name: "",
-  officeName: "",
+  officeId: "",
   particulars: "",
   scheduledDate: "",
   venue: "",
@@ -60,7 +63,7 @@ const emptyFormValues: ActivityFormValues = {
 
 const activityValueFields: ActivityField[] = [
   "name",
-  "officeName",
+  "officeId",
   "particulars",
   "scheduledDate",
   "venue",
@@ -89,7 +92,7 @@ function getInitialFormValues(
   return {
     activityDesignId: activity.activityDesignId,
     name: activity.name,
-    officeName: activity.officeName,
+    officeId: KEEP_SAVED_OFFICE,
     particulars: activity.particulars ?? "",
     scheduledDate: activity.scheduledDate.slice(0, 10),
     venue: activity.venue ?? "",
@@ -219,6 +222,8 @@ function ActivityFormFields({
   activityDesignId,
   mode,
   activityDesign,
+  offices,
+  savedOfficeName,
 }: {
   formValues: ActivityFormValues;
   fieldErrors: ActivityFieldErrors;
@@ -228,6 +233,8 @@ function ActivityFormFields({
   activityDesignId?: string;
   mode: ActivityFormMode;
   activityDesign?: ActivityDesignListItem;
+  offices: ActivityOfficeOption[];
+  savedOfficeName?: string;
 }) {
   return (
     <FieldGroup>
@@ -264,13 +271,12 @@ function ActivityFormFields({
         autoFocus={layout === "dialog"}
         onChange={(event) => updateField("name", event.target.value)}
       />
-      <ActivityTextField
-        id="officeName"
-        label="Office"
-        required
-        value={formValues.officeName}
-        error={fieldErrors.officeName}
-        onChange={(event) => updateField("officeName", event.target.value)}
+      <ActivityOfficePicker
+        offices={offices}
+        savedOfficeName={savedOfficeName}
+        value={formValues.officeId}
+        error={fieldErrors.officeId}
+        onChange={(value) => updateField("officeId", value)}
       />
       <LocalDatePicker
         id="scheduledDate"
@@ -325,6 +331,7 @@ export default function ActivityForm({
   activityDesigns = [],
   activity,
   activityDesign,
+  offices,
   mode = "create",
   layout = "card",
   onCancel,
@@ -335,6 +342,7 @@ export default function ActivityForm({
   activityDesigns?: ActivityDesignListItem[];
   activity?: ActivityEditableListItem;
   activityDesign?: ActivityDesignListItem;
+  offices: ActivityOfficeOption[];
   mode?: ActivityFormMode;
   layout?: "card" | "dialog";
   onCancel?: () => void;
@@ -369,7 +377,7 @@ export default function ActivityForm({
       [
         "activityDesignId",
         "name",
-        "officeName",
+        "officeId",
         "scheduledDate",
         "particulars",
         "venue",
@@ -407,6 +415,7 @@ export default function ActivityForm({
     setSuccessMessage(null);
 
     const formData = new FormData(event.currentTarget);
+    formData.set("officeId", formValues.officeId);
 
     if (
       mode === "create" &&
@@ -433,6 +442,7 @@ export default function ActivityForm({
         if (result.status === "error") {
           setFormError(result.error);
           setFieldErrors(result.fields);
+          if (result.fields.officeId && formValues.officeId) router.refresh();
           return;
         }
 
@@ -499,6 +509,8 @@ export default function ActivityForm({
             activityDesignId={activityDesignId}
             mode={mode}
             activityDesign={activityDesign}
+            offices={offices}
+            savedOfficeName={mode === "edit" ? activity?.officeName : undefined}
           />
           <input
             type="hidden"
@@ -521,6 +533,8 @@ export default function ActivityForm({
             activityDesignId={activityDesignId}
             mode={mode}
             activityDesign={activityDesign}
+            offices={offices}
+            savedOfficeName={mode === "edit" ? activity?.officeName : undefined}
           />
           <input
             type="hidden"

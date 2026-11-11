@@ -26,6 +26,7 @@ import {
 } from "@/features/activity-planning/server";
 import { POST as authPost } from "@/app/api/auth/[...all]/route";
 import { prisma } from "@/prisma/client";
+import { KEEP_SAVED_OFFICE } from "@/features/activity-planning/types";
 
 const staffPassword = "correct-horse-battery-staple";
 const validActivityDesign = {
@@ -35,7 +36,7 @@ const validActivityDesign = {
 };
 const validActivity = {
   name: "Community Feeding",
-  officeName: "Municipal Social Welfare and Development Office",
+  officeId: "social-welfare-office",
   scheduledDate: "2026-09-01",
 };
 
@@ -142,6 +143,14 @@ describe("Activity edit and delete Server Action adapters", () => {
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.office.deleteMany();
+    await prisma.office.create({
+      data: {
+        id: validActivity.officeId,
+        name: "Municipal Social Welfare and Development Office",
+        normalizedName: "municipal social welfare and development office",
+      },
+    });
     setActionCookie();
     mocks.revalidatePath.mockClear();
   });
@@ -150,6 +159,9 @@ describe("Activity edit and delete Server Action adapters", () => {
     const { cookie, activityDesign, activity } =
       await createActivityScenario();
 
+    await prisma.office.create({
+      data: { id: "health-office", name: "Municipal Health Office", normalizedName: "municipal health office" },
+    });
     setActionCookie(cookie);
     await expect(
       updateActivityAction(
@@ -157,7 +169,8 @@ describe("Activity edit and delete Server Action adapters", () => {
           activityDesignId: activityDesign.id,
           activityId: activity.id,
           name: "  Expanded Community Feeding  ",
-          officeName: "  Municipal Health Office  ",
+          officeId: "health-office",
+          officeName: "Forged Office label",
           particulars: "  Nutrition Month launch  ",
           scheduledDate: "2026-09-03",
           venue: "  Municipal Covered Court  ",
@@ -194,9 +207,54 @@ describe("Activity edit and delete Server Action adapters", () => {
     ]);
   });
 
+  it("keeps the stored name after renaming, deactivating, or deleting the directory Office", async () => {
+    const { cookie, activityDesign, activity } = await createActivityScenario();
+    setActionCookie(cookie);
+    const values = {
+      ...validActivity,
+      activityDesignId: activityDesign.id,
+      activityId: activity.id,
+      name: "Corrected Activity",
+    };
+
+    await prisma.office.update({
+      where: { id: validActivity.officeId },
+      data: { name: "Renamed Office", normalizedName: "renamed office", isActive: false },
+    });
+
+    await expect(updateActivityAction(toFormData(values))).resolves.toMatchObject({
+      status: "error",
+      fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
+    });
+    await expect(prisma.activity.findUnique({ where: { id: activity.id } })).resolves.toMatchObject({
+      name: validActivity.name,
+      officeName: activity.officeName,
+    });
+
+    await expect(updateActivityAction(toFormData({
+      ...values,
+      officeId: KEEP_SAVED_OFFICE,
+      officeName: "Forged Office label",
+    }))).resolves.toMatchObject({
+      status: "success",
+      activity: { name: "Corrected Activity", officeName: activity.officeName },
+    });
+
+    await prisma.office.delete({ where: { id: validActivity.officeId } });
+    await expect(updateActivityAction(toFormData({
+      ...values,
+      name: "Second correction",
+      officeId: KEEP_SAVED_OFFICE,
+    }))).resolves.toMatchObject({
+      status: "success",
+      activity: { name: "Second correction", officeName: activity.officeName },
+    });
+  });
+
   it.each([
     ["a blank name", { name: " " }, "name"],
-    ["a blank office", { officeName: " " }, "officeName"],
+    ["a blank Office", { officeId: " " }, "officeId"],
+    ["an unknown Office", { officeId: "fabricated-office-id" }, "officeId"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
     ["a negative budget", { plannedBudgetPesos: "-1" }, "plannedBudgetPesos"],
@@ -210,6 +268,7 @@ describe("Activity edit and delete Server Action adapters", () => {
       const result = await updateActivityAction(
         toFormData({
           ...validActivity,
+          name: "Attempted edit",
           ...invalidFields,
           activityDesignId: activityDesign.id,
           activityId: activity.id,
@@ -225,6 +284,7 @@ describe("Activity edit and delete Server Action adapters", () => {
         prisma.activity.findUnique({ where: { id: activity.id } }),
       ).resolves.toMatchObject({
         name: validActivity.name,
+        officeName: activity.officeName,
         scheduledDate: new Date("2026-09-01T00:00:00.000Z"),
         plannedParticipantCount: null,
         plannedBudgetCentavos: null,

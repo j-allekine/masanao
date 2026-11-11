@@ -33,7 +33,7 @@ const validActivityDesign = {
 };
 const validActivity = {
   name: "Community Feeding",
-  officeName: "Municipal Social Welfare and Development Office",
+  officeId: "social-welfare-office",
   scheduledDate: "2026-09-01",
 };
 const validMealSchedule = {
@@ -151,6 +151,14 @@ describe("Meal Schedule Server Action adapters", () => {
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.office.deleteMany();
+    await prisma.office.create({
+      data: {
+        id: validActivity.officeId,
+        name: "Municipal Social Welfare and Development Office",
+        normalizedName: "municipal social welfare and development office",
+      },
+    });
     setActionCookie();
     mocks.revalidatePath.mockClear();
   });

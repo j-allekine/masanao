@@ -43,6 +43,15 @@ export async function updateActivityCommand(
     parsedInput.data,
   );
 
+  if (activity === "invalid-office") {
+    return {
+      ok: false,
+      kind: "validation",
+      error: "Please correct the highlighted Activity fields.",
+      fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
+    };
+  }
+
   if (!activity) {
     return {
       ok: false,

@@ -24,11 +24,13 @@ import type {
   ActivityDesignListItem,
   ActivityEditableListItem,
   ActivityListItem,
+  ActivityOfficeOption,
 } from "../types";
 import type { ActivityFormMode } from "./forms/activity-form";
 import ActivityForm from "./forms/activity-form";
 
 export default function ActivityCreateDialog({
+  offices,
   activityDesign,
   activityDesigns = [],
   activity,
@@ -37,6 +39,7 @@ export default function ActivityCreateDialog({
   onClose,
   onSuccess,
 }: {
+  offices: ActivityOfficeOption[];
   activityDesign: ActivityDesignListItem | null;
   activityDesigns?: ActivityDesignListItem[];
   activity?: ActivityEditableListItem;
@@ -111,6 +114,7 @@ export default function ActivityCreateDialog({
               ) : null}
             </DialogHeader>
             <ActivityForm
+              offices={offices}
               key={`${mode}-${activity?.id ?? activityDesign?.id ?? "global"}`}
               activityDesignId={activityDesign?.id}
               activityDesigns={activityDesigns}

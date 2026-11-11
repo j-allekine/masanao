@@ -193,3 +193,18 @@ export async function listOfficeRecords(): Promise<OfficeListItem[]> {
 
   return offices.map(toOfficeListItem);
 }
+
+export function listActiveOfficeOptionRecords() {
+  return prisma.office.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+  });
+}
+
+export function findActiveOfficeName(db: Prisma.TransactionClient, id: string) {
+  return db.office.findUnique({
+    where: { id, isActive: true },
+    select: { name: true },
+  });
+}

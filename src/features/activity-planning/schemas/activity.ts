@@ -67,11 +67,10 @@ const nameSchema = z
   .min(1, "Activity name is required")
   .max(200, "Activity name must be 200 characters or fewer");
 
-const officeNameSchema = z
-  .string()
+const officeIdSchema = z
+  .string({ error: "Office is required" })
   .trim()
-  .min(1, "Office name is required")
-  .max(200, "Office name must be 200 characters or fewer");
+  .min(1, "Office is required");
 
 const plannedBudgetPesosSchema = z.preprocess(
   (value) => {
@@ -107,7 +106,7 @@ const plannedBudgetPesosSchema = z.preprocess(
 
 export const activitySchema = z.object({
   name: nameSchema,
-  officeName: officeNameSchema,
+  officeId: officeIdSchema,
   particulars: optionalText("Activity particulars", 2_000),
   scheduledDate: scheduledDateSchema,
   venue: optionalText("Venue", 300),

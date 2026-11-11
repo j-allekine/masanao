@@ -23,7 +23,7 @@ import ActivityDesignsContent from "@/features/activity-planning/components/acti
 
 function renderActivityDesignsContent() {
   return renderToStaticMarkup(
-    createElement(ActivityDesignsContent, { initialActivityDesigns: [] }),
+    createElement(ActivityDesignsContent, { initialActivityDesigns: [], offices: [] }),
   );
 }
 

@@ -1,7 +1,11 @@
 import "server-only";
 
-import { listOfficeRecords } from "../db/offices";
+import { listActiveOfficeOptionRecords, listOfficeRecords } from "../db/offices";
 
 export async function listOffices() {
   return listOfficeRecords();
+}
+
+export async function listActiveOfficeOptions() {
+  return listActiveOfficeOptionRecords();
 }
