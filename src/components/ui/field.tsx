@@ -233,7 +233,7 @@ function FieldError({
       data-slot="field-error"
       className={cn(
         "text-label font-normal text-destructive",
-        visuallyHidden && "sr-only",
+        visuallyHidden && "sr-only w-px!",
         className
       )}
       {...props}

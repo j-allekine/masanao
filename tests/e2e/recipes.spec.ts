@@ -249,7 +249,9 @@ test("shows field errors for nonempty invalid baseline values without losing the
     await baseline.press("Tab");
     await page.getByRole("button", { name: "Create Recipe" }).click();
     await expect(baseline).toHaveAttribute("aria-invalid", "true");
-    await expect(page.locator("#recipe-baseline-pax-error")).toHaveCSS("clip-path", "inset(50%)");
+    const detail = page.locator("#recipe-baseline-pax-error");
+    await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+    await expect(detail).toHaveCSS("width", "1px");
     await expect(page.getByLabel("Recipe name")).toHaveValue("Invalid Baseline Soup");
     await expect(page.getByLabel("Ingredient 1 quantity")).toHaveValue("1.2500");
     await expect(baseline).toHaveValue(invalidValue);
