@@ -993,6 +993,7 @@ test.describe("Items catalog journey", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await addItemButton.click();
     await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("*", { exact: true })).toHaveCount(4);
 
     await dialog.getByRole("combobox", { name: "Category" }).click();
     await expectOpenOptionIsClickable(page, "Dry Goods");
@@ -1010,9 +1011,9 @@ test.describe("Items catalog journey", () => {
     await page.keyboard.press("Escape");
 
     await dialog.getByRole("button", { name: "Create Item", exact: true }).click();
-    await expect(dialog.getByText("Item name is required", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("Category is required", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("Base Unit is required", { exact: true })).toBeVisible();
+    await expectItemFieldError(dialog.getByRole("textbox", { name: "Name", exact: true }), "Item name is required");
+    await expectItemFieldError(dialog.getByRole("combobox", { name: "Category", exact: true }), "Category is required");
+    await expectItemFieldError(dialog.getByRole("combobox", { name: "Base Unit", exact: true }), "Base Unit is required");
 
     await dialog.getByLabel("Name").fill("  Brown   Rice ");
     await dialog.getByRole("combobox", { name: "Category" }).click();
