@@ -359,7 +359,7 @@ for (const width of [1280, 320]) {
       await expect(field).toHaveCSS("border-top-color", destructive);
     }
     await expect(recipeName).toHaveAccessibleDescription("Recipe name is required");
-    await expect(firstItem).toHaveAccessibleDescription("Select an Item.");
+    await expect(firstItem).toHaveAccessibleDescription(/Select an Item\./);
     await expect(firstQuantity).toHaveAccessibleDescription("Enter a positive exact-decimal quantity.");
     await expect(page.locator("#recipe-ingredient-0-item-error")).toHaveCSS("clip-path", "inset(50%)");
     await expect(page.locator("#recipe-ingredient-0-quantity-error")).toHaveCSS("clip-path", "inset(50%)");

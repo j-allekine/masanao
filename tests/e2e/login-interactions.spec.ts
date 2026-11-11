@@ -222,7 +222,7 @@ for (const surface of signInSurfaces) {
           const markColor = await mark.evaluate((element) => getComputedStyle(element).color);
           await expect(label).not.toHaveCSS("color", markColor);
           await expect(group).not.toHaveCSS("border-top-color", markColor);
-          const fieldHeight = await group.locator("..").evaluate((element) => element.offsetHeight);
+          const fieldHeight = await group.locator("..").evaluate((element) => element.getBoundingClientRect().height);
           return { ...field, group, markColor, fieldHeight };
         }),
       );
@@ -235,7 +235,7 @@ for (const surface of signInSurfaces) {
         await expect(group).toHaveCSS("border-top-color", markColor);
         await expect(form.getByText(error, { exact: true })).toHaveCSS("position", "absolute");
         await expect(form.getByText(error, { exact: true })).toHaveCSS("overflow", "hidden");
-        await expect.poll(() => group.locator("..").evaluate((element) => element.offsetHeight)).toBe(fieldHeight);
+        await expect.poll(() => group.locator("..").evaluate((element) => element.getBoundingClientRect().height)).toBe(fieldHeight);
       }
 
       if (surface.focusesUsername) await expect(username).toBeFocused();

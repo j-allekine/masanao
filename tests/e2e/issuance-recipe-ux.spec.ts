@@ -20,7 +20,8 @@ async function expectRequiredPax(page: Page, input: Locator) {
 async function expectHiddenPaxError(page: Page, input: Locator, description: string) {
   await expect(input).toHaveAttribute("aria-invalid", "true");
   await expect(input).toHaveCSS("border-top-color", destructiveColor);
-  await expect(input).toHaveAccessibleDescription(new RegExp(RegExp.escape(description)));
+  const escapedDescription = description.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await expect(input).toHaveAccessibleDescription(new RegExp(escapedDescription));
   const id = await input.getAttribute("id");
   const error = page.locator(`#${id}-error`);
   await expect(error).toHaveText(description);
