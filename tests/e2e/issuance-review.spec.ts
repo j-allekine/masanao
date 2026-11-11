@@ -53,7 +53,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   const review = page.getByRole("dialog", {
     name: "Combined quantities and stock",
@@ -101,7 +101,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await review.getByRole("button", { name: "Confirm quantity" }).click();
   await page.keyboard.press("Escape");
   await expect(
-    page.getByRole("button", { name: "Review quantities and stock" }),
+    page.getByRole("button", { name: "Review", exact: true }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
@@ -146,7 +146,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   });
   await page.setViewportSize({ width: 320, height: 720 });
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
@@ -186,7 +186,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
       .get(),
   ).toEqual({ finalQuantity: "0.987654321123456789", adjusted: 1 });
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
@@ -201,7 +201,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("3");
   await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("2");
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   await review
     .getByRole("button", { name: "Reset adjustment for Review Eggs" })
@@ -209,7 +209,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await page.keyboard.press("Escape");
   await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("");
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   await expect(
     review.getByText(/Meal pax pending. This review is incomplete/),

@@ -39,7 +39,7 @@ async function addRecipe(page: Page) {
   await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
 }
 async function confirmAutomatic(page: Page, quantity: string) {
-  await page.getByRole("button", { name: "Review quantities and stock" }).click();
+  await page.getByRole("button", { name: "Review", exact: true }).click();
   const review = page.getByRole("dialog", { name: "Combined quantities and stock" });
   await review.getByRole("button", { name: "Adjust issued quantity for Regression Eggs" }).click();
   await review.getByLabel("Final quantity for Regression Eggs").fill(quantity);
@@ -53,7 +53,7 @@ test("redundant confirmation follows changed demand before save", async ({ page 
   await addRecipe(page);
   await confirmAutomatic(page, "10");
   await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("20");
-  await page.getByRole("button", { name: "Review quantities and stock" }).click();
+  await page.getByRole("button", { name: "Review", exact: true }).click();
   await expect(page.getByRole("dialog").getByText("20 pc", { exact: true }).first()).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Save draft" }).click();

@@ -135,7 +135,7 @@ test("a long draft and posted meal retain identity while the working body scroll
   const heading = page.getByRole("heading", { name: title, level: 1, exact: true });
   const sidebar = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
   const pax = page.getByRole("textbox", { name: "Meal pax", exact: true });
-  const review = page.getByRole("button", { name: "Review quantities and stock", exact: true });
+  const review = page.getByRole("button", { name: "Review", exact: true });
   const save = page.getByRole("button", { name: "Save draft", exact: true });
   const post = page.getByRole("button", { name: "Post issuance", exact: true });
   const lastStock = page.getByRole("button", { name: `Actions for Stock item ${itemName(itemCount)}`, exact: true });
@@ -147,8 +147,24 @@ test("a long draft and posted meal retain identity while the working body scroll
   await pax.fill("76");
   await expect(save).toBeEnabled();
   await expect(page.getByRole("main")).toHaveCount(1);
+  const footer = page.locator("footer").filter({ has: review });
+  const discardChanges = footer.getByRole("button", { name: "Discard changes", exact: true });
   for (const { width, height } of viewports) {
     await page.setViewportSize({ width, height });
+    await expect(review).toHaveText("Review");
+    await expect(footer.getByRole("button")).toHaveText(["Discard changes", "Review", "Save draft", "Post issuance"]);
+    await discardChanges.focus();
+    for (const action of [review, save, post]) {
+      await page.keyboard.press("Tab");
+      await expect(action).toBeFocused();
+      await expect(action).toBeInViewport({ ratio: 1 });
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    if (width >= 768) {
+      const footerBox = (await footer.boundingBox())!;
+      const postBox = (await post.boundingBox())!;
+      expect(footerBox.x + footerBox.width - postBox.x - postBox.width).toBeLessThanOrEqual(24);
+    }
     await pax.scrollIntoViewIfNeeded();
     await expect(pax).toBeInViewport({ ratio: 1 });
     await expect(pax).toHaveValue("76");
