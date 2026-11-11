@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import Database from "better-sqlite3";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { postFixtureSignIn } from "./fixture-auth";
+import { expectFullRecordHeading } from "./workspace-layout-helpers";
 
 const activity = "/activity-designs/e2e-issuance-layout-design/activities/e2e-issuance-layout-activity";
 const meal = `${activity}/meal-schedules/e2e-issuance-layout-meal`;
@@ -185,27 +186,36 @@ test("a long draft and posted meal retain identity while the working body scroll
   await expect(lastStock).toBeInViewport({ ratio: 1 });
   await save.scrollIntoViewIfNeeded();
   await expect(save).toBeInViewport({ ratio: 1 });
-  const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
-  await fullTitle.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("dialog", { name: title, exact: true })).toHaveText(title);
-  await page.keyboard.press("Escape");
-  await expect(fullTitle).toBeFocused();
+  await expectFullRecordHeading(page, title);
+  await heading.scrollIntoViewIfNeeded();
+  await expect(heading).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: info.outputPath("draft-scrolled-enlarged.png"), animations: "disabled" });
   await enlarged.evaluate((style) => { style.textContent = "html { font-size: 200%; } body { letter-spacing: .02em; }"; });
   await lastStock.scrollIntoViewIfNeeded();
   await expect(lastStock).toBeInViewport({ ratio: 1 });
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
-  await expect(heading).toBeInViewport();
   await save.scrollIntoViewIfNeeded();
   await expect(save).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: info.outputPath("draft-scrolled-200-percent.png"), animations: "disabled" });
+  await heading.scrollIntoViewIfNeeded();
+  await expect(heading).toBeInViewport({ ratio: 1 });
+  await expectFullRecordHeading(page, title);
+  await page.screenshot({ path: info.outputPath("draft-heading-200-percent.png"), animations: "disabled" });
   await enlarged.evaluate((style) => { style.parentNode?.removeChild(style); });
 
   await post.click();
   const confirmation = page.getByRole("dialog", { name: "Post issuance?", exact: true });
   await confirmation.getByRole("button", { name: "Confirm and post issuance", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Issuance posted");
+
+  const updatedMeal = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  try {
+    updatedMeal.prepare("UPDATE meal_schedule SET label=?, mealTime=? WHERE id=?")
+      .run("Changed planning label", "17:30", "e2e-issuance-layout-meal");
+  } finally {
+    updatedMeal.close();
+  }
+  await page.reload();
 
   const lastIssued = page.getByText(itemName(itemCount), { exact: true });
   const totals = page.getByRole("button", { name: "View issued totals", exact: true });
@@ -216,6 +226,7 @@ test("a long draft and posted meal retain identity while the working body scroll
     await expect(lastIssued).not.toBeInViewport();
     await lastIssued.scrollIntoViewIfNeeded();
     await expect(lastIssued).toBeInViewport({ ratio: 1 });
+    await expectFullRecordHeading(page, title);
     await expect(heading).toBeInViewport({ ratio: 1 });
     await expect(sidebar).toBeInViewport({ ratio: 1 });
     await expect(page.getByText("Posted", { exact: true })).toBeInViewport({ ratio: 1 });

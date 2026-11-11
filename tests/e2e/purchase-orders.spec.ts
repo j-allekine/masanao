@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
+import { expectFullRecordHeading, expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -989,16 +989,9 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
         }
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expectFullRecordHeading(page, number);
       await page.screenshot({ path: info.outputPath(`purchase-order-detail-scrolled-${width}x${height}.png`) });
     }
-
-    const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
-    await fullTitle.focus();
-    await page.keyboard.press("Enter");
-    const titleDialog = page.getByRole("dialog", { name: number, exact: true });
-    await expect(titleDialog.getByText(number, { exact: true })).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(titleDialog).toBeHidden();
 
     await delivery.click();
     await expect(page).toHaveURL(`${detailPath}/record-delivery`, { timeout: 30_000 });

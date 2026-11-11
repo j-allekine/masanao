@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { expect, test, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
+import { expectFullRecordHeading } from "./workspace-layout-helpers";
 
 const staffPassword = "correct-horse-battery-staple";
 
@@ -531,13 +532,9 @@ test.describe("overflowing Recipe routes", () => {
         await expect(detailTitle).toBeInViewport({ ratio: 1 });
         await expect(back).toBeInViewport({ ratio: 1 });
       }
+      await expectFullRecordHeading(page, targetName);
       await page.screenshot({ path: info.outputPath(`recipe-ingredients-scrolled-${width}x${height}.png`), animations: "disabled" });
     }
-    const fullTitle = main.getByRole("button", { name: "Show full title", exact: true });
-    await fullTitle.press("Enter");
-    await expect(page.getByRole("dialog", { name: targetName, exact: true })).toHaveText(targetName);
-    await page.keyboard.press("Escape");
-    await expect(fullTitle).toBeFocused();
     await back.press("Enter");
     await expect(page).toHaveURL(layoutCatalog);
     await expect(main.getByLabel("Search Recipes")).toHaveValue("Layout Recipe");
@@ -575,6 +572,7 @@ test.describe("overflowing Recipe routes", () => {
         expect(await page.evaluate(() => scrollY)).toBe(0);
       }
       await expect(last).toHaveValue("2.5000");
+      await expectFullRecordHeading(page, layoutRecipeName(20));
       await page.screenshot({ path: info.outputPath(`recipe-edit-scrolled-${width}x${height}.png`), animations: "disabled" });
     }
 
@@ -606,7 +604,7 @@ test.describe("overflowing Recipe routes", () => {
     await expect(page).toHaveURL(layoutCatalog);
 
     await main.getByRole("link", { name: "Create Recipe", exact: true }).click();
-    await expect(main.getByRole("heading", { name: "New Recipe", level: 1, exact: true })).toBeVisible();
+    await expectFullRecordHeading(page, "New Recipe");
     await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
     const create = main.getByRole("button", { name: "Create Recipe", exact: true });
     const add = main.getByRole("button", { name: "Add Ingredient", exact: true });

@@ -1,10 +1,7 @@
 "use client";
 
-import { Expand } from "lucide-react";
 import { useLayoutEffect, useRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import WorkspaceHeader from "@/components/workspace/workspace-header";
 import { cn } from "@/lib/utils";
 
@@ -41,19 +38,18 @@ export default function WorkspaceLayout({
     const footerElement = footerRef.current;
     const measureChrome = () => {
       const chromeHeight = chrome.getBoundingClientRect().height;
-      layout.style.setProperty("--workspace-chrome-height", `${chromeHeight}px`);
-      if (mode === "bounded") {
-        const footerHeight = footerElement?.getBoundingClientRect().height ?? 0;
-        // If there is too little room to work, let the whole editor scroll.
-        const enoughRoom = window.innerHeight - chromeHeight - footerHeight >= 112;
-        layout.toggleAttribute("data-bounded-scroll", enoughRoom);
-      }
+      const footerHeight = footerElement?.getBoundingClientRect().height ?? 0;
+      // When the header and actions leave too little working room, let all regions scroll.
+      const enoughRoom = window.innerHeight - chromeHeight - footerHeight >= 112;
+      layout.toggleAttribute("data-bounded-scroll", mode === "bounded" && enoughRoom);
+      layout.toggleAttribute("data-flow-scroll", !enoughRoom);
+      layout.style.setProperty("--workspace-chrome-height", enoughRoom ? `${chromeHeight}px` : "0px");
     };
     measureChrome();
     const observer = new ResizeObserver(measureChrome);
     observer.observe(chrome, { box: "border-box" });
     if (footerElement) observer.observe(footerElement, { box: "border-box" });
-    if (mode === "bounded") window.addEventListener("resize", measureChrome);
+    window.addEventListener("resize", measureChrome);
 
     let focusFrame = 0;
     const revealFocus = (event: FocusEvent) => {
@@ -95,7 +91,7 @@ export default function WorkspaceLayout({
         className,
       )}
     >
-      <div ref={chromeRef} data-slot="workspace-chrome" className="sticky top-0 z-20 shrink-0 bg-card">
+      <div ref={chromeRef} data-slot="workspace-chrome" className={cn(styles.chrome, "top-0 z-20 shrink-0 bg-card")}>
         <WorkspaceHeader title={workspaceTitle} />
         {task}
       </div>
@@ -130,21 +126,10 @@ export function WorkspaceTaskHeader({
   );
 }
 
-/** Keep the heading compact while making the complete record name available on demand. */
 export function WorkspaceRecordTitle({ title }: { title: string }) {
   return (
-    <div className="flex min-w-[min(100%,14ch)] flex-1 items-center gap-1">
-      <h1 className="line-clamp-2 min-w-0 text-heading-3 font-semibold wrap-anywhere">
-        {title}
-      </h1>
-      <Popover>
-        <PopoverTrigger render={<Button variant="ghost" size="icon" aria-label="Show full title" />}>
-          <Expand aria-hidden="true" />
-        </PopoverTrigger>
-        <PopoverContent align="start" className="max-h-[min(14rem,50svh)] max-w-[calc(100vw-2rem)] overflow-y-auto">
-          <PopoverTitle className="wrap-anywhere">{title}</PopoverTitle>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <h1 className="min-w-[min(100%,14ch)] flex-1 text-heading-3 font-semibold wrap-anywhere">
+      {title}
+    </h1>
   );
 }

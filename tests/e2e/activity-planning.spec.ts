@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
+import { expectFullRecordHeading } from "./workspace-layout-helpers";
 
 const staffPassword = "correct-horse-battery-staple";
 const destructiveColor = "rgb(157, 65, 55)";
@@ -786,6 +787,50 @@ test.describe("Activity planning journey", () => {
       deleteActivityFixture(plannedActivity.id);
       deleteActivityFixture(otherActivity.id);
       deleteDesigns([populatedDesign, emptyDesign, otherDesign]);
+    }
+  });
+
+  test("wraps full Planning record names and keeps actions reachable", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    const phrase = "Municipal kitchen workshop and volunteer meal preparation ";
+    const title = phrase.repeat(4).slice(0, 200);
+    const design = createDesignFixture(title);
+    const activity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "Community kitchen orientation",
+      officeName: "E2E Activity Office",
+      scheduledDate: "2026-10-07T00:00:00.000Z",
+    });
+    try {
+      await signIn(page);
+      const designUrl = `/activity-designs/${design.id}`;
+      for (const [path, headingName, actionName, record] of [
+        [designUrl, title, "Create Activity", "design"],
+        [`${designUrl}/activities/${activity.id}`, activity.name, "Add Meal Schedule", "activity"],
+      ]) {
+        await page.goto(path);
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        const sidebar = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
+        const action = page.getByRole("button", { name: actionName, exact: true });
+        const back = page.getByRole("link", { name: "Activity Designs", exact: true });
+        for (const viewport of [{ width: 1280, height: 800 }, { width: 320, height: 480 }, { width: 320, height: 300 }]) {
+          await page.setViewportSize(viewport);
+          const heading = await expectFullRecordHeading(page, headingName);
+          await heading.scrollIntoViewIfNeeded();
+          await expect(heading).toBeInViewport({ ratio: 1 });
+          await page.screenshot({ path: info.outputPath(`${record}-heading-${viewport.width}x${viewport.height}.png`) });
+          await sidebar.focus();
+          await page.keyboard.press("Tab");
+          await expect(action).toBeFocused();
+          await expect(action).toBeInViewport({ ratio: 1 });
+          await page.keyboard.press("Tab");
+          await expect(back).toBeFocused();
+          await expect(back).toBeInViewport({ ratio: 1 });
+        }
+      }
+    } finally {
+      deleteActivityFixture(activity.id);
+      deleteDesigns([design]);
     }
   });
 
