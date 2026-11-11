@@ -314,11 +314,11 @@ export default function DeliveryReceiptForm({
         {lines.length ? <Table aria-label="Delivery Receipt lines" className="min-w-[60rem] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[26%]">Item <FieldRequiredMark /></TableHead>
+              <TableHead className="w-[23%]">Item <FieldRequiredMark /></TableHead>
               <TableHead className="w-[15%]">Unit</TableHead>
-              <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty <FieldRequiredMark /></TableHead>
+              <TableHead className="w-[14%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty <FieldRequiredMark /></TableHead>
               <TableHead className="w-[14%] whitespace-nowrap" aria-label="Base Unit quantity">Base Unit Qty</TableHead>
-              <TableHead className="w-[12%] whitespace-nowrap">Unit price <FieldRequiredMark /></TableHead>
+              <TableHead className="w-[13%] whitespace-nowrap">Unit price <FieldRequiredMark /></TableHead>
               <TableHead className="w-[14%]">Amount</TableHead>
               <TableHead className="w-[7%] text-right">Remove</TableHead>
             </TableRow>
