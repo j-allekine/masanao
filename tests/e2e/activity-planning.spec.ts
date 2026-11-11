@@ -511,6 +511,8 @@ test.describe("Activity planning journey", () => {
       await page.goto("/dashboard?start=2026-09-01&end=2026-09-30");
       const dashboardSearch = page.getByRole("searchbox", { name: "Search Activities by name or Office" });
       await dashboardSearch.fill("E2E Global Office");
+      await dashboardSearch.press("Enter");
+      await expect(page).toHaveURL((url) => url.searchParams.get("activitySearch") === "E2E Global Office");
       await expect(page.getByRole("row", { name: /E2E Global Activity/ })).toContainText("E2E Global Office");
       await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -784,8 +786,12 @@ test.describe("Activity planning journey", () => {
         await picker.press("ArrowDown");
         await expect(page.getByRole("option", { name: `Keep saved Office · ${officeName}` })).toBeVisible();
         const directoryOption = page.getByRole("option", { name: officeName, exact: true });
-        if (active) await expect(directoryOption).toBeVisible();
-        else await expect(directoryOption).toHaveCount(0);
+        if (active) {
+          await expect(directoryOption).toBeVisible();
+        } else {
+          await expect(directoryOption).toHaveCount(0);
+          await page.screenshot({ path: test.info().outputPath("activity-office-keep-inactive.png") });
+        }
         await picker.press("Escape");
         const venue = active ? "Community Hall" : "Community Annex";
         await edit.getByRole("textbox", { name: "Venue", exact: true }).fill(venue);
@@ -878,7 +884,8 @@ test.describe("Activity planning journey", () => {
         await expect(createDialog).toContainText(
           `Add Activity to “${populatedDesign.title}”`,
         );
-        await expect(createDialog.getByRole("combobox")).toHaveCount(0);
+        await expect(createDialog.getByRole("combobox", { name: "Activity Design", exact: true })).toHaveCount(0);
+        await expect(createDialog.getByRole("combobox", { name: "Office", exact: true })).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(createDialog).toHaveCount(0);
 

@@ -106,11 +106,12 @@ test.describe("Purchase Orders read journey", () => {
         const insertPurchaseOrder = database.prepare(
           `INSERT INTO "purchase_order"
            ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "referenceNumber", "note", "createdAt", "updatedAt")
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         );
 
         purchaseOrderIds.forEach((purchaseOrderId, index) => {
           const purchaseOrderNo = `PO-E2E-${String(index + 1).padStart(3, "0")}`;
+          const timestamp = new Date(Date.UTC(2026, 8, 15, 12) - index * 1_000).toISOString();
           insertPurchaseOrder.run(
             purchaseOrderId,
             purchaseOrderNo,
@@ -118,6 +119,8 @@ test.describe("Purchase Orders read journey", () => {
             vendorId,
             `ORS-E2E-${String(index + 1).padStart(3, "0")}`,
             index === 0 ? "Kitchen delivery" : null,
+            timestamp,
+            timestamp,
           );
         });
       });
