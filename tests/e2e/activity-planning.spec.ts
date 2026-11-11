@@ -489,12 +489,12 @@ test.describe("Activity planning journey", () => {
       });
       await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
       await expect(page.getByRole("heading", { name: activityName, exact: true })).toBeVisible();
+      await expect(page.getByRole("main").getByText("E2E Global Office", { exact: true })).toBeVisible();
       await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await expect(activitySearch).toHaveValue(activityName);
       const createdRow = page.getByRole("row").filter({ hasText: activityName });
       await expect(createdRow).toBeVisible();
-      await expect(createdRow).toContainText("E2E Global Office");
 
       const savedActivity = readActivityFixture(design.id, activityName);
       expect(savedActivity).toBeDefined();
@@ -600,7 +600,10 @@ test.describe("Activity planning journey", () => {
       await page.getByRole("option", { name: "E2E Replacement Office", exact: true }).click();
       await editDialog.getByRole("button", { name: "Save changes", exact: true }).click();
       await expect(editDialog).toHaveCount(0);
-      await expect(updatedRow).toContainText("E2E Replacement Office");
+      await updatedRow.getByRole("link", { name: updatedActivityName, exact: true }).click();
+      await expect(page.getByRole("main").getByText("E2E Replacement Office", { exact: true })).toBeVisible();
+      await page.goBack();
+      await expect(updatedRow).toBeVisible();
       expect(readActivityFixture(design.id, updatedActivityName)).toMatchObject({
         officeName: "E2E Replacement Office",
       });
