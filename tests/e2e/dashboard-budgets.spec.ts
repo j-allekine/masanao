@@ -221,8 +221,9 @@ test("pagination waits for a pending period change without restoring the previou
   const next = page.getByLabel("Activity budget pagination").getByRole("button", { name: "Next page", exact: true });
   await expect(next).toBeEnabled();
   await page.getByRole("button", { name: "Reporting period", exact: true }).click();
-  await page.getByLabel(/^From/).fill("2020-08-01");
-  await page.getByLabel(/^To/).fill("2020-08-31");
+  const picker = page.getByRole("dialog", { name: "Reporting period" });
+  await picker.getByLabel(/^From/).fill("2020-08-01");
+  await picker.getByLabel(/^To/).fill("2020-08-31");
   let releasePeriod = () => {};
   const responseGate = new Promise<void>((resolve) => { releasePeriod = resolve; });
   await page.route("**/dashboard?start=2020-08-01**", async (route) => { await responseGate; await route.continue(); }, { times: 1 });
