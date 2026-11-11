@@ -174,19 +174,11 @@
   color: var(--primary);
 }
 
-.fieldDescription,
-.fieldError {
+.fieldDescription {
   margin: 0;
   font-size: var(--text-body-sm);
   line-height: var(--text-body-sm--line-height);
-}
-
-.fieldDescription {
   color: var(--muted-foreground);
-}
-
-.fieldError {
-  color: var(--destructive-foreground);
 }
 
 .successMessage {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { IssuanceReviewItem } from "../types";
 import { AlertTriangle, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldDescription,
+  FieldError,
 } from "@/components/ui/field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -55,6 +56,7 @@ export default function QuantityReviewDialog({
   const [editing, setEditing] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
   const [error, setError] = useState("");
+  const quantityRef = useRef<HTMLInputElement>(null);
   function confirm(row: ReviewRow) {
     if (!isValidIssuanceFinalQuantity(quantity, row.policy)) {
       setError(
@@ -62,6 +64,7 @@ export default function QuantityReviewDialog({
           ? "Enter a positive whole quantity for this Item."
           : "Enter a positive decimal quantity.",
       );
+      requestAnimationFrame(() => quantityRef.current?.focus());
       return;
     }
     onConfirm(row.itemId, quantity);
@@ -165,25 +168,27 @@ export default function QuantityReviewDialog({
                 {editing === row.itemId ? (
                   <FieldGroup>
                     <Field data-invalid={Boolean(error)}>
-                      <FieldLabel htmlFor={`final-${row.itemId}`}>
+                      <FieldLabel htmlFor={`final-${row.itemId}`} required>
                         Final quantity for {row.itemName}
                       </FieldLabel>
                       <Input
                         disabled={saving}
                         id={`final-${row.itemId}`}
+                        ref={quantityRef}
                         inputMode="decimal"
+                        required
                         value={quantity}
                         aria-invalid={Boolean(error)}
-                        aria-describedby={`final-help-${row.itemId}`}
+                        aria-describedby={error ? `final-error-${row.itemId}` : `final-help-${row.itemId}`}
                         onChange={(event) => {
                           setQuantity(event.target.value);
                           setError("");
                         }}
                       />
                       <FieldDescription id={`final-help-${row.itemId}`}>
-                        {error ||
-                          `Enter the exact positive ${row.policy === "whole-only" ? "whole " : ""}quantity in ${row.baseUnitAbbreviation}.`}
+                        Enter the exact positive {row.policy === "whole-only" ? "whole " : ""}quantity in {row.baseUnitAbbreviation}.
                       </FieldDescription>
+                      {error ? <FieldError id={`final-error-${row.itemId}`} visuallyHidden>{error}</FieldError> : null}
                     </Field>
                     <div className="flex flex-wrap gap-2">
                       <Button disabled={saving} onClick={() => confirm(row)}>

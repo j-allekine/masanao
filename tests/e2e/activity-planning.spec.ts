@@ -1,9 +1,59 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
+const destructiveColor = "rgb(157, 65, 55)";
+
+async function expectRequiredMarker(dialog: Locator, fieldId: string) {
+  const marker = dialog.locator(`label[for="${fieldId}"] [aria-hidden="true"]`);
+  await expect(marker).toHaveText("*");
+  await expect(marker).toHaveCSS("color", destructiveColor);
+}
+
+async function expectHiddenFieldError(
+  dialog: Locator,
+  control: Locator,
+  description: string | RegExp,
+) {
+  await expect(control).toHaveAttribute("aria-invalid", "true");
+  await expect(control).toHaveAccessibleDescription(description);
+  await expect(control).toHaveCSS("border-top-color", destructiveColor);
+  const descriptions = await control.getAttribute("aria-describedby");
+  const errorId = descriptions?.split(" ").find((id) => id.endsWith("-error"));
+  const details = dialog.locator(`[id="${errorId}"]`);
+  await expect(details).toHaveCSS("position", "absolute");
+  await expect(details).toHaveCSS("clip-path", "inset(50%)");
+}
+
+async function expectMealScheduleValidation(
+  dialog: Locator,
+  submitName: string,
+  correctedLabel: string,
+  correctedTime: string,
+) {
+  await expectRequiredMarker(dialog, "mealScheduleLabel");
+  await expectRequiredMarker(dialog, "mealScheduleTime");
+  const label = dialog.getByRole("textbox", {
+    name: "Meal Schedule label",
+    exact: true,
+  });
+  const time = dialog.locator("#mealScheduleTime");
+  await expect(time).toHaveAccessibleName("Meal time");
+  await expect(label).toHaveAttribute("required", "");
+  await expect(time).toHaveAttribute("required", "");
+  await label.clear();
+  await time.clear();
+  await dialog.getByRole("button", { name: submitName, exact: true }).click();
+  await expectHiddenFieldError(dialog, label, "Meal Schedule label is required");
+  await expectHiddenFieldError(dialog, time, "Meal time must use HH:mm format");
+  await label.fill(correctedLabel);
+  await expect(label).toHaveAttribute("aria-invalid", "false");
+  await expect(time).toHaveAttribute("aria-invalid", "true");
+  await time.fill(correctedTime);
+  await expect(time).toHaveAttribute("aria-invalid", "false");
+}
 
 async function signIn(page: Page) {
   const response = await postFixtureSignIn(page.request, {
@@ -219,13 +269,13 @@ test.describe("Activity planning journey", () => {
 
       await expect(
         dialog.getByRole("textbox", {
-          name: "Planned pax (optional)",
+          name: "Planned pax",
           exact: true,
         }),
       ).toHaveCSS("font-family", bodyFace);
       await expect(
         dialog.getByRole("textbox", {
-          name: "Planned budget (optional)",
+          name: "Planned budget",
           exact: true,
         }),
       ).toHaveCSS("font-family", bodyFace);
@@ -324,15 +374,27 @@ test.describe("Activity planning journey", () => {
       };
       page.on("request", requestListener);
 
-      await creationDialog.getByRole("button", { name: "Create Activity", exact: true }).click();
-      await expect(
-        creationDialog.getByText("Activity Design is required.", { exact: true }),
-      ).toBeVisible();
+      const picker = creationDialog.getByRole("combobox", {
+        name: "Activity Design",
+        exact: true,
+      });
+      await expect(picker).toHaveAttribute("aria-required", "true");
+      for (const id of ["activityDesignId", "name", "officeName", "scheduledDate"]) {
+        await expectRequiredMarker(creationDialog, id);
+      }
+      await expect(creationDialog.getByText("(optional)", { exact: false })).toHaveCount(0);
+
+      const submit = creationDialog.getByRole("button", {
+        name: "Create Activity",
+        exact: true,
+      });
+      await submit.click();
+      await expectHiddenFieldError(creationDialog, picker, "Activity Design is required.");
+      await expect(picker).toBeFocused();
       expect(createRequests).toHaveLength(0);
       page.off("request", requestListener);
 
-      const picker = creationDialog.getByRole("combobox");
-      await picker.click();
+      await picker.press("Enter");
       const pickerSearch = page.getByRole("textbox", {
         name: "Search Activity Designs",
         exact: true,
@@ -345,38 +407,46 @@ test.describe("Activity planning journey", () => {
       await option.click();
       await expect(picker).toContainText(design.title);
       await expect(picker).toContainText(design.activityDesignNo);
+      await expect(picker).toHaveAttribute("aria-invalid", "false");
+      await submit.click();
+      const activityNameInput = creationDialog.getByRole("textbox", {
+        name: "Activity name",
+        exact: true,
+      });
+      const officeInput = creationDialog.getByRole("textbox", { name: "Office", exact: true });
+      const scheduledDate = creationDialog.getByRole("button", { name: "Scheduled date", exact: true });
+      await expect(activityNameInput).toBeFocused();
+      await expectHiddenFieldError(creationDialog, activityNameInput, "Activity name is required");
+      await expectHiddenFieldError(creationDialog, officeInput, "Office name is required");
+      await expectHiddenFieldError(creationDialog, scheduledDate, /Scheduled date is required/);
 
       const activityName = "E2E Global Activity";
-      await creationDialog
-        .getByRole("textbox", { name: "Activity name", exact: true })
-        .fill(activityName);
-      await creationDialog
-        .getByRole("textbox", { name: "Office", exact: true })
-        .fill("E2E Global Office");
-      await creationDialog
-        .getByRole("button", { name: "Scheduled date", exact: true })
-        .click();
+      await activityNameInput.fill(activityName);
+      await expect(activityNameInput).toHaveAttribute("aria-invalid", "false");
+      await expect(officeInput).toHaveAttribute("aria-invalid", "true");
+      await officeInput.fill("E2E Global Office");
+      await scheduledDate.click();
       await page
         .locator('[data-slot="calendar"]')
         .locator('button[data-day="9/15/2026"]')
         .click();
       await creationDialog
         .getByRole("textbox", {
-          name: "Activity particulars (optional)",
+          name: "Activity particulars",
           exact: true,
         })
         .fill("E2E global particulars");
       await creationDialog
-        .getByRole("textbox", { name: "Venue (optional)", exact: true })
+        .getByRole("textbox", { name: "Venue", exact: true })
         .fill("E2E global venue");
       await creationDialog
         .getByRole("textbox", {
-          name: "Planned pax (optional)",
+          name: "Planned pax",
           exact: true,
         })
         .fill("1250");
       await creationDialog
-        .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+        .getByRole("textbox", { name: "Planned budget", exact: true })
         .fill("1250.00");
       await creationDialog
         .getByRole("button", { name: "Create Activity", exact: true })
@@ -426,12 +496,12 @@ test.describe("Activity planning journey", () => {
       );
       await expect(
         editDialog.getByRole("textbox", {
-          name: "Planned pax (optional)",
+          name: "Planned pax",
           exact: true,
         }),
       ).toHaveValue("1,250");
       await expect(
-        editDialog.getByRole("textbox", { name: "Planned budget (optional)", exact: true }),
+        editDialog.getByRole("textbox", { name: "Planned budget", exact: true }),
       ).toHaveValue("1250.00");
 
       const updatedActivityName = "E2E Global Activity Updated";
@@ -439,19 +509,19 @@ test.describe("Activity planning journey", () => {
         .getByRole("textbox", { name: "Activity name", exact: true })
         .fill(updatedActivityName);
       await editDialog
-        .getByRole("textbox", { name: "Activity particulars (optional)", exact: true })
+        .getByRole("textbox", { name: "Activity particulars", exact: true })
         .fill("");
       await editDialog
-        .getByRole("textbox", { name: "Venue (optional)", exact: true })
+        .getByRole("textbox", { name: "Venue", exact: true })
         .fill("");
       await editDialog
         .getByRole("textbox", {
-          name: "Planned pax (optional)",
+          name: "Planned pax",
           exact: true,
         })
         .fill("");
       await editDialog
-        .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+        .getByRole("textbox", { name: "Planned budget", exact: true })
         .fill("");
       await editDialog.getByRole("button", { name: "Save changes", exact: true }).click();
 
@@ -582,7 +652,7 @@ test.describe("Activity planning journey", () => {
     const calendar = page.locator('[data-slot="calendar"]');
     await calendar.locator("button[data-day]").first().click();
     await sheet
-      .getByRole("textbox", { name: "Planned budget (optional)", exact: true })
+      .getByRole("textbox", { name: "Planned budget", exact: true })
       .fill("12345.67");
     await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
 
@@ -815,7 +885,7 @@ test.describe("Activity planning journey", () => {
       ).toHaveValue("Lunch");
       await expect(mealScheduleEditDialog.locator("#mealScheduleTime")).toHaveValue("12:00");
       await expect(mealScheduleEditDialog.locator("#mealScheduleServings")).toHaveCount(0);
-      await mealScheduleEditDialog.locator("#mealScheduleTime").fill("12:30");
+      await expectMealScheduleValidation(mealScheduleEditDialog, "Save changes", "Lunch", "12:30");
       await mealScheduleEditDialog.getByRole("button", { name: "Save changes", exact: true }).click();
       await expect(mealScheduleEditDialog).toHaveCount(0);
       expect(withE2eDatabase((database) => database.prepare('SELECT "mealTime", "plannedServings" FROM "meal_schedule" WHERE "id" = ?').get(mealScheduleId))).toEqual({ mealTime: "12:30", plannedServings: 1250 });
@@ -935,7 +1005,7 @@ test.describe("Activity planning journey", () => {
         )).toBe(true);
       }
 
-      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`/activity-designs/${design.id}/activities/${emptyActivity.id}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await page
@@ -946,10 +1016,12 @@ test.describe("Activity planning journey", () => {
       await expect(createDialog).toContainText(
         `Under “${emptyActivity.name}”.`,
       );
-      await createDialog
-        .getByRole("textbox", { name: "Meal Schedule label", exact: true })
-        .fill("Afternoon Snack");
-      await createDialog.locator("#mealScheduleTime").fill("15:30");
+      await expectMealScheduleValidation(
+        createDialog,
+        "Add Meal Schedule",
+        "Afternoon Snack",
+        "15:30",
+      );
       await expect(createDialog.locator("#mealScheduleServings")).toHaveCount(0);
       await createDialog
         .getByRole("button", { name: "Add Meal Schedule", exact: true })

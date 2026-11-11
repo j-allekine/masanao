@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -85,6 +86,7 @@ function ItemFieldError({
     <FieldError
       id={`${id}-error`}
       errors={errors.map((message) => ({ message }))}
+      visuallyHidden
     />
   );
 }
@@ -119,17 +121,15 @@ function LookupField({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required>
         {label}
-        <span className="text-destructive" aria-hidden="true">
-          *
-        </span>
       </FieldLabel>
-        <Select
+      <Select
         items={lookupItems}
         value={value || null}
-          onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
-          disabled={disabled}
+        onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
+        disabled={disabled}
+        required
       >
         <SelectTrigger
           id={inputId}
@@ -182,7 +182,7 @@ export default function ItemForm({
     initialFormValues,
   );
   const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<ItemField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as ItemField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -235,12 +235,19 @@ export default function ItemForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: ItemFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      const lookupFields: ItemField[] = [];
+      if (formValues.categoryId && result.fields.categoryId?.length) lookupFields.push("categoryId");
+      if (formValues.baseUnitId && result.fields.baseUnitId?.length) lookupFields.push("baseUnitId");
+      setFormError(
+        result.kind === "duplicate"
+          ? { message: `${result.error} Enter a different name.`, fields: ["name"] }
+          : { message: result.error, fields: lookupFields.length ? lookupFields : undefined },
+      );
       setFieldErrors(result.fields);
       return;
     }
@@ -276,9 +283,7 @@ export default function ItemForm({
             : await updateItemAction(formData);
         handleResult(result);
       } catch {
-        setFormError(
-          "The Item could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Item could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -304,17 +309,14 @@ export default function ItemForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Item</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 
         <FieldGroup>
           <Field data-invalid={Boolean(fieldErrors.name?.length)}>
-            <FieldLabel htmlFor={`${mode}-item-name`}>
+            <FieldLabel htmlFor={`${mode}-item-name`} required>
               Name
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>
             </FieldLabel>
             <Input
               id={`${mode}-item-name`}
@@ -367,9 +369,8 @@ export default function ItemForm({
           ) : null}
 
           <Field data-invalid={Boolean(fieldErrors.reorderLevel?.length)}>
-            <FieldLabel htmlFor={`${mode}-item-reorderLevel`}>
+            <FieldLabel htmlFor={`${mode}-item-reorderLevel`} required>
               Reorder level{formValues.baseUnitId ? ` (${units.find((unit) => unit.id === formValues.baseUnitId)?.abbreviation ?? "Base Unit"})` : " (Base Unit)"}
-              <span className="text-destructive" aria-hidden="true">*</span>
             </FieldLabel>
             <Input
               id={`${mode}-item-reorderLevel`}
@@ -423,6 +424,12 @@ export default function ItemForm({
                   }
                   className="min-w-0 flex-1 whitespace-normal px-2"
                   value={option.value}
+                  aria-invalid={fieldErrors.issuanceQuantityPolicy?.length ? true : undefined}
+                  aria-describedby={
+                    fieldErrors.issuanceQuantityPolicy?.length
+                      ? `${mode}-item-issuance-quantity-policy-error`
+                      : undefined
+                  }
                 >
                   {option.label}
                 </ToggleGroupItem>
@@ -443,7 +450,7 @@ export default function ItemForm({
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
             <FieldLabel htmlFor={`${mode}-item-note`}>
-              Item Note <span className="text-muted-foreground">(optional)</span>
+              Item Note
             </FieldLabel>
             <Textarea
               id={`${mode}-item-note`}

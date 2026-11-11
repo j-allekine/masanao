@@ -43,7 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -239,7 +239,7 @@ function PaxToPrepareControl({
     <FieldGroup className="w-auto gap-1">
       <Field data-invalid={validPax === null ? true : undefined}>
         <div className="flex items-center gap-2">
-          <FieldLabel htmlFor="pax-to-prepare" className="shrink-0">Meal pax</FieldLabel>
+          <FieldLabel htmlFor="pax-to-prepare" className="shrink-0" required>Meal pax</FieldLabel>
           <Input
             id="pax-to-prepare"
             className="w-24 tabular-nums"
@@ -247,8 +247,9 @@ function PaxToPrepareControl({
             min="1"
             type="number"
             value={mealPax}
+            required
             aria-invalid={validPax === null}
-            aria-describedby="meal-pax-description"
+            aria-describedby={validPax === null ? "pax-to-prepare-error meal-pax-description" : "meal-pax-description"}
             onChange={(event) => onMealPaxChange(event.target.value)}
           />
           {!followsActivityPlan ? (
@@ -258,7 +259,10 @@ function PaxToPrepareControl({
             </Button>
           ) : null}
         </div>
-        <FieldDescription id="meal-pax-description">{validPax === null ? "Enter a number greater than zero." : followsActivityPlan ? "From the activity plan · Default for all recipes" : `Activity plan: ${plannedPax} pax · Default for all recipes`}</FieldDescription>
+        <FieldDescription id="meal-pax-description">{followsActivityPlan ? "From the activity plan · Default for all recipes" : `Activity plan: ${plannedPax} pax · Default for all recipes`}</FieldDescription>
+        {validPax === null ? (
+          <FieldError visuallyHidden id="pax-to-prepare-error">Enter a number greater than zero.</FieldError>
+        ) : null}
       </Field>
     </FieldGroup>
   );
@@ -284,6 +288,7 @@ function RecipePicker({
     ...(Object.values(recipeCatalog) as Recipe[]).filter((recipe) => !availableIds.has(recipe.id)),
   ];
   const recipeNames = recipes.map((recipe) => recipe.name);
+  const invalidPax = positiveNumber(paxDraft) === null;
 
   return (
     <div>
@@ -303,7 +308,7 @@ function RecipePicker({
         onInputValueChange={setQuery}
         onValueChange={(recipeName) => {
           const recipe = recipes.find((item) => item.name === recipeName);
-          if (!recipe || !availableIds.has(recipe.id) || positiveNumber(paxDraft) === null) return;
+          if (!recipe || !availableIds.has(recipe.id) || invalidPax) return;
           onAddRecipe(recipe.id, paxDraft);
           setLastAddedRecipe(recipe.name);
           setQuery("");
@@ -321,12 +326,26 @@ function RecipePicker({
         </ComboboxTrigger>
         <ComboboxContent className="w-[min(26rem,calc(100vw-2rem))] p-2">
           <FieldGroup className="p-2 pb-3">
-            <Field data-invalid={positiveNumber(paxDraft) === null ? true : undefined}>
+            <Field data-invalid={invalidPax ? true : undefined}>
               <div className="flex items-center justify-between gap-3">
-                <FieldLabel htmlFor="add-recipe-pax">Pax for new recipes</FieldLabel>
-                <Input id="add-recipe-pax" className="w-24 tabular-nums" type="number" min="1" inputMode="numeric" value={paxDraft} onChange={(event) => setPaxDraft(event.target.value)} aria-invalid={positiveNumber(paxDraft) === null} aria-describedby="add-recipe-pax-help" />
+                <FieldLabel htmlFor="add-recipe-pax" required>Pax for new recipes</FieldLabel>
+                <Input
+                  id="add-recipe-pax"
+                  className="w-24 tabular-nums"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={paxDraft}
+                  required
+                  onChange={(event) => setPaxDraft(event.target.value)}
+                  aria-invalid={invalidPax}
+                  aria-describedby={invalidPax ? "add-recipe-pax-error add-recipe-pax-help" : "add-recipe-pax-help"}
+                />
               </div>
-              <FieldDescription id="add-recipe-pax-help">{positiveNumber(paxDraft) === null ? "Enter a number greater than zero to add recipes." : `Meal default: ${mealPax} pax. Existing recipes won't change.`}</FieldDescription>
+              <FieldDescription id="add-recipe-pax-help">{`Meal default: ${mealPax} pax. Existing recipes won't change.`}</FieldDescription>
+              {invalidPax ? (
+                <FieldError visuallyHidden id="add-recipe-pax-error">Enter a number greater than zero to add recipes.</FieldError>
+              ) : null}
             </Field>
           </FieldGroup>
           <Separator className="mb-2" />
@@ -338,7 +357,7 @@ function RecipePicker({
               if (!recipe) return null;
               const alreadyAdded = !availableIds.has(recipe.id);
               return (
-                <ComboboxItem key={recipe.id} value={recipeName} disabled={alreadyAdded || positiveNumber(paxDraft) === null}>
+                <ComboboxItem key={recipe.id} value={recipeName} disabled={alreadyAdded || invalidPax}>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate font-medium">{recipe.name}</span>
                     <span className="text-label text-muted-foreground">Recipe yield: {recipe.standardYield} servings</span>

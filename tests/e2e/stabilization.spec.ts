@@ -420,7 +420,7 @@ test.describe("frontend stabilization regression seam", () => {
       });
 
       await expect(designNo).toHaveAttribute("required", "");
-      await expect(fiscalYear).toHaveAttribute("aria-required", "true");
+      await expect(fiscalYear).toHaveAccessibleDescription("Required");
       await expect(title).toHaveAttribute("required", "");
       await title.fill("E2E retained after validation");
       await submit.click();
@@ -428,7 +428,8 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(designNo).toHaveAttribute("aria-invalid", "true");
       const designNoErrorId = await designNo.getAttribute("aria-describedby");
       expect(designNoErrorId).toBeTruthy();
-      await expect(dialog.locator(`#${designNoErrorId}`)).toBeVisible();
+      await expect(designNo).toHaveAccessibleDescription("Activity Design No. is required");
+      await expect(dialog.locator(`#${designNoErrorId}`)).toHaveCSS("position", "absolute");
       await expect(title).toHaveValue("E2E retained after validation");
 
       await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -451,7 +452,7 @@ test.describe("frontend stabilization regression seam", () => {
       await expect(activityName).toHaveAttribute("required", "");
       await expect(
         sheet.getByRole("button", { name: "Scheduled date", exact: true }),
-      ).toHaveAttribute("aria-required", "true");
+      ).toHaveAccessibleDescription("Required");
       await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
       await expect(activityName).toBeFocused();
       await expect(activityName).toHaveAttribute("aria-invalid", "true");
@@ -483,7 +484,7 @@ test.describe("frontend stabilization regression seam", () => {
         .click();
       await expect(
         duplicateDialog.getByText(
-          "An Activity Design with that number already exists.",
+          "An Activity Design with that number already exists. Enter a different Activity Design No.",
           { exact: true },
         ).first(),
       ).toBeVisible();
@@ -533,9 +534,9 @@ test.describe("frontend stabilization regression seam", () => {
         exact: true,
       });
       await expect(form).toHaveAttribute("data-client-ready", "true");
-      await form.getByLabel("Username", { exact: true }).fill("kitchen.staff");
+      await form.getByRole("textbox", { name: "Username", exact: true }).fill("kitchen.staff");
       await form
-        .getByLabel("Password", { exact: true })
+        .getByLabel(/^Password/)
         .fill(staffPassword);
 
       const submit = form.getByRole("button", { name: "Sign in", exact: true });
@@ -594,9 +595,9 @@ test.describe("frontend stabilization regression seam", () => {
           exact: true,
         });
         await expect(form).toHaveAttribute("data-client-ready", "true");
-        await form.getByLabel("Username", { exact: true }).fill("failure.staff");
-        await form.getByLabel("Password", { exact: true }).fill("wrong-password");
-        await form.getByLabel("Password", { exact: true }).press("Enter");
+        await form.getByRole("textbox", { name: "Username", exact: true }).fill("failure.staff");
+        await form.getByLabel(/^Password/).fill("wrong-password");
+        await form.getByLabel(/^Password/).press("Enter");
         await expect(form.getByRole("alert")).toContainText(scenario.expected);
       }
     } finally {

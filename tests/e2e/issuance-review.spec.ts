@@ -65,12 +65,20 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
     .click();
-  await review.getByLabel("Final quantity for Review Eggs").fill("0.5");
+  const finalQuantity = review.getByRole("textbox", { name: "Final quantity for Review Eggs", exact: true });
+  const mark = review.locator('label[for="final-e2e-review-eggs"]').getByText("*", { exact: true });
+  await expect(mark).toBeVisible();
+  await expect(finalQuantity).toHaveAttribute("required", "");
+  const invalidColor = await mark.evaluate((element) => getComputedStyle(element).color);
+  await finalQuantity.fill("0.5");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
-  await expect(
-    review.getByText("Enter a positive whole quantity for this Item."),
-  ).toBeVisible();
-  await review.getByLabel("Final quantity for Review Eggs").fill("1");
+  await expect(finalQuantity).toBeFocused();
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
+  await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive whole quantity for this Item.");
+  await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
+  await expect(review.locator("#final-error-e2e-review-eggs")).toHaveCSS("clip-path", "inset(50%)");
+  await finalQuantity.fill("1");
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "false");
   await review.getByRole("button", { name: "Confirm quantity" }).focus();
   await page.keyboard.press("Enter");
   await expect(
@@ -106,8 +114,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByLabel("Meal pax", { exact: true }).fill("2");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("1");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("2");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("1");
   await expect(
     page
       .getByRole("alert")
@@ -124,8 +132,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     .getByRole("button", { name: "Reset adjustment for Review Eggs" })
     .click();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("2");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("2");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("2");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("2");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
@@ -143,9 +151,15 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await review
     .getByRole("button", { name: "Adjust issued quantity for Review Eggs" })
     .click();
-  await review
-    .getByLabel("Final quantity for Review Eggs")
-    .fill("0.987654321123456789");
+  await expect(mark).toBeVisible();
+  await finalQuantity.fill("0");
+  await review.getByRole("button", { name: "Confirm quantity" }).click();
+  await expect(finalQuantity).toBeFocused();
+  await expect(finalQuantity).toHaveAttribute("aria-invalid", "true");
+  await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive decimal quantity.");
+  await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
+  await expect(review.locator("#final-error-e2e-review-eggs")).toHaveCSS("clip-path", "inset(50%)");
+  await finalQuantity.fill("0.987654321123456789");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
   await expect(
     review.getByText("0.987654321123456789 pc", { exact: true }),
@@ -184,8 +198,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     review.getByRole("button", { name: "Reset adjustment for Review Eggs" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("3");
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("2");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("3");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("2");
   await page
     .getByRole("button", { name: "Review quantities and stock" })
     .click();
@@ -193,21 +207,22 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     .getByRole("button", { name: "Reset adjustment for Review Eggs" })
     .click();
   await page.keyboard.press("Escape");
-  await page.getByLabel("Meal pax", { exact: true }).fill("");
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("");
   await page
     .getByRole("button", { name: "Review quantities and stock" })
     .click();
   await expect(
     review.getByText(/Meal pax pending. This review is incomplete/),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await review.getByRole("button", { name: "Close review", exact: true }).click();
+  await expect(review).toBeHidden();
   await page.goBack();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes?" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
   await expect(page).toHaveURL(/\/meal-schedules\/[^/]+$/);
-  await expect(page.getByLabel("Meal pax", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("");
   await page.goBack();
   await page
     .getByRole("dialog", { name: "Discard unsaved changes?" })

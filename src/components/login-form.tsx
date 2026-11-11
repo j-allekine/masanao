@@ -153,7 +153,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
         </div>
 
         <Field data-invalid={fieldErrors.username ? "true" : undefined}>
-          <FieldLabel htmlFor="masanao-username">Username</FieldLabel>
+          <FieldLabel htmlFor="masanao-username" required>Username</FieldLabel>
           <InputGroup className="h-10">
             <InputGroupAddon>
               <UserRoundIcon aria-hidden="true" strokeWidth={1.75} />
@@ -179,12 +179,12 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
             />
           </InputGroup>
           {fieldErrors.username ? (
-            <FieldError id={usernameErrorId}>{fieldErrors.username}</FieldError>
+            <FieldError id={usernameErrorId} visuallyHidden>{fieldErrors.username}</FieldError>
           ) : null}
         </Field>
 
         <Field data-invalid={fieldErrors.password ? "true" : undefined}>
-          <FieldLabel htmlFor="masanao-password">Password</FieldLabel>
+          <FieldLabel htmlFor="masanao-password" required>Password</FieldLabel>
           <InputGroup className="h-10">
             <InputGroupAddon>
               <KeyRoundIcon aria-hidden="true" strokeWidth={1.75} />
@@ -224,7 +224,7 @@ export function LoginForm({ className, headingId, ...props }: LoginFormProps) {
             </InputGroupAddon>
           </InputGroup>
           {fieldErrors.password ? (
-            <FieldError id={passwordErrorId}>{fieldErrors.password}</FieldError>
+            <FieldError id={passwordErrorId} visuallyHidden>{fieldErrors.password}</FieldError>
           ) : null}
         </Field>
 

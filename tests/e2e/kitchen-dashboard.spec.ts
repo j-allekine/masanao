@@ -13,8 +13,9 @@ test("budget-only Dashboard keeps authentication, dated bookmarks, pending perio
   await expect(page.getByText("No Activities scheduled in this period", { exact: true })).toBeVisible();
   await expect(page.locator("[data-dashboard-sample]")).toHaveCount(0);
   await page.getByRole("button", { name: "Reporting period", exact: true }).click();
-  await page.getByLabel("From", { exact: true }).fill("2020-08-01");
-  await page.getByLabel("To", { exact: true }).fill("2020-08-31");
+  const picker = page.getByRole("dialog", { name: "Reporting period" });
+  await picker.getByLabel(/^From/).fill("2020-08-01");
+  await picker.getByLabel(/^To/).fill("2020-08-31");
   let releasePeriod = () => {};
   const periodResponse = new Promise<void>((resolve) => { releasePeriod = resolve; });
   await page.route("**/dashboard?start=2020-08-01**", async (route) => { await periodResponse; await route.continue(); }, { times: 1 });

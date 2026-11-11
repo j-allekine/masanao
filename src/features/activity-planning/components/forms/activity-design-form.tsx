@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -76,13 +77,8 @@ function ActivityDesignFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={required}>
         {label}
-        {required ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       <Input
         id={inputId}
@@ -94,7 +90,11 @@ function ActivityDesignFieldInput({
         aria-describedby={hasError ? errorId : undefined}
       />
       {hasError ? (
-        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
+        <FieldError
+          id={errorId}
+          errors={error?.map((message) => ({ message }))}
+          visuallyHidden
+        />
       ) : null}
     </Field>
   );
@@ -116,7 +116,7 @@ export default function ActivityDesignForm({
   const initialFormValues = initialValues(activityDesign);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<ActivityDesignField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as ActivityDesignField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -158,7 +158,7 @@ export default function ActivityDesignForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -179,16 +179,17 @@ export default function ActivityDesignForm({
             : await updateActivityDesignAction(formData);
 
         if (result.status === "error") {
-          setFormError(result.error);
+          setFormError({
+            message: result.error,
+            fields: result.fields.activityDesignNo?.length ? ["activityDesignNo"] : undefined,
+          });
           setFieldErrors(result.fields);
           return;
         }
 
         if (result.status === "success") onSuccess(result.activityDesign);
       } catch {
-        setFormError(
-          "The Activity Design could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Activity Design could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -206,7 +207,7 @@ export default function ActivityDesignForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Activity Design</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -223,11 +224,8 @@ export default function ActivityDesignForm({
             mode={mode}
           />
           <Field data-invalid={Boolean(fieldErrors.fiscalYear?.length)}>
-            <FieldLabel htmlFor={`${mode}-activity-design-fiscalYear`}>
+            <FieldLabel htmlFor={`${mode}-activity-design-fiscalYear`} required>
               Fiscal Year
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>
             </FieldLabel>
             <FiscalYearPicker
               id={`${mode}-activity-design-fiscalYear`}
@@ -240,6 +238,7 @@ export default function ActivityDesignForm({
               <FieldError
                 id={`${mode}-activity-design-fiscalYear-error`}
                 errors={fieldErrors.fiscalYear.map((message) => ({ message }))}
+                visuallyHidden
               />
             ) : null}
             <input

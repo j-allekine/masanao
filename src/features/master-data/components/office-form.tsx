@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { WorkspaceFormActionButtons } from "@/components/workspace/form-actions";
 
 import { createOfficeAction, updateOfficeAction } from "../actions";
+import { duplicateIdentityFeedback } from "./duplicate-identity-feedback";
 import type {
   OfficeField,
   OfficeFieldErrors,
@@ -81,20 +83,8 @@ function OfficeFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={required}>
         {label}
-        {required ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : (
-          <span
-            className="font-normal text-muted-foreground"
-            aria-hidden="true"
-          >
-            (optional)
-          </span>
-        )}
       </FieldLabel>
       <Input
         id={inputId}
@@ -112,6 +102,7 @@ function OfficeFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -134,7 +125,7 @@ export default function OfficeForm({
   const initialFormValues = initialValues(office);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<OfficeFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<OfficeField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as OfficeField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -175,12 +166,22 @@ export default function OfficeForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: OfficeFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      if (result.kind === "duplicate") {
+        setFormError(duplicateIdentityFeedback(result.error, result.fields));
+      } else if (result.fields.officialEmail?.length) {
+        const message = result.fields.officialEmail.join(". ");
+        setFormError({
+          message: message.includes("valid email address") ? `${message}. For example, name@example.com.` : message,
+          fields: ["officialEmail"],
+        });
+      } else {
+        setFormError({ message: result.error });
+      }
       setFieldErrors(result.fields);
       return;
     }
@@ -207,9 +208,7 @@ export default function OfficeForm({
 
         handleResult(result);
       } catch {
-        setFormError(
-          "The Office could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Office could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -227,7 +226,7 @@ export default function OfficeForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Office</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 

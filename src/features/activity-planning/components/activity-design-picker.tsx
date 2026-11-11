@@ -81,11 +81,8 @@ export default function ActivityDesignPicker({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={id}>
+      <FieldLabel htmlFor={id} required>
         Activity Design
-        <span className="text-destructive" aria-hidden="true">
-          *
-        </span>
       </FieldLabel>
       <Popover
         open={open}
@@ -101,6 +98,7 @@ export default function ActivityDesignPicker({
               id={id}
               variant="outline"
               role="combobox"
+              aria-required="true"
               aria-expanded={open}
               aria-controls={`${id}-options`}
               aria-invalid={hasError}
@@ -182,7 +180,7 @@ export default function ActivityDesignPicker({
         </PopoverContent>
       </Popover>
       {hasError ? (
-        <FieldError id={errorId} errors={error?.map((message) => ({ message }))} />
+        <FieldError visuallyHidden id={errorId} errors={error?.map((message) => ({ message }))} />
       ) : null}
     </Field>
   );

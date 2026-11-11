@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -76,13 +77,8 @@ function VendorFieldInput({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
+      <FieldLabel htmlFor={inputId} required={id === "name"}>
         {label}
-        {id === "name" ? (
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
-        ) : null}
       </FieldLabel>
       {multiline ? (
         <Textarea
@@ -110,6 +106,7 @@ function VendorFieldInput({
         <FieldError
           id={errorId}
           errors={error?.map((message) => ({ message }))}
+          visuallyHidden
         />
       ) : null}
     </Field>
@@ -132,7 +129,7 @@ export default function VendorForm({
   const initialFormValues = initialValues(vendor);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<VendorFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<VendorField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as VendorField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -166,7 +163,7 @@ export default function VendorForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: VendorFormActionState) {
@@ -174,7 +171,17 @@ export default function VendorForm({
       const hasFieldError = Object.keys(result.fields).some(
         (field) => field !== "form",
       );
-      setFormError(hasFieldError && !result.fields.form ? null : result.error);
+      if (result.kind === "duplicate") {
+        setFormError({ message: `${result.error} Enter a different name.`, fields: ["name"] });
+      } else if (result.fields.email?.length) {
+        const message = result.fields.email.join(". ");
+        setFormError({
+          message: message.includes("valid email address") ? `${message}. For example, name@example.com.` : message,
+          fields: ["email"],
+        });
+      } else {
+        setFormError(hasFieldError && !result.fields.form ? null : { message: result.error });
+      }
       setFieldErrors(result.fields);
       return;
     }
@@ -201,9 +208,7 @@ export default function VendorForm({
 
         handleResult(result);
       } catch {
-        setFormError(
-          "The Vendor could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Vendor could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -221,7 +226,7 @@ export default function VendorForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Vendor</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 

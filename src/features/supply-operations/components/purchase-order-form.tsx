@@ -9,6 +9,7 @@ import {
 } from "react";
 import { Plus, Save } from "lucide-react";
 
+import { clearFeedbackForField, type FormFeedback } from "@/components/workspace/form-feedback";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DialogFooter } from "@/components/ui/dialog";
 import {
@@ -75,6 +76,7 @@ function PurchaseOrderFieldError({
     <FieldError
       id={`${id}-error`}
       errors={errors.map((message) => ({ message }))}
+      visuallyHidden
     />
   );
 }
@@ -114,17 +116,13 @@ function VendorField({
 
   return (
     <Field data-invalid={hasError}>
-      <FieldLabel htmlFor={inputId}>
-        Vendor
-        <span className="text-destructive" aria-hidden="true">
-          *
-        </span>
-      </FieldLabel>
+      <FieldLabel htmlFor={inputId} required>Vendor</FieldLabel>
       <Select
         items={lookupItems}
         value={value || null}
         onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
         disabled={isLocked || vendorOptions.length === 0}
+        required
       >
         <SelectTrigger
           id={inputId}
@@ -179,7 +177,7 @@ export default function PurchaseOrderForm({
   const [formValues, setFormValues] =
     useState<PurchaseOrderFormValues>(initialFormValues);
   const [fieldErrors, setFieldErrors] = useState<PurchaseOrderFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<FormFeedback<PurchaseOrderField> | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const isDirty = (Object.keys(initialFormValues) as PurchaseOrderField[]).some(
     (field) => formValues[field] !== initialFormValues[field],
@@ -229,12 +227,16 @@ export default function PurchaseOrderForm({
       delete nextErrors[field];
       return nextErrors;
     });
-    setFormError(null);
+    setFormError((current) => clearFeedbackForField(current, field));
   }
 
   function handleResult(result: PurchaseOrderFormActionState) {
     if (result.status === "error") {
-      setFormError(result.error);
+      setFormError(
+        result.kind === "duplicate"
+          ? { message: `${result.error} Enter a different Purchase Order No.`, fields: ["purchaseOrderNo"] }
+          : { message: result.error, fields: result.kind === "inactive" || result.kind === "locked" ? ["vendorId"] : undefined },
+      );
       setFieldErrors(result.fields);
       return;
     }
@@ -270,9 +272,7 @@ export default function PurchaseOrderForm({
             : await updatePurchaseOrderAction(formData);
         handleResult(result);
       } catch {
-        setFormError(
-          "The Purchase Order could not be saved. Check your connection and try again.",
-        );
+        setFormError({ message: "The Purchase Order could not be saved. Check your connection and try again." });
       }
     });
   }
@@ -304,17 +304,14 @@ export default function PurchaseOrderForm({
         {formError ? (
           <Alert variant="destructive" className="mb-6">
             <AlertTitle>Could not save Purchase Order</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
         ) : null}
 
         <FieldGroup>
           <Field data-invalid={Boolean(fieldErrors.purchaseOrderNo?.length)}>
-            <FieldLabel htmlFor={`${mode}-purchase-order-purchaseOrderNo`}>
+            <FieldLabel htmlFor={`${mode}-purchase-order-purchaseOrderNo`} required>
               Purchase Order No.
-              <span className="text-destructive" aria-hidden="true">
-                *
-              </span>
             </FieldLabel>
             <Input
               id={`${mode}-purchase-order-purchaseOrderNo`}
@@ -348,7 +345,7 @@ export default function PurchaseOrderForm({
 
           <Field data-invalid={Boolean(fieldErrors.referenceNumber?.length)}>
             <FieldLabel htmlFor={`${mode}-purchase-order-referenceNumber`}>
-              Reference number <span className="text-muted-foreground">(optional)</span>
+              Reference number
             </FieldLabel>
             <Input
               id={`${mode}-purchase-order-referenceNumber`}
@@ -371,7 +368,7 @@ export default function PurchaseOrderForm({
 
           <Field data-invalid={Boolean(fieldErrors.note?.length)}>
             <FieldLabel htmlFor={`${mode}-purchase-order-note`}>
-              Note <span className="text-muted-foreground">(optional)</span>
+              Note
             </FieldLabel>
             <Textarea
               id={`${mode}-purchase-order-note`}

@@ -182,7 +182,7 @@ describe("Activity Design feature seams", () => {
       ),
     ).resolves.toEqual({
       status: "error",
-      error: "An Activity Design with that number already exists.",
+      error: "An Activity Design with that number already exists. Enter a different Activity Design No.",
       fields: {
         activityDesignNo: [
           "An Activity Design with that number already exists.",
@@ -353,7 +353,7 @@ describe("Activity Design feature seams", () => {
       ),
     ).resolves.toEqual({
       status: "error",
-      error: "An Activity Design with that number already exists.",
+      error: "An Activity Design with that number already exists. Enter a different Activity Design No.",
       fields: {
         activityDesignNo: [
           "An Activity Design with that number already exists.",

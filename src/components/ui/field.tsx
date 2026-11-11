@@ -98,10 +98,20 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+function FieldRequiredMark() {
+  return (
+    <span aria-hidden="true" className="text-destructive">
+      *
+    </span>
+  )
+}
+
 function FieldLabel({
   className,
+  children,
+  required,
   ...props
-}: React.ComponentProps<typeof Label>) {
+}: React.ComponentProps<typeof Label> & { required?: boolean }) {
   return (
     <Label
       data-slot="field-label"
@@ -111,7 +121,10 @@ function FieldLabel({
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && <FieldRequiredMark />}
+    </Label>
   )
 }
 
@@ -177,9 +190,11 @@ function FieldError({
   className,
   children,
   errors,
+  visuallyHidden = false,
   ...props
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
+  visuallyHidden?: boolean
 }) {
   const content = useMemo(() => {
     if (children) {
@@ -214,9 +229,13 @@ function FieldError({
 
   return (
     <div
-      role="alert"
+      role={visuallyHidden ? undefined : "alert"}
       data-slot="field-error"
-      className={cn("text-label font-normal text-destructive", className)}
+      className={cn(
+        "text-label font-normal text-destructive",
+        visuallyHidden && "sr-only w-px!",
+        className
+      )}
       {...props}
     >
       {content}
@@ -227,6 +246,7 @@ function FieldError({
 export {
   Field,
   FieldLabel,
+  FieldRequiredMark,
   FieldDescription,
   FieldError,
   FieldGroup,
