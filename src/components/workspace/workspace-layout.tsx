@@ -41,9 +41,11 @@ export default function WorkspaceLayout({
       const footerHeight = footerElement?.getBoundingClientRect().height ?? 0;
       // When the header and actions leave too little working room, let all regions scroll.
       const enoughRoom = window.innerHeight - chromeHeight - footerHeight >= 112;
+      const flowRecordChrome =
+        !enoughRoom && chrome.querySelector('[data-slot="workspace-record-title"]') !== null;
       layout.toggleAttribute("data-bounded-scroll", mode === "bounded" && enoughRoom);
-      layout.toggleAttribute("data-flow-scroll", !enoughRoom);
-      layout.style.setProperty("--workspace-chrome-height", enoughRoom ? `${chromeHeight}px` : "0px");
+      layout.toggleAttribute("data-flow-scroll", flowRecordChrome);
+      layout.style.setProperty("--workspace-chrome-height", flowRecordChrome ? "0px" : `${chromeHeight}px`);
     };
     measureChrome();
     const observer = new ResizeObserver(measureChrome);
@@ -128,7 +130,10 @@ export function WorkspaceTaskHeader({
 
 export function WorkspaceRecordTitle({ title }: { title: string }) {
   return (
-    <h1 className="min-w-[min(100%,14ch)] flex-1 text-heading-3 font-semibold wrap-anywhere">
+    <h1
+      data-slot="workspace-record-title"
+      className="min-w-[min(100%,14ch)] flex-1 text-heading-3 font-semibold wrap-anywhere"
+    >
       {title}
     </h1>
   );

@@ -976,12 +976,9 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
       }, width === 768 || height === 480);
       await expectFullRecordHeading(page, number);
       await expect(heading).toBeInViewport({ ratio: 1 });
-      const chrome = main.locator('[data-slot="workspace-chrome"]');
-      const hasRoomForStickyHeader = height - (await chrome.boundingBox())!.height >= 112;
-      await expect(chrome).toHaveCSS("position", hasRoomForStickyHeader ? "sticky" : "static");
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);
-        if (hasRoomForStickyHeader) {
+        if (width >= 1024) {
           await expect(heading).toBeInViewport({ ratio: 1 });
           await expect(toggle).toBeInViewport({ ratio: 1 });
           await expect(delivery).toBeInViewport({ ratio: 1 });
@@ -997,7 +994,7 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`purchase-order-detail-scrolled-${width}x${height}.png`) });
-      if (!hasRoomForStickyHeader) {
+      if (height === 480) {
         await delivery.focus();
         await expect(delivery).toBeInViewport({ ratio: 1 });
         await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));

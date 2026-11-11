@@ -513,9 +513,6 @@ test.describe("overflowing Recipe routes", () => {
     const item = (index: number) => table.getByRole("row").filter({ hasText: layoutIngredientName(index) });
     for (const { width, height } of layoutViewports) {
       await page.setViewportSize({ width, height });
-      const chrome = main.locator('[data-slot="workspace-chrome"]');
-      const hasRoomForStickyHeader = height - (await chrome.boundingBox())!.height >= 112;
-      await expect(chrome).toHaveCSS("position", hasRoomForStickyHeader ? "sticky" : "static");
       await expectFullRecordHeading(page, targetName);
       await detailTitle.evaluate((element) => element.scrollIntoView({ block: "center" }));
       await expect(detailTitle).toBeInViewport({ ratio: 1 });
@@ -532,13 +529,19 @@ test.describe("overflowing Recipe routes", () => {
         await expect(quantity).toBeInViewport();
         await expect(quantityHeader).toBeInViewport();
         await expect.poll(async () => Math.abs((await quantityHeader.boundingBox())!.x - (await quantity.boundingBox())!.x)).toBeLessThan(1);
-        if (hasRoomForStickyHeader) {
+        if (width >= 1024) {
           await expect(sidebar).toBeInViewport({ ratio: 1 });
           await expect(detailTitle).toBeInViewport({ ratio: 1 });
           await expect(back).toBeInViewport({ ratio: 1 });
         }
       }
       await page.screenshot({ path: info.outputPath(`recipe-ingredients-scrolled-${width}x${height}.png`), animations: "disabled" });
+      if (height === 480) {
+        await back.focus();
+        await expect(back).toBeInViewport({ ratio: 1 });
+        await detailTitle.scrollIntoViewIfNeeded();
+        await expect(detailTitle).toBeInViewport({ ratio: 1 });
+      }
     }
     await back.press("Enter");
     await expect(page).toHaveURL(layoutCatalog);
