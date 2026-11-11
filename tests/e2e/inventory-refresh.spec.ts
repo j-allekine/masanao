@@ -47,7 +47,7 @@ test("returning through browser history sees posted receiving, unchanged drafts,
   await page.getByRole("link", { name: "REFRESH255-PO", exact: true }).click();
   await page.getByRole("link", { name: "Record delivery", exact: true }).click();
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-  await page.getByLabel("Receipt number", { exact: true }).fill("REFRESH255-DR");
+  await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("REFRESH255-DR");
   await page.getByRole("combobox", { name: "Item", exact: true }).fill("Refresh Eggs");
   await page.getByRole("option", { name: "Refresh Eggs", exact: true }).click();
   await page.getByRole("combobox", { name: "Unit", exact: true }).click();

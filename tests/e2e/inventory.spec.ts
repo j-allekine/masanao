@@ -34,7 +34,7 @@ test("staff reads exact stock from converted receiving through draft and posted 
   await expect(page.getByRole("link", { name: "Inventory", exact: true })).toHaveAttribute("aria-current", "page");
   await page.goto("/purchase-orders/inv-po/record-delivery");
   await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-  await page.getByLabel("Receipt number", { exact: true }).fill("INV-DR");
+  await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("INV-DR");
   await page.getByRole("combobox", { name: "Item", exact: true }).fill("Inventory Eggs");
   await page.getByRole("option", { name: "Inventory Eggs", exact: true }).click();
   await page.getByRole("combobox", { name: "Unit", exact: true }).click();

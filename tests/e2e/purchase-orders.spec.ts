@@ -580,15 +580,32 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       const linesTable = page.getByRole("table", { name: "Delivery Receipt lines", exact: true });
       await expect(linesTable).toBeVisible();
-      await expect(linesTable.getByRole("columnheader")).toHaveText([
-        "Item",
-        "Unit",
-        "Delivered Qty",
-        "Base Unit Qty",
-        "Unit price",
-        "Amount",
-        "Remove",
-      ]);
+      for (const name of ["Item", "Delivered quantity", "Unit price"]) {
+        const marker = linesTable.getByRole("columnheader", { name, exact: true }).getByText("*", { exact: true });
+        await expect(marker).toBeVisible();
+        await expect(marker).toHaveAttribute("aria-hidden", "true");
+      }
+      for (const name of ["Unit", "Base Unit quantity", "Amount", "Remove"]) {
+        await expect(linesTable.getByRole("columnheader", { name, exact: true }).getByText("*", { exact: true })).toHaveCount(0);
+      }
+      const receiptNumber = page.getByRole("textbox", { name: "Receipt number", exact: true });
+      const numberMarker = receiptNumber.locator("..").getByText("*", { exact: true });
+      const destructiveColor = await numberMarker.evaluate((marker) => getComputedStyle(marker).color);
+      await expect(numberMarker).toBeVisible();
+      await expect(page.locator("#receiptDate").locator("..").getByText("*", { exact: true })).toHaveCSS("color", destructiveColor);
+      await expect(page.getByRole("form", { name: "Record delivery" })).toHaveAttribute("novalidate", "");
+      await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+      await expect(receiptNumber).toHaveAttribute("aria-invalid", "true");
+      await expect(receiptNumber).toHaveCSS("border-top-color", destructiveColor);
+      await expect(receiptNumber).toHaveAccessibleDescription("Receipt number is required");
+      const firstLine = linesTable.getByRole("row", { name: "Delivery line 1", exact: true });
+      await expect(firstLine.getByRole("combobox", { name: "Item", exact: true })).toHaveAccessibleDescription("Select an Item");
+      await expect(firstLine.getByRole("textbox", { name: "Quantity", exact: true })).toHaveAccessibleDescription("Enter a positive quantity");
+      await expect(firstLine.getByRole("textbox", { name: "Unit price", exact: true })).toHaveAccessibleDescription("Enter a positive Unit Price");
+      for (const detail of await firstLine.locator('[data-slot="field-error"]').all()) {
+        await expect(detail).toHaveCSS("position", "absolute");
+        await expect(detail).toHaveCSS("clip-path", "inset(50%)");
+      }
       await page.setViewportSize({ width: 1024, height: 800 });
       for (const header of [
         linesTable.getByRole("columnheader", { name: "Delivered quantity", exact: true }),
@@ -603,10 +620,10 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.locator("#receiptDate").click();
       await page.locator('[data-slot="calendar"] button[data-day="9/3/2026"]').click();
       await expect(page.locator("#receiptDate")).toContainText("September 3, 2026");
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-E2E-ALT");
       await page.mouse.click(8, 8);
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
-      await expect(page.getByLabel("Receipt number", { exact: true })).toHaveValue("DR-E2E-ALT");
+      await expect(page.getByRole("textbox", { name: "Receipt number", exact: true })).toHaveValue("DR-E2E-ALT");
       const itemPicker = page.getByRole("combobox", { name: "Item", exact: true });
       await itemPicker.fill("not-an-active-item");
       await expect(page.getByText("No active Items match your search.", { exact: true })).toBeVisible();
@@ -709,7 +726,7 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await expect(page.getByText("No Delivery Receipt lines", { exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "Post delivery", exact: true })).toBeDisabled();
       await page.locator("#add-delivery-line").click();
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("combobox", { name: "Item", exact: true }).click();
       await page.getByRole("option", { name: "E2E Rice", exact: true }).click();
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toContainText("Kilogram (kg)");
@@ -722,14 +739,21 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await page.getByLabel("Unit price", { exact: true }).fill("800");
       await expect(page.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveText("25 kg");
       withE2eDatabase((database) => database.prepare('UPDATE "unit" SET "active" = 0 WHERE "id" = ?').run(alternateUnitId));
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-INVALID");
+      await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-E2E-INVALID");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       const correctedLine = page.locator('tr[aria-label="Delivery line 1"]');
-      await expect(correctedLine.getByText("Select an available Unit for this Item.", { exact: true })).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "Unit", exact: true })).toHaveAttribute("aria-invalid", "true");
+      const unavailableUnit = correctedLine.getByRole("combobox", { name: "Unit", exact: true });
+      await expect(unavailableUnit).toHaveAttribute("aria-invalid", "true");
+      await expect(unavailableUnit).toHaveCSS("border-top-color", destructiveColor);
+      await expect(unavailableUnit).toHaveAccessibleDescription("Select an available Unit for this Item.");
+      await expect(correctedLine.getByText("Select an available Unit for this Item.", { exact: true })).toHaveCSS("clip-path", "inset(50%)");
+      const recovery = page.getByRole("alert").filter({ hasText: "The Unit on delivery line 1 is unavailable." });
+      await expect(recovery).toHaveCount(1);
+      await expect(recovery).toContainText("Select an available Unit for this Item.");
       await page.getByRole("combobox", { name: "Unit", exact: true }).click();
       await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
       await expect(correctedLine.getByText("Select an available Unit for this Item.", { exact: true })).toHaveCount(0);
+      await expect(recovery).toHaveCount(0);
       await expect(page.getByRole("combobox", { name: "Unit", exact: true })).not.toHaveAttribute("aria-invalid", "true");
       await page.getByLabel("Quantity", { exact: true }).fill("3");
       await page.getByLabel("Unit price", { exact: true }).fill("50");
@@ -742,11 +766,13 @@ test.describe("Delivery Receipt alternate Unit journey", () => {
       await repeatedBaseLine.getByLabel("Quantity", { exact: true }).fill("4");
       await repeatedBaseLine.getByLabel("Unit price", { exact: true }).fill("50");
       await expect(repeatedBaseLine.getByLabel("Calculated Base Unit quantity", { exact: true })).toHaveText("4 kg");
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-ALT");
+      await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-E2E-ALT");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
-      await expect(page.locator('[data-slot="alert"]')).toContainText("A Delivery Receipt with that number already exists for this Vendor.");
+      await expect(receiptNumber).toHaveAttribute("aria-invalid", "true");
+      await expect(receiptNumber).toHaveAccessibleDescription("A Delivery Receipt with that number already exists for this Vendor.");
+      await expect(page.getByRole("alert")).toContainText("Enter a different Receipt number.");
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}/record-delivery$`));
-      await page.getByLabel("Receipt number", { exact: true }).fill("DR-E2E-BASE");
+      await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-E2E-BASE");
       await page.getByRole("button", { name: "Post delivery", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/purchase-orders/${purchaseOrderId}#delivery-receipt-`), { timeout: 30_000 });
       await expect(page.locator('[data-po-total-delivered]')).toHaveText("₱ 2,350.00");

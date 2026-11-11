@@ -120,7 +120,7 @@ test("fresh reads use edited levels and posted stock, and no-match can be cleare
     await expect(page.locator('[data-inventory-desktop] [data-item-id="status-good"]')).toContainText("Reorder now");
     await page.goto("/purchase-orders/status-po/record-delivery");
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    await page.getByLabel("Receipt number", { exact: true }).fill("STATUS-NEW");
+    await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("STATUS-NEW");
     await page.getByRole("combobox", { name: "Item", exact: true }).fill("Status Empty Item");
     await page.getByRole("option", { name: "Status Empty Item", exact: true }).click();
     await page.getByLabel("Quantity", { exact: true }).fill("20");

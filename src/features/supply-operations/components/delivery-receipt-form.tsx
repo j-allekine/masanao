@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldRequiredMark } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -86,6 +86,7 @@ function ItemPicker({ items, value, invalid, describedBy, id, onValueChange }: I
     <ComboboxInput
       id={id}
       aria-label="Item"
+      aria-required="true"
       aria-describedby={describedBy}
       aria-invalid={invalid}
       placeholder="Search active Items"
@@ -131,7 +132,7 @@ export default function DeliveryReceiptForm({
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const date = dateOverride ?? (isHydrated ? localDate() : "");
   const [errors, setErrors] = useState<DeliveryReceiptFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<{ message: string; field?: "receiptNo" } | null>(null);
   const [editingUnitPriceLineId, setEditingUnitPriceLineId] = useState<string | null>(null);
   const [posting, startTransition] = useTransition();
 
@@ -160,20 +161,20 @@ export default function DeliveryReceiptForm({
       delete next[field];
       return next;
     });
-    setFormError(null);
+    setFormError((current) => current?.field && current.field !== field ? current : null);
   }
 
   function fieldError(field: DeliveryReceiptField, id = `delivery-receipt-${field}-error`) {
     const messages = errors[field];
     return messages?.length
-      ? <FieldError id={id} errors={messages.map((message) => ({ message }))} />
+      ? <FieldError id={id} visuallyHidden errors={messages.map((message) => ({ message }))} />
       : null;
   }
 
   function lineFieldError(index: number, field: DeliveryReceiptLineField, id: string) {
     const messages = errors.lines?.[index]?.[field] ?? (errors.lines ? undefined : errors[field]);
     return messages?.length
-      ? <FieldError id={id} errors={messages.map((message) => ({ message }))} />
+      ? <FieldError id={id} visuallyHidden errors={messages.map((message) => ({ message }))} />
       : null;
   }
 
@@ -199,7 +200,7 @@ export default function DeliveryReceiptForm({
       }
       return next;
     });
-    setFormError(null);
+    setFormError((current) => current?.field ? current : null);
   }
 
   function updateLine(id: string, next: Partial<Line>) {
@@ -229,7 +230,7 @@ export default function DeliveryReceiptForm({
       if (nextLines === currentErrors.lines) return currentErrors;
       return { ...currentErrors, lines: nextLines };
     });
-    setFormError(null);
+    setFormError((current) => current?.field ? current : null);
     requestAnimationFrame(() => {
       const focusTarget = next[removedIndex] ?? next[removedIndex - 1];
       if (focusTarget) document.getElementById(`item-${focusTarget.id}`)?.focus();
@@ -264,7 +265,9 @@ export default function DeliveryReceiptForm({
         return;
       }
       setErrors(result.fields);
-      setFormError(result.error);
+      setFormError(result.kind === "duplicate"
+        ? { message: `${result.error} Enter a different Receipt number.`, field: "receiptNo" }
+        : { message: result.fields.form?.join(" ") || result.error });
     });
   }
 
@@ -273,15 +276,25 @@ export default function DeliveryReceiptForm({
     return addExactPositiveDecimals(total, multiplyExactPositiveDecimals(value.quantity, value.unitPrice));
   }, "0");
 
+  const selectionRecovery = lines.flatMap((line, index) => {
+    const lineErrors = errors.lines?.[index];
+    const unavailableItem = line.itemId && lineErrors?.itemId?.[0];
+    const unavailableUnit = lineErrors?.selectedUnitId?.[0];
+    if (unavailableItem) return [`The Item on delivery line ${index + 1} is unavailable. ${unavailableItem}`];
+    if (unavailableUnit) return [`The Unit on delivery line ${index + 1} is unavailable. ${unavailableUnit}`];
+    return [];
+  }).join(" ");
+  const visibleError = selectionRecovery || formError?.message;
+
   const inDialog = presentation === "dialog";
   const fields = (
     <div className={inDialog
       ? "flex min-h-0 min-w-0 flex-col gap-6 overflow-y-auto overscroll-y-contain px-4 py-5 [scrollbar-gutter:stable] sm:px-6"
       : "flex min-w-0 flex-col gap-6"}>
-      {formError ? <Alert id="delivery-post-error" tabIndex={-1} variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{formError}</AlertDescription></Alert> : null}
+      {visibleError ? <Alert id="delivery-post-error" tabIndex={-1} variant="destructive"><AlertTitle>Could not post Delivery Receipt</AlertTitle><AlertDescription>{visibleError}</AlertDescription></Alert> : null}
       <FieldGroup className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.receiptNo?.length)}>
-          <FieldLabel htmlFor="receiptNo">Receipt number</FieldLabel>
+          <FieldLabel htmlFor="receiptNo" required>Receipt number</FieldLabel>
           <Input id="receiptNo" name="receiptNo" aria-label="Receipt number" aria-invalid={Boolean(errors.receiptNo?.length)} aria-describedby={errors.receiptNo?.length ? "delivery-receipt-receiptNo-error" : undefined} maxLength={100} onChange={() => clearError("receiptNo")} required />
           {fieldError("receiptNo")}
         </Field>
@@ -301,11 +314,11 @@ export default function DeliveryReceiptForm({
         {lines.length ? <Table aria-label="Delivery Receipt lines" className="min-w-[60rem] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[26%]">Item</TableHead>
+              <TableHead className="w-[26%]">Item <FieldRequiredMark /></TableHead>
               <TableHead className="w-[15%]">Unit</TableHead>
-              <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty</TableHead>
+              <TableHead className="w-[12%] whitespace-nowrap" aria-label="Delivered quantity">Delivered Qty <FieldRequiredMark /></TableHead>
               <TableHead className="w-[14%] whitespace-nowrap" aria-label="Base Unit quantity">Base Unit Qty</TableHead>
-              <TableHead className="w-[12%] whitespace-nowrap">Unit price</TableHead>
+              <TableHead className="w-[12%] whitespace-nowrap">Unit price <FieldRequiredMark /></TableHead>
               <TableHead className="w-[14%]">Amount</TableHead>
               <TableHead className="w-[7%] text-right">Remove</TableHead>
             </TableRow>
