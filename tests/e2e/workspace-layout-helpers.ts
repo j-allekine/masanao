@@ -33,3 +33,15 @@ export async function expectPannedColumns(column: Locator, cell: Locator) {
   await expect.poll(async () => Math.abs((await column.boundingBox())!.x - (await cell.boundingBox())!.x)).toBeLessThan(1);
 }
 
+
+export async function expectFullRecordHeading(page: Page, title: string) {
+  const heading = page.getByRole("heading", { name: title, level: 1, exact: true });
+  await expect(heading).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Show full title", exact: true })).toHaveCount(0);
+  await expect.poll(() => heading.evaluate((element) =>
+    element.scrollHeight <= element.clientHeight &&
+    element.scrollWidth <= element.clientWidth &&
+    document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  return heading;
+}

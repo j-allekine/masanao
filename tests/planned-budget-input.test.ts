@@ -83,7 +83,7 @@ describe("planned budget input presentation", () => {
     });
     const result = activitySchema.safeParse({
       name: "Community feeding",
-      officeName: "Municipal kitchen",
+      officeId: "municipal-kitchen",
       scheduledDate: "2026-09-03",
       ...normalized,
     });
@@ -102,7 +102,7 @@ describe("planned budget input presentation", () => {
     const normalized = normalizeActivityFormInput(input);
     const result = activitySchema.safeParse({
       name: "Community feeding",
-      officeName: "Municipal kitchen",
+      officeId: "municipal-kitchen",
       scheduledDate: "2026-09-03",
       ...normalized,
     });

@@ -20,7 +20,10 @@ import { setVendorActiveCommand } from "./server/commands/set-vendor-active";
 import { updateVendorCommand } from "./server/commands/update-vendor";
 import { isAdministrator } from "./server/policies/authorization";
 import { listCategories as listCategoriesQuery } from "./server/queries/list-categories";
-import { listOffices as listOfficesQuery } from "./server/queries/list-offices";
+import {
+  listActiveOfficeOptions as listActiveOfficeOptionsQuery,
+  listOffices as listOfficesQuery,
+} from "./server/queries/list-offices";
 import { listUnits as listUnitsQuery } from "./server/queries/list-units";
 import { listVendors as listVendorsQuery } from "./server/queries/list-vendors";
 import type {
@@ -69,6 +72,10 @@ export async function listCategories() {
 
 export async function listOffices() {
   return listOfficesQuery();
+}
+
+export async function listActiveOfficeOptions() {
+  return listActiveOfficeOptionsQuery();
 }
 
 export async function listVendors() {

@@ -1,3 +1,4 @@
+import { createActivityOfficeFixture } from "./activity-office-fixture";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -113,6 +114,8 @@ for (const width of [1280, 375]) {
     test.setTimeout(120_000);
     const db = database();
     const name = `Visibility Planning ${randomUUID()}`;
+    const officeName = `${name} Office`;
+    const office = createActivityOfficeFixture(officeName);
     try {
       await page.setViewportSize({ width, height: 900 });
       await signIn(page);
@@ -132,7 +135,8 @@ for (const width of [1280, 375]) {
       await page.getByRole("button", { name: "Create Activity", exact: true }).click();
       dialog = page.getByRole("dialog");
       await dialog.getByRole("textbox", { name: "Activity name", exact: true }).fill(name + " Activity");
-      await dialog.getByRole("textbox", { name: "Office", exact: true }).fill("Kitchen");
+      await dialog.getByRole("combobox", { name: "Office", exact: true }).fill(officeName);
+      await page.getByRole("option", { name: officeName, exact: true }).click();
       await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
       await page.locator('[data-slot="calendar"] button[data-day]').first().click();
       await dialog.getByRole("button", { name: "Create Activity", exact: true }).click();
@@ -152,6 +156,7 @@ for (const width of [1280, 375]) {
       await expect(page.getByRole("heading", { name: name + " Activity", exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "Open Meal Schedule: Lunch", exact: true })).toBeVisible();
     } finally {
+      office.remove();
       const design = db.prepare("SELECT id FROM activity_design WHERE title = ?").get(name) as { id: string } | undefined;
       if (design) {
         db.prepare("DELETE FROM meal_schedule WHERE activityId IN (SELECT id FROM activity WHERE activityDesignId = ?)").run(design.id);

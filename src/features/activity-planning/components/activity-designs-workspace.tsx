@@ -7,7 +7,7 @@ import {
 } from "next/navigation";
 import { toast } from "sonner";
 
-import type { ActivityDesignListItem } from "../types";
+import type { ActivityDesignListItem, ActivityOfficeOption } from "../types";
 import ActivityCreateDialog from "./activity-create-dialog";
 import ActivityDesignDialog, {
   type ActivityDesignDialogState,
@@ -31,9 +31,11 @@ import {
 const PAGE_SIZE = 10;
 
 export default function ActivityDesignsWorkspace({
+  offices,
   activityDesigns,
   initialQuery = "",
 }: {
+  offices: ActivityOfficeOption[];
   activityDesigns: ActivityDesignListItem[];
   initialQuery?: string;
 }) {
@@ -193,6 +195,7 @@ export default function ActivityDesignsWorkspace({
         }}
       />
       <ActivityCreateDialog
+        offices={offices}
         activityDesign={activityDesignForCreate}
         activityDesigns={activityDesigns}
         open={activityDesignForCreate !== null}

@@ -1,7 +1,9 @@
+import { createActivityOfficeFixture } from "./activity-office-fixture";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
+import { expectFullRecordHeading } from "./workspace-layout-helpers";
 
 const staffPassword = "correct-horse-battery-staple";
 const destructiveColor = "rgb(157, 65, 55)";
@@ -229,7 +231,7 @@ function deleteActivityFixture(activityId: string) {
   });
 }
 
-function deleteDesigns(designs: ActivityDesignFixture[]) {
+function deleteDesigns(designs: Pick<ActivityDesignFixture, "id">[]) {
   withE2eDatabase((database) => {
     const remove = database.transaction(() => {
       for (const design of designs) {
@@ -353,6 +355,10 @@ test.describe("Activity planning journey", () => {
     } | undefined;
     let activityId: string | undefined;
     let mealScheduleId: string | undefined;
+    const office = createActivityOfficeFixture("E2E Global Office");
+    const reassignmentOffice = createActivityOfficeFixture("E2E Replacement Office");
+    const inactiveOffice = createActivityOfficeFixture("E2E Inactive Office");
+    inactiveOffice.deactivate();
 
     try {
       const createdDesign = createDesignFixture("E2E Global Activity Plan");
@@ -379,7 +385,7 @@ test.describe("Activity planning journey", () => {
         exact: true,
       });
       await expect(picker).toHaveAttribute("aria-required", "true");
-      for (const id of ["activityDesignId", "name", "officeName", "scheduledDate"]) {
+      for (const id of ["activityDesignId", "name", "officeId", "scheduledDate"]) {
         await expectRequiredMarker(creationDialog, id);
       }
       await expect(creationDialog.getByText("(optional)", { exact: false })).toHaveCount(0);
@@ -413,23 +419,44 @@ test.describe("Activity planning journey", () => {
         name: "Activity name",
         exact: true,
       });
-      const officeInput = creationDialog.getByRole("textbox", { name: "Office", exact: true });
+      const officeInput = creationDialog.getByRole("combobox", { name: "Office", exact: true });
       const scheduledDate = creationDialog.getByRole("button", { name: "Scheduled date", exact: true });
       await expect(activityNameInput).toBeFocused();
       await expectHiddenFieldError(creationDialog, activityNameInput, "Activity name is required");
-      await expectHiddenFieldError(creationDialog, officeInput, "Office name is required");
+      await expectHiddenFieldError(creationDialog, officeInput, "Office is required");
       await expectHiddenFieldError(creationDialog, scheduledDate, /Scheduled date is required/);
 
       const activityName = "E2E Global Activity";
       await activityNameInput.fill(activityName);
       await expect(activityNameInput).toHaveAttribute("aria-invalid", "false");
       await expect(officeInput).toHaveAttribute("aria-invalid", "true");
-      await officeInput.fill("E2E Global Office");
+      await officeInput.fill("E2E Inactive Office");
+      const noOfficeMatches = page.getByText("No active Offices match your search.");
+      await expect(noOfficeMatches).toBeVisible();
+      await officeInput.press("Escape");
+      await expect(officeInput).toHaveAttribute("aria-expanded", "false");
+      await expect(noOfficeMatches).toBeHidden();
+      await expect(creationDialog).toBeVisible();
+      await officeInput.fill("Global Office");
+      await expect(page.getByRole("option", { name: "E2E Global Office" })).toBeVisible();
+      await page.screenshot({ path: test.info().outputPath("activity-office-keyboard-search.png") });
+      await officeInput.press("ArrowDown");
+      await officeInput.press("Enter");
+      await expect(officeInput).toHaveValue("E2E Global Office");
+      await expect(officeInput).toHaveAttribute("aria-invalid", "false");
       await scheduledDate.click();
       await page
         .locator('[data-slot="calendar"]')
         .locator('button[data-day="9/15/2026"]')
         .click();
+      await officeInput.clear();
+      await expect(officeInput).toHaveValue("");
+      await submit.click();
+      await expect(officeInput).toBeFocused();
+      await expectHiddenFieldError(creationDialog, officeInput, "Office is required");
+      await expect(activityNameInput).toHaveValue(activityName);
+      await officeInput.fill("Global Office");
+      await page.getByRole("option", { name: "E2E Global Office", exact: true }).click();
       await creationDialog
         .getByRole("textbox", {
           name: "Activity particulars",
@@ -462,6 +489,7 @@ test.describe("Activity planning journey", () => {
       });
       await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
       await expect(page.getByRole("heading", { name: activityName, exact: true })).toBeVisible();
+      await expect(page.getByRole("main").getByText("E2E Global Office", { exact: true })).toBeVisible();
       await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
       await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
       await expect(activitySearch).toHaveValue(activityName);
@@ -479,6 +507,16 @@ test.describe("Activity planning journey", () => {
       });
       activityId = savedActivity!.id;
 
+      office.rename("E2E Renamed Global Office");
+      await page.goto("/dashboard?start=2026-09-01&end=2026-09-30");
+      const dashboardSearch = page.getByRole("searchbox", { name: "Search Activities by name or Office" });
+      await dashboardSearch.fill("E2E Global Office");
+      await dashboardSearch.press("Enter");
+      await expect(page).toHaveURL((url) => url.searchParams.get("activitySearch") === "E2E Global Office");
+      await expect(page.getByRole("row", { name: /E2E Global Activity/ })).toContainText("E2E Global Office");
+      await page.goto(`/activities?activitiesSearch=${encodeURIComponent(activityName)}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+
       await createdRow
         .getByRole("button", { name: `Actions for ${activityName}`, exact: true })
         .click();
@@ -488,7 +526,7 @@ test.describe("Activity planning journey", () => {
         editDialog.getByRole("textbox", { name: "Activity name", exact: true }),
       ).toHaveValue(activityName);
       await expect(
-        editDialog.getByRole("textbox", { name: "Office", exact: true }),
+        editDialog.getByRole("combobox", { name: "Office", exact: true }),
       ).toHaveValue("E2E Global Office");
       await expect(editDialog.locator("#activityDesignReadonly")).toHaveAttribute(
         "readonly",
@@ -541,6 +579,7 @@ test.describe("Activity planning journey", () => {
       expect(readActivityFixture(design.id, updatedActivityName)).toMatchObject({
         id: activityId,
         name: updatedActivityName,
+        officeName: "E2E Global Office",
         particulars: null,
         venue: null,
         plannedParticipantCount: null,
@@ -552,6 +591,22 @@ test.describe("Activity planning journey", () => {
       await expect(
         page.getByRole("navigation", { name: "Planning sections" }),
       ).toHaveCount(0);
+
+      await updatedRow.getByRole("button", { name: `Actions for ${updatedActivityName}`, exact: true }).click();
+      await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+      const editOffice = editDialog.getByRole("combobox", { name: "Office", exact: true });
+      await expect(editOffice).toHaveValue("E2E Global Office");
+      await editOffice.fill("Replacement Office");
+      await page.getByRole("option", { name: "E2E Replacement Office", exact: true }).click();
+      await editDialog.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(editDialog).toHaveCount(0);
+      await updatedRow.getByRole("link", { name: updatedActivityName, exact: true }).click();
+      await expect(page.getByRole("main").getByText("E2E Replacement Office", { exact: true })).toBeVisible();
+      await page.goBack();
+      await expect(updatedRow).toBeVisible();
+      expect(readActivityFixture(design.id, updatedActivityName)).toMatchObject({
+        officeName: "E2E Replacement Office",
+      });
 
       const staleRow = page
         .getByRole("row")
@@ -599,6 +654,9 @@ test.describe("Activity planning journey", () => {
         page.getByRole("searchbox", { name: "Search Activities", exact: true }),
       ).toBeFocused();
     } finally {
+      office.remove();
+      reassignmentOffice.remove();
+      inactiveOffice.remove();
       if (mealScheduleId && activityDesign && activityId) {
         deleteMealScheduleFixture(mealScheduleId);
       }
@@ -608,77 +666,147 @@ test.describe("Activity planning journey", () => {
     }
   });
 
-  test("creates an Activity, reloads it, and opens its Activity Design record", async ({
+  test("explains where to maintain Offices when no active choices exist", async ({ page }) => {
+    const design = createDesignFixture("E2E Empty Office Directory");
+    const activeIds = withE2eDatabase((db) => db.transaction(() => {
+      const offices = db.prepare("SELECT id FROM office WHERE isActive = 1").all() as { id: string }[];
+      db.prepare("UPDATE office SET isActive = 0 WHERE isActive = 1").run();
+      return offices;
+    })());
+    try {
+      await signIn(page);
+      await page.goto(`/activity-designs/${design.id}`);
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await page.getByRole("button", { name: "Create Activity", exact: true }).click();
+      const dialog = page.getByRole("dialog");
+      const office = dialog.getByRole("combobox", { name: "Office", exact: true });
+      await expect(office).toHaveAccessibleDescription(/No active Offices.*Master Data/);
+      await office.fill("Mayor");
+      await expect(page.getByText("No active Offices available.", { exact: true })).toBeVisible();
+      await expect(page.getByRole("option")).toHaveCount(0);
+      await office.press("Escape");
+      await expect(office).toHaveAttribute("aria-expanded", "false");
+      await page.screenshot({ path: test.info().outputPath("activity-office-empty-directory.png") });
+      await expect(dialog).toBeVisible();
+    } finally {
+      withE2eDatabase((db) => db.transaction(() => {
+        const reactivate = db.prepare("UPDATE office SET isActive = 1 WHERE id = ?");
+        for (const { id } of activeIds) reactivate.run(id);
+      })());
+      deleteDesigns([design]);
+    }
+  });
+
+  test("creates an Activity, reloads it, and keeps its Office through directory changes", async ({
     page,
   }) => {
     test.setTimeout(60_000);
 
-    await signIn(page);
-    const title = "E2E Contextual Feeding Plan";
-    await createDesign(page, title);
+    const officeName = "E2E Kitchen Office";
+    const office = createActivityOfficeFixture(officeName);
+    let designId: string | undefined;
+    try {
+      await signIn(page);
+      const title = "E2E Contextual Feeding Plan";
+      await createDesign(page, title);
 
-    const designRow = page.getByRole("row").filter({ hasText: title });
-    const actions = designRow.getByRole("button", {
-      name: `Actions for ${title}`,
-      exact: true,
-    });
-    const designId = (await actions.getAttribute("id"))!.replace(
-      "activity-design-actions-",
-      "",
-    );
+      const designRow = page.getByRole("row").filter({ hasText: title });
+      const actions = designRow.getByRole("button", {
+        name: `Actions for ${title}`,
+        exact: true,
+      });
+      designId = (await actions.getAttribute("id"))!.replace(
+        "activity-design-actions-",
+        "",
+      );
 
-    await actions.click();
-    const menuItems = page.getByRole("menuitem");
-    await expect(menuItems.nth(0)).toHaveText("Add Activity");
-    await expect(menuItems.nth(1)).toHaveText("Edit");
-    await expect(menuItems.nth(2)).toHaveText("Delete");
-    await menuItems.nth(0).click();
+      await actions.click();
+      const menuItems = page.getByRole("menuitem");
+      await expect(menuItems.nth(0)).toHaveText("Add Activity");
+      await expect(menuItems.nth(1)).toHaveText("Edit");
+      await expect(menuItems.nth(2)).toHaveText("Delete");
+      await menuItems.nth(0).click();
 
-    const sheet = page.getByRole("dialog").filter({ hasText: `Add Activity to “${title}”` });
-    await expect(sheet).toContainText("Activity Design No.");
-    await expect(sheet).toContainText("FY 2026");
-    await expect(
-      sheet.getByRole("textbox", { name: "Activity name", exact: true }),
-    ).toBeFocused();
-    await sheet
-      .getByRole("textbox", { name: "Activity name", exact: true })
-      .fill("E2E Community Feeding");
-    await sheet
-      .getByRole("textbox", { name: "Office", exact: true })
-      .fill("E2E Kitchen Office");
-    await sheet
-      .getByRole("button", { name: "Scheduled date", exact: true })
-      .click();
-    const calendar = page.locator('[data-slot="calendar"]');
-    await calendar.locator("button[data-day]").first().click();
-    await sheet
-      .getByRole("textbox", { name: "Planned budget", exact: true })
-      .fill("12345.67");
-    await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
+      const sheet = page.getByRole("dialog").filter({ hasText: `Add Activity to “${title}”` });
+      await expect(sheet).toContainText("Activity Design No.");
+      await expect(sheet).toContainText("FY 2026");
+      await expect(
+        sheet.getByRole("textbox", { name: "Activity name", exact: true }),
+      ).toBeFocused();
+      await sheet
+        .getByRole("textbox", { name: "Activity name", exact: true })
+        .fill("E2E Community Feeding");
+      await sheet
+        .getByRole("combobox", { name: "Office", exact: true })
+        .fill("Kitchen Office");
+      await page.getByRole("option", { name: officeName, exact: true }).click();
+      await sheet
+        .getByRole("button", { name: "Scheduled date", exact: true })
+        .click();
+      const calendar = page.locator('[data-slot="calendar"]');
+      await calendar.locator("button[data-day]").first().click();
+      await sheet
+        .getByRole("textbox", { name: "Planned budget", exact: true })
+        .fill("12345.67");
+      await sheet.getByRole("button", { name: "Create Activity", exact: true }).click();
 
-    await expect(sheet).toHaveCount(0);
-    await expect(page.getByText(`Activity added to “${title}”`, { exact: true })).toBeVisible();
-    await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
-    await expect(page.getByRole("heading", { name: "E2E Community Feeding", exact: true })).toBeVisible();
-    await page.goto("/activity-designs");
-    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    await expect(designRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
+      await expect(sheet).toHaveCount(0);
+      await expect(page.getByText(`Activity added to “${title}”`, { exact: true })).toBeVisible();
+      await expect(page).toHaveURL(/\/activities\/[^/?]+(?:\?.*)?$/);
+      await expect(page.getByRole("heading", { name: "E2E Community Feeding", exact: true })).toBeVisible();
+      await page.goto("/activity-designs");
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      await expect(designRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
 
-    await page.reload();
-    await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
-    const savedRow = page.getByRole("row").filter({ hasText: title });
-    await expect(savedRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
-    expect(readActivityFixture(designId, "E2E Community Feeding")).toMatchObject({
-      name: "E2E Community Feeding",
-      officeName: "E2E Kitchen Office",
-      plannedBudgetCentavos: 1234567,
-    });
+      await page.reload();
+      await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+      const savedRow = page.getByRole("row").filter({ hasText: title });
+      await expect(savedRow.getByRole("cell", { name: "1 Activity", exact: true })).toBeVisible();
+      expect(readActivityFixture(designId, "E2E Community Feeding")).toMatchObject({
+        name: "E2E Community Feeding",
+        officeName,
+        plannedBudgetCentavos: 1234567,
+      });
 
-    await page.goto(`/activity-designs/${designId}`);
-    await expect(page).toHaveURL(new RegExp(`/activity-designs/${designId}$`));
-    await expect(
-      page.getByRole("heading", { name: new RegExp(title) }),
-    ).toBeVisible();
+      await page.goto(`/activity-designs/${designId}`);
+      await expect(page).toHaveURL(new RegExp(`/activity-designs/${designId}$`));
+      await expect(
+        page.getByRole("heading", { name: new RegExp(title) }),
+      ).toBeVisible();
+
+      const row = page.getByRole("row").filter({ hasText: "E2E Community Feeding" });
+      for (const active of [true, false]) {
+        if (!active) {
+          office.deactivate();
+          await page.reload();
+        }
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        await row.getByRole("button", { name: "Actions for E2E Community Feeding" }).click();
+        await page.getByRole("menuitem", { name: "Edit", exact: true }).click();
+        const edit = page.getByRole("dialog");
+        const picker = edit.getByRole("combobox", { name: "Office", exact: true });
+        await expect(picker).toHaveValue(officeName);
+        await picker.press("ArrowDown");
+        await expect(page.getByRole("option", { name: `Keep saved Office · ${officeName}` })).toBeVisible();
+        const directoryOption = page.getByRole("option", { name: officeName, exact: true });
+        if (active) {
+          await expect(directoryOption).toBeVisible();
+        } else {
+          await expect(directoryOption).toHaveCount(0);
+          await page.screenshot({ path: test.info().outputPath("activity-office-keep-inactive.png") });
+        }
+        await picker.press("Escape");
+        const venue = active ? "Community Hall" : "Community Annex";
+        await edit.getByRole("textbox", { name: "Venue", exact: true }).fill(venue);
+        await edit.getByRole("button", { name: "Save changes", exact: true }).click();
+        await expect(edit).toHaveCount(0);
+        await expect(row).toContainText(officeName);
+        expect(readActivityFixture(designId, "E2E Community Feeding")).toMatchObject({ officeName, venue });
+      }
+    } finally {
+      office.remove();
+      if (designId) deleteDesigns([{ id: designId }]);
+    }
   });
 
   test("opens populated and empty Activity Design records without page overflow", async ({
@@ -759,7 +887,8 @@ test.describe("Activity planning journey", () => {
         await expect(createDialog).toContainText(
           `Add Activity to “${populatedDesign.title}”`,
         );
-        await expect(createDialog.getByRole("combobox")).toHaveCount(0);
+        await expect(createDialog.getByRole("combobox", { name: "Activity Design", exact: true })).toHaveCount(0);
+        await expect(createDialog.getByRole("combobox", { name: "Office", exact: true })).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(createDialog).toHaveCount(0);
 
@@ -786,6 +915,50 @@ test.describe("Activity planning journey", () => {
       deleteActivityFixture(plannedActivity.id);
       deleteActivityFixture(otherActivity.id);
       deleteDesigns([populatedDesign, emptyDesign, otherDesign]);
+    }
+  });
+
+  test("wraps full Planning record names and keeps actions reachable", async ({ page }, info) => {
+    test.setTimeout(120_000);
+    const phrase = "Municipal kitchen workshop and volunteer meal preparation ";
+    const title = phrase.repeat(4).slice(0, 200);
+    const design = createDesignFixture(title);
+    const activity = createActivityFixture({
+      activityDesignId: design.id,
+      name: "Community kitchen orientation",
+      officeName: "E2E Activity Office",
+      scheduledDate: "2026-10-07T00:00:00.000Z",
+    });
+    try {
+      await signIn(page);
+      const designUrl = `/activity-designs/${design.id}`;
+      for (const [path, headingName, actionName, record] of [
+        [designUrl, title, "Create Activity", "design"],
+        [`${designUrl}/activities/${activity.id}`, activity.name, "Add Meal Schedule", "activity"],
+      ]) {
+        await page.goto(path);
+        await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+        const sidebar = page.getByRole("main").getByRole("button", { name: "Toggle Sidebar", exact: true });
+        const action = page.getByRole("button", { name: actionName, exact: true });
+        const back = page.getByRole("link", { name: "Activity Designs", exact: true });
+        for (const viewport of [{ width: 1280, height: 800 }, { width: 320, height: 480 }, { width: 320, height: 300 }]) {
+          await page.setViewportSize(viewport);
+          const heading = await expectFullRecordHeading(page, headingName);
+          await heading.scrollIntoViewIfNeeded();
+          await expect(heading).toBeInViewport({ ratio: 1 });
+          await page.screenshot({ path: info.outputPath(`${record}-heading-${viewport.width}x${viewport.height}.png`) });
+          await sidebar.focus();
+          await page.keyboard.press("Tab");
+          await expect(action).toBeFocused();
+          await expect(action).toBeInViewport({ ratio: 1 });
+          await page.keyboard.press("Tab");
+          await expect(back).toBeFocused();
+          await expect(back).toBeInViewport({ ratio: 1 });
+        }
+      }
+    } finally {
+      deleteActivityFixture(activity.id);
+      deleteDesigns([design]);
     }
   });
 

@@ -10,6 +10,7 @@ import type {
   ActivityDesignListItem,
   ActivityListItem,
   ActivityWorkspaceListItem,
+  ActivityOfficeOption,
 } from "../types";
 import ActivitiesTable from "./activities-table";
 import { getPlanningReturnUrl, withPlanningReturn } from "./planning-return-state";
@@ -32,10 +33,12 @@ import {
 const PAGE_SIZE = 10;
 
 export default function ActivitiesWorkspace({
+  offices,
   activities,
   activityDesigns,
   initialQuery = "",
 }: {
+  offices: ActivityOfficeOption[];
   activities: ActivityWorkspaceListItem[];
   activityDesigns: ActivityDesignListItem[];
   initialQuery?: string;
@@ -249,6 +252,7 @@ export default function ActivitiesWorkspace({
         />
       </div>
       <ActivityCreateDialog
+        offices={offices}
         activityDesign={null}
         activityDesigns={activityDesigns}
         open={isCreateDialogOpen}
@@ -256,6 +260,7 @@ export default function ActivitiesWorkspace({
         onSuccess={handleCreateSuccess}
       />
       <ActivityCreateDialog
+        offices={offices}
         activityDesign={
           activityForEdit
             ? activityDesigns.find(

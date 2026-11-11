@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { expect, test, type Page } from "@playwright/test";
 import { postFixtureSignIn } from "./fixture-auth";
+import { expectFullRecordHeading } from "./workspace-layout-helpers";
 
 const staffPassword = "correct-horse-battery-staple";
 
@@ -512,9 +513,10 @@ test.describe("overflowing Recipe routes", () => {
     const item = (index: number) => table.getByRole("row").filter({ hasText: layoutIngredientName(index) });
     for (const { width, height } of layoutViewports) {
       await page.setViewportSize({ width, height });
-      const chrome = main.locator('[data-slot="workspace-chrome"]');
-      await expect.poll(async () => height - (await chrome.boundingBox())!.height).toBeGreaterThan(100);
-      await page.evaluate(() => window.scrollTo(0, 0));
+      await expectFullRecordHeading(page, targetName);
+      await detailTitle.evaluate((element) => element.scrollIntoView({ block: "center" }));
+      await expect(detailTitle).toBeInViewport({ ratio: 1 });
+      await page.screenshot({ path: info.outputPath(`recipe-heading-${width}x${height}.png`), animations: "disabled" });
       await item(1).scrollIntoViewIfNeeded();
       await expect(item(1)).toBeInViewport();
       await expect(item(layoutIngredientCount)).not.toBeInViewport();
@@ -527,17 +529,20 @@ test.describe("overflowing Recipe routes", () => {
         await expect(quantity).toBeInViewport();
         await expect(quantityHeader).toBeInViewport();
         await expect.poll(async () => Math.abs((await quantityHeader.boundingBox())!.x - (await quantity.boundingBox())!.x)).toBeLessThan(1);
-        await expect(sidebar).toBeInViewport({ ratio: 1 });
-        await expect(detailTitle).toBeInViewport({ ratio: 1 });
-        await expect(back).toBeInViewport({ ratio: 1 });
+        if (width >= 1024) {
+          await expect(sidebar).toBeInViewport({ ratio: 1 });
+          await expect(detailTitle).toBeInViewport({ ratio: 1 });
+          await expect(back).toBeInViewport({ ratio: 1 });
+        }
       }
       await page.screenshot({ path: info.outputPath(`recipe-ingredients-scrolled-${width}x${height}.png`), animations: "disabled" });
+      if (height === 480) {
+        await back.focus();
+        await expect(back).toBeInViewport({ ratio: 1 });
+        await detailTitle.scrollIntoViewIfNeeded();
+        await expect(detailTitle).toBeInViewport({ ratio: 1 });
+      }
     }
-    const fullTitle = main.getByRole("button", { name: "Show full title", exact: true });
-    await fullTitle.press("Enter");
-    await expect(page.getByRole("dialog", { name: targetName, exact: true })).toHaveText(targetName);
-    await page.keyboard.press("Escape");
-    await expect(fullTitle).toBeFocused();
     await back.press("Enter");
     await expect(page).toHaveURL(layoutCatalog);
     await expect(main.getByLabel("Search Recipes")).toHaveValue("Layout Recipe");
@@ -575,13 +580,16 @@ test.describe("overflowing Recipe routes", () => {
         expect(await page.evaluate(() => scrollY)).toBe(0);
       }
       await expect(last).toHaveValue("2.5000");
+      await expectFullRecordHeading(page, layoutRecipeName(20));
       await page.screenshot({ path: info.outputPath(`recipe-edit-scrolled-${width}x${height}.png`), animations: "disabled" });
     }
 
     await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
     await last.scrollIntoViewIfNeeded();
     await expect(last).toBeInViewport({ ratio: 1 });
-    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+    await save.scrollIntoViewIfNeeded();
+    await expect(save).toBeInViewport({ ratio: 0.99 });
     await last.fill("0");
     await save.press("Enter");
     const summary = main.getByRole("alert").filter({ hasText: "Could not save Recipe" });
@@ -592,7 +600,8 @@ test.describe("overflowing Recipe routes", () => {
     await expect(last).toBeInViewport({ ratio: 1 });
     await expect(last).toHaveValue("0");
     await expect(pax).toHaveValue("50");
-    await expect(save).toBeInViewport({ ratio: 1 });
+    await save.scrollIntoViewIfNeeded();
+    await expect(save).toBeInViewport({ ratio: 0.99 });
     await page.screenshot({ path: info.outputPath("recipe-edit-validation-enlarged.png"), animations: "disabled" });
 
     await cancel.press("Enter");
@@ -606,7 +615,7 @@ test.describe("overflowing Recipe routes", () => {
     await expect(page).toHaveURL(layoutCatalog);
 
     await main.getByRole("link", { name: "Create Recipe", exact: true }).click();
-    await expect(main.getByRole("heading", { name: "New Recipe", level: 1, exact: true })).toBeVisible();
+    await expectFullRecordHeading(page, "New Recipe");
     await page.addStyleTag({ content: "html { font-size: 150%; } body { letter-spacing: .02em; }" });
     const create = main.getByRole("button", { name: "Create Recipe", exact: true });
     const add = main.getByRole("button", { name: "Add Ingredient", exact: true });

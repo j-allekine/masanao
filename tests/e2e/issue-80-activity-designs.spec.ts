@@ -1,3 +1,4 @@
+import { createActivityOfficeFixture } from "./activity-office-fixture";
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
@@ -325,6 +326,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
     const designs: ActivityDesign[] = [];
 
     await authenticate(page);
+    const officeFixture = createActivityOfficeFixture("E2E exact Office");
     try {
       designs.push(createDesign(title));
 
@@ -389,7 +391,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         name: "Activity name",
         exact: true,
       });
-      const office = dialog.getByRole("textbox", { name: "Office", exact: true });
+      const office = dialog.getByRole("combobox", { name: "Office", exact: true });
       const participantCount = dialog.getByRole("textbox", {
         name: "Planned pax",
         exact: true,
@@ -400,7 +402,8 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       });
 
       await activityName.fill("E2E exact Activity");
-      await office.fill("E2E exact Office");
+      await office.fill("exact Office");
+      await page.getByRole("option", { name: "E2E exact Office", exact: true }).click();
       await participantCount.fill("1221121");
       await expect(participantCount).toHaveValue("1,221,121");
       await dialog.getByRole("button", { name: "Scheduled date", exact: true }).click();
@@ -431,7 +434,9 @@ test.describe("issue 80 Activity Designs cleanup", () => {
       await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("position", "absolute");
       await expect(dialog.locator("#plannedBudgetPesos-error")).toHaveCSS("clip-path", "inset(50%)");
       await expect(
-        dialog.locator('[data-slot="input-group"]').filter({ has: plannedBudget }),
+        dialog.locator('[data-slot="input-group"]').filter({
+          has: page.getByRole("textbox", { name: "Planned budget", exact: true }),
+        }),
       ).toHaveCSS("border-top-color", "rgb(157, 65, 55)");
 
       await particulars.clear();
@@ -455,6 +460,7 @@ test.describe("issue 80 Activity Designs cleanup", () => {
         plannedBudgetCentavos: 121212100,
       });
     } finally {
+      officeFixture.remove();
       deleteDesigns(designs);
     }
   });

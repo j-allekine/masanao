@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import WorkspaceShell from "@/components/workspace/workspace-shell";
+import { listActiveOfficeOptions } from "@/features/master-data/server";
 import { auth } from "@/server/auth";
 import { listActivityDesigns } from "@/features/activity-planning/server";
 import { ActivityDesignsContent } from "@/features/activity-planning/ui";
@@ -26,7 +27,10 @@ export default async function ActivityDesignsRoute({
     redirect("/");
   }
 
-  const activityDesigns = await listActivityDesigns();
+  const [activityDesigns, offices] = await Promise.all([
+    listActivityDesigns(),
+    listActiveOfficeOptions(),
+  ]);
   const initialQuery = serializeSearchParams(await searchParams);
 
   return (
@@ -38,6 +42,7 @@ export default async function ActivityDesignsRoute({
       activeSection="activity-designs"
     >
       <ActivityDesignsContent
+        offices={offices}
         initialActivityDesigns={activityDesigns}
         initialQuery={initialQuery}
       />

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { parsePesoStringToCentavos } from "../domain/planned-budget";
-import type { ActivityFieldErrors } from "../types";
+import {
+  KEEP_SAVED_OFFICE,
+  type ActivityCreateResult,
+  type ActivityFieldErrors,
+} from "../types";
 
 const optionalText = (label: string, max: number) =>
   z.preprocess(
@@ -67,11 +71,10 @@ const nameSchema = z
   .min(1, "Activity name is required")
   .max(200, "Activity name must be 200 characters or fewer");
 
-const officeNameSchema = z
-  .string()
+const officeIdSchema = z
+  .string({ error: "Office is required" })
   .trim()
-  .min(1, "Office name is required")
-  .max(200, "Office name must be 200 characters or fewer");
+  .min(1, "Office is required");
 
 const plannedBudgetPesosSchema = z.preprocess(
   (value) => {
@@ -107,7 +110,10 @@ const plannedBudgetPesosSchema = z.preprocess(
 
 export const activitySchema = z.object({
   name: nameSchema,
-  officeName: officeNameSchema,
+  officeId: officeIdSchema.refine(
+    (id) => id !== KEEP_SAVED_OFFICE,
+    "Office is required",
+  ),
   particulars: optionalText("Activity particulars", 2_000),
   scheduledDate: scheduledDateSchema,
   venue: optionalText("Venue", 300),
@@ -116,6 +122,17 @@ export const activitySchema = z.object({
   ),
   plannedBudgetPesos: plannedBudgetPesosSchema,
 });
+
+export const activityUpdateSchema = activitySchema.extend({
+  officeId: officeIdSchema.transform((id) => id === KEEP_SAVED_OFFICE ? null : id),
+});
+
+export const unavailableActivityOffice = {
+  ok: false,
+  kind: "validation",
+  error: "Please correct the highlighted Activity fields.",
+  fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
+} satisfies Extract<ActivityCreateResult, { ok: false }>;
 
 function normalizeGroupedInteger(value: string) {
   const trimmed = value.trim();
@@ -162,6 +179,7 @@ export function normalizeActivityFormInput(input: Record<string, unknown>) {
 }
 
 export type ActivityInput = z.infer<typeof activitySchema>;
+export type ActivityUpdateInput = z.infer<typeof activityUpdateSchema>;
 
 export function activityFieldErrors(error: z.ZodError): ActivityFieldErrors {
   const fields: ActivityFieldErrors = {};

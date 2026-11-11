@@ -1,3 +1,7 @@
+export const KEEP_SAVED_OFFICE = "keep-saved-office";
+
+export type ActivityOfficeOption = { id: string; name: string };
+
 export type ActivityDesignField =
   | "activityDesignNo"
   | "fiscalYear"
@@ -9,7 +13,7 @@ export type FieldErrors = Partial<Record<ActivityDesignField | "form", string[]>
 export type ActivityField =
   | "activityDesignId"
   | "name"
-  | "officeName"
+  | "officeId"
   | "particulars"
   | "scheduledDate"
   | "venue"

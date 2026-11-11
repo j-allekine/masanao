@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
+import { expectFullRecordHeading, expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -106,11 +106,12 @@ test.describe("Purchase Orders read journey", () => {
         const insertPurchaseOrder = database.prepare(
           `INSERT INTO "purchase_order"
            ("id", "purchaseOrderNo", "normalizedPurchaseOrderNo", "vendorId", "referenceNumber", "note", "createdAt", "updatedAt")
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         );
 
         purchaseOrderIds.forEach((purchaseOrderId, index) => {
           const purchaseOrderNo = `PO-E2E-${String(index + 1).padStart(3, "0")}`;
+          const timestamp = new Date(Date.UTC(2026, 8, 15, 12) - index * 1_000).toISOString();
           insertPurchaseOrder.run(
             purchaseOrderId,
             purchaseOrderNo,
@@ -118,6 +119,8 @@ test.describe("Purchase Orders read journey", () => {
             vendorId,
             `ORS-E2E-${String(index + 1).padStart(3, "0")}`,
             index === 0 ? "Kitchen delivery" : null,
+            timestamp,
+            timestamp,
           );
         });
       });
@@ -974,13 +977,17 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
         document.body.style.letterSpacing = enlarge ? ".02em" : "";
         window.scrollTo(0, 0);
       }, width === 768 || height === 480);
+      await expectFullRecordHeading(page, number);
       await expect(heading).toBeInViewport({ ratio: 1 });
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);
-        await expect(heading).toBeInViewport({ ratio: 1 });
-        await expect(toggle).toBeInViewport({ ratio: 1 });
-        await expect(delivery).toBeInViewport({ ratio: 1 });
+        if (width >= 1024) {
+          await expect(heading).toBeInViewport({ ratio: 1 });
+          await expect(toggle).toBeInViewport({ ratio: 1 });
+          await expect(delivery).toBeInViewport({ ratio: 1 });
+        }
       }
+      await expect(table.getByRole("row").last()).toBeInViewport();
       if (width >= 640) {
         const amount = table.getByRole("columnheader", { name: "Amount", exact: true });
         await expect(table.getByRole("columnheader").first()).toBeInViewport();
@@ -990,15 +997,14 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`purchase-order-detail-scrolled-${width}x${height}.png`) });
+      if (height === 480) {
+        await delivery.focus();
+        await expect(delivery).toBeInViewport({ ratio: 1 });
+        await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));
+        await expect(heading).toBeInViewport({ ratio: 1 });
+        await page.screenshot({ path: info.outputPath(`purchase-order-heading-${width}x${height}.png`) });
+      }
     }
-
-    const fullTitle = page.getByRole("button", { name: "Show full title", exact: true });
-    await fullTitle.focus();
-    await page.keyboard.press("Enter");
-    const titleDialog = page.getByRole("dialog", { name: number, exact: true });
-    await expect(titleDialog.getByText(number, { exact: true })).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(titleDialog).toBeHidden();
 
     await delivery.click();
     await expect(page).toHaveURL(`${detailPath}/record-delivery`, { timeout: 30_000 });

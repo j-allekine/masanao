@@ -2,8 +2,9 @@ import "server-only";
 
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
+import { findActiveOfficeName } from "@/features/master-data/server/db/offices";
 
-import type { ActivityInput } from "../../schemas/activity";
+import type { ActivityInput, ActivityUpdateInput } from "../../schemas/activity";
 import type {
   ActivityDetailItem,
   ActivityListItem,
@@ -180,34 +181,46 @@ export async function getActivityRecord(
   };
 }
 
+type ActivityWriteResult = ActivityListItem | "invalid-office" | null;
+
+function activityWriteData(input: ActivityInput | ActivityUpdateInput) {
+  return {
+    name: input.name,
+    particulars: input.particulars ?? null,
+    scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
+    venue: input.venue ?? null,
+    plannedParticipantCount: input.plannedParticipantCount ?? null,
+    plannedBudgetCentavos: input.plannedBudgetPesos ?? null,
+  };
+}
+
 export async function createActivityRecord(
   activityDesignId: string,
   input: ActivityInput,
-): Promise<ActivityListItem | null> {
-  const parent = await prisma.activityDesign.findUnique({
-    where: { id: activityDesignId },
-    select: { id: true },
-  });
-
-  if (!parent) return null;
-
+): Promise<ActivityWriteResult> {
   try {
-    const activity = await prisma.activity.create({
-      data: {
-        id: crypto.randomUUID(),
-        activityDesignId,
-        name: input.name,
-        officeName: input.officeName,
-        particulars: input.particulars ?? null,
-        scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
-        venue: input.venue ?? null,
-        plannedParticipantCount: input.plannedParticipantCount ?? null,
-        plannedBudgetCentavos: input.plannedBudgetPesos ?? null,
-      },
-      select: activitySelect,
-    });
+    return await prisma.$transaction(async (db) => {
+      const parent = await db.activityDesign.findUnique({
+        where: { id: activityDesignId },
+        select: { id: true },
+      });
+      if (!parent) return null;
 
-    return toActivityListItem(activity);
+      const office = await findActiveOfficeName(db, input.officeId);
+      if (!office) return "invalid-office";
+
+      const activity = await db.activity.create({
+        data: {
+          ...activityWriteData(input),
+          id: crypto.randomUUID(),
+          activityDesignId,
+          officeName: office.name,
+        },
+        select: activitySelect,
+      });
+
+      return toActivityListItem(activity);
+    });
   } catch (error) {
     if (isForeignKeyConstraintViolation(error)) return null;
     throw error;
@@ -217,31 +230,29 @@ export async function createActivityRecord(
 export async function updateActivityRecord(
   activityDesignId: string,
   activityId: string,
-  input: ActivityInput,
-): Promise<ActivityListItem | null> {
-  const existingActivity = await prisma.activity.findFirst({
-    where: { id: activityId, activityDesignId },
-    select: { id: true },
-  });
-
-  if (!existingActivity) return null;
-
+  input: ActivityUpdateInput,
+): Promise<ActivityWriteResult> {
   try {
-    const activity = await prisma.activity.update({
-      where: { id: activityId },
-      data: {
-        name: input.name,
-        officeName: input.officeName,
-        particulars: input.particulars ?? null,
-        scheduledDate: dateOnlyToUtcDate(input.scheduledDate),
-        venue: input.venue ?? null,
-        plannedParticipantCount: input.plannedParticipantCount ?? null,
-        plannedBudgetCentavos: input.plannedBudgetPesos ?? null,
-      },
-      select: activitySelect,
-    });
+    return await prisma.$transaction(async (db) => {
+      const existing = await db.activity.findUnique({
+        where: { id: activityId, activityDesignId },
+        select: { officeName: true },
+      });
+      if (!existing) return null;
 
-    return toActivityListItem(activity);
+      const office = input.officeId === null
+        ? { name: existing.officeName }
+        : await findActiveOfficeName(db, input.officeId);
+      if (!office) return "invalid-office";
+
+      const activity = await db.activity.update({
+        where: { id: activityId, activityDesignId },
+        data: { ...activityWriteData(input), officeName: office.name },
+        select: activitySelect,
+      });
+
+      return toActivityListItem(activity);
+    });
   } catch (error) {
     if (isRecordNotFound(error)) return null;
     throw error;

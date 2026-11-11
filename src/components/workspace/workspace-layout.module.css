@@ -2,6 +2,10 @@
   scrollbar-gutter: stable;
 }
 
+.layout:not([data-flow-scroll]) > .chrome {
+  position: sticky;
+}
+
 .body :where([id], :focus) {
   scroll-margin-block-start: calc(
     var(--workspace-chrome-height, 0px) + var(--workspace-column-label-height, 0px) + 0.25rem

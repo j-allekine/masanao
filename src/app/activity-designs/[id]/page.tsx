@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import WorkspaceShell from "@/components/workspace/workspace-shell";
 import { getActivityDesign } from "@/features/activity-planning/server";
 import { ActivityDesignDetailContent } from "@/features/activity-planning/ui";
+import { listActiveOfficeOptions } from "@/features/master-data/server";
 import { auth } from "@/server/auth";
 
 export const metadata: Metadata = {
@@ -24,7 +25,10 @@ export default async function ActivityDesignDetailRoute(
     redirect("/");
   }
 
-  const activityDesign = await getActivityDesign(id);
+  const [activityDesign, offices] = await Promise.all([
+    getActivityDesign(id),
+    listActiveOfficeOptions(),
+  ]);
   if (!activityDesign) notFound();
 
   return (
@@ -35,7 +39,7 @@ export default async function ActivityDesignDetailRoute(
       }}
       activeSection="activity-designs"
     >
-      <ActivityDesignDetailContent activityDesign={activityDesign} />
+      <ActivityDesignDetailContent activityDesign={activityDesign} offices={offices} />
     </WorkspaceShell>
   );
 }

@@ -15,7 +15,7 @@ export function RecordFacts({ fields }: { fields: RecordFact[] }) {
 export function RecordDetails({ fields, label = "Additional details", disabled = false }: { fields: RecordFact[]; label?: string; disabled?: boolean }) {
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   if (!fields.length) return null;
-  return <Collapsible className="min-w-0"><CollapsibleTrigger disabled={disabled || !hydrated} render={<Button variant="ghost" className="px-0" />}>
-    {label}<ChevronDown data-icon="inline-end" aria-hidden="true" />
+  return <Collapsible className="min-w-0"><CollapsibleTrigger disabled={disabled || !hydrated} render={<Button variant="ghost" className="h-auto min-h-8 min-w-0 max-w-full px-0 text-left whitespace-normal" />}>
+    <span className="min-w-0 wrap-anywhere">{label}</span><ChevronDown data-icon="inline-end" aria-hidden="true" />
   </CollapsibleTrigger><CollapsibleContent className="pt-2 pb-3"><RecordFacts fields={fields} /></CollapsibleContent></Collapsible>;
 }

@@ -55,7 +55,7 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
     page.getByRole("alert").filter({ hasText: "Confirm the unresolved" }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Review quantities and stock" })
+    .getByRole("button", { name: "Review", exact: true })
     .click();
   const review = page.getByRole("dialog", {
     name: "Combined quantities and stock",

@@ -8,6 +8,7 @@ import {
   listActivities,
   listActivityDesigns,
 } from "@/features/activity-planning/server";
+import { listActiveOfficeOptions } from "@/features/master-data/server";
 import { auth } from "@/server/auth";
 import { serializeSearchParams } from "@/lib/search-params";
 
@@ -29,9 +30,10 @@ export default async function ActivitiesRoute({
     redirect("/");
   }
 
-  const [activities, activityDesigns] = await Promise.all([
+  const [activities, activityDesigns, offices] = await Promise.all([
     listActivities(),
     listActivityDesigns(),
+    listActiveOfficeOptions(),
   ]);
   const initialQuery = serializeSearchParams(await searchParams);
 
@@ -44,6 +46,7 @@ export default async function ActivitiesRoute({
       activeSection="activity-designs"
     >
       <ActivitiesContent
+        offices={offices}
         initialActivities={activities}
         initialActivityDesigns={activityDesigns}
         initialQuery={initialQuery}

@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, LockKeyhole, Plus, X } from "lucide-react";
+import { AlertTriangle, ClipboardList, LockKeyhole, Plus, X } from "lucide-react";
 import WorkspaceLayout, { WorkspaceRecordTitle, WorkspaceTaskHeader } from "@/components/workspace/workspace-layout";
 import WorkspaceRowActionMenu from "@/components/workspace/row-action-menu";
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
@@ -482,7 +482,7 @@ export default function IssuanceDraftContent({
     setStockItems(result.value.draft.stockItems);
     setMealPax(result.value.draft.mealPax?.toString() ?? "");
     setDirty(false);
-    setNotice("Draft saved. No stock has been issued.");
+    setNotice("Draft saved.");
     return result.value;
   }
   function save() {
@@ -508,7 +508,7 @@ export default function IssuanceDraftContent({
       }
       if (current.review.some((row) => row.warning)) {
         setError(
-          "Confirm the unresolved combined Item quantities in Review quantities and stock before posting.",
+          "Confirm the unresolved combined Item quantities in Review before posting.",
         );
         return;
       }
@@ -593,11 +593,11 @@ export default function IssuanceDraftContent({
         </WorkspaceTaskHeader>
       }
       footer={
-        <div className="grid grid-cols-2 gap-2 [&>button]:h-auto [&>button]:min-h-8 [&>button]:min-w-0 [&>button]:whitespace-normal sm:flex sm:flex-wrap">
-          {dirty ? <Button variant="ghost" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
-          <Button id="issuance-review" variant="outline" className={dirty ? undefined : "col-span-2"} disabled={pending} onClick={openReview} aria-label="Review quantities and stock">
-            <span className="sm:hidden">Review quantities</span>
-            <span className="hidden sm:inline">Review quantities and stock</span>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {dirty ? <Button variant="ghost" className="sm:mr-2" disabled={pending} onClick={() => setDiscard("reset")}>Discard changes</Button> : null}
+          <Button id="issuance-review" variant="outline" disabled={pending} onClick={openReview}>
+            <ClipboardList data-icon="inline-start" aria-hidden="true" />
+            Review
           </Button>
           <Button variant="outline" disabled={pending || !canSave} onClick={save}>{pending ? "Working…" : "Save draft"}</Button>
           <Button id="issuance-post" disabled={pending || !pax(mealPax) || (!recipes.length && !stockItems.length)} onClick={preparePosting}>Post issuance</Button>
@@ -610,18 +610,19 @@ export default function IssuanceDraftContent({
           <PaxField id="meal-pax" label="Meal pax" value={mealPax} onChange={changeMeal} disabled={pending}
             description={mealPax === "" ? "Required before adding Recipes or posting." : ""} />
         </FieldGroup>
-        <div className="text-body-sm text-muted-foreground">
-          <p>{dirty ? "Save your changes before leaving." : "No stock has been issued."}</p>
-          {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
-          {!saved.draft.id && !recipes.length && !stockItems.length ? <p>Add a Recipe or Stock item before saving your first draft.</p> : null}
-        </div>
+        {dirty || !pax(mealPax) ? (
+          <div className="text-body-sm text-muted-foreground">
+            {dirty ? <p>Save your changes before leaving.</p> : null}
+            {!pax(mealPax) ? <p>Enter valid Meal pax before posting.</p> : null}
+          </div>
+        ) : null}
         {review.some((row) => row.warning) ? (
           <Alert variant="destructive">
             <AlertTriangle aria-label="Quantity review needed" />
             <AlertDescription>
               Some combined Item quantities require confirmation.{" "}
               <Button variant="link" onClick={openReview}>
-                Review quantities
+                Open Review
               </Button>
             </AlertDescription>
           </Alert>
@@ -633,11 +634,10 @@ export default function IssuanceDraftContent({
               className="size-4 shrink-0"
             />
             <span>
-              Adjusted Item demand is locked. Reset its confirmation in{" "}
+              Adjusted Item demand is locked. Reset its confirmation before changing affected Recipes, pax, or Stock items.{" "}
               <Button variant="link" onClick={openReview}>
-                combined review
-              </Button>{" "}
-              before changing affected Recipes, pax, or Stock items.
+                Open Review
+              </Button>
             </span>
           </p>
         ) : null}
@@ -658,7 +658,16 @@ export default function IssuanceDraftContent({
       >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 id="recipes-heading" className="text-heading-3 font-semibold">Recipes <span className="text-muted-foreground">({recipes.length})</span></h2>
-          <Button id="issuance-add-recipe" variant="outline" disabled={pending} onClick={openPicker}><Plus data-icon="inline-start" />Add Recipes</Button>
+          <Button
+            id="issuance-add-recipe"
+            variant="outline"
+            className="h-auto min-h-8 min-w-0 max-w-full text-left whitespace-normal"
+            disabled={pending}
+            onClick={openPicker}
+          >
+            <Plus data-icon="inline-start" aria-hidden="true" />
+            <span className="min-w-0 wrap-anywhere">Add Recipes</span>
+          </Button>
         </div>
         {recipes.length === 0 ? (
           <Empty>
@@ -725,7 +734,16 @@ export default function IssuanceDraftContent({
         <section aria-labelledby="stock-heading" className="mt-6">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 id="stock-heading" className="text-heading-3 font-semibold">Stock <span className="text-muted-foreground">({stockItems.length})</span></h2>
-            <Button id="issuance-add" variant="outline" disabled={pending} onClick={() => { setError(""); setStockPicker({ line: null }); }}><Plus data-icon="inline-start" />Add Stock item</Button>
+            <Button
+              id="issuance-add"
+              variant="outline"
+              className="h-auto min-h-8 min-w-0 max-w-full text-left whitespace-normal"
+              disabled={pending}
+              onClick={() => { setError(""); setStockPicker({ line: null }); }}
+            >
+              <Plus data-icon="inline-start" aria-hidden="true" />
+              <span className="min-w-0 wrap-anywhere">Add Stock item</span>
+            </Button>
           </div>
           {stockItems.length === 0 ? (
             <Empty>

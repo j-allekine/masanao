@@ -3,6 +3,7 @@ import "server-only";
 import {
   activityFieldErrors,
   activitySchema,
+  unavailableActivityOffice,
 } from "../../schemas/activity";
 import type { ActivityCreateResult } from "../../types";
 import { createActivityRecord } from "../db/activities";
@@ -32,6 +33,10 @@ export async function createActivityCommand(
   }
 
   const activity = await createActivityRecord(activityDesignId, parsedInput.data);
+
+  if (activity === "invalid-office") {
+    return unavailableActivityOffice;
+  }
 
   if (!activity) {
     return {

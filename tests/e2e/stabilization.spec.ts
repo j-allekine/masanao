@@ -448,7 +448,7 @@ test.describe("frontend stabilization regression seam", () => {
         name: "Activity name",
         exact: true,
       });
-      const office = sheet.getByRole("textbox", { name: "Office", exact: true });
+      const office = sheet.getByRole("combobox", { name: "Office", exact: true });
       await expect(activityName).toHaveAttribute("required", "");
       await expect(
         sheet.getByRole("button", { name: "Scheduled date", exact: true }),

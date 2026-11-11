@@ -34,7 +34,7 @@ const validActivityDesign = {
 };
 const validActivity = {
   name: "Community Feeding",
-  officeName: "Municipal Social Welfare and Development Office",
+  officeId: "social-welfare-office",
   scheduledDate: "2026-09-01",
 };
 
@@ -132,8 +132,35 @@ describe("Activity feature seams", () => {
     await prisma.activity.deleteMany();
     await prisma.activityDesign.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.office.deleteMany();
+    await prisma.office.create({
+      data: {
+        id: validActivity.officeId,
+        name: "Municipal Social Welfare and Development Office",
+        normalizedName: "municipal social welfare and development office",
+      },
+    });
     setActionCookie();
     mocks.revalidatePath.mockClear();
+  });
+
+  it("rejects an Office deactivated before the save", async () => {
+    await createStaffAccount();
+    const cookie = await cookieForStaff();
+    const design = await createActivityDesign(cookie);
+    await prisma.office.update({
+      where: { id: validActivity.officeId },
+      data: { isActive: false },
+    });
+    setActionCookie(cookie);
+
+    await expect(
+      createActivityAction(toFormData({ ...validActivity, activityDesignId: design.id })),
+    ).resolves.toMatchObject({
+      status: "error",
+      fields: { officeId: ["This Office is unavailable. Choose an active Office."] },
+    });
+    await expect(prisma.activity.count()).resolves.toBe(0);
   });
 
   it("creates an Activity with optional planning values and lists it in the workspace gateway without Meal Schedules", async () => {
@@ -143,7 +170,8 @@ describe("Activity feature seams", () => {
 
     const activity = await createActivity(cookie, activityDesign.id, {
       name: "  Community Feeding  ",
-      officeName: "  Municipal Social Welfare and Development Office  ",
+      officeId: validActivity.officeId,
+      officeName: "Forged Office label",
       particulars: "  Nutrition Month launch  ",
       scheduledDate: "2026-09-01",
       venue: "  Municipal Covered Court  ",
@@ -310,13 +338,14 @@ describe("Activity feature seams", () => {
 
   it.each([
     ["a blank name", { name: " " }, "name"],
-    ["a blank office", { officeName: " " }, "officeName"],
+    ["a blank Office", { officeId: " " }, "officeId"],
+    ["a missing Office", { officeId: undefined }, "officeId"],
+    ["an unknown Office", { officeId: "fabricated-office-id" }, "officeId"],
     ["a missing scheduled date", { scheduledDate: "" }, "scheduledDate"],
     ["an invalid scheduled date", { scheduledDate: "2026-02-30" }, "scheduledDate"],
     ["a negative participant count", { plannedParticipantCount: -1 }, "plannedParticipantCount"],
     ["a negative budget", { plannedBudgetPesos: "-1" }, "plannedBudgetPesos"],
     ["an overlong activity name", { name: "x".repeat(201) }, "name"],
-    ["an overlong office", { officeName: "x".repeat(201) }, "officeName"],
     ["overlong activity particulars", { particulars: "x".repeat(2_001) }, "particulars"],
     ["an overlong venue", { venue: "x".repeat(301) }, "venue"],
   ] as const)(
