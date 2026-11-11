@@ -974,13 +974,20 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
         document.body.style.letterSpacing = enlarge ? ".02em" : "";
         window.scrollTo(0, 0);
       }, width === 768 || height === 480);
+      await expectFullRecordHeading(page, number);
       await expect(heading).toBeInViewport({ ratio: 1 });
+      const chrome = main.locator('[data-slot="workspace-chrome"]');
+      const hasRoomForStickyHeader = height - (await chrome.boundingBox())!.height >= 112;
+      await expect(chrome).toHaveCSS("position", hasRoomForStickyHeader ? "sticky" : "static");
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);
-        await expect(heading).toBeInViewport({ ratio: 1 });
-        await expect(toggle).toBeInViewport({ ratio: 1 });
-        await expect(delivery).toBeInViewport({ ratio: 1 });
+        if (hasRoomForStickyHeader) {
+          await expect(heading).toBeInViewport({ ratio: 1 });
+          await expect(toggle).toBeInViewport({ ratio: 1 });
+          await expect(delivery).toBeInViewport({ ratio: 1 });
+        }
       }
+      await expect(table.getByRole("row").last()).toBeInViewport();
       if (width >= 640) {
         const amount = table.getByRole("columnheader", { name: "Amount", exact: true });
         await expect(table.getByRole("columnheader").first()).toBeInViewport();
@@ -989,8 +996,14 @@ test("keeps long Purchase Order context and the receiving controls reachable", a
         }
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await expectFullRecordHeading(page, number);
       await page.screenshot({ path: info.outputPath(`purchase-order-detail-scrolled-${width}x${height}.png`) });
+      if (!hasRoomForStickyHeader) {
+        await delivery.focus();
+        await expect(delivery).toBeInViewport({ ratio: 1 });
+        await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));
+        await expect(heading).toBeInViewport({ ratio: 1 });
+        await page.screenshot({ path: info.outputPath(`purchase-order-heading-${width}x${height}.png`) });
+      }
     }
 
     await delivery.click();

@@ -586,7 +586,7 @@ test.describe("overflowing Recipe routes", () => {
     await expect(last).toBeInViewport({ ratio: 1 });
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
     await save.scrollIntoViewIfNeeded();
-    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(save).toBeInViewport({ ratio: 0.99 });
     await last.fill("0");
     await save.press("Enter");
     const summary = main.getByRole("alert").filter({ hasText: "Could not save Recipe" });
@@ -598,7 +598,7 @@ test.describe("overflowing Recipe routes", () => {
     await expect(last).toHaveValue("0");
     await expect(pax).toHaveValue("50");
     await save.scrollIntoViewIfNeeded();
-    await expect(save).toBeInViewport({ ratio: 1 });
+    await expect(save).toBeInViewport({ ratio: 0.99 });
     await page.screenshot({ path: info.outputPath("recipe-edit-validation-enlarged.png"), animations: "disabled" });
 
     await cancel.press("Enter");

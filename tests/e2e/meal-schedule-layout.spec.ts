@@ -220,10 +220,13 @@ test("a long draft and posted meal retain identity while the working body scroll
   await save.scrollIntoViewIfNeeded();
   await expect(save).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: info.outputPath("draft-scrolled-200-percent.png"), animations: "disabled" });
-  await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));
-  await expect(heading).toBeInViewport({ ratio: 1 });
   await expectFullRecordHeading(page, title);
-  await page.screenshot({ path: info.outputPath("draft-heading-200-percent.png"), animations: "disabled" });
+  await heading.evaluate((element) => element.scrollIntoView({ block: "start" }));
+  await expect.poll(() => heading.evaluate((element) => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(-1);
+  await page.screenshot({ path: info.outputPath("draft-heading-start-200-percent.png"), animations: "disabled" });
+  await heading.evaluate((element) => element.scrollIntoView({ block: "end" }));
+  await expect.poll(() => heading.evaluate((element) => element.getBoundingClientRect().bottom - innerHeight)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: info.outputPath("draft-heading-end-200-percent.png"), animations: "disabled" });
   await enlarged.evaluate((style) => { style.parentNode?.removeChild(style); });
 
   await post.click();
