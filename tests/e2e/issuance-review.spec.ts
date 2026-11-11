@@ -212,7 +212,8 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(
     review.getByText(/Meal pax pending. This review is incomplete/),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  await review.getByRole("button", { name: "Close review", exact: true }).click();
+  await expect(review).toBeHidden();
   await page.goBack();
   await expect(
     page.getByRole("dialog", { name: "Discard unsaved changes?" }),
