@@ -45,8 +45,12 @@ test("Stock cart preserves exact quantities and supports batch addition", async 
   const quantity = picker.getByRole("textbox", { name: "Quantity", exact: true });
   await quantity.fill("0");
   await expect(quantity).toHaveAttribute("aria-invalid", "true");
+  const quantityError = "Enter a positive decimal quantity, such as 0.25 or 2.";
+  await expect(quantity).toHaveAccessibleDescription(quantityError);
+  await expect(picker.getByText(quantityError, { exact: true })).toBeVisible();
   await expect(picker.getByRole("button", { name: "Add 1 Stock item", exact: true })).toBeDisabled();
   await quantity.fill("1250.123456789123");
+  await expect(picker.getByText(quantityError, { exact: true })).toHaveCount(0);
   await picker.getByRole("combobox", { name: "Unit", exact: true }).click();
   await page.getByRole("option", { name: "Gram", exact: true }).click();
   await expect(picker.getByText("Base quantity: 1.250123456789123 kg", { exact: true })).toBeVisible();

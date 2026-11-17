@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isPositiveExactDecimal, multiplyExactPositiveDecimals } from "@/features/supply-operations/domain/delivery-receipt";
@@ -131,6 +131,8 @@ export default function StockCart({ onClose, onApply, submissionError }: {
                       ...item.conversions.map((entry) => ({ value: entry.id, label: entry.alternateUnit.name })),
                     ];
                     const conversion = item.conversions.find((entry) => entry.id === unit);
+                    const quantityId = `stock-quantity-${item.id}`;
+                    const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
                     return (
                       <li key={item.id} className="flex min-w-0 flex-col gap-2 py-2">
                         <div className="flex items-center justify-between gap-2">
@@ -141,11 +143,13 @@ export default function StockCart({ onClose, onApply, submissionError }: {
                           }}><X /></Button>
                         </div>
                         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-2">
-                          <Field>
-                            <FieldLabel htmlFor={`stock-quantity-${item.id}`}>Quantity</FieldLabel>
-                            <Input id={`stock-quantity-${item.id}`} inputMode="decimal" className="tabular-nums" required disabled={applying} value={quantity}
-                              aria-invalid={Boolean(quantity && !isPositiveExactDecimal(quantity))}
+                          <Field data-invalid={invalidQuantity}>
+                            <FieldLabel htmlFor={quantityId}>Quantity</FieldLabel>
+                            <Input id={quantityId} inputMode="decimal" className="tabular-nums" required disabled={applying} value={quantity}
+                              aria-invalid={invalidQuantity}
+                              aria-describedby={invalidQuantity ? `${quantityId}-error` : undefined}
                               onChange={(event) => updateLine(item.id, { quantity: event.target.value })} />
+                            {invalidQuantity ? <FieldError id={`${quantityId}-error`}>Enter a positive decimal quantity, such as 0.25 or 2.</FieldError> : null}
                           </Field>
                           <Field>
                             <FieldLabel htmlFor={`stock-unit-${item.id}`}>Unit</FieldLabel>

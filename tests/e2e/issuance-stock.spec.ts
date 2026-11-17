@@ -27,7 +27,7 @@ test("staff adds exact alternate Stock quantity, reopens unchanged factors, edit
   await page.getByRole("option", { name: "Gram", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("desktop-stock-picker.png"), fullPage: true });
   await dialog.getByRole("button", { name: "Add 1 Stock item", exact: true }).click();
-  await expect(page.getByText(/1250\.123456789123 g/)).toBeVisible();
+  await expect(page.getByText(/1,250\.123456789123 g/)).toBeVisible();
   await expect(dialog).not.toBeVisible();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
