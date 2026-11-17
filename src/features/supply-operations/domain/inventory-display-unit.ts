@@ -1,4 +1,4 @@
-import { compareRational, decimalRational, divideRational, roundRational } from "@/features/issuance/domain/rational";
+import { compareRational, decimalRational, divideRational, finiteDecimal, roundRational } from "@/features/issuance/domain/rational";
 
 import { formatDisplayNumber } from "@/lib/format-display-number";
 
@@ -7,7 +7,7 @@ const minimumDisplayQuantity = decimalRational("0.001");
 export function formatInventoryQuantity(quantity: string, baseUnitsPerUnit?: string) {
   if (!/^\d+(?:\.\d+)?$/.test(quantity)) return "Unavailable";
   const base = decimalRational(quantity);
-  return formatConvertedQuantity(base, baseUnitsPerUnit);
+  return baseUnitsPerUnit ? formatConvertedQuantity(base, baseUnitsPerUnit) : formatDisplayNumber(finiteDecimal(base));
 }
 
 export function formatConvertedQuantity(base: ReturnType<typeof decimalRational>, baseUnitsPerUnit?: string) {
