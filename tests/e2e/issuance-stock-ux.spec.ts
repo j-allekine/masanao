@@ -9,6 +9,9 @@ test.beforeAll(() => {
   db.exec(`
     INSERT OR IGNORE INTO item (id,name,normalizedName,categoryId,baseUnitId,isActive,reorderLevel,createdAt,updatedAt)
       VALUES ('e2e-stock-ux-replacement','Replacement Rice','replacement rice','default-category-staples-dry-goods','default-unit-kilogram',1,0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT OR IGNORE INTO item_unit_conversion (id,itemId,alternateUnitId,baseUnitQuantity,createdAt,updatedAt)
+      VALUES ('e2e-stock-ux-small','e2e-stock-ux-replacement','default-unit-sack','25',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
+             ('e2e-stock-ux-large','e2e-stock-ux-replacement','default-unit-sack','50',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT OR IGNORE INTO activity_design (id,activityDesignNo,fiscalYear,title,createdAt,updatedAt) VALUES ('e2e-stock-ux-design','AD-STOCK-UX',2026,'Stock picker training',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT OR IGNORE INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('e2e-stock-ux-activity','e2e-stock-ux-design','Stock picker preparation','Kitchen',CURRENT_TIMESTAMP,10,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
   `);
@@ -52,9 +55,14 @@ test("Stock cart preserves exact quantities and supports batch addition", async 
   await quantity.fill("1250.123456789123");
   await expect(picker.getByText(quantityError, { exact: true })).toHaveCount(0);
   await picker.getByRole("combobox", { name: "Unit", exact: true }).click();
-  await page.getByRole("option", { name: "Gram", exact: true }).click();
+  await page.getByRole("option", { name: "Gram (g) · 0.001 kg", exact: true }).click();
   await expect(picker.getByText("Base quantity: 1.250123456789123 kg", { exact: true })).toBeVisible();
   await picker.getByRole("button", { name: "Add Replacement Rice", exact: true }).click();
+  const replacement = picker.getByRole("listitem").filter({ hasText: "Replacement Rice" });
+  await replacement.getByRole("combobox", { name: "Unit", exact: true }).click();
+  await expect(page.getByRole("option", { name: "Sack (sack) · 25 kg", exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: "Sack (sack) · 50 kg", exact: true })).toBeVisible();
+  await page.getByRole("option", { name: "Kilogram (kg) · Base", exact: true }).click();
   await picker.getByRole("listitem").filter({ hasText: "Replacement Rice" }).getByRole("textbox", { name: "Quantity", exact: true }).fill("2.000000000000000001");
   await page.setViewportSize({ width: 320, height: 720 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -105,7 +113,7 @@ test("unavailable saved Stock Items and Units are marked and can be replaced", a
   await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("1");
   const invalidColor = "rgb(157, 65, 55)";
   await picker.getByRole("combobox", { name: "Unit", exact: true }).click();
-  await page.getByRole("option", { name: "Gram", exact: true }).click();
+  await page.getByRole("option", { name: "Gram (g) · 0.001 kg", exact: true }).click();
   await picker.getByRole("button", { name: "Add 1 Stock item", exact: true }).click();
   await expect(picker).not.toBeVisible();
   await page.getByRole("button", { name: "Save draft" }).click();

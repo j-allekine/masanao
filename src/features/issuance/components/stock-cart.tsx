@@ -127,8 +127,11 @@ export default function StockCart({ onClose, onApply, submissionError }: {
                 <ul aria-label="Stock items to add" tabIndex={0} className="max-h-64 divide-y overflow-y-auto rounded-md p-1.5 outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-ring overscroll-contain [scrollbar-gutter:stable]">
                   {cart.map(({ item, quantity, unit }) => {
                     const units = [
-                      { value: "base", label: item.baseUnit.name },
-                      ...item.conversions.map((entry) => ({ value: entry.id, label: entry.alternateUnit.name })),
+                      { value: "base", label: `${item.baseUnit.name} (${item.baseUnit.abbreviation}) · Base` },
+                      ...item.conversions.map((entry) => ({
+                        value: entry.id,
+                        label: `${entry.alternateUnit.name} (${entry.alternateUnit.abbreviation}) · ${formatDisplayNumber(entry.factor)} ${item.baseUnit.abbreviation}`,
+                      })),
                     ];
                     const conversion = item.conversions.find((entry) => entry.id === unit);
                     const quantityId = `stock-quantity-${item.id}`;
