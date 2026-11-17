@@ -33,10 +33,9 @@ async function openIssuance(page: Page, suffix: string) {
 async function addRecipe(page: Page) {
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("Regression Omelet");
-  await page.getByRole("checkbox", { name: "Regression Omelet" }).check();
+  await page.getByRole("button", { name: "Add Regression Omelet", exact: true }).click();
   await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
-  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" })).not.toBeVisible();
 }
 async function confirmAutomatic(page: Page, quantity: string) {
   await page.getByRole("button", { name: "Review", exact: true }).click();
@@ -86,8 +85,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     await openIssuance(page, cancel);
     await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
     const picker = page.getByRole("dialog", { name: "Add Stock item" });
-    await picker.getByRole("combobox", { name: "Item", exact: true }).click();
-    await page.getByRole("option", { name: "Rice", exact: true }).click();
+    await picker.getByRole("button", { name: "Add Rice", exact: true }).click();
     await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("1");
     let release!: () => void;
     let requested!: () => void;
@@ -99,7 +97,7 @@ for (const cancel of ["cancel", "escape"] as const) {
       await released;
       await route.fulfill({ response: await route.fetch() });
     }, { times: 1 });
-    await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
+    await picker.getByRole("button", { name: "Add 1 Stock item", exact: true }).click();
     await requestStarted;
     if (cancel === "cancel") await picker.getByRole("button", { name: "Cancel", exact: true }).click();
     else await page.keyboard.press("Escape");
@@ -108,7 +106,7 @@ for (const cancel of ["cancel", "escape"] as const) {
     const response = page.waitForResponse((result) => result.request().method() === "POST" && result.url().endsWith(`${mealPath(cancel)}`));
     release();
     expect((await response).ok()).toBe(true);
-    await expect(picker.getByRole("textbox", { name: "Quantity", exact: true })).toBeEnabled();
+    await picker.getByRole("button", { name: "Add Rice", exact: true }).click();
     await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("7");
     await expect(picker).toBeVisible();
     await expect(picker.getByRole("textbox", { name: "Quantity", exact: true })).toHaveValue("7");

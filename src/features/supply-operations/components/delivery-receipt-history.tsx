@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export default function DeliveryReceiptHistory({
             </Button>
           </TableCell>
           <TableCell className="hidden sm:table-cell">{formatDate(receipt.receiptDate)}</TableCell>
-          <TableCell className="hidden sm:table-cell">{receipt.lines.length}</TableCell>
+          <TableCell className="hidden sm:table-cell">{formatDisplayNumber(receipt.lines.length)}</TableCell>
           <TableCell className="min-w-32 px-3 whitespace-normal text-right sm:px-6" data-receipt-amount>
             <PurchaseOrderDeliveredAmount summary={summarizePurchaseOrderDeliveries([receipt])} />
           </TableCell>
@@ -91,8 +92,8 @@ export default function DeliveryReceiptHistory({
               <TableBody>{selectedReceipt.lines.map((line) => <TableRow key={line.id}>
                 <TableCell className="font-medium">{line.itemName}</TableCell>
                 <TableCell>{line.selectedUnitName}</TableCell>
-                <TableCell className="text-right">{line.enteredQuantity}</TableCell>
-                <TableCell className="text-right">{line.calculatedBaseUnitQuantity} {line.baseUnitName}</TableCell>
+                <TableCell className="text-right">{formatDisplayNumber(line.enteredQuantity)}</TableCell>
+                <TableCell className="text-right">{formatDisplayNumber(line.calculatedBaseUnitQuantity)} {line.baseUnitName}</TableCell>
                 <TableCell className="text-right">{line.unitPrice ? `₱ ${formatDeliveryReceiptAmount(line.unitPrice)}` : "Not recorded"}</TableCell>
                 <TableCell className="text-right">{line.lineAmount ? `₱ ${formatDeliveryReceiptAmount(line.lineAmount)}` : "Not recorded"}</TableCell>
               </TableRow>)}</TableBody>

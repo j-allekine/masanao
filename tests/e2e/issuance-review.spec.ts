@@ -11,6 +11,7 @@ test.beforeAll(() => {
     INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,createdAt,updatedAt) VALUES ('e2e-review-activity','e2e-review-design','Quantity preparation','Kitchen',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('e2e-review-meal','e2e-review-activity','Lunch','12:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO item (reorderLevel, id,name,normalizedName,categoryId,baseUnitId,isActive,issuanceQuantityPolicy,createdAt,updatedAt) VALUES (10, 'e2e-review-eggs','Review Eggs','review eggs','default-category-staples-dry-goods','default-unit-piece',1,'whole-only',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    INSERT INTO item_unit_conversion (id,itemId,alternateUnitId,baseUnitQuantity,createdAt,updatedAt) VALUES ('e2e-review-dozen','e2e-review-eggs','default-unit-dozen','12',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO recipe (id,name,normalizedName,baselinePax,isActive,createdAt,updatedAt) VALUES ('e2e-review-recipe','Review Omelet','review omelet',3,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO recipe_ingredient (id,recipeId,itemId,enteredQuantity,createdAt,updatedAt) VALUES ('e2e-review-ingredient','e2e-review-recipe','e2e-review-eggs','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
   db.close();
@@ -31,6 +32,9 @@ test("combined review preserves repeating contributions, exact confirmations, lo
       })
     ).status(),
   ).toBe(200);
+  await page.goto("/inventory?q=Review+Eggs");
+  await page.getByRole("button", { name: /Display unit for Review Eggs/ }).click();
+  await page.getByRole("menuitemradio", { name: "Dozen", exact: true }).click();
   await page.goto("/activity-designs/e2e-review-design/activities/e2e-review-activity");
   await page.goto(mealPath);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible({
@@ -38,10 +42,9 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   });
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("Review Omelet");
-  await page.getByRole("checkbox", { name: "Review Omelet" }).check();
+  await page.getByRole("button", { name: "Add Review Omelet", exact: true }).click();
   await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
-  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" })).not.toBeVisible();
   await expect(
     page.getByRole("alert").filter({ hasText: "require confirmation" }),
   ).toBeVisible();
@@ -58,7 +61,11 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   const review = page.getByRole("dialog", {
     name: "Combined quantities and stock",
   });
-  await expect(review.getByText("0.333333 pc", { exact: true })).toBeVisible();
+  await expect(review.getByRole("button", { name: "Display unit for Review Eggs: Dozen" })).toBeVisible();
+  await expect(review.getByText("Final quantity", { exact: true }).locator("..").getByText("≈0.028 doz", { exact: true })).toBeVisible();
+  await review.getByRole("button", { name: "Display unit for Review Eggs: Dozen" }).click();
+  await page.getByRole("menuitemradio", { name: "Piece", exact: true }).click();
+  await expect(review.getByText("Final quantity", { exact: true }).locator("..").getByText("0.333333 pc", { exact: true })).toBeVisible();
   await expect(
     review.getByText(/whole-only Item has a fractional total/),
   ).toBeVisible();
@@ -77,7 +84,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await expect(finalQuantity).toHaveAccessibleDescription("Enter a positive whole quantity for this Item.");
   await expect(finalQuantity).toHaveCSS("border-top-color", invalidColor);
   await expect(review.locator("#final-error-e2e-review-eggs")).toHaveCSS("clip-path", "inset(50%)");
-  await finalQuantity.fill("1");
+  await finalQuantity.fill("1,000");
   await expect(finalQuantity).toHaveAttribute("aria-invalid", "false");
   await review.getByRole("button", { name: "Confirm quantity" }).focus();
   await page.keyboard.press("Enter");
@@ -85,7 +92,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
     review.getByText(/Reset this confirmation before changing demand/),
   ).toBeVisible();
   await expect(
-    review.getByText("Shortage: required 1 pc; available 0 pc."),
+    review.getByText("Short by", { exact: true }).locator("..").getByText("1,000 pc", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("desktop-combined-review.png"),
@@ -162,7 +169,7 @@ test("combined review preserves repeating contributions, exact confirmations, lo
   await finalQuantity.fill("0.987654321123456789");
   await review.getByRole("button", { name: "Confirm quantity" }).click();
   await expect(
-    review.getByText("0.987654321123456789 pc", { exact: true }),
+    review.getByText("Final quantity", { exact: true }).locator("..").getByText("0.987654321123456789 pc", { exact: true }),
   ).toBeVisible();
   await expect
     .poll(() =>

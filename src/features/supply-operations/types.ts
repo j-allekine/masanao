@@ -238,6 +238,7 @@ export type InventoryListItem = {
   name: string;
   category: { id: string; name: string };
   baseUnit: { id: string; name: string; abbreviation: string };
+  unitConversions: { id: string; baseUnitQuantity: string; alternateUnit: { name: string; abbreviation: string } }[];
   reorderLevel: string;
   balance: import("./domain/inventory").StockBalance;
   stockStatus: import("./domain/inventory").StockStatus;

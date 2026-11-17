@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
+import { useItemDisplayUnit } from "./item-display-unit";
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,6 +14,7 @@ import CatalogPagination from "@/components/workspace/catalog-pagination";
 import { Button } from "@/components/ui/button";
 import { FieldLegend, FieldSet } from "@/components/ui/field";
 import type { InventoryListItem } from "../types";
+import { formatInventoryQuantity } from "../domain/inventory-display-unit";
 import { stockStatusLabels } from "../domain/inventory";
 import InventorySearch from "./inventory-search";
 import { inventoryCategories } from "../domain/inventory-category-filter";
@@ -30,8 +33,24 @@ function StockBadge({ item }: { item: InventoryListItem }) {
   return <Badge variant="outline" className={tone}>{stockStatusLabels[item.stockStatus]}</Badge>;
 }
 
-function onHand(item: InventoryListItem) {
-  return item.balance.kind === "valid" ? `${item.balance.quantity} ${item.baseUnit.abbreviation}` : "Unavailable";
+function InventoryQuantities({ item, children }: {
+  item: InventoryListItem;
+  children: (onHand: React.ReactNode, reorderLevel: React.ReactNode) => React.ReactNode;
+}) {
+  const { unit, factor, selector } = useItemDisplayUnit(item);
+  const balance = item.balance.kind === "valid" ? item.balance.quantity : null;
+  const onHand = balance === null ? "Unavailable" : formatInventoryQuantity(balance, factor);
+  const reorder = formatInventoryQuantity(item.reorderLevel, factor);
+  const exactBalance = balance === null ? "Unavailable" : `${formatDisplayNumber(balance)} ${item.baseUnit.abbreviation}`;
+  const exactReorder = `${formatDisplayNumber(item.reorderLevel)} ${item.baseUnit.abbreviation}`;
+
+  return children(
+    <span className="inline-flex max-w-full flex-wrap items-center justify-end gap-x-1 sm:justify-start">
+      <span title={exactBalance} className="min-w-0 wrap-anywhere">{onHand}{balance !== null && (selector ? " " : ` ${unit.abbreviation}`)}</span>
+      {selector}
+    </span>,
+    <span title={exactReorder} className="wrap-anywhere">{reorder === "Unavailable" ? reorder : `${reorder} ${unit.abbreviation}`}</span>,
+  );
 }
 
 export function InventoryTable({ items, hasFilters = false, onClearFilters }: { items: InventoryListItem[]; hasFilters?: boolean; onClearFilters?: () => void }) {
@@ -42,29 +61,29 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
   }
   return <>
     <div className="flex flex-col gap-3 sm:hidden" data-inventory-mobile>
-      {items.map((item) => <Card key={item.id} size="sm" data-item-id={item.id}>
+      {items.map((item) => <InventoryQuantities key={item.id} item={item}>{(onHand, reorderLevel) => <Card size="sm" data-item-id={item.id}>
         <CardHeader><CardTitle className="min-w-0 break-words">{item.name}</CardTitle></CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-3">
           <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3">
             <dt className="text-muted-foreground">Category</dt><dd className="break-words text-right">{item.category.name}</dd>
-            <dt className="text-muted-foreground">On hand</dt><dd className="break-words text-right tabular-nums">{onHand(item)}</dd>
-            <dt className="text-muted-foreground">Reorder level</dt><dd className="break-words text-right tabular-nums">{item.reorderLevel} {item.baseUnit.abbreviation}</dd>
+            <dt className="text-muted-foreground">On hand</dt><dd className="break-words text-right tabular-nums">{onHand}</dd>
+            <dt className="text-muted-foreground">Reorder level</dt><dd className="break-words text-right tabular-nums">{reorderLevel}</dd>
             <dt className="text-muted-foreground">Stock status</dt><dd className="text-right"><StockBadge item={item} /></dd>
           </dl>
           {item.balance.kind === "invalid" ? <p className="break-words text-body-sm text-destructive">{item.balance.error}</p> : item.stockStatus === "review-required" ? <p className="text-body-sm text-destructive">Invalid Reorder level. Review Item settings.</p> : null}
         </CardContent>
-      </Card>)}
+      </Card>}</InventoryQuantities>)}
     </div>
     <div className="hidden sm:block" data-inventory-desktop>
       <WorkspaceTableFrame caption="Inventory" stickyColumns className="min-w-[46rem] table-fixed">
         <TableHeader className="bg-muted/60"><TableRow>{["Item", "Category", "On hand", "Reorder level", "Stock status"].map((label) => <TableHead key={label} scope="col" className="whitespace-normal">{label}</TableHead>)}</TableRow></TableHeader>
-        <TableBody>{items.map((item) => <TableRow key={item.id} data-item-id={item.id}>
+        <TableBody>{items.map((item) => <InventoryQuantities key={item.id} item={item}>{(onHand, reorderLevel) => <TableRow data-item-id={item.id}>
           <TableCell className="whitespace-normal break-words align-top">{item.name}</TableCell>
           <TableCell className="whitespace-normal break-words align-top">{item.category.name}</TableCell>
-          <TableCell className="whitespace-normal break-words align-top tabular-nums">{onHand(item)}</TableCell>
-          <TableCell className="whitespace-normal break-words align-top tabular-nums">{item.reorderLevel} {item.baseUnit.abbreviation}</TableCell>
+          <TableCell className="whitespace-normal break-words align-top tabular-nums">{onHand}</TableCell>
+          <TableCell className="whitespace-normal break-words align-top tabular-nums">{reorderLevel}</TableCell>
           <TableCell className="whitespace-normal break-words align-top"><StockBadge item={item} />{item.balance.kind === "invalid" ? <p className="mt-2 text-body-sm text-destructive">{item.balance.error}</p> : item.stockStatus === "review-required" ? <p className="mt-2 text-body-sm text-destructive">Invalid Reorder level. Review Item settings.</p> : null}</TableCell>
-        </TableRow>)}</TableBody>
+        </TableRow>}</InventoryQuantities>)}</TableBody>
       </WorkspaceTableFrame>
     </div>
   </>;
@@ -114,7 +133,7 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
       <div className="flex min-w-0 flex-col gap-3">
         <p ref={resultsNote} tabIndex={-1} className="text-body-sm text-muted-foreground">
           {state.stockStatus && <>Showing items marked “{stockStatusLabels[state.stockStatus]}”. </>}
-          On hand is shown in each Item’s Base Unit. Reorder levels flag supplies needing replenishment.
+          Choose a display unit to view On hand and Reorder level in the same unit.
         </p>
         <InventoryTable items={pagination.rows} hasFilters={hasFilters} onClearFilters={clearFilters} />
       </div>

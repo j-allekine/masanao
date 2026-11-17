@@ -1,3 +1,4 @@
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,26 +30,26 @@ export default function InventoryStockOverview({ items, onFilter }: {
         <Card size="sm" className="justify-center py-1.5">
           <CardHeader className="flex items-baseline justify-between gap-2 px-2.5">
             <CardDescription className="text-label @sm:text-body-sm">Items tracked</CardDescription>
-            <CardTitle><span className="text-heading-3 tabular-nums">{items.length}</span></CardTitle>
+            <CardTitle><span className="text-heading-3 tabular-nums">{formatDisplayNumber(items.length)}</span></CardTitle>
           </CardHeader>
         </Card>
         <Card size="sm" className="justify-center py-1.5">
           <CardHeader className="flex items-baseline justify-between gap-2 px-2.5">
             <CardDescription className="text-label @sm:text-body-sm">Good stock</CardDescription>
-            <CardTitle><span className="text-heading-3 tabular-nums text-success-foreground">{counts.good}</span></CardTitle>
+            <CardTitle><span className="text-heading-3 tabular-nums text-success-foreground">{formatDisplayNumber(counts.good)}</span></CardTitle>
           </CardHeader>
         </Card>
         <Card size="sm" className="col-span-2 bg-warning-muted py-1.5 @2xl:col-span-1">
           <CardContent className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-2.5">
             <CardTitle className="text-warning-foreground">
-              <span className="text-heading-3 tabular-nums">{restock}</span> {restock === 1 ? "needs restocking" : "need restocking"}
+              <span className="text-heading-3 tabular-nums">{formatDisplayNumber(restock)}</span> {restock === 1 ? "needs restocking" : "need restocking"}
             </CardTitle>
             <div className="flex flex-wrap gap-1.5">
               <Button type="button" size="sm" variant="outline" disabled={outOfStock === 0} onClick={() => onFilter("out-of-stock")}>
-                {outOfStock} out of stock
+                {formatDisplayNumber(outOfStock)} out of stock
               </Button>
               <Button type="button" size="sm" variant="outline" disabled={reorderNow === 0} onClick={() => onFilter("reorder-now")}>
-                {reorderNow} reorder now
+                {formatDisplayNumber(reorderNow)} reorder now
               </Button>
             </div>
           </CardContent>

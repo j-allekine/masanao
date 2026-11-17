@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Plus } from "lucide-react";
@@ -251,7 +252,7 @@ export default function RecipesContent({
                       </Link>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {recipe.ingredientCount}
+                      {formatDisplayNumber(recipe.ingredientCount)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex flex-wrap justify-center gap-1"><WorkspaceLifecycleBadge isActive={recipe.isActive} />{recipe.needsAttention ? <Badge variant="destructive">Needs attention</Badge> : null}</div>

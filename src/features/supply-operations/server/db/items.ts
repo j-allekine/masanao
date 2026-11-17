@@ -1,5 +1,6 @@
 import "server-only";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
@@ -85,7 +86,7 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
       id: conversion.id,
       alternateUnit: conversion.alternateUnit,
       baseUnitQuantity: conversion.baseUnitQuantity,
-      label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
+      label: `${conversion.alternateUnit.name} (${formatDisplayNumber(conversion.baseUnitQuantity)} ${item.baseUnit.abbreviation})`,
     }))),
     hasPostedDeliveryReceiptLines: item._count.deliveryReceiptLines > 0,
   };
@@ -103,7 +104,7 @@ function toConversionListItem(conversion: Prisma.ItemUnitConversionGetPayload<{ 
     id: conversion.id,
     alternateUnit: conversion.alternateUnit,
     baseUnitQuantity: conversion.baseUnitQuantity,
-    label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${conversion.item.baseUnit.abbreviation})`,
+    label: `${conversion.alternateUnit.name} (${formatDisplayNumber(conversion.baseUnitQuantity)} ${conversion.item.baseUnit.abbreviation})`,
   };
 }
 

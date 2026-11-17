@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +72,7 @@ export default function RecipePreviewDialog({
                   Ingredients
                 </h2>
                 <p className="text-body-sm text-muted-foreground">
-                  {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
+                  {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${formatDisplayNumber(recipe.baselinePax)} pax`}. These are reference quantities, not issued quantities.
                 </p>
               </div>
               <div className="overflow-x-auto rounded-lg border">
@@ -90,7 +91,7 @@ export default function RecipePreviewDialog({
                           {ingredient.item.name}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {ingredient.enteredQuantity}
+                          {formatDisplayNumber(ingredient.enteredQuantity)}
                         </TableCell>
                         <TableCell className="break-words">{displayUnit(ingredient)}</TableCell>
                       </TableRow>

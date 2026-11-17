@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
@@ -240,7 +241,7 @@ export default function ActivityDetailContent({
 
         <section aria-labelledby="activity-meal-schedules-title" className="flex flex-col gap-3">
           <h2 id="activity-meal-schedules-title" className="text-heading-3 font-semibold">
-            Meal Schedules ({activity.mealSchedules.length})
+            Meal Schedules ({formatDisplayNumber(activity.mealSchedules.length)})
           </h2>
           {activity.mealSchedules.length === 0 ? (
             <MealSchedulesEmptyState />

@@ -1,4 +1,5 @@
 import "server-only";
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { Prisma } from "@/prisma/generated/client";
 import type { PrismaClient } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
@@ -49,7 +50,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
         if (row.warning || !isValidIssuanceFinalQuantity(row.finalQuantity, row.policy)) reject("policy", `${row.itemName}: current policy requires a whole final quantity. Review and confirm its combined quantity before posting.`);
         const savedTotal = workspace.draft.itemTotals?.find((total) => total.itemId === row.itemId);
         if (!savedTotal || compareRational(decimalRational(savedTotal.finalQuantity), final) !== 0) reject("policy", `${row.itemName}: the current quantity policy changes its final quantity. Review and save the current combined quantities before posting.`);
-        if (row.shortage) reject("shortage", `${row.itemName}: requires ${row.finalQuantity} ${row.baseUnitAbbreviation}; available ${row.availableQuantity} ${row.baseUnitAbbreviation}. Reduce demand or receive stock before posting.`);
+        if (row.shortage) reject("shortage", `${row.itemName}: requires ${formatDisplayNumber(row.finalQuantity)} ${row.baseUnitAbbreviation}; available ${formatDisplayNumber(row.availableQuantity)} ${row.baseUnitAbbreviation}. Reduce demand or receive stock before posting.`);
       }
       const postedAt = new Date();
       // Capture live display evidence once; snapshot arithmetic remains authoritative.

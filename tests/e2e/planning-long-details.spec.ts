@@ -101,7 +101,7 @@ test("expanded meal details remain scrollable without hiding draft work or its f
     await addRecipes.click();
     const picker = page.getByRole("dialog", { name: "Add Recipes", exact: true });
     await expect(picker).toBeVisible();
-    await picker.getByRole("button", { name: "Done", exact: true }).click();
+    await picker.getByRole("button", { name: "Cancel", exact: true }).click();
     await expect(picker).not.toBeVisible();
     const addStock = page.getByRole("button", { name: "Add Stock item", exact: true });
     await addStock.scrollIntoViewIfNeeded();

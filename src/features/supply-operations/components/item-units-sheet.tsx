@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { Save, XIcon } from "lucide-react";
 
@@ -37,7 +38,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
   const selectedUnit = eligibleUnits.find((unit) => unit.id === alternateUnitId);
   const hasAlternateUnitError = Boolean(errors.alternateUnitId?.length);
   const hasQuantityError = Boolean(errors.baseUnitQuantity?.length);
-  const preview = selectedUnit && baseUnitQuantity.trim() ? `${selectedUnit.name} (${baseUnitQuantity.trim()} ${selectedItem.baseUnit.abbreviation})` : null;
+  const preview = selectedUnit && baseUnitQuantity.trim() ? `${selectedUnit.name} (${formatDisplayNumber(baseUnitQuantity.trim())} ${selectedItem.baseUnit.abbreviation})` : null;
 
   function closeDialog() {
     setDialogOpen(false); setErrors({}); setFormError(null); setAlternateUnitId(""); setBaseUnitQuantity("");
@@ -103,7 +104,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
                   Package quantities configured for this Item.
                 </p>
               </div>
-              <Badge variant="outline">{conversions.length}</Badge>
+              <Badge variant="outline">{formatDisplayNumber(conversions.length)}</Badge>
             </div>
             {conversions.map((conversion) => (
               <Card key={conversion.id} size="sm" className="gap-1.5 bg-card shadow-none">
@@ -112,7 +113,7 @@ export default function ItemUnitsSheet({ item, units, canManage, open, onOpenCha
                 </CardHeader>
                 <CardContent className="px-3">
                   <CardDescription className="text-body-sm">
-                    1 {conversion.alternateUnit.name} = {conversion.baseUnitQuantity} {selectedItem.baseUnit.abbreviation}
+                    1 {conversion.alternateUnit.name} = {formatDisplayNumber(conversion.baseUnitQuantity)} {selectedItem.baseUnit.abbreviation}
                   </CardDescription>
                 </CardContent>
               </Card>

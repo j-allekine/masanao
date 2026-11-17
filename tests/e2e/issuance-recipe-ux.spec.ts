@@ -43,7 +43,7 @@ test.beforeAll(() => {
   db.close();
 });
 
-test("whole Recipe cards, digits-only pax, persistent added list and save from review", async ({ page }, testInfo) => {
+test("Recipe cart, per-Recipe pax and save from review", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
   expect((await postFixtureSignIn(page.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.goto(path);
@@ -75,42 +75,30 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await expect(meal).toHaveAttribute("aria-invalid", "false");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   const picker = page.getByRole("dialog", { name: "Add Recipes", exact: true });
-  const pickerMeal = picker.getByRole("textbox", { name: "Meal pax", exact: true });
-  await expectRequiredPax(page, pickerMeal);
-  await pickerMeal.fill("0");
-  await expectHiddenPaxError(page, pickerMeal, rangeError);
-  await pickerMeal.fill("10");
-  const target = picker.getByRole("textbox", { name: "Recipe pax", exact: true });
-  await expect(target).toHaveCount(0);
-  await picker.getByRole("checkbox", { name: "Use custom Recipe pax", exact: true }).check();
-  await expectRequiredPax(page, target);
-  await target.press("End");
-  await target.press("x");
-  await expect(target).toHaveValue("10");
-  await expectHiddenPaxError(page, target, digitsError);
-  await expect(target).toBeFocused();
-  await target.press("2");
-  await expect(target).toHaveValue("102");
-  await expect(target).toHaveAttribute("aria-invalid", "false");
-  await picker.getByRole("checkbox", { name: "Use custom Recipe pax", exact: true }).uncheck();
+  await expect(picker.getByText("Meal pax ·", { exact: false })).toHaveCount(0);
   await picker.getByLabel("Search Recipes").fill("Alpha Rice");
-  const alpha = picker.getByRole("checkbox", { name: "Alpha Rice", exact: true });
-  const card = picker.locator("label").filter({ has: page.getByRole("checkbox", { name: "Alpha Rice", exact: true }) });
-  // Click the card padding, away from the checkbox and Recipe name.
-  await card.click({ position: { x: 150, y: 45 } });
-  await expect(alpha).toBeChecked();
-  await expect(picker.getByRole("region", { name: "Selected Recipes" }).getByText("Alpha Rice", { exact: true })).toBeVisible();
-  await card.click({ position: { x: 150, y: 45 } });
-  await expect(alpha).not.toBeChecked();
-  await expect(picker.getByRole("region", { name: "Selected Recipes" })).toHaveCount(0);
-  await alpha.focus();
-  await page.keyboard.press("Space");
-  await expect(alpha).toBeChecked();
-  await picker.getByRole("button", { name: "Remove selection Alpha Rice", exact: true }).click();
-  await expect(alpha).not.toBeChecked();
-  await expect(alpha).toBeFocused();
-  await page.keyboard.press("Space");
-  await page.screenshot({ path: testInfo.outputPath("recipe-selected-preview.png"), fullPage: true });
+  const alpha = picker.getByRole("button", { name: "Add Alpha Rice", exact: true });
+  await alpha.click();
+  await expect(picker.getByText("In cart", { exact: true })).toBeVisible();
+  await picker.getByRole("button", { name: "Remove Alpha Rice", exact: true }).click();
+  await expect(alpha).toBeEnabled();
+  await alpha.click();
+  const target = picker.getByRole("spinbutton", { name: "Alpha Rice pax" });
+  await expect(target).toHaveValue("10");
+  await target.fill("0");
+  await expect(picker.getByRole("button", { name: "Add 1 Recipe" })).toBeDisabled();
+  await target.fill("10");
+  await picker.getByLabel("Search Recipes").fill("Beta Rice");
+  await picker.getByRole("button", { name: "Add Beta Rice", exact: true }).click();
+  await picker.getByRole("spinbutton", { name: "Beta Rice pax" }).fill("15");
+  await picker.getByLabel("Search Recipes").fill("zz-no-match");
+  await expect(picker.getByText("No Recipes match your search.")).toBeVisible();
+  const cart = picker.getByRole("list", { name: "Recipes to add" });
+  await expect(cart).toHaveCSS("overflow-y", "auto");
+  await expect(cart.getByText("Alpha Rice", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 740 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("recipe-cart-mobile.png"), fullPage: true });
   let release!: () => void;
   let requested!: () => void;
   const requestStarted = new Promise<void>((resolve) => { requested = resolve; });
@@ -121,32 +109,18 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
     await released;
     await route.continue();
   }, { times: 1 });
-  await picker.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
+  const confirm = picker.getByRole("button", { name: "Add 2 Recipes", exact: true });
+  await confirm.click();
   await requestStarted;
   try {
-    await expect(picker.getByRole("button", { name: "Done", exact: true })).toBeDisabled();
-    await expect(picker.getByRole("button", { name: "Adding…", exact: true })).toBeDisabled();
+    await expect(picker.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled();
     await page.keyboard.press("Escape");
     await expect(picker).toBeVisible();
   } finally {
     release();
   }
-  const added = picker.getByRole("list", { name: "Already added Recipes" });
-  await expect(added.getByText("Alpha Rice", { exact: true })).toBeVisible();
-  await picker.getByLabel("Search Recipes").fill("Beta Rice");
-  await expect(added.getByText("Alpha Rice", { exact: true })).toBeVisible();
-  await picker.getByRole("checkbox", { name: "Beta Rice", exact: true }).check();
-  await picker.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(added.getByText("Beta Rice", { exact: true })).toBeVisible();
-  await picker.getByLabel("Search Recipes").fill("zz-no-match");
-  await expect(picker.getByText("No Recipes match your search.")).toBeVisible();
-  await expect(added.getByText("Alpha Rice", { exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("recipe-search-added-desktop.png"), fullPage: true });
-  await page.setViewportSize({ width: 320, height: 740 });
-  await expect(picker).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath("recipe-search-added-mobile.png"), fullPage: true });
-  await picker.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(picker).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "View ingredients for Beta Rice", exact: true })).toBeVisible();
   await page.getByLabel("Actions for Alpha Rice", { exact: true }).click();
   await page.getByRole("menuitem", { name: "Adjust target pax" }).click();
   const custom = page.getByRole("textbox", { name: "Target pax", exact: true });
@@ -167,14 +141,14 @@ test("whole Recipe cards, digits-only pax, persistent added list and save from r
   await review.getByRole("button", { name: "Close review" }).click();
   await page.reload();
   await expect(page.getByRole("button", { name: "View ingredients for Alpha Rice", exact: true })).toBeVisible();
-  await expect(page.getByText("Custom target", { exact: true })).toBeVisible();
+  await expect(page.getByText("Custom target", { exact: true })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "View ingredients for Beta Rice", exact: true })).toBeVisible();
   await expect(page.getByText("Draft", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Discard changes", exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("saved-draft.png"), animations: "disabled" });
 });
 
-test("pending Meal pax can be completed without leaving the Recipe picker", async ({ page }) => {
+test("missing Meal pax is set on the draft before adding Recipes", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec("INSERT INTO meal_schedule (id,activityId,label,mealTime,createdAt,updatedAt) VALUES ('e2e-ux-pending','e2e-ux-activity','Dinner','18:00',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
@@ -185,19 +159,15 @@ test("pending Meal pax can be completed without leaving the Recipe picker", asyn
   await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   const picker = page.getByRole("dialog", { name: "Add Recipes", exact: true });
-  await picker.getByLabel("Search Recipes").fill("Alpha Rice");
-  await picker.getByRole("checkbox", { name: "Alpha Rice", exact: true }).check();
-  await expect(picker.getByRole("button", { name: "Add 1 Recipe", exact: true })).toBeDisabled();
-  const pickerMeal = picker.getByRole("textbox", { name: "Meal pax", exact: true });
-  await expectRequiredPax(page, pickerMeal);
-  await pickerMeal.fill("0");
-  await expectHiddenPaxError(page, pickerMeal, rangeError);
-  await pickerMeal.fill("15");
-  await expect(pickerMeal).toHaveAttribute("aria-invalid", "false");
-  await expect(picker.getByRole("button", { name: "Add 1 Recipe", exact: true })).toBeEnabled();
+  await expect(picker.getByText("Enter Meal pax on the draft before adding Recipes.")).toBeVisible();
+  await expect(picker.getByRole("button", { name: "Add Alpha Rice", exact: true })).toBeDisabled();
+  await picker.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(picker).not.toBeVisible();
+  await page.getByRole("textbox", { name: "Meal pax", exact: true }).fill("15");
+  await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
+  await picker.getByRole("button", { name: "Add Alpha Rice", exact: true }).click();
   await picker.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(picker.getByRole("list", { name: "Already added Recipes" }).getByText("Alpha Rice", { exact: true })).toBeVisible();
-  await picker.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(picker).not.toBeVisible();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("15");

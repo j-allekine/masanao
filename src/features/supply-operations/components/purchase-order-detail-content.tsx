@@ -1,3 +1,4 @@
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import Link from "next/link";
 import { ClipboardList, FilePlus2, Inbox } from "lucide-react";
 
@@ -62,7 +63,7 @@ export default function PurchaseOrderDetailContent({
           <RecordFacts fields={[
             { label: "Vendor", value: purchaseOrder.vendor.name },
             { label: "Total delivered", value: <span data-po-total-delivered><PurchaseOrderDeliveredAmount summary={purchaseOrder.deliverySummary} /></span> },
-            { label: "Delivery receipts", value: <span className="tabular-nums" data-po-receipt-count>{purchaseOrder.deliverySummary.receiptCount}</span> },
+            { label: "Delivery receipts", value: <span className="tabular-nums" data-po-receipt-count>{formatDisplayNumber(purchaseOrder.deliverySummary.receiptCount)}</span> },
           ]} />
           <RecordDetails label="Purchase Order details" fields={[
             ...(purchaseOrder.referenceNumber ? [{ label: "Reference number", value: purchaseOrder.referenceNumber }] : []),

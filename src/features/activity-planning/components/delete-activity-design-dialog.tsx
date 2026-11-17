@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useState, useTransition } from "react";
 
 import DestructiveDialog from "@/components/workspace/destructive-dialog";
@@ -8,7 +9,7 @@ import { deleteActivityDesignAction } from "../actions";
 import type { ActivityDesignListItem } from "../types";
 
 function blockedMessage(activityCount: number) {
-  return `This Activity Design cannot be deleted because it contains ${activityCount} ${activityCount === 1 ? "Activity" : "Activities"}.`;
+  return `This Activity Design cannot be deleted because it contains ${formatDisplayNumber(activityCount)} ${activityCount === 1 ? "Activity" : "Activities"}.`;
 }
 
 export default function DeleteActivityDesignDialog({
