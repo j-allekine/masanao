@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -471,7 +472,7 @@ export default function RecipeCreateEditor({
                           <TableCell className="align-top text-muted-foreground">
                             {selectedItem
                               ? calculatedBaseUnitQuantity
-                                ? `${calculatedBaseUnitQuantity} ${selectedItem.baseUnit.abbreviation}`
+                                ? `${formatDisplayNumber(calculatedBaseUnitQuantity)} ${selectedItem.baseUnit.abbreviation}`
                                 : `${selectedItem.baseUnit.name} (${selectedItem.baseUnit.abbreviation})`
                               : "—"}
                           </TableCell>

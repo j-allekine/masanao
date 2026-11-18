@@ -49,7 +49,7 @@ export function calculateIssuanceReview(draft: IssuanceDraft, references: Issuan
     const availableQuantity = reference?.availableQuantity ?? "0";
     // Negative balances are possible only through existing ledger evidence; parse their sign exactly.
     const available = availableQuantity.startsWith("-") ? rational(-decimalRational(availableQuantity.slice(1)).numerator, decimalRational(availableQuantity.slice(1)).denominator) : decimalRational(availableQuantity);
-    return { itemId, itemName: total.itemName, baseUnitId: total.baseUnitId, baseUnitName: total.baseUnitName, baseUnitAbbreviation: total.baseUnitAbbreviation, calculatedNumerator: total.value.numerator.toString(), calculatedDenominator: total.value.denominator.toString(), calculatedQuantity: calculated.quantity, calculatedApproximate: calculated.approximate, automaticQuantity, finalQuantity, adjusted: adjustments.has(itemId), policy, warning, availableQuantity, shortage: !reviewPending && compareRational(final, available) > 0 };
+    return { itemId, itemName: total.itemName, baseUnitId: total.baseUnitId, baseUnitName: total.baseUnitName, baseUnitAbbreviation: total.baseUnitAbbreviation, calculatedNumerator: total.value.numerator.toString(), calculatedDenominator: total.value.denominator.toString(), calculatedQuantity: calculated.quantity, calculatedApproximate: calculated.approximate, automaticQuantity, finalQuantity, adjusted: adjustments.has(itemId), policy, warning, availableQuantity, unitConversions: reference?.unitConversions, shortage: !reviewPending && compareRational(final, available) > 0 };
   });
   return { review: review.sort((a, b) => a.itemName.localeCompare(b.itemName)), reviewPending };
 }

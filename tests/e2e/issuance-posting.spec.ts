@@ -44,10 +44,9 @@ test("staff posts saved exact quantities with keyboard confirmation, shortage re
   });
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
   await page.getByLabel("Search Recipes").fill("Posting Omelet");
-  await page.getByRole("checkbox", { name: "Posting Omelet" }).check();
+  await page.getByRole("button", { name: "Add Posting Omelet", exact: true }).click();
   await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
-  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" })).not.toBeVisible();
   await page
     .getByRole("button", { name: "Post issuance", exact: true })
     .click();

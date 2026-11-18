@@ -1,3 +1,4 @@
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { RecordDetails } from "@/components/workspace/record-details";
@@ -66,7 +67,7 @@ export default function IssuancePostedContent({
       <div className="px-4 py-5 sm:px-6">
         <MealScheduleDetails mealSchedule={mealSchedule} ready={hydrated} showDetails={false} />
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <p className="mr-auto text-body-sm text-muted-foreground">{draft.mealPax} pax</p>
+          <p className="mr-auto text-body-sm text-muted-foreground">{formatDisplayNumber(draft.mealPax)} pax</p>
           <Button id="view-issued-totals" disabled={!hydrated} variant="outline" onClick={() => setTotalsOpen(true)}>View issued totals</Button>
           <Dialog open={postingDetailsOpen} onOpenChange={setPostingDetailsOpen}>
             <Tooltip>
@@ -106,7 +107,7 @@ export default function IssuancePostedContent({
                   </h3>
                   {row.adjusted ? <Badge variant="secondary">Adjusted</Badge> : null}
                 </div>
-                <strong className="max-w-32 break-all text-body-sm tabular-nums">{row.finalQuantity} {row.baseUnitAbbreviation}</strong>
+                <strong className="max-w-32 break-all text-body-sm tabular-nums">{formatDisplayNumber(row.finalQuantity)} {row.baseUnitAbbreviation}</strong>
                 <Tooltip>
                   <TooltipTrigger render={<Button id={`receipt-sources-${row.itemId}`} disabled={!hydrated} aria-label={`View breakdown for ${row.itemName}`} variant="ghost" size="icon-lg" onClick={() => { receiptOpenerId.current = `receipt-sources-${row.itemId}`; setReceiptItemId(row.itemId); }} />}>
                     <Info aria-hidden="true" />
@@ -123,8 +124,8 @@ export default function IssuancePostedContent({
               <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
             </DialogHeader>
             <dl className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
-              <div><dt className="text-body-sm text-muted-foreground">Issued</dt><dd className="mt-1 break-all text-heading-2 font-semibold tabular-nums">{receiptRow?.finalQuantity} {receiptRow?.baseUnitAbbreviation}</dd></div>
-              <div><dt className="text-body-sm text-muted-foreground">Calculated</dt><dd className="mt-1 break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{receiptRow?.calculatedQuantity} {receiptRow?.baseUnitAbbreviation}</dd>{receiptRow?.adjusted ? <Badge variant="outline" className="mt-2">Adjusted</Badge> : null}</div>
+              <div><dt className="text-body-sm text-muted-foreground">Issued</dt><dd className="mt-1 break-all text-heading-2 font-semibold tabular-nums">{formatDisplayNumber(receiptRow?.finalQuantity)} {receiptRow?.baseUnitAbbreviation}</dd></div>
+              <div><dt className="text-body-sm text-muted-foreground">Calculated</dt><dd className="mt-1 break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{formatDisplayNumber(receiptRow?.calculatedQuantity)} {receiptRow?.baseUnitAbbreviation}</dd>{receiptRow?.adjusted ? <Badge variant="outline" className="mt-2">Adjusted</Badge> : null}</div>
             </dl>
             <h3 className="font-medium">Receipt sources</h3>
             {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">Receipt sources were not recorded for this older issuance.</p>}
@@ -136,7 +137,7 @@ export default function IssuancePostedContent({
                   <p className="text-body-sm text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>
                   {allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}
                 </div>
-                <p className="max-w-1/3 shrink-0 break-all text-body-sm tabular-nums">{allocation.quantity} <span className="inline-block max-w-full break-all">{receiptRow.baseUnitAbbreviation}</span></p>
+                <p className="max-w-1/3 shrink-0 break-all text-body-sm tabular-nums">{formatDisplayNumber(allocation.quantity)} <span className="inline-block max-w-full break-all">{receiptRow.baseUnitAbbreviation}</span></p>
               </li>)}
             </ul>
             <div className="hidden sm:block"><Table>
@@ -144,7 +145,7 @@ export default function IssuancePostedContent({
               <TableBody>{receiptRow?.receiptAllocations?.map((allocation) => <TableRow key={allocation.receiptLineId}>
                 <TableCell className="whitespace-normal break-words">{allocation.receiptNo}<p className="text-muted-foreground">{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(allocation.receiptDate))}</p>{allocation.basis === "reconstructed" ? <span className="block text-body-sm text-muted-foreground">Historical source reconstructed</span> : null}</TableCell>
                 <TableCell className="whitespace-normal break-words">{allocation.purchaseOrderNo}</TableCell>
-                <TableCell className="whitespace-normal break-all text-right tabular-nums">{allocation.quantity} {receiptRow.baseUnitAbbreviation}</TableCell>
+                <TableCell className="whitespace-normal break-all text-right tabular-nums">{formatDisplayNumber(allocation.quantity)} {receiptRow.baseUnitAbbreviation}</TableCell>
               </TableRow>)}</TableBody>
             </Table></div>
             {receiptRow?.receiptAllocations?.some((allocation) => allocation.basis === "reconstructed") ? <p className="text-body-sm text-muted-foreground">Historical receipt sources were inferred using FIFO; they do not prove which receipts were picked at the original posting.</p> : null}
@@ -154,20 +155,20 @@ export default function IssuancePostedContent({
           </DialogContent>
         </Dialog>
         {draft.recipes.length ? <section aria-labelledby="posted-recipes" className="mt-8">
-          <h2 id="posted-recipes" className="text-heading-3 font-semibold">Recipes ({draft.recipes.length})</h2>
+          <h2 id="posted-recipes" className="text-heading-3 font-semibold">Recipes ({formatDisplayNumber(draft.recipes.length)})</h2>
           <ul className="mt-3 divide-y rounded-lg border">
             {draft.recipes.map((recipe) => <li key={recipe.id} className="flex min-w-0 items-center justify-between gap-4 px-4 py-3">
               <Button id={`posted-ingredients-${recipe.id}`} disabled={!hydrated} variant="link" className="h-auto min-w-0 whitespace-normal px-0 text-left" aria-label={`View ingredients for ${recipe.recipeName}`} onClick={() => { jumpToTotals.current = false; openerId.current = `posted-ingredients-${recipe.id}`; setViewId(recipe.id); }}>{recipe.recipeName}</Button>
-              <span className="shrink-0 text-body-sm text-muted-foreground tabular-nums">{recipe.targetPax} pax</span>
+              <span className="shrink-0 text-body-sm text-muted-foreground tabular-nums">{formatDisplayNumber(recipe.targetPax)} pax</span>
             </li>)}
           </ul>
         </section> : null}
         {draft.stockItems.length ? <section aria-labelledby="posted-direct-items" className="mt-8">
-          <h2 id="posted-direct-items" className="text-heading-3 font-semibold">Items added separately ({draft.stockItems.length})</h2>
+          <h2 id="posted-direct-items" className="text-heading-3 font-semibold">Items added separately ({formatDisplayNumber(draft.stockItems.length)})</h2>
           <ul className="mt-3 divide-y rounded-lg border">
             {draft.stockItems.map((line) => <li key={line.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-4 px-4 py-4 text-body-sm">
               <span className="min-w-0 break-words font-medium">{line.itemName}</span>
-              <span className="max-w-32 break-words text-right tabular-nums">{line.enteredQuantity} {line.selectedUnitAbbreviation}</span>
+              <span className="max-w-32 break-words text-right tabular-nums">{formatDisplayNumber(line.enteredQuantity)} {line.selectedUnitAbbreviation}</span>
               {line.conversionId ? <p className="col-span-2 break-words text-muted-foreground">1 {line.selectedUnitAbbreviation} = {line.conversionFactor} {line.baseUnitAbbreviation}</p> : null}
             </li>)}
           </ul>
@@ -198,7 +199,7 @@ export default function IssuancePostedContent({
           <SheetHeader className="gap-2 px-5 pt-6 pb-0 pr-12 sm:px-6 sm:pr-14">
             <SheetTitle>{view?.recipeName}</SheetTitle>
             <SheetDescription>
-              Baseline {view?.baselinePax} pax · Target {view?.targetPax} pax
+              Baseline {formatDisplayNumber(view?.baselinePax)} pax · Target {formatDisplayNumber(view?.targetPax)} pax
             </SheetDescription>
           </SheetHeader>
           <div className="min-h-0 overflow-y-auto px-5 pb-6 sm:px-6">
@@ -247,12 +248,12 @@ export default function IssuancePostedContent({
                       ) : null}
                     </TableCell>
                     <TableCell className="whitespace-normal break-words px-2 py-3 text-right align-top tabular-nums sm:px-4">
-                      {ingredient.enteredQuantity}{" "}
+                      {formatDisplayNumber(ingredient.enteredQuantity)}{" "}
                       {ingredient.selectedUnitAbbreviation}
                     </TableCell>
                     <TableCell className="whitespace-normal break-words px-2 py-3 text-right align-top tabular-nums sm:px-4">
                       {ingredient.postedContribution
-                        ? `${ingredient.postedContribution.approximate ? "≈ " : ""}${ingredient.postedContribution.quantity} ${ingredient.selectedUnitAbbreviation}`
+                        ? `${ingredient.postedContribution.approximate ? "≈ " : ""}${formatDisplayNumber(ingredient.postedContribution.quantity)} ${ingredient.selectedUnitAbbreviation}`
                         : "Saved contribution unavailable"}
                     </TableCell>
                   </TableRow>

@@ -1,3 +1,4 @@
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useState } from "react";
 import { PackageOpen } from "lucide-react";
 
@@ -75,7 +76,7 @@ function ItemMobileCard({
           </div>
           <div className="flex items-start justify-between gap-3">
             <span className="text-label font-semibold text-muted-foreground">Reorder level</span>
-            <span className="min-w-0 break-words text-right">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
+            <span className="min-w-0 break-words text-right">{formatDisplayNumber(item.reorderLevel)} {item.baseUnit.abbreviation}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-label font-semibold text-muted-foreground">
@@ -128,7 +129,7 @@ function ItemRow({
           <span className="block break-words">{item.baseUnit.name}</span>
         </TableCell>
         <TableCell className="max-w-[18rem] whitespace-normal align-top">
-          <span className="block break-words">{item.reorderLevel} {item.baseUnit.abbreviation}</span>
+          <span className="block break-words">{formatDisplayNumber(item.reorderLevel)} {item.baseUnit.abbreviation}</span>
         </TableCell>
         <TableCell className="text-center">
           <WorkspaceLifecycleBadge isActive={item.isActive} />

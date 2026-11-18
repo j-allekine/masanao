@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
@@ -228,7 +229,7 @@ export default function ActivityDesignDetailContent({
 
         <section aria-labelledby="activity-design-activities-title" className="flex flex-col gap-3">
           <h2 id="activity-design-activities-title" className="text-heading-3 font-semibold">
-            Activities ({activityDesign.activityCount})
+            Activities ({formatDisplayNumber(activityDesign.activityCount)})
           </h2>
           {activityDesign.activities.length === 0 ? (
             <ActivitiesEmptyState />

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
   const conversion = item?.conversions.find((entry) => entry.id === unit);
   const units = item ? [
     { value: "base", label: `${item.baseUnit.name} (${item.baseUnit.abbreviation}) · Base` },
-    ...item.conversions.map((entry) => ({ value: entry.id, label: `${entry.alternateUnit.name} (${entry.alternateUnit.abbreviation}) · ${entry.factor} ${item.baseUnit.abbreviation}` })),
+    ...item.conversions.map((entry) => ({ value: entry.id, label: `${entry.alternateUnit.name} (${entry.alternateUnit.abbreviation}) · ${formatDisplayNumber(entry.factor)} ${item.baseUnit.abbreviation}` })),
   ] : [];
   const invalidQuantity = quantity !== "" && !isPositiveExactDecimal(quantity);
   const unavailableSavedItem = Boolean(line && loadedOptions && !item && !options.some((option) => option.id === line.itemId));
@@ -183,7 +184,7 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
                   </Select>
                 </Field>
               </FieldGroup>
-              {baseQuantity ? <FieldDescription className="break-words tabular-nums" aria-live="polite">Base quantity: {baseQuantity} {item!.baseUnit.abbreviation}</FieldDescription> : null}
+              {baseQuantity ? <FieldDescription className="break-words tabular-nums" aria-live="polite">Base quantity: {formatDisplayNumber(baseQuantity)} {item!.baseUnit.abbreviation}</FieldDescription> : null}
             </FieldGroup>
           </FieldGroup>
           <section aria-label="Stock already added" className="flex min-w-0 flex-col gap-3">
@@ -194,14 +195,14 @@ export default function StockPicker({ line, addedItems = [], submissionError, on
                 <Button variant="ghost" size="icon-sm" disabled={pending} aria-label="Clear Stock selection" onClick={() => { setItemId(""); setQuery(""); setQuantity(""); setUnit("base"); setError(""); setNotice(""); itemInput.current?.focus(); }}><X /></Button>
               </div>
             </section> : null}
-            <h3 className="text-body-sm font-medium">Stock already added ({addedItems.length})</h3>
+            <h3 className="text-body-sm font-medium">Stock already added ({formatDisplayNumber(addedItems.length)})</h3>
             {addedItems.length ? (
               <ul className="flex max-h-48 flex-col divide-y overflow-y-auto">
                 {addedItems.map((entry) => (
                   <li key={entry.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2">
                     <p className="min-w-0 break-words text-body-sm font-medium">{entry.itemName}</p>
-                    <p className="break-words text-body-sm tabular-nums">{entry.enteredQuantity} {entry.selectedUnitAbbreviation}</p>
-                    {entry.conversionId ? <p className="w-full break-words text-label text-muted-foreground tabular-nums">Base quantity: {multiplyExactPositiveDecimals(entry.enteredQuantity, entry.conversionFactor)} {entry.baseUnitAbbreviation}</p> : null}
+                    <p className="break-words text-body-sm tabular-nums">{formatDisplayNumber(entry.enteredQuantity)} {entry.selectedUnitAbbreviation}</p>
+                    {entry.conversionId ? <p className="w-full break-words text-label text-muted-foreground tabular-nums">Base quantity: {formatDisplayNumber(multiplyExactPositiveDecimals(entry.enteredQuantity, entry.conversionFactor))} {entry.baseUnitAbbreviation}</p> : null}
                   </li>
                 ))}
               </ul>

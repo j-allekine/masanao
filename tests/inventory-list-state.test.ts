@@ -4,7 +4,7 @@ import type { InventoryListItem } from "../src/features/supply-operations/types"
 
 const rows: InventoryListItem[] = Array.from({ length: 25 }, (_, index) => ({
   id: String(index), name: `Rice ${index}`, category: { id: index < 22 ? "archived" : "other", name: "Pantry" },
-  baseUnit: { id: "kg", name: "Kilogram", abbreviation: "kg" }, reorderLevel: "1",
+  unitConversions: [], baseUnit: { id: "kg", name: "Kilogram", abbreviation: "kg" }, reorderLevel: "1",
   balance: { kind: "valid", quantity: "1.000000000000000001" },
   stockStatus: index === 24 ? "review-required" : "good",
 }));

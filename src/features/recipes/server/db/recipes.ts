@@ -1,5 +1,6 @@
 import "server-only";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 
@@ -119,7 +120,7 @@ export async function listActiveRecipeIngredientOptions(): Promise<
     unitConversions: sortItemUnitConversions(
       item.unitConversions.map((conversion) => ({
         ...conversion,
-        label: `${conversion.alternateUnit.name} (${conversion.baseUnitQuantity} ${item.baseUnit.abbreviation})`,
+        label: `${conversion.alternateUnit.name} (${formatDisplayNumber(conversion.baseUnitQuantity)} ${item.baseUnit.abbreviation})`,
       })),
     ),
   }));

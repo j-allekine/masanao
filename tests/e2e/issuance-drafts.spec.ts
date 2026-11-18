@@ -33,14 +33,14 @@ test("staff prepares, saves and reopens a Recipe draft with keyboard and mobile 
   });
   await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("100");
   await page.getByRole("button", { name: "Add Recipes", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("100");
+  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByText("Meal pax ·", { exact: false })).toHaveCount(0);
   await page.getByLabel("Search Recipes").fill("Training Rice");
-  const recipe = page.getByRole("checkbox", { name: "Training Rice" });
+  const recipe = page.getByRole("button", { name: "Add Training Rice", exact: true });
+  await expect(recipe).toBeEnabled();
   await recipe.focus();
   await page.keyboard.press("Space");
   await page.getByRole("button", { name: "Add 1 Recipe", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "Add Recipes" }).getByRole("heading", { name: /Already added/ })).toBeVisible();
-  await page.getByRole("dialog", { name: "Add Recipes" }).getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Add Recipes" })).not.toBeVisible();
   await expect(
     page.getByRole("button", { name: "View ingredients for Training Rice", exact: true }),
   ).toBeVisible();

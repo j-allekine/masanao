@@ -65,11 +65,11 @@ test("returning through browser history sees posted receiving, unchanged drafts,
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
   const picker = page.getByRole("dialog", { name: "Add Stock item" });
-  await picker.getByRole("combobox", { name: "Item", exact: true }).fill("Refresh Eggs");
-  await page.getByRole("option", { name: "Refresh Eggs", exact: true }).click();
+  await picker.getByRole("searchbox", { name: "Search Stock items" }).fill("Refresh Eggs");
+  await picker.getByRole("button", { name: "Add Refresh Eggs", exact: true }).click();
   await picker.getByRole("textbox", { name: "Quantity", exact: true }).fill("10");
-  await picker.getByRole("button", { name: "Add Stock item", exact: true }).click();
-  await picker.getByRole("button", { name: "Done", exact: true }).click();
+  await picker.getByRole("button", { name: "Add 1 Stock item", exact: true }).click();
+  await expect(picker).not.toBeVisible();
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Draft saved");
   await page.getByRole("link", { name: "Inventory", exact: true }).click();

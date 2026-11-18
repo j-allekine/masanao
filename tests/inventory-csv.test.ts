@@ -31,7 +31,7 @@ test("public export authorizes current accounts and exports every combined match
   expect(empty.csv.split("\r\n")).toHaveLength(2);
 });
 test("CSV preserves exact quantities, exceptional evidence, newlines and quotes while neutralizing formulas in every field", () => {
-  const row: InventoryListItem = { id: "1", name: ' \t=SUM(1,2)\n"quoted"', category: { id: "1", name: "\u0001+1" }, baseUnit: { id: "1", name: "@unit", abbreviation: "kg" }, balance: { kind: "valid", quantity: "9007199254740993.000000000000000001" }, reorderLevel: "0.000000000000000001", stockStatus: "good" };
+  const row: InventoryListItem = { id: "1", name: ' \t=SUM(1,2)\n"quoted"', category: { id: "1", name: "\u0001+1" }, unitConversions: [], baseUnit: { id: "1", name: "@unit", abbreviation: "kg" }, balance: { kind: "valid", quantity: "9007199254740993.000000000000000001" }, reorderLevel: "0.000000000000000001", stockStatus: "good" };
   const csv = formatInventoryCsv([row], "2026-10-20T00:00:00.000Z");
   expect(csv).toContain('"\' \t=SUM(1,2)\n""quoted"""');
   expect(csv).toContain('"\'\u0001+1"'); expect(csv).toContain('"\'@unit (kg)"');
@@ -41,6 +41,6 @@ test("CSV preserves exact quantities, exceptional evidence, newlines and quotes 
 
 
 test.each(["=1+1", "+1+1", "-1+1", "@SUM(1,2)", " \t=1+1", "\u0000=1+1", "\u0085=1+1", "\rtext", "\ntext", "\ttext"])("neutralizes spreadsheet formula/control prefix %j", (name) => {
-  const row: InventoryListItem = { id: "safe", name, category: { id: "1", name }, baseUnit: { id: "1", name, abbreviation: "unit" }, balance: { kind: "valid", quantity: "0" }, reorderLevel: "1", stockStatus: "out-of-stock" };
+  const row: InventoryListItem = { id: "safe", name, category: { id: "1", name }, unitConversions: [], baseUnit: { id: "1", name, abbreviation: "unit" }, balance: { kind: "valid", quantity: "0" }, reorderLevel: "1", stockStatus: "out-of-stock" };
   expect(formatInventoryCsv([row], "now")).toContain(`"'${name}"`);
 });

@@ -1,3 +1,4 @@
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import Link from "next/link";
 import { ClipboardList } from "lucide-react";
 
@@ -72,7 +73,7 @@ export default function RecipeDetailContent({
               Ingredients
             </h2>
             <p className="text-body text-muted-foreground">
-              {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${recipe.baselinePax.toLocaleString()} pax`}. These are reference quantities, not issued quantities.
+              {recipe.baselinePax === null ? "Baseline pax not set" : `Ingredients for ${formatDisplayNumber(recipe.baselinePax)} pax`}. These are reference quantities, not issued quantities.
             </p>
           </div>
           <WorkspaceTableFrame caption="Recipe ingredients" className="min-w-[28rem]" stickyColumns>
@@ -90,7 +91,7 @@ export default function RecipeDetailContent({
                       {ingredient.item.name}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {ingredient.enteredQuantity}
+                      {formatDisplayNumber(ingredient.enteredQuantity)}
                     </TableCell>
                     <TableCell className="whitespace-normal wrap-anywhere">{displayUnit(ingredient)}</TableCell>
                   </TableRow>

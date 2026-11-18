@@ -15,7 +15,18 @@ export async function listInventoryRecords(actor: CurrentActor | null | undefine
     if (!authorized) return { ok: false, kind: "forbidden", error: "Staff access required." };
     const items = await transaction.item.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, reorderLevel: true, category: { select: { id: true, name: true } }, baseUnit: { select: { id: true, name: true, abbreviation: true } } },
+      select: {
+        id: true,
+        name: true,
+        reorderLevel: true,
+        category: { select: { id: true, name: true } },
+        baseUnit: { select: { id: true, name: true, abbreviation: true } },
+        unitConversions: {
+          where: { alternateUnit: { active: true } },
+          select: { id: true, baseUnitQuantity: true, alternateUnit: { select: { name: true, abbreviation: true } } },
+          orderBy: [{ alternateUnit: { name: "asc" } }, { id: "asc" }],
+        },
+      },
       orderBy: [{ normalizedName: "asc" }, { id: "asc" }],
     });
     const balances = await readStockBalances(items.map((item) => item.id), transaction);

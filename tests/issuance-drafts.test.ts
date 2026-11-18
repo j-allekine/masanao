@@ -71,7 +71,13 @@ describe("Issuance Recipe drafts through public gateways", () => {
     expect(edited.draft.stockItems[0]).toMatchObject({ id: selection.lineId, enteredQuantity: selection.enteredQuantity, conversionFactor: "0.009" });
     await prisma.unit.update({ where: { id: "issuance-g" }, data: { active: false } });
     expect(await saveIssuanceDraft(staff, context, { revision: 2, mealPax: 200, recipes: [], stockItems: [{ ...selection, enteredQuantity: "4" }] })).toMatchObject({ ok: false, kind: "validation" });
-    expect(await getIssuanceWorkspace(staff, context)).toEqual({ ok: true, value: edited });
+    expect(await getIssuanceWorkspace(staff, context)).toEqual({
+      ok: true, value: {
+        ...edited,
+        review: edited.review.map((row) => ({ ...row, unitConversions: [] })),
+        reviewReferences: edited.reviewReferences.map((reference) => ({ ...reference, unitConversions: [] })),
+      },
+    });
     expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
   });
   it("rejects invalid Stock quantities, foreign conversions, and copied-data tampering", async () => {
@@ -280,7 +286,7 @@ describe("Issuance Recipe drafts through public gateways", () => {
     expect(await getIssuanceReviewReferences(null, ["issuance-rice"])).toMatchObject({ ok: false, kind: "authentication" });
     expect(await getIssuanceReviewReferences(staff, "issuance-rice")).toMatchObject({ ok: false, kind: "validation" });
     expect(await getIssuanceReviewReferences(staff, [])).toEqual({ ok: true, value: [] });
-    expect(await getIssuanceReviewReferences(staff, ["issuance-rice", "issuance-rice"])).toEqual({ ok: true, value: [{ itemId: "issuance-rice", policy: "allow-decimals", availableQuantity: quantity }] });
+    expect(await getIssuanceReviewReferences(staff, ["issuance-rice", "issuance-rice"])).toEqual({ ok: true, value: [{ itemId: "issuance-rice", policy: "allow-decimals", availableQuantity: quantity, unitConversions: [{ id: "issuance-conversion", baseUnitQuantity: "0.001", alternateUnit: { name: "Gram", abbreviation: "g" } }] }] });
     const saved = workspace(await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 200, recipes: [], stockItems: [{ itemId: "issuance-rice", conversionId: null, enteredQuantity: quantity }] }));
     expect(saved.review[0]).toMatchObject({ finalQuantity: quantity, availableQuantity: quantity, shortage: false });
     const excess = workspace(await saveIssuanceDraft(staff, context, { revision: 1, mealPax: 200, recipes: [], stockItems: saved.draft.stockItems.map((line) => ({ lineId: line.id })), quantityReviews: [{ itemId: "issuance-rice", finalQuantity: "19.000000000000000002" }] }));

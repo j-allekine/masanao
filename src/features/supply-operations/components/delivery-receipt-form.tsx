@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Save, Trash2 } from "lucide-react";
@@ -306,7 +307,7 @@ export default function DeliveryReceiptForm({
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-baseline gap-2">
               <h2 id="delivery-lines-heading" className="text-heading-3 font-semibold">Delivery Receipt lines</h2>
-              <p aria-live="polite" className="text-body-sm text-muted-foreground">{lines.length} {lines.length === 1 ? "line" : "lines"}</p>
+              <p aria-live="polite" className="text-body-sm text-muted-foreground">{formatDisplayNumber(lines.length)} {lines.length === 1 ? "line" : "lines"}</p>
             </div>
           </div>
           <Button id="add-delivery-line" type="button" variant="outline" onClick={addLine}><Plus data-icon="inline-start" />Add line</Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayNumber } from "@/lib/format-display-number";
 import Link from "next/link";
 import { useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -20,7 +21,7 @@ const day = (value: string) => new Intl.DateTimeFormat("en-PH", { dateStyle: "me
 const varianceTone = (value: string | null) => value?.startsWith("-") ? "text-destructive" : value && BigInt(value) > BigInt(0) ? "text-primary" : undefined;
 
 function CostNotes({ row }: { row: DashboardBudgetActivity }) {
-  const notes = [row.cost === null && "Cost incomplete", row.pendingMeals > 0 && `${row.pendingMeals} ${row.pendingMeals === 1 ? "meal" : "meals"} not posted`, !row.mealCount && "No Meal Schedules", row.reconstructed && "Estimate from reconstructed sources"].filter(Boolean);
+  const notes = [row.cost === null && "Cost incomplete", row.pendingMeals > 0 && `${formatDisplayNumber(row.pendingMeals)} ${row.pendingMeals === 1 ? "meal" : "meals"} not posted`, !row.mealCount && "No Meal Schedules", row.reconstructed && "Estimate from reconstructed sources"].filter(Boolean);
   return notes.length ? <p className="mt-1 text-label text-muted-foreground">{notes.join(" · ")}</p> : null;
 }
 
@@ -46,7 +47,7 @@ export default function DashboardBudgetReport({ report, disabled, onPageChange, 
     { label: "Planned budget", value: row.budget === null ? "Not recorded" : money(row.budget) },
     { label: "Issued supply cost", value: money(row.cost) },
     { label: "Budget variance", value: money(row.variance, true) },
-    { label: "Budget used", value: row.used ?? "—" },
+    { label: "Budget used", value: row.used === null ? "—" : formatDisplayNumber(row.used) },
   ];
   return <section aria-labelledby="budget-performance-title" className="flex min-w-0 flex-col gap-5">
     <div>
@@ -54,7 +55,7 @@ export default function DashboardBudgetReport({ report, disabled, onPageChange, 
         <dt className="text-body-sm text-muted-foreground">{metric.label}</dt>
         <dd className="mt-2 break-words text-heading-2 font-semibold tracking-tight tabular-nums"><span className={cn(metric.signed && available && varianceTone(metric.value))}>{available ? money(metric.value, metric.signed) : "—"}</span></dd>
       </div>)}</dl>
-      <p className="mt-3 text-label text-muted-foreground">Costs to date{report.summary.excluded > 0 ? ` · ${report.summary.excluded} incomplete ${report.summary.excluded === 1 ? "Activity" : "Activities"} excluded from totals` : ""}</p>
+      <p className="mt-3 text-label text-muted-foreground">Costs to date{report.summary.excluded > 0 ? ` · ${formatDisplayNumber(report.summary.excluded)} incomplete ${report.summary.excluded === 1 ? "Activity" : "Activities"} excluded from totals` : ""}</p>
       {report.summary.reconstructed && <p className="mt-1 text-label text-muted-foreground">Includes estimates from reconstructed receipt sources.</p>}
     </div>
     <Separator />
