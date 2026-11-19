@@ -4,4 +4,5 @@ export { default as PurchaseOrderDetailContent } from "./components/purchase-ord
 export { default as DeliveryReceiptForm } from "./components/delivery-receipt-form";
 export { default as DeliveryReceiptDialog } from "./components/delivery-receipt-dialog";
 export { default as InventoryContent } from "./components/inventory-content";
+export { default as OpeningStockPrototype } from "./components/opening-stock-prototype";
 export { default as KitchenDashboard } from "./components/dashboard-content";

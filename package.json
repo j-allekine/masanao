@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "prototype:recipe-scaling": "next dev --port 3117",
+    "prototype:opening-stock": "node scripts/prototype-opening-stock.mjs",
     "lint": "eslint src",
     "test": "vitest",
     "test:run": "vitest run",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { useItemDisplayUnit } from "./item-display-unit";
 import { formatDisplayNumber } from "@/lib/format-display-number";
@@ -89,7 +89,7 @@ export function InventoryTable({ items, hasFilters = false, onClearFilters }: { 
   </>;
 }
 
-export default function InventoryContent({ items }: { items: InventoryListItem[] }) {
+export default function InventoryContent({ items, openingStockAction }: { items: InventoryListItem[]; openingStockAction?: ReactNode }) {
   const { currentQuery, state, snapshotItems, pagination, hasFilters, refreshing, hydrated, navigate, requestRefresh } = useInventoryNavigation(items);
   const resultsNote = useRef<HTMLParagraphElement>(null);
 
@@ -105,6 +105,7 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
 
   const taskHeader = (
     <WorkspaceTaskHeader actions={<>
+      {openingStockAction}
       <Button type="button" variant="outline" disabled={!hydrated || refreshing} aria-busy={refreshing} onClick={requestRefresh}>
         <RefreshCw data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
       </Button>
