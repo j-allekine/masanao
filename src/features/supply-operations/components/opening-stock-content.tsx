@@ -19,10 +19,11 @@ import WorkspaceLayout, { WorkspaceTaskHeader } from "@/components/workspace/wor
 import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { useEditorNavigationGuard } from "@/hooks/use-editor-navigation-guard";
 import { formatDisplayNumber } from "@/lib/format-display-number";
-import { beginOpeningStockAction, discardOpeningStockDraftAction, saveOpeningStockDraftAction } from "../actions";
+import { beginOpeningStockAction, discardOpeningStockDraftAction, postOpeningStockAction, saveOpeningStockDraftAction } from "../actions";
 import { openingStockProduct, openingStockToday } from "../domain/opening-stock";
 import type { OpeningStockLine, OpeningStockWorkspace } from "../opening-stock-types";
 import type { ItemListItem } from "../types";
+import { OpeningStockPosted, OpeningStockReview } from "./opening-stock-review";
 
 export default function OpeningStockContent({ workspace: initial }: { workspace: OpeningStockWorkspace }) {
   const [workspace, setWorkspace] = useState(initial);
@@ -36,6 +37,9 @@ export default function OpeningStockContent({ workspace: initial }: { workspace:
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [zeroAcknowledged, setZeroAcknowledged] = useState(false);
+  const [postingError, setPostingError] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -74,11 +78,21 @@ export default function OpeningStockContent({ workspace: initial }: { workspace:
       setCountDate(date); setNote(""); setLines([]); setSavedSignature(JSON.stringify({ countDate: date, note: "", lines: [] })); setError("");
     });
   }
-  function save() {
+  function save(openReview = false) {
     startTransition(async () => {
       const result = await saveOpeningStockDraftAction({ attemptId: workspace.attemptId, revision: workspace.revision, countDate, note, lines });
       if (!result.ok) { failure(result.error, result.fields); return; }
       setWorkspace({ ...workspace, revision: result.value.revision }); setSavedSignature(signature); setFields({}); setError(""); setMessage("Opening Stock draft saved. No stock has moved.");
+      if (openReview) { setZeroAcknowledged(false); setPostingError(""); setReviewOpen(true); }
+    });
+  }
+  function post() {
+    startTransition(async () => {
+      const result = await postOpeningStockAction({ attemptId: workspace.attemptId, revision: workspace.revision, zeroCostAcknowledged: zeroAcknowledged });
+      if (!result.ok) { setPostingError(result.error); return; }
+      // Review saved this exact count, so the navigation guard is already clean.
+      // Reload the immutable server snapshot rather than synthesizing posted evidence.
+      window.location.reload();
     });
   }
   function discard() {
@@ -119,6 +133,7 @@ export default function OpeningStockContent({ workspace: initial }: { workspace:
     return value === null ? "Unknown" : `₱${formatDisplayNumber(value)}`;
   };
   const remove = (line: OpeningStockLine) => <Button type="button" size="icon-sm" variant="ghost" disabled={!editing || pending} aria-label={`Remove ${line.itemName}`} onClick={() => setLines((current) => current.filter((entry) => entry.id !== line.id))}><Trash2 /></Button>;
+  if (workspace.status === "posted") return <OpeningStockPosted workspace={workspace} />;
   return <WorkspaceLayout workspaceTitle="Supply Operations" data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       {error && <Alert variant="destructive" ref={errorRef} tabIndex={-1}><AlertTitle>Review the starting count</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
@@ -131,11 +146,12 @@ export default function OpeningStockContent({ workspace: initial }: { workspace:
           <div className="hidden md:block"><WorkspaceTableFrame caption="Opening Stock count"><TableHeader><TableRow>{["Item", "Counted quantity", "Unit", "Equivalent stock", "Opening unit cost", "Line amount", ""].map((label) => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader><TableBody>{lines.map((line, index) => <TableRow key={line.id}><TableCell className="max-w-48 whitespace-normal break-words">{line.itemName}</TableCell><TableCell className="min-w-28">{quantityInput(line, index, "desktop")}</TableCell><TableCell className="min-w-36">{unitInput(line, "desktop")}</TableCell><TableCell>{equivalent(line)}</TableCell><TableCell className="min-w-36">{costInput(line, index, "desktop")}{zeroReason(line, "desktop")}</TableCell><TableCell>{amount(line)}</TableCell><TableCell>{remove(line)}</TableCell></TableRow>)}</TableBody></WorkspaceTableFrame></div>
           <div className="flex flex-col gap-3 md:hidden">{lines.map((line, index) => <Card key={line.id} size="sm"><CardHeader><CardTitle className="break-words">{line.itemName}</CardTitle></CardHeader><CardContent className="flex flex-col gap-3"><FieldGroup className="grid grid-cols-2 gap-3"><Field><FieldLabel>Counted quantity</FieldLabel>{quantityInput(line, index, "mobile")}</Field><Field><FieldLabel>Unit</FieldLabel>{unitInput(line, "mobile")}</Field><Field><FieldLabel>Opening unit cost</FieldLabel>{costInput(line, index, "mobile")}</Field><Field><FieldLabel>Line amount</FieldLabel><p>{amount(line)}</p></Field></FieldGroup><p className="text-body-sm">Equivalent stock: <strong>{equivalent(line)}</strong></p>{zeroReason(line, "mobile")}<div className="flex justify-end">{remove(line)}</div></CardContent></Card>)}</div>
         </>}
-        {editing && <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><p className="text-body-sm text-muted-foreground">{lines.length} Items · {dirty ? "Unsaved changes" : "Saved draft"}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending} onClick={() => setDiscardOpen(true)}>Discard setup draft</Button><Button disabled={pending || !hydrated} onClick={save}>{pending ? "Saving…" : "Save draft"}</Button></div></div>}
+        {editing && <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><p className="text-body-sm text-muted-foreground">{lines.length} Items · {dirty ? "Unsaved changes" : "Saved draft"}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending} onClick={() => setDiscardOpen(true)}>Discard setup draft</Button><Button variant="outline" disabled={pending || !hydrated} onClick={() => save()}>{pending ? "Saving…" : "Save draft"}</Button><Button disabled={pending || !hydrated || !lines.length} onClick={() => save(true)}>Review opening stock</Button></div></div>}
       </>}
     </div>
     <Dialog open={pickerOpen} onOpenChange={setPickerOpen}><DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Add items</DialogTitle><DialogDescription>Choose existing active Items. Configured alternate units are available in the count.</DialogDescription></DialogHeader><FieldGroup><Field><FieldLabel htmlFor="opening-search">Search Items</FieldLabel><Input autoFocus id="opening-search" value={search} onChange={(event) => setSearch(event.target.value)} /></Field></FieldGroup><div className="flex max-h-72 flex-col gap-2 overflow-y-auto">{workspace.items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())).map((item) => <Button key={item.id} variant="outline" className="h-auto justify-between gap-3 py-3 whitespace-normal" disabled={lines.some((line) => line.itemId === item.id)} onClick={() => addItem(item)}><span className="min-w-0 break-words text-left">{item.name}<span className="block text-body-sm font-normal text-muted-foreground">{item.category.name} · {item.baseUnit.abbreviation}</span></span><span>{lines.some((line) => line.itemId === item.id) ? "Added" : "Add"}</span></Button>)}{!workspace.items.some((item) => item.name.toLowerCase().includes(search.toLowerCase())) && <p className="text-body-sm text-muted-foreground">No matching active Items.</p>}</div></DialogContent></Dialog>
     <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Discard setup draft?</AlertDialogTitle><AlertDialogDescription>This clears the starting count and releases receiving and issuance. Catalog Items and their units remain. No stock will move.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={pending}>Keep counting</AlertDialogCancel><AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); discard(); }}>Discard setup draft</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <AlertDialog open={Boolean(guard.exitRequest)} onOpenChange={(open) => { if (!open) guard.dismissExit(); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Leave unsaved count changes?</AlertDialogTitle><AlertDialogDescription>Your saved draft remains. Changes since your last save will be lost.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Stay here</AlertDialogCancel><AlertDialogAction onClick={() => guard.confirmExit(() => {})}>Leave without saving</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <OpeningStockReview open={reviewOpen} onOpenChange={setReviewOpen} lines={lines.map((line) => ({ ...line, calculatedBaseUnitQuantity: openingStockProduct(line.quantity, line.conversionFactor), lineAmount: line.openingUnitCost === "" ? null : openingStockProduct(line.quantity, line.openingUnitCost) }))} countDate={countDate} note={note} pending={pending} error={postingError} zeroAcknowledged={zeroAcknowledged} onZeroAcknowledgedChange={setZeroAcknowledged} onPost={post} />
   </WorkspaceLayout>;
 }
