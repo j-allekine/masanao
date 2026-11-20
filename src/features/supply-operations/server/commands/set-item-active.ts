@@ -13,7 +13,7 @@ export async function setItemActiveCommand(
       return {
         ok: false,
         kind: "referenced",
-        error: "This Item cannot be deactivated because posted Delivery Receipts reference it.",
+        error: "This Item cannot be deactivated because posted stock activity references it.",
       };
     }
 

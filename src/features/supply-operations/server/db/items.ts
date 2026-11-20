@@ -44,7 +44,7 @@ const itemListSelect = {
     orderBy: [{ alternateUnit: { normalizedName: "asc" } }, { id: "asc" }] satisfies Prisma.ItemUnitConversionOrderByWithRelationInput[],
   },
   _count: {
-    select: { deliveryReceiptLines: true },
+    select: { deliveryReceiptLines: true, openingStockSources: true },
   },
 } as const;
 
@@ -92,6 +92,7 @@ function toItemListItem(item: ItemListRecord): ItemListItem {
       label: `${conversion.alternateUnit.name} (${formatDisplayNumber(conversion.baseUnitQuantity)} ${item.baseUnit.abbreviation})`,
     }))),
     hasPostedDeliveryReceiptLines: item._count.deliveryReceiptLines > 0,
+    hasPostedOpeningStock: item._count.openingStockSources > 0,
   };
 }
 
@@ -178,6 +179,7 @@ async function findItemRecord(database: ItemDatabase, id: string) {
         select: {
           unitConversions: true,
           deliveryReceiptLines: true,
+          openingStockSources: true,
           recipeIngredients: true,
           issuanceIngredients: true,
           issuanceStockItems: true,
@@ -358,7 +360,7 @@ export async function updateItemWithActiveLookups(
         if (existing._count.unitConversions > 0) {
           return { kind: "base-unit-locked" as const, reason: "alternate-units" as const };
         }
-        if (existing._count.deliveryReceiptLines > 0) {
+        if (existing._count.deliveryReceiptLines > 0 || existing._count.openingStockSources > 0) {
           return { kind: "base-unit-locked" as const, reason: "stock-activity" as const };
         }
         if (existing._count.recipeIngredients > 0) {
@@ -401,6 +403,7 @@ export async function setItemActiveRecord(id: string, isActive: boolean) {
         select: { id: true },
       });
       if (receiptLine) return { kind: "referenced" as const };
+      if (await transaction.openingStockSource.findFirst({ where: { itemId: id }, select: { id: true } })) return { kind: "referenced" as const };
     }
 
     const item = await transaction.item.update({

@@ -22,6 +22,9 @@ export type OpeningStockLine = OpeningStockLineInput & {
   lineAmount: string | null;
 };
 export type OpeningStockWorkspace = {
+  reference?: string;
+  postedAt?: string | null;
+  postedByName?: string | null;
   status: "not-started" | "draft" | "posted";
   revision: number;
   attemptId: string | null;

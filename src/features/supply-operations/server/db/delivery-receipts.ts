@@ -15,7 +15,7 @@ function dateOnlyToUtcDate(value: string) {
 
 export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceiptInput) {
   return prisma.$transaction(async (database) => {
-    await assertOpeningStockGate(database);
+    await assertOpeningStockGate(database, input.receiptDate);
     const receiptDate = dateOnlyToUtcDate(input.receiptDate);
     const purchaseOrder = await database.purchaseOrder.findUnique({
       where: { id: input.purchaseOrderId },
