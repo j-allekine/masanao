@@ -16,6 +16,7 @@ export async function executeCreateItemUnitConversion(formData: FormData): Promi
     const result = await createItemUnitConversion(actor, itemId, input);
     if (!result.ok) return { status: "error", kind: result.kind, error: result.error, fields: result.fields };
     revalidatePath("/items");
+    revalidatePath("/inventory/opening-stock");
     return { status: "success", conversion: result.conversion };
   } catch {
     return { status: "error", kind: "server", error: "The alternate Unit could not be saved. Check your connection and try again.", fields: {} };

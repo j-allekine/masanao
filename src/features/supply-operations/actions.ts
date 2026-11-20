@@ -1,6 +1,9 @@
 "use server";
 
 import { executeCreateItem } from "./server/actions/create-item";
+import { executeCreateItemWithConversions } from "./server/actions/create-item-with-conversions";
+
+export async function createItemWithConversionsAction(input: unknown) { return executeCreateItemWithConversions(input); }
 import { executeOpeningStockAction } from "./server/actions/opening-stock";
 
 export async function beginOpeningStockAction(input: unknown) { return executeOpeningStockAction("begin", input); }
