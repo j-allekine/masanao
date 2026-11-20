@@ -3,11 +3,17 @@ import "server-only";
 import { deliveryReceiptFieldErrors, deliveryReceiptSchema } from "../../schemas/delivery-receipt";
 import type { DeliveryReceiptPostResult } from "../../types";
 import { postDeliveryReceiptWithSelectedUnit } from "../db/delivery-receipts";
+import { OpeningStockGateError } from "../db/opening-stock";
 
 export async function postDeliveryReceiptCommand(input: unknown): Promise<DeliveryReceiptPostResult> {
   const parsed = deliveryReceiptSchema.safeParse(input);
   if (!parsed.success) return { ok: false, kind: "validation", error: "Please correct the highlighted Delivery Receipt fields.", fields: deliveryReceiptFieldErrors(parsed.error) };
-  const result = await postDeliveryReceiptWithSelectedUnit(parsed.data);
+  let result;
+  try { result = await postDeliveryReceiptWithSelectedUnit(parsed.data); }
+  catch (error) {
+    if (error instanceof OpeningStockGateError) return { ok: false, kind: "validation", error: error.message, fields: {} };
+    throw error;
+  }
   if (result.kind === "created") return { ok: true, receipt: result.receipt };
   if (result.kind === "duplicate") return { ok: false, kind: "duplicate", error: "A Delivery Receipt with that number already exists for this Vendor.", fields: { receiptNo: ["A Delivery Receipt with that number already exists for this Vendor."] } };
   if (result.kind === "inactive-item") return { ok: false, kind: "inactive", error: "Select an active Item.", fields: { itemId: ["Select an active Item."], lines: { [result.lineIndex]: { itemId: ["Select an active Item."] } } } };

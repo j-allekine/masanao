@@ -1,6 +1,11 @@
 "use server";
 
 import { executeCreateItem } from "./server/actions/create-item";
+import { executeOpeningStockAction } from "./server/actions/opening-stock";
+
+export async function beginOpeningStockAction(input: unknown) { return executeOpeningStockAction("begin", input); }
+export async function saveOpeningStockDraftAction(input: unknown) { return executeOpeningStockAction("save", input); }
+export async function discardOpeningStockDraftAction(input: unknown) { return executeOpeningStockAction("discard", input); }
 import { executeDeleteItem } from "./server/actions/delete-item";
 import { executeSetItemActive } from "./server/actions/set-item-active";
 import { executeUpdateItem } from "./server/actions/update-item";

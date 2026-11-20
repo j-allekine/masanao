@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
+import { assertOpeningStockGate } from "./opening-stock";
 
 import type { DeliveryReceiptInput } from "../../schemas/delivery-receipt";
 import { isPositiveExactDecimal, multiplyExactPositiveDecimals } from "../../domain/delivery-receipt";
@@ -14,6 +15,7 @@ function dateOnlyToUtcDate(value: string) {
 
 export async function postDeliveryReceiptWithSelectedUnit(input: DeliveryReceiptInput) {
   return prisma.$transaction(async (database) => {
+    await assertOpeningStockGate(database);
     const receiptDate = dateOnlyToUtcDate(input.receiptDate);
     const purchaseOrder = await database.purchaseOrder.findUnique({
       where: { id: input.purchaseOrderId },
