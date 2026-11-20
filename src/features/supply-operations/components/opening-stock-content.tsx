@@ -23,6 +23,7 @@ import { beginOpeningStockAction, discardOpeningStockDraftAction, postOpeningSto
 import { openingStockProduct, openingStockToday } from "../domain/opening-stock";
 import type { OpeningStockLine, OpeningStockWorkspace } from "../opening-stock-types";
 import type { CategoryListItem, ItemListItem, UnitListItem } from "../types";
+import OpeningStockCorrections from "./opening-stock-corrections";
 import OpeningStockItemEditor from "./opening-stock-item-editor";
 import ItemUnitsSheet from "./item-units-sheet";
 import { OpeningStockPosted, OpeningStockReview } from "./opening-stock-review";
@@ -138,7 +139,7 @@ export default function OpeningStockContent({ workspace: initial, categories, un
     return value === null ? "Unknown" : `₱${formatDisplayNumber(value)}`;
   };
   const remove = (line: OpeningStockLine) => <Button type="button" size="icon-sm" variant="ghost" disabled={!editing || pending} aria-label={`Remove ${line.itemName}`} onClick={() => setLines((current) => current.filter((entry) => entry.id !== line.id))}><Trash2 /></Button>;
-  if (workspace.status === "posted") return <OpeningStockPosted workspace={workspace} />;
+  if (workspace.status === "posted") return <OpeningStockPosted workspace={workspace}><OpeningStockCorrections workspace={workspace} categories={categories} units={units} /></OpeningStockPosted>;
   return <WorkspaceLayout workspaceTitle="Supply Operations" data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       {error && <Alert variant="destructive" ref={errorRef} tabIndex={-1}><AlertTitle>Review the starting count</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
