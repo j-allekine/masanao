@@ -1,7 +1,7 @@
 import "server-only";
 import type { CurrentActor } from "@/server/auth";
-import { openingStockAttemptSchema, openingStockSaveSchema } from "../../schemas/opening-stock";
-import { beginOpeningStockRecord, discardOpeningStockRecord, saveOpeningStockRecord } from "../db/opening-stock";
+import { openingStockAttemptSchema, openingStockPostSchema, openingStockSaveSchema } from "../../schemas/opening-stock";
+import { beginOpeningStockRecord, discardOpeningStockRecord, postOpeningStockRecord, saveOpeningStockRecord } from "../db/opening-stock";
 import type { OpeningStockResult } from "../../opening-stock-types";
 import type { z } from "zod";
 
@@ -21,4 +21,8 @@ export async function saveOpeningStockCommand(actor: CurrentActor | null | undef
 export async function discardOpeningStockCommand(actor: CurrentActor | null | undefined, input: unknown) {
   const parsed = openingStockAttemptSchema.safeParse(input);
   return parsed.success ? discardOpeningStockRecord(actor, parsed.data) : invalid(parsed.error);
+}
+export async function postOpeningStockCommand(actor: CurrentActor | null | undefined, input: unknown) {
+  const parsed = openingStockPostSchema.safeParse(input);
+  return parsed.success ? postOpeningStockRecord(actor, parsed.data) : invalid(parsed.error);
 }

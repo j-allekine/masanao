@@ -40,6 +40,7 @@ export type ItemListItem = {
   updatedAt: string;
   unitConversions?: ItemUnitConversionListItem[];
   hasPostedDeliveryReceiptLines: boolean;
+  hasPostedOpeningStock?: boolean;
 };
 
 export type ItemUnitConversionListItem = {

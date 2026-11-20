@@ -105,6 +105,7 @@ model Unit {
   baseIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientBaseUnit")
   selectedOpeningStockLines OpeningStockLine[] @relation("OpeningStockSelectedUnit")
   baseOpeningStockLines OpeningStockLine[] @relation("OpeningStockBaseUnit")
+  openingStockSources OpeningStockSource[] @relation("OpeningStockSourceBaseUnit")
 
   @@map("unit")
 }
@@ -144,6 +145,8 @@ model Item {
   issuanceStockItems IssuanceStockItem[]
   issuanceItemTotals IssuanceItemTotal[]
   openingStockLines OpeningStockLine[]
+
+  openingStockSources OpeningStockSource[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -269,6 +272,7 @@ model InventoryLedgerMovement {
   id                    String              @id
   deliveryReceiptLineId String?             @unique
   issuanceItemTotalId   String?             @unique
+  openingStockSourceId  String?             @unique
   itemId                String
   baseUnitId            String
   quantity              String
@@ -276,6 +280,7 @@ model InventoryLedgerMovement {
   occurredAt            DateTime
   deliveryReceiptLine   DeliveryReceiptLine? @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
   issuanceItemTotal     IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
+  openingStockSource    OpeningStockSource? @relation(fields: [openingStockSourceId], references: [id], onDelete: Restrict)
   item                  Item                @relation("InventoryLedgerMovementItem", fields: [itemId], references: [id], onDelete: Restrict)
   baseUnit              Unit                @relation("InventoryLedgerMovementBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
 
@@ -373,6 +378,7 @@ model IssuanceItemTotal {
   adjusted Boolean @default(false)
   movement InventoryLedgerMovement?
   receiptAllocations IssuanceReceiptAllocation[]
+  openingWithdrawals OpeningStockWithdrawal[]
   issuanceRecord IssuanceRecord @relation(fields: [issuanceRecordId], references: [id], onDelete: Restrict)
   item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
 
@@ -484,6 +490,7 @@ model RecipeIngredient {
 model OpeningStockSetup {
   id String @id
   status String @default("not-started")
+  reference String @default("OS-0001")
   revision Int @default(0)
   attemptId String? @unique
   countDate String @default("")
@@ -494,6 +501,7 @@ model OpeningStockSetup {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lines OpeningStockLine[]
+  sources OpeningStockSource[]
   discards OpeningStockDiscard[]
   @@map("opening_stock_setup")
 }
@@ -517,6 +525,7 @@ model OpeningStockLine {
   zeroCostReason String @default("")
   calculatedBaseUnitQuantity String?
   lineAmount String?
+  source OpeningStockSource?
   setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
   item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
   selectedUnit Unit @relation("OpeningStockSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
@@ -536,4 +545,49 @@ model OpeningStockDiscard {
   discardedAt DateTime @default(now())
   setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
   @@map("opening_stock_discard")
+}
+
+model OpeningStockSource {
+  id String @id
+  openingStockId String
+  openingStockLineId String? @unique
+  itemId String
+  baseUnitId String
+  itemName String
+  baseUnitName String
+  baseUnitAbbreviation String
+  reference String
+  countDate String
+  position Int
+  quantity String
+  amount String
+  postedAt DateTime
+  revision Int @default(0)
+  setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
+  line OpeningStockLine? @relation(fields: [openingStockLineId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("OpeningStockSourceBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  movement InventoryLedgerMovement?
+  withdrawals OpeningStockWithdrawal[]
+  @@index([itemId, position])
+  @@map("opening_stock_source")
+}
+
+model OpeningStockWithdrawal {
+  id String @id
+  sourceId String
+  issuanceItemTotalId String?
+  kind String @default("issuance")
+  sequence Int
+  quantity String
+  beforeQuantity String
+  afterQuantity String
+  costCentavos String
+  postedAt DateTime
+  source OpeningStockSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  issuanceItemTotal IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
+  @@unique([sourceId, sequence])
+  @@unique([sourceId, issuanceItemTotalId])
+  @@index([issuanceItemTotalId])
+  @@map("opening_stock_withdrawal")
 }

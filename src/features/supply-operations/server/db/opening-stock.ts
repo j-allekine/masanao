@@ -3,7 +3,8 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 import type { OpeningStockResult, OpeningStockSaveInput, OpeningStockWorkspace } from "../../opening-stock-types";
-import { openingStockProduct, openingStockToday } from "../../domain/opening-stock";
+import { openingStockProduct, openingStockToday, validOpeningStockDate } from "../../domain/opening-stock";
+import { compareRational, decimalRational } from "@/features/issuance/domain/rational";
 import { listItemRecords } from "./items";
 
 export const OPENING_STOCK_ID = "opening-stock";
@@ -12,13 +13,14 @@ type Failure = Extract<OpeningStockResult<never>, { ok: false }>;
 class Rejected extends Error {
   constructor(readonly failure: Failure) { super(failure.error); }
 }
-function reject(kind: Failure["kind"], error: string): never { throw new Rejected({ ok: false, kind, error }); }
+function reject(kind: Failure["kind"], error: string, fields?: Record<string, string>): never { throw new Rejected({ ok: false, kind, error, fields }); }
 
 /** First statement obtains the same SQLite writer reservation as setup/save/discard. */
-export async function assertOpeningStockGate(database: Prisma.TransactionClient) {
+export async function assertOpeningStockGate(database: Prisma.TransactionClient, effectiveDate = openingStockToday()) {
   await database.openingStockSetup.upsert({ where: { id: OPENING_STOCK_ID }, create: { id: OPENING_STOCK_ID }, update: { revision: { increment: 0 } } });
-  const setup = await database.openingStockSetup.findUnique({ where: { id: OPENING_STOCK_ID }, select: { status: true } });
+  const setup = await database.openingStockSetup.findUnique({ where: { id: OPENING_STOCK_ID }, select: { status: true, countDate: true } });
   if (setup?.status === "draft") throw new OpeningStockGateError("Opening Stock setup is in progress. An administrator must complete or discard the starting count before stock can move.");
+  if (setup?.status === "posted" && effectiveDate < setup.countDate) throw new OpeningStockGateError(`Stock transactions cannot be dated before Opening Stock on ${setup.countDate}.`);
 }
 
 async function authorize(database: Prisma.TransactionClient, actor: CurrentActor | null | undefined, manage: boolean) {
@@ -29,7 +31,7 @@ async function authorize(database: Prisma.TransactionClient, actor: CurrentActor
 }
 
 async function run<T>(work: (database: Prisma.TransactionClient) => Promise<T>): Promise<OpeningStockResult<T>> {
-  try { return { ok: true, value: await prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }) }; }
+  try { return { ok: true, value: await prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 15000 }) }; }
   catch (error) {
     if (error instanceof Rejected) return error.failure;
     if ((error instanceof Error && /SQLITE_BUSY|database is locked|SocketTimeout/.test(error.message)) || (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P1008", "P2028"].includes(error.code))) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try again; this attempt changed no stock." };
@@ -49,6 +51,7 @@ export async function readOpeningStockWorkspaceRecord(actor: CurrentActor | null
     return {
       status: (setup?.status ?? "not-started") as OpeningStockWorkspace["status"], revision: setup?.revision ?? 0,
       attemptId: setup?.attemptId ?? null, countDate: setup?.countDate ?? "", note: setup?.note ?? "",
+      reference: setup?.reference ?? "OS-0001", postedAt: setup?.postedAt?.toISOString() ?? null, postedByName: setup?.postedByName ?? null,
       canManage: user.role === "admin", eligible: !hasHistory,
       lines: setup?.lines ?? [],
       items: [],
@@ -57,6 +60,48 @@ export async function readOpeningStockWorkspaceRecord(actor: CurrentActor | null
   if (!result.ok) return result;
   const items = await listItemRecords();
   return { ok: true, value: { ...result.value, items: items.filter((item) => item.isActive && item.baseUnit.active) } };
+}
+
+/** Hooks are internal rollback-test seams; actions never accept them. */
+export async function postOpeningStockRecord(actor: CurrentActor | null | undefined, input: { attemptId: string; revision: number; zeroCostAcknowledged: boolean }, hooks: { afterFirstMovement?: () => void } = {}): Promise<OpeningStockResult<{ revision: number }>> {
+  return run(async (database) => {
+    const setup = await claim(database);
+    const user = await authorize(database, actor, true);
+    if (setup.status === "posted" && setup.attemptId === input.attemptId) return { revision: setup.revision };
+    if (setup.status !== "draft" || setup.attemptId !== input.attemptId || setup.revision !== input.revision) reject("conflict", "The count changed or was discarded. Reopen and review it before posting.");
+    if (!validOpeningStockDate(setup.countDate)) reject("validation", "Choose a count date no later than today in Manila.", { countDate: "Choose a real count date no later than today." });
+    if (!setup.lines.length) reject("validation", "Add and complete at least one counted Item before posting.");
+    if (await database.inventoryLedgerMovement.findFirst({ select: { id: true } })) reject("history", "Existing posted stock prevents an opening balance. No records have been changed.");
+    const postedAt = new Date();
+    for (const [index, line] of setup.lines.entries()) {
+      const fields: Record<string, string> = {};
+      let quantityValid = false; let costValid = false;
+      try { quantityValid = decimalRational(line.quantity).numerator > BigInt(0); } catch {}
+      try { costValid = line.openingUnitCost !== "" && decimalRational(line.openingUnitCost).numerator >= BigInt(0); } catch {}
+      if (!quantityValid) fields[`lines.${index}.quantity`] = "Enter a positive counted quantity.";
+      if (!costValid) fields[`lines.${index}.openingUnitCost`] = "Enter an explicit opening unit cost of zero or more.";
+      if (costValid && decimalRational(line.openingUnitCost).numerator === BigInt(0)) {
+        if (!line.zeroCostReason.trim()) fields[`lines.${index}.zeroCostReason`] = "Explain the assigned zero cost.";
+        if (!input.zeroCostAcknowledged) fields.zeroCostAcknowledged = "Acknowledge the zero-cost lines in review.";
+      }
+      if (Object.keys(fields).length) reject("validation", "Complete the highlighted count fields before posting.", fields);
+      const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, include: { baseUnit: true } });
+      const selected = await database.unit.findFirst({ where: { id: line.selectedUnitId, active: true } });
+      if (!item?.baseUnit.active || !selected || item.baseUnitId !== line.baseUnitId) reject("reference", `${line.itemName}: Item or units changed. Reselect and review this line.`);
+      const conversion = line.conversionId ? await database.itemUnitConversion.findFirst({ where: { id: line.conversionId, itemId: line.itemId, alternateUnitId: line.selectedUnitId } }) : null;
+      const base = !line.conversionId && line.selectedUnitId === item.baseUnitId;
+      if ((!base && !conversion) || (conversion && compareRational(decimalRational(conversion.baseUnitQuantity), decimalRational(line.conversionFactor)) !== 0)) reject("reference", `${line.itemName}: its conversion changed. Remove and reselect the Item, then review its count.`);
+      const quantity = openingStockProduct(line.quantity, line.conversionFactor);
+      const amount = openingStockProduct(line.quantity, line.openingUnitCost);
+      if (!quantity || !amount || decimalRational(quantity).numerator <= BigInt(0) || quantity !== line.calculatedBaseUnitQuantity || amount !== line.lineAmount) reject("reference", `${line.itemName}: count evidence is incomplete. Save and review the line again.`);
+      await database.openingStockLine.update({ where: { id: line.id }, data: { itemName: item.name, selectedUnitName: selected.name, selectedUnitAbbreviation: selected.abbreviation, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation } });
+      const source = await database.openingStockSource.create({ data: { id: crypto.randomUUID(), openingStockId: setup.id, openingStockLineId: line.id, itemId: line.itemId, baseUnitId: line.baseUnitId, itemName: item.name, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation, reference: setup.reference, countDate: setup.countDate, position: line.position, quantity, amount, postedAt } });
+      await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockSourceId: source.id, itemId: line.itemId, baseUnitId: line.baseUnitId, quantity, movementType: "stock-in", occurredAt: new Date(`${setup.countDate}T00:00:00.000Z`) } });
+      if (index === 0) hooks.afterFirstMovement?.();
+    }
+    const updated = await database.openingStockSetup.update({ where: { id: setup.id }, data: { status: "posted", revision: { increment: 1 }, postedAt, postedById: user.id, postedByName: user.name } });
+    return { revision: updated.revision };
+  });
 }
 
 export async function beginOpeningStockRecord(actor: CurrentActor | null | undefined, input: { attemptId: string; revision: number }): Promise<OpeningStockResult<{ revision: number }>> {
