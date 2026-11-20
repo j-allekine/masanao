@@ -7,6 +7,9 @@ import { prisma } from "@/prisma/client";
 import type { ItemInput } from "../../schemas/item";
 import type { ItemListItem, ItemUnitConversionListItem } from "../../types";
 import { sortItemUnitConversions } from "../../domain/item-unit-conversion";
+import type { CurrentActor } from "@/server/auth";
+import type { ItemWithConversionsInput } from "../../schemas/item-with-conversions";
+import type { ItemWithConversionsResult } from "../../item-with-conversions-types";
 
 const itemListSelect = {
   id: true,
@@ -112,8 +115,10 @@ export async function createItemUnitConversionRecord(input: {
   itemId: string;
   alternateUnitId: string;
   baseUnitQuantity: string;
-}) {
+}, actor: CurrentActor) {
   return prisma.$transaction(async (transaction) => {
+    const administrator = await transaction.user.findFirst({ where: { id: actor.id, role: "admin", disabled: false }, select: { id: true } });
+    if (!administrator) return { kind: "forbidden" as const };
     const item = await transaction.item.findUnique({
       where: { id: input.itemId },
       select: { id: true, baseUnitId: true, isActive: true },
@@ -300,6 +305,43 @@ export async function createItemWithActiveLookups(
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
+}
+
+/** One transaction creates the catalog identity and every submitted package size. */
+export async function createItemWithConversionsRecord(actor: CurrentActor, input: ItemWithConversionsInput): Promise<ItemWithConversionsResult> {
+  try {
+    return await prisma.$transaction(async (transaction): Promise<ItemWithConversionsResult> => {
+      const administrator = await transaction.user.findFirst({ where: { id: actor.id, role: "admin", disabled: false }, select: { id: true } });
+      if (!administrator) return { ok: false, kind: "forbidden", error: "Administrator access required.", fields: {} };
+      const [conflict, lookups] = await Promise.all([
+        findItemConflictRecord(transaction, input.item),
+        findActiveItemLookups(transaction, input.item),
+      ]);
+      if (conflict) return { ok: false, kind: "duplicate", error: "An Item with that name already exists.", fields: { name: ["Enter a different Item name."] } };
+      const fields: Record<string, string[]> = {};
+      if (!lookups.category) fields.categoryId = ["Select an active Category."];
+      if (!lookups.baseUnit) fields.baseUnitId = ["Select an active Base Unit."];
+      const units = await transaction.unit.findMany({ where: { id: { in: input.conversions.map((entry) => entry.alternateUnitId) }, active: true }, select: { id: true } });
+      const activeUnits = new Set(units.map((unit) => unit.id));
+      const seen = new Set<string>();
+      for (const [index, conversion] of input.conversions.entries()) {
+        if (conversion.alternateUnitId === input.item.baseUnitId) fields[`conversions.${index}.alternateUnitId`] = ["The Base Unit cannot be an alternate Unit."];
+        else if (!activeUnits.has(conversion.alternateUnitId)) fields[`conversions.${index}.alternateUnitId`] = ["Select an active alternate Unit."];
+        const key = `${conversion.alternateUnitId}:${conversion.baseUnitQuantity}`;
+        if (seen.has(key)) fields[`conversions.${index}.baseUnitQuantity`] = ["That Unit and package quantity are already included."];
+        seen.add(key);
+      }
+      if (Object.keys(fields).length) return { ok: false, kind: "validation", error: "Please correct the highlighted Item and conversion fields.", fields };
+      const item = await createItemRecord(transaction, input.item);
+      if (input.conversions.length) await transaction.itemUnitConversion.createMany({ data: input.conversions.map((conversion) => ({ id: crypto.randomUUID(), itemId: item.id, ...conversion })) });
+      const saved = await transaction.item.findUniqueOrThrow({ where: { id: item.id }, select: itemListSelect });
+      return { ok: true, item: toItemListItem(saved) };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  } catch (error) {
+    if (isUniqueConstraintViolation(error)) return { ok: false, kind: "duplicate", error: "The Item or an identical alternate-unit conversion already exists. Nothing was created.", fields: { form: ["Review the Item name and package sizes."] } };
+    if ((error instanceof Error && /SQLITE_BUSY|database is locked|SocketTimeout/.test(error.message)) || (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P1008", "P2028"].includes(error.code))) return { ok: false, kind: "busy", error: "Another transaction is in progress. Nothing was created; try again.", fields: {} };
+    throw error;
+  }
 }
 
 export async function updateItemWithActiveLookups(

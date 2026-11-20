@@ -1,15 +1,17 @@
 import "server-only";
+import type { CurrentActor } from "@/server/auth";
 
 import { itemUnitConversionFieldErrors, itemUnitConversionSchema } from "../../schemas/item-unit-conversion";
 import type { ItemUnitConversionCreateResult } from "../../types";
 import { createItemUnitConversionRecord } from "../db/items";
 
-export async function createItemUnitConversionCommand(itemId: string, input: unknown): Promise<ItemUnitConversionCreateResult> {
+export async function createItemUnitConversionCommand(actor: CurrentActor, itemId: string, input: unknown): Promise<ItemUnitConversionCreateResult> {
   const parsed = itemUnitConversionSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, kind: "validation", error: "Please correct the highlighted conversion fields.", fields: itemUnitConversionFieldErrors(parsed.error) };
   }
-  const result = await createItemUnitConversionRecord({ itemId, ...parsed.data });
+  const result = await createItemUnitConversionRecord({ itemId, ...parsed.data }, actor);
+  if (result.kind === "forbidden") return { ok: false, kind: "forbidden", error: "Administrator access required.", fields: {} };
   if (result.kind === "created") return { ok: true, conversion: result.conversion };
   if (result.kind === "not-found") return { ok: false, kind: "not-found", error: "The Item could not be found.", fields: {} };
   if (result.kind === "inactive-item") return { ok: false, kind: "inactive", error: "Alternate Units cannot be added to an Inactive Item.", fields: {} };

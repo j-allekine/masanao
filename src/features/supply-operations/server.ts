@@ -8,6 +8,7 @@ import type { CurrentActor } from "@/server/auth";
 import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 
 import { createItemCommand } from "./server/commands/create-item";
+import { createItemWithConversionsCommand } from "./server/commands/create-item-with-conversions";
 import { deleteItemCommand } from "./server/commands/delete-item";
 import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
@@ -120,6 +121,10 @@ export async function createItem(actor: CurrentActor, input: unknown): Promise<I
   return authorizationFailure ? { ...authorizationFailure, fields: {} } : createItemCommand(input);
 }
 
+export async function createItemWithConversions(actor: CurrentActor | null | undefined, input: unknown) {
+  return createItemWithConversionsCommand(actor, input);
+}
+
 export async function updateItem(actor: CurrentActor, id: string, input: unknown): Promise<ItemUpdateResult> {
   const authorizationFailure = await authorizeAdministrator(actor);
   return authorizationFailure ? { ...authorizationFailure, fields: {} } : updateItemCommand(id, input);
@@ -139,7 +144,7 @@ export async function createItemUnitConversion(actor: CurrentActor, itemId: stri
   const authorizationFailure = await authorizeAdministrator(actor);
   return authorizationFailure
     ? { ...authorizationFailure, fields: {} }
-    : createItemUnitConversionCommand(itemId, input);
+    : createItemUnitConversionCommand(actor, itemId, input);
 }
 
 export { listInventory } from "./server/queries/list-inventory";
