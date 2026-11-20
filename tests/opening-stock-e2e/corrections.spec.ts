@@ -66,7 +66,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await itemEditor.getByRole("textbox", { name: "Base Unit quantity 1", exact: true }).fill("0.001");
   await itemEditor.getByRole("button", { name: "Create Item", exact: true }).click();
   await expect(itemEditor).toBeHidden();
-  const addedCard = editor.locator('[data-slot="card"]').filter({ has: page.getByRole("heading", { name: created, exact: true }) });
+  const addedCard = editor.locator('[data-slot="card"]').filter({ has: page.getByText(created, { exact: true }) });
   await addedCard.getByRole("textbox", { name: "Added quantity", exact: true }).fill("250");
   await addedCard.getByRole("combobox", { name: "Unit", exact: true }).click();
   await page.getByRole("option", { name: "Gram (0.001 kg)", exact: true }).click();
