@@ -105,4 +105,3 @@ describe("Opening Stock drafts through the public workflow", () => {
     expect(openingStockToday(new Date("2026-11-20T16:01:00Z"))).toBe("2026-11-21");
   });
 });
-

@@ -40,7 +40,9 @@ test("administrator counts exact quantities, saves, recovers errors, guards navi
   await expect(page.getByRole("textbox", { name: "Quantity for Count Rice", exact: true })).toHaveValue("3");
   await expect(page.getByRole("textbox", { name: "Opening unit cost for Count Rice", exact: true })).toHaveValue("0");
   await expect(page.getByRole("button", { name: "Save draft", exact: true })).toBeEnabled();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect(page.getByRole("heading", { name: "Start with what’s already in your kitchen", exact: true })).toBeInViewport();
   await page.screenshot({ path: testInfo.outputPath("opening-count-desktop.png"), fullPage: true });
   await page.getByRole("textbox", { name: "Quantity for Count Rice", exact: true }).fill("oops");
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -55,7 +57,9 @@ test("administrator counts exact quantities, saves, recovers errors, guards navi
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("draft saved");
   await expect(page.getByRole("button", { name: "Save draft", exact: true })).toBeEnabled();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  await expect(page.getByRole("heading", { name: "Start with what’s already in your kitchen", exact: true })).toBeInViewport();
   await page.screenshot({ path: testInfo.outputPath("opening-count-mobile-320.png"), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Discard setup draft", exact: true }).click();
@@ -70,4 +74,3 @@ test("administrator counts exact quantities, saves, recovers errors, guards navi
   expect(database.prepare("SELECT id FROM item WHERE id = 'opening-count-rice'").get()).toBeTruthy();
   database.close();
 });
-
