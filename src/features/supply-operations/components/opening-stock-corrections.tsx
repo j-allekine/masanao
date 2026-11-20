@@ -71,7 +71,7 @@ export default function OpeningStockCorrections({ workspace, categories, units }
     if (!current) return;
     const document = current;
     startTransition(async () => {
-      const result = await saveOpeningStockCorrectionAction({ id: document.id, revision: document.revision, reason: document.reason, note: document.note, lines: document.lines });
+      const result = await saveOpeningStockCorrectionAction({ id: document.id, revision: document.revision, reason: document.reason, note: document.note, lines: document.lines.map(({ id, itemId, quantity, selectedUnitId, conversionId, openingUnitCost, zeroCostReason }) => ({ id, itemId, quantity, selectedUnitId, conversionId, openingUnitCost, zeroCostReason })) });
       if (!result.ok) { failure(result.error, result.fields); return; }
       const updated = result.value.correction;
       setCurrent(updated); setSaved(signature(updated)); setRecords((old) => old.map((record) => record.id === updated.id ? updated : record)); setFields({}); setError(""); setMessage("Correction draft saved. No stock moved or was reserved.");
