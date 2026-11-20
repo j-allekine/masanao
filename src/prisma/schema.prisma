@@ -103,6 +103,8 @@ model Unit {
   selectedIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockSelectedUnit")
   baseIssuanceStockItems IssuanceStockItem[] @relation("IssuanceStockBaseUnit")
   baseIssuanceIngredients IssuanceRecipeIngredient[] @relation("IssuanceIngredientBaseUnit")
+  selectedOpeningStockLines OpeningStockLine[] @relation("OpeningStockSelectedUnit")
+  baseOpeningStockLines OpeningStockLine[] @relation("OpeningStockBaseUnit")
 
   @@map("unit")
 }
@@ -141,6 +143,7 @@ model Item {
   issuanceIngredients IssuanceRecipeIngredient[]
   issuanceStockItems IssuanceStockItem[]
   issuanceItemTotals IssuanceItemTotal[]
+  openingStockLines OpeningStockLine[]
 
   @@index([categoryId])
   @@index([baseUnitId])
@@ -157,6 +160,7 @@ model ItemUnitConversion {
   item             Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
   alternateUnit    Unit     @relation("ItemUnitConversionAlternateUnit", fields: [alternateUnitId], references: [id], onDelete: Restrict)
   recipeIngredients RecipeIngredient[]
+  openingStockLines OpeningStockLine[]
 
   @@unique([itemId, alternateUnitId, baseUnitQuantity])
   @@index([itemId])
@@ -475,4 +479,61 @@ model RecipeIngredient {
   @@index([itemId])
   @@index([itemUnitConversionId])
   @@map("recipe_ingredient")
+}
+
+model OpeningStockSetup {
+  id String @id
+  status String @default("not-started")
+  revision Int @default(0)
+  attemptId String? @unique
+  countDate String @default("")
+  note String @default("")
+  postedAt DateTime?
+  postedById String?
+  postedByName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lines OpeningStockLine[]
+  discards OpeningStockDiscard[]
+  @@map("opening_stock_setup")
+}
+
+model OpeningStockLine {
+  id String @id
+  openingStockId String
+  position Int
+  itemId String
+  itemName String
+  quantity String @default("")
+  selectedUnitId String
+  selectedUnitName String
+  selectedUnitAbbreviation String
+  conversionId String?
+  conversionFactor String
+  baseUnitId String
+  baseUnitName String
+  baseUnitAbbreviation String
+  openingUnitCost String @default("")
+  zeroCostReason String @default("")
+  calculatedBaseUnitQuantity String?
+  lineAmount String?
+  setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit Unit @relation("OpeningStockSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("OpeningStockBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  conversion ItemUnitConversion? @relation(fields: [conversionId], references: [id], onDelete: Restrict)
+  @@index([openingStockId, position])
+  @@index([itemId])
+  @@map("opening_stock_line")
+}
+
+model OpeningStockDiscard {
+  attemptId String @id
+  openingStockId String
+  resultingRevision Int
+  actorId String
+  actorName String
+  discardedAt DateTime @default(now())
+  setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
+  @@map("opening_stock_discard")
 }

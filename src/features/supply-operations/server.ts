@@ -1,5 +1,9 @@
 import "server-only";
 
+export { getOpeningStockWorkspaceQuery as getOpeningStockWorkspace } from "./server/queries/opening-stock";
+export { beginOpeningStockCommand as beginOpeningStock, saveOpeningStockCommand as saveOpeningStockDraft, discardOpeningStockCommand as discardOpeningStockDraft } from "./server/commands/opening-stock";
+export type { OpeningStockWorkspace, OpeningStockLineInput, OpeningStockLine, OpeningStockSaveInput, OpeningStockResult } from "./opening-stock-types";
+
 import type { CurrentActor } from "@/server/auth";
 import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 

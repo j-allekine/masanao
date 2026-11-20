@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useRef } from "react";
 import { Download, PackageOpen, RefreshCw } from "lucide-react";
 import { useItemDisplayUnit } from "./item-display-unit";
@@ -105,6 +107,7 @@ export default function InventoryContent({ items }: { items: InventoryListItem[]
 
   const taskHeader = (
     <WorkspaceTaskHeader actions={<>
+      <Button variant="outline" nativeButton={false} render={<Link href="/inventory/opening-stock" />}>Opening Stock</Button>
       <Button type="button" variant="outline" disabled={!hydrated || refreshing} aria-busy={refreshing} onClick={requestRefresh}>
         <RefreshCw data-icon="inline-start" className="hidden sm:inline" aria-hidden="true" />{refreshing ? "Refreshing…" : "Refresh"}
       </Button>

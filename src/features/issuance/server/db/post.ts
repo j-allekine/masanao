@@ -10,6 +10,7 @@ import { getIssuanceWorkspaceRecord } from "./drafts";
 import { isValidIssuanceFinalQuantity } from "../../domain/quantities";
 import { compareRational, decimalRational, displayRational, recipeContribution } from "../../domain/rational";
 import { InvalidStockEvidenceError } from "@/features/supply-operations/domain/inventory";
+import { assertOpeningStockGate, OpeningStockGateError } from "@/features/supply-operations/server/db/opening-stock";
 
 class PostingRejected extends Error {
   readonly result: IssuanceFailure;
@@ -25,6 +26,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       // SQLite BEGIN is deferred: this MUST be the first statement. Acquire the
       // writer lock before actor, reference, balance, or draft reads.
       const claim = await transaction.issuanceRecord.updateMany({ where: { mealScheduleId: context.mealScheduleId, status: "draft", revision }, data: { revision: { increment: 1 } } });
+      await assertOpeningStockGate(transaction);
       const persistedActor = await transaction.user.findFirst({ where: { id: actor.id, disabled: false, role: { in: ["staff", "admin"] } }, select: { id: true, name: true, username: true } });
       if (!persistedActor) reject("forbidden", "Sign in as active kitchen staff or an administrator to post issuance.");
       const workspace = await getIssuanceWorkspaceRecord(context, transaction);
@@ -74,6 +76,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       return { ok: true, value: result };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 15000 });
   } catch (error) {
+    if (error instanceof OpeningStockGateError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof InvalidStockEvidenceError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof FifoAllocationError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof PostingRejected) return error.result;
