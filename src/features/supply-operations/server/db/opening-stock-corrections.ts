@@ -43,7 +43,7 @@ async function editable(database: Prisma.TransactionClient, input: { id: string;
   if (!record || record.discardedAt || record.status !== "draft" || record.revision !== input.revision) reject("conflict", "The correction changed or was discarded. Reopen it and review before continuing.");
   return record;
 }
-export async function beginOpeningStockCorrectionRecord(actor: CurrentActor | null | undefined, input: { id: string; kind?: "add-omitted" | "reduce-remaining" }) {
+export async function beginOpeningStockCorrectionRecord(actor: CurrentActor | null | undefined, input: { id: string; kind?: OpeningStockCorrection["kind"] }) {
   return runOpeningStock(async database => {
     const setup = await claim(database); const user = await authorizeOpeningStock(database, actor, true);
     const prior = await database.openingStockCorrection.findUnique({ where: { id: input.id } });
@@ -59,6 +59,7 @@ export async function saveOpeningStockCorrectionRecord(actor: CurrentActor | nul
     await claim(database); await authorizeOpeningStock(database, actor, true);
     const record = await editable(database, input);
     if (record.kind === "reduce-remaining") return saveReductions(database, record, input);
+    if (record.kind === "correct-remaining-cost") return saveCostCorrections(database, record, input);
     const lines = [];
     const contexts = new Map<string, Awaited<ReturnType<typeof currentContext>>>();
     for (const [position, line] of input.lines.entries()) {
@@ -96,6 +97,7 @@ export async function postOpeningStockCorrectionRecord(actor: CurrentActor | nul
     if (prior?.status === "posted" && !prior.discardedAt) return { revision: prior.revision };
     const record = await editable(database, input);
     if (record.kind === "reduce-remaining") return postReductions(database, record, user, hooks);
+    if (record.kind === "correct-remaining-cost") return postCostCorrections(database, record, user, input.zeroCostAcknowledged, hooks);
     if (!record.reason.trim() || !record.lines.length) reject("validation", "Enter a correction reason and at least one omitted stock line.", { reason: "Explain why the starting stock was omitted." });
     const postedAt = new Date();
     let position = (await database.openingStockSource.aggregate({ where: { openingStockId: setup.id }, _max: { position: true } }))._max.position ?? -1;
@@ -153,7 +155,7 @@ async function saveReductions(database: Prisma.TransactionClient, record: Correc
   const lines = [];
   const selected = new Set<string>();
   for (const [position, line] of input.lines.entries()) {
-    if (!("sourceId" in line)) reject("validation", "Select an opening source for the reduction.");
+    if (!("sourceId" in line) || !("quantity" in line)) reject("validation", "Select an opening source for the reduction.");
     if (selected.has(line.sourceId)) reject("validation", "Select each opening source once and combine its reduction quantity.");
     selected.add(line.sourceId);
     const owner = await database.openingStockCorrectionLine.findUnique({ where: { id: line.id }, select: { correctionId: true } });
@@ -186,6 +188,69 @@ async function postReductions(database: Prisma.TransactionClient, record: Correc
     if (cost === null || residual === null || line.beforeQuantity !== state.remaining || line.beforeValueCentavos !== residual || line.afterQuantity !== difference(state.remaining, line.quantity) || line.afterValueCentavos !== (BigInt(residual) - BigInt(cost)).toString()) reject("conflict", "Remaining quantity or value changed. Save and review the correction again.");
     await withdrawOpeningStockSource(database, source.id, { correctionLineId: line.id, quantity: line.quantity, postedAt });
     await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockCorrectionLineId: line.id, itemId: source.itemId, baseUnitId: source.baseUnitId, quantity: line.quantity, movementType: "stock-out", occurredAt: postedAt } });
+    if (index === 0) hooks.afterFirstMovement?.();
+  }
+  const posted = await database.openingStockCorrection.update({ where: { id: record.id }, data: { status: "posted", postedAt, postedById: user.id, postedByName: user.name, revision: { increment: 1 } } });
+  return { revision: posted.revision };
+}
+
+async function saveCostCorrections(database: Prisma.TransactionClient, record: CorrectionRecord, input: OpeningStockCorrectionSaveInput) {
+  const lines = [];
+  const selected = new Set<string>();
+  for (const [position, line] of input.lines.entries()) {
+    if (!("sourceId" in line) || !("openingUnitCost" in line)) reject("validation", "Select an opening source and its replacement cost.");
+    if (selected.has(line.sourceId)) reject("validation", "Select each opening source once to replace its entire remaining cost.");
+    selected.add(line.sourceId);
+    const owner = await database.openingStockCorrectionLine.findUnique({ where: { id: line.id }, select: { correctionId: true } });
+    if (owner && owner.correctionId !== record.id) reject("reference", "A correction line belongs to another record. Select the source again.");
+    const state = await readOpeningStockSourceCapacity(database, line.sourceId);
+    const source = state.source;
+    if (source.openingStockId !== record.openingStockId) reject("reference", "Select a source from this Opening Stock record.");
+    if (decimalRational(state.remaining).numerator <= BigInt(0)) reject("validation", `${source.itemName}: this source is exhausted. Select a source with remaining stock.`, { [`lines.${position}.sourceId`]: "This source has no remaining stock." });
+    const residual = allocatedSupplyCost(source.amount, source.quantity, state.before, state.remaining)!;
+    const amount = line.openingUnitCost === "" ? null : openingStockProduct(state.remaining, line.openingUnitCost);
+    const value = amount === null ? null : allocatedSupplyCost(amount, state.remaining, "0", state.remaining);
+    lines.push({ id: line.id, correctionId: record.id, position, sourceId: source.id, sourceReference: source.reference, sourcePosition: source.position, sourceQuantity: source.quantity, sourceAmount: source.amount, itemId: source.itemId, itemName: source.itemName, selectedUnitId: source.baseUnitId, selectedUnitName: source.baseUnitName, selectedUnitAbbreviation: source.baseUnitAbbreviation, baseUnitId: source.baseUnitId, baseUnitName: source.baseUnitName, baseUnitAbbreviation: source.baseUnitAbbreviation, conversionId: null, conversionFactor: "1", quantity: state.remaining, openingUnitCost: line.openingUnitCost, zeroCostReason: line.zeroCostReason, calculatedBaseUnitQuantity: state.remaining, lineAmount: amount, beforeQuantity: state.remaining, beforeValueCentavos: residual, afterQuantity: state.remaining, afterValueCentavos: value, sourceState: JSON.stringify([[source.id, source.revision]]) });
+  }
+  await database.openingStockCorrectionLine.deleteMany({ where: { correctionId: record.id, id: { notIn: lines.map(line => line.id) } } });
+  for (const line of lines) { const { id, ...data } = line; await database.openingStockCorrectionLine.upsert({ where: { id }, create: line, update: data }); }
+  const saved = await database.openingStockCorrection.update({ where: { id: record.id }, data: { reason: input.reason, note: input.note, revision: { increment: 1 } } });
+  return { revision: saved.revision, correction: await readCorrection(database, saved.id) };
+}
+
+async function postCostCorrections(database: Prisma.TransactionClient, record: CorrectionRecord, user: { id: string; name: string }, zeroCostAcknowledged: boolean, hooks: { afterFirstMovement?: () => void }) {
+  if (!record.reason.trim() || !record.lines.length) reject("validation", "Enter a correction reason and at least one remaining-cost replacement.", { reason: "Explain why the remaining opening stock cost needs correction." });
+  const postedAt = new Date();
+  const targets = [];
+  // Gather and validate every target before any retirement. Draft headers cannot
+  // validate committed withdrawals until the whole correction has been posted.
+  for (const [index, line] of record.lines.entries()) {
+    const fields: Record<string, string> = {};
+    let nonnegativeCost = false;
+    try { nonnegativeCost = line.openingUnitCost !== "" && decimalRational(line.openingUnitCost).numerator >= BigInt(0); } catch {}
+    if (!nonnegativeCost) fields[`lines.${index}.openingUnitCost`] = "Enter an explicit replacement cost of zero or more.";
+    else if (decimalRational(line.openingUnitCost).numerator === BigInt(0)) {
+      if (!line.zeroCostReason.trim()) fields[`lines.${index}.zeroCostReason`] = "Explain the assigned zero cost.";
+      if (!zeroCostAcknowledged) fields.zeroCostAcknowledged = "Acknowledge zero-cost lines in review.";
+    }
+    if (Object.keys(fields).length) reject("validation", "Complete the replacement cost fields before posting.", fields);
+    if (!line.sourceId) reject("reference", "Select an opening source again.");
+    const state = await readOpeningStockSourceCapacity(database, line.sourceId);
+    const source = state.source;
+    if (line.sourceState !== JSON.stringify([[source.id, source.revision]])) reject("conflict", `${line.itemName}: remaining opening stock changed. Save and review the correction again.`);
+    if (source.openingStockId !== record.openingStockId || source.itemId !== line.itemId || source.baseUnitId !== line.baseUnitId || source.postedAt > postedAt) reject("reference", "The selected source no longer matches the correction. Select it again and review.");
+    if (decimalRational(state.remaining).numerator <= BigInt(0)) reject("validation", `${line.itemName}: this source is exhausted. Select a source with remaining stock.`);
+    const amount = openingStockProduct(state.remaining, line.openingUnitCost);
+    const residual = allocatedSupplyCost(source.amount, source.quantity, state.before, state.remaining);
+    const value = amount === null ? null : allocatedSupplyCost(amount, state.remaining, "0", state.remaining);
+    if (residual === null || value === null || line.quantity !== state.remaining || line.calculatedBaseUnitQuantity !== state.remaining || line.beforeQuantity !== state.remaining || line.afterQuantity !== state.remaining || line.beforeValueCentavos !== residual || line.afterValueCentavos !== value || line.lineAmount !== amount || line.sourceQuantity !== source.quantity || line.sourceAmount !== source.amount) reject("conflict", "Remaining quantity or value changed. Save and review the correction again.");
+    targets.push({ line, source, quantity: state.remaining, amount: amount! });
+  }
+  for (const [index, { line, source, quantity, amount }] of targets.entries()) {
+    await withdrawOpeningStockSource(database, source.id, { correctionLineId: line.id, quantity, postedAt });
+    await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockCorrectionLineId: line.id, itemId: source.itemId, baseUnitId: source.baseUnitId, quantity, movementType: "stock-out", occurredAt: postedAt } });
+    const replacement = await database.openingStockSource.create({ data: { id: crypto.randomUUID(), openingStockId: source.openingStockId, correctionLineId: line.id, originalSourceId: source.id, itemId: source.itemId, baseUnitId: source.baseUnitId, itemName: source.itemName, baseUnitName: source.baseUnitName, baseUnitAbbreviation: source.baseUnitAbbreviation, reference: record.reference, countDate: source.countDate, position: source.position, quantity, amount, postedAt } });
+    await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockSourceId: replacement.id, itemId: source.itemId, baseUnitId: source.baseUnitId, quantity, movementType: "stock-in", occurredAt: postedAt } });
     if (index === 0) hooks.afterFirstMovement?.();
   }
   const posted = await database.openingStockCorrection.update({ where: { id: record.id }, data: { status: "posted", postedAt, postedById: user.id, postedByName: user.name, revision: { increment: 1 } } });
