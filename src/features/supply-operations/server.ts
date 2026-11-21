@@ -151,3 +151,6 @@ export { listInventory } from "./server/queries/list-inventory";
 export { exportInventory } from "./server/queries/export-inventory";
 export type { InventoryListItem, InventoryResult } from "./types";
 export { getKitchenDashboard } from "./server/queries/dashboard";
+
+export { beginOpeningStockCorrectionCommand as beginOpeningStockCorrection, saveOpeningStockCorrectionCommand as saveOpeningStockCorrection, postOpeningStockCorrectionCommand as postOpeningStockCorrection, discardOpeningStockCorrectionCommand as discardOpeningStockCorrection } from "./server/commands/opening-stock-corrections";
+export type { OpeningStockCorrection, OpeningStockCorrectionLine, OpeningStockCorrectionSaveInput, OpeningStockSourceSummary } from "./opening-stock-correction-types";

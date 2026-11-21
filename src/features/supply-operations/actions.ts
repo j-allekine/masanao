@@ -74,3 +74,9 @@ export async function postDeliveryReceiptAction(formData: FormData): Promise<Del
 export async function readPurchaseOrderDeliverySummariesAction(ids: string[]) {
   return executeReadPurchaseOrderDeliverySummaries(ids);
 }
+
+import { executeOpeningStockCorrectionAction } from "./server/actions/opening-stock-corrections";
+export async function beginOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("begin", input); }
+export async function saveOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("save", input); }
+export async function postOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("post", input); }
+export async function discardOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("discard", input); }

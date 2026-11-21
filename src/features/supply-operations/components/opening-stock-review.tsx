@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ function totalAmount(lines: OpeningStockLine[]) {
   return finiteDecimal(total);
 }
 
-function CountEvidence({ lines }: { lines: OpeningStockLine[] }) {
+export function CountEvidence({ lines }: { lines: OpeningStockLine[] }) {
   return <>
     <p className="text-body-sm text-muted-foreground">Opening lines are allocated in their recorded order, before later deliveries. This is an allocation convention because original purchase chronology is unknown; it does not prove physical picking order.</p>
     <div className="hidden md:block">
@@ -95,7 +95,7 @@ export function OpeningStockReview({ open, onOpenChange, lines, countDate, note,
   </Dialog>;
 }
 
-export function OpeningStockPosted({ workspace }: { workspace: OpeningStockWorkspace }) {
+export function OpeningStockPosted({ workspace, children }: { workspace: OpeningStockWorkspace; children?: ReactNode }) {
   return <WorkspaceLayout workspaceTitle="Supply Operations" task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge>Posted</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       <div><h2 className="text-heading-2 font-semibold">{workspace.reference || "Opening Stock"}</h2><p className="mt-2 text-body-sm text-muted-foreground">These starting quantities were posted as stock. The original count is read-only.</p></div>
@@ -105,8 +105,10 @@ export function OpeningStockPosted({ workspace }: { workspace: OpeningStockWorks
         <div><dt className="text-muted-foreground">Posted at</dt><dd>{workspace.postedAt ? <time dateTime={workspace.postedAt}>{new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(workspace.postedAt))}</time> : "Not recorded"}</dd></div>
         <div><dt className="text-muted-foreground">Reference / notes</dt><dd className="break-words">{workspace.note || "None provided"}</dd></div>
       </dl>
+      <h2 className="text-heading-3 font-semibold">Original counted quantities</h2>
       <CountEvidence lines={workspace.lines} />
       <p className="text-body-sm text-muted-foreground">Assigned opening costs support operational supply-cost reporting. Original Purchase Orders are not required for these sources.</p>
+      {children}
     </div>
   </WorkspaceLayout>;
 }
