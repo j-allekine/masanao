@@ -69,6 +69,7 @@ test("administrator reduces selected opening sources with saved review and staff
   await editor.getByRole("button", { name: "Select source lines", exact: true }).click();
   await page.keyboard.press("Escape");
   await expect(editor).toBeVisible();
+  await expect(editor.getByRole("button", { name: "Select source lines", exact: true })).toBeFocused();
   await editor.getByRole("button", { name: "Review correction", exact: true }).click();
   await review.getByRole("button", { name: "Post correction", exact: true }).click();
   const posted = page.getByRole("dialog", { name: /OS-0001-C/ });
@@ -79,9 +80,9 @@ test("administrator reduces selected opening sources with saved review and staff
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   const sources = db.prepare('SELECT quantity,amount FROM opening_stock_source WHERE itemId = ? ORDER BY position').all("reduction-item");
   expect(sources).toEqual([{ quantity: "3", amount: "0.03" }, { quantity: "2", amount: "4" }]);
-  expect(db.prepare('SELECT COUNT(*) AS count FROM opening_stock_withdrawal WHERE kind = ?').get("correction")).toEqual({ count: 2 });
+  expect(db.prepare('SELECT COUNT(*) AS count FROM opening_stock_withdrawal WHERE kind = ?').get("correction-retirement")).toEqual({ count: 2 });
   db.close();
-  const staff = await browser.newContext({ viewport: { width: 320, height: 900 } });
+  const staff = await browser.newContext({ baseURL: process.env.BETTER_AUTH_URL, viewport: { width: 320, height: 900 } });
   expect((await postFixtureSignIn(staff.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   const staffPage = await staff.newPage();
   await staffPage.goto("/inventory/opening-stock");
