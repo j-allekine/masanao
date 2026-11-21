@@ -132,6 +132,21 @@ describe("Remaining Opening Stock quantity reductions", () => {
     expect(await f.inventory()).toEqual({ kind: "valid", quantity: "4" });
   });
 
+  it("keeps a reviewed reduction valid when only unrelated same-Item capacity changes", async () => {
+    const f = await fixture();
+    const original = await f.postCount([{ ...f.line, quantity: "2", openingUnitCost: "3" }, { ...f.line, id: crypto.randomUUID(), quantity: "5", openingUnitCost: "4" }]);
+    const target = original.sources![1];
+    const c = await f.reduce([{ id: crypto.randomUUID(), sourceId: target.id, quantity: "2" }]);
+    expect(c.saved.correction.lines).toMatchObject([{ sourceId: target.id, beforeQuantity: "5", beforeValueCentavos: "2000", afterQuantity: "3", afterValueCentavos: "1200" }]);
+    const earlier = await f.issue("1");
+    expect(earlier.result.value.review[0].openingAllocations).toMatchObject([{ sourceId: original.sources![0].id, quantity: "1" }]);
+    expect(await f.receipt()).toMatchObject({ ok: true });
+    value(await postOpeningStockCorrection(f.admin, c.post));
+    expect(value(await getOpeningStockWorkspace(f.staff)).sources).toMatchObject([{ remainingQuantity: "1" }, { id: target.id, remainingQuantity: "3", remainingValueCentavos: "1200" }]);
+    expect(await f.inventory()).toEqual({ kind: "valid", quantity: "29" });
+    expect(await getIssuanceWorkspace(f.staff, earlier.meal)).toEqual(earlier.result);
+  });
+
   it("rolls back all reduction evidence on failure and makes successful retries idempotent", async () => {
     const f = await fixture(); const original = await f.postCount([{ ...f.line, quantity: "2" }, { ...f.line, id: crypto.randomUUID(), quantity: "3" }]);
     const c = await f.reduce(original.sources!.map(s => ({ id: crypto.randomUUID(), sourceId: s.id, quantity: "1" })));
