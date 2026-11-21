@@ -106,6 +106,8 @@ model Unit {
   selectedOpeningStockLines OpeningStockLine[] @relation("OpeningStockSelectedUnit")
   baseOpeningStockLines OpeningStockLine[] @relation("OpeningStockBaseUnit")
   openingStockSources OpeningStockSource[] @relation("OpeningStockSourceBaseUnit")
+  correctionSelectedUnits OpeningStockCorrectionLine[] @relation("CorrectionSelectedUnit")
+  correctionBaseUnits OpeningStockCorrectionLine[] @relation("CorrectionBaseUnit")
 
   @@map("unit")
 }
@@ -145,6 +147,7 @@ model Item {
   issuanceStockItems IssuanceStockItem[]
   issuanceItemTotals IssuanceItemTotal[]
   openingStockLines OpeningStockLine[]
+  openingStockCorrectionLines OpeningStockCorrectionLine[]
 
   openingStockSources OpeningStockSource[]
 
@@ -164,6 +167,7 @@ model ItemUnitConversion {
   alternateUnit    Unit     @relation("ItemUnitConversionAlternateUnit", fields: [alternateUnitId], references: [id], onDelete: Restrict)
   recipeIngredients RecipeIngredient[]
   openingStockLines OpeningStockLine[]
+  openingStockCorrectionLines OpeningStockCorrectionLine[]
 
   @@unique([itemId, alternateUnitId, baseUnitQuantity])
   @@index([itemId])
@@ -503,6 +507,7 @@ model OpeningStockSetup {
   lines OpeningStockLine[]
   sources OpeningStockSource[]
   discards OpeningStockDiscard[]
+  corrections OpeningStockCorrection[]
   @@map("opening_stock_setup")
 }
 
@@ -551,6 +556,8 @@ model OpeningStockSource {
   id String @id
   openingStockId String
   openingStockLineId String? @unique
+  correctionLineId String? @unique
+  originalSourceId String?
   itemId String
   baseUnitId String
   itemName String
@@ -564,6 +571,9 @@ model OpeningStockSource {
   postedAt DateTime
   revision Int @default(0)
   setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
+  correctionLine OpeningStockCorrectionLine? @relation(fields: [correctionLineId], references: [id], onDelete: Restrict)
+  originalSource OpeningStockSource? @relation("OpeningStockSourceOrigin", fields: [originalSourceId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  derivedSources OpeningStockSource[] @relation("OpeningStockSourceOrigin")
   line OpeningStockLine? @relation(fields: [openingStockLineId], references: [id], onDelete: Restrict)
   item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
   baseUnit Unit @relation("OpeningStockSourceBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
@@ -590,4 +600,61 @@ model OpeningStockWithdrawal {
   @@unique([sourceId, issuanceItemTotalId])
   @@index([issuanceItemTotalId])
   @@map("opening_stock_withdrawal")
+}
+
+model OpeningStockCorrection {
+  id String @id
+  openingStockId String
+  reference String @unique
+  kind String @default("add-omitted")
+  status String @default("draft")
+  revision Int @default(0)
+  reason String @default("")
+  note String @default("")
+  createdById String
+  createdByName String
+  postedAt DateTime?
+  postedById String?
+  postedByName String?
+  discardedAt DateTime?
+  discardedById String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  setup OpeningStockSetup @relation(fields: [openingStockId], references: [id], onDelete: Restrict)
+  lines OpeningStockCorrectionLine[]
+  @@index([openingStockId, createdAt])
+  @@map("opening_stock_correction")
+}
+model OpeningStockCorrectionLine {
+  id String @id
+  correctionId String
+  position Int
+  itemId String
+  itemName String
+  quantity String @default("")
+  selectedUnitId String
+  selectedUnitName String
+  selectedUnitAbbreviation String
+  conversionId String?
+  conversionFactor String
+  baseUnitId String
+  baseUnitName String
+  baseUnitAbbreviation String
+  openingUnitCost String @default("")
+  zeroCostReason String @default("")
+  calculatedBaseUnitQuantity String?
+  lineAmount String?
+  beforeQuantity String @default("0")
+  beforeValueCentavos String @default("0")
+  afterQuantity String?
+  afterValueCentavos String?
+  sourceState String @default("[]")
+  correction OpeningStockCorrection @relation(fields: [correctionId], references: [id], onDelete: Restrict)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  selectedUnit Unit @relation("CorrectionSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
+  baseUnit Unit @relation("CorrectionBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  conversion ItemUnitConversion? @relation(fields: [conversionId], references: [id], onDelete: Restrict)
+  source OpeningStockSource?
+  @@index([correctionId, position])
+  @@map("opening_stock_correction_line")
 }

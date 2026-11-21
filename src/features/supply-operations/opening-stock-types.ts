@@ -22,6 +22,8 @@ export type OpeningStockLine = OpeningStockLineInput & {
   lineAmount: string | null;
 };
 export type OpeningStockWorkspace = {
+  corrections?: import("./opening-stock-correction-types").OpeningStockCorrection[];
+  sources?: import("./opening-stock-correction-types").OpeningStockSourceSummary[];
   reference?: string;
   postedAt?: string | null;
   postedByName?: string | null;

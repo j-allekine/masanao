@@ -21,7 +21,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
   await page.getByLabel("Search Items", { exact: true }).fill(existing);
-  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button").filter({ hasText: existing }).click();
+  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${existing} `) }).click();
   await page.getByRole("textbox", { name: `Quantity for ${existing}`, exact: true }).fill("2");
   await page.getByRole("textbox", { name: `Opening unit cost for ${existing}`, exact: true }).fill("3");
   await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
@@ -33,7 +33,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await editor.getByRole("button", { name: "Add items", exact: true }).click();
   const picker = page.getByRole("dialog", { name: "Add omitted Item", exact: true });
   await picker.getByRole("textbox", { name: "Search Items", exact: true }).fill(existing);
-  await picker.getByRole("button").filter({ hasText: existing }).click();
+  await picker.getByRole("button", { name: new RegExp(`^${existing} `) }).click();
   await editor.getByRole("textbox", { name: "Added quantity", exact: true }).fill("0.5");
   await editor.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(editor.getByRole("status")).toContainText("draft saved");
