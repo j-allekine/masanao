@@ -277,6 +277,7 @@ model InventoryLedgerMovement {
   deliveryReceiptLineId String?             @unique
   issuanceItemTotalId   String?             @unique
   openingStockSourceId  String?             @unique
+  openingStockCorrectionLineId String? @unique
   itemId                String
   baseUnitId            String
   quantity              String
@@ -285,6 +286,7 @@ model InventoryLedgerMovement {
   deliveryReceiptLine   DeliveryReceiptLine? @relation(fields: [deliveryReceiptLineId], references: [id], onDelete: Restrict)
   issuanceItemTotal     IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
   openingStockSource    OpeningStockSource? @relation(fields: [openingStockSourceId], references: [id], onDelete: Restrict)
+  openingStockCorrectionLine OpeningStockCorrectionLine? @relation(fields: [openingStockCorrectionLineId], references: [id], onDelete: Restrict)
   item                  Item                @relation("InventoryLedgerMovementItem", fields: [itemId], references: [id], onDelete: Restrict)
   baseUnit              Unit                @relation("InventoryLedgerMovementBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
 
@@ -579,6 +581,7 @@ model OpeningStockSource {
   baseUnit Unit @relation("OpeningStockSourceBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   movement InventoryLedgerMovement?
   withdrawals OpeningStockWithdrawal[]
+  affectedCorrectionLines OpeningStockCorrectionLine[] @relation("CorrectionAffectedSource")
   @@index([itemId, position])
   @@map("opening_stock_source")
 }
@@ -586,6 +589,7 @@ model OpeningStockSource {
 model OpeningStockWithdrawal {
   id String @id
   sourceId String
+  correctionLineId String? @unique
   issuanceItemTotalId String?
   kind String @default("issuance")
   sequence Int
@@ -595,6 +599,7 @@ model OpeningStockWithdrawal {
   costCentavos String
   postedAt DateTime
   source OpeningStockSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  correctionLine OpeningStockCorrectionLine? @relation(fields: [correctionLineId], references: [id], onDelete: Restrict)
   issuanceItemTotal IssuanceItemTotal? @relation(fields: [issuanceItemTotalId], references: [id], onDelete: Restrict)
   @@unique([sourceId, sequence])
   @@unique([sourceId, issuanceItemTotalId])
@@ -654,6 +659,12 @@ model OpeningStockCorrectionLine {
   selectedUnit Unit @relation("CorrectionSelectedUnit", fields: [selectedUnitId], references: [id], onDelete: Restrict)
   baseUnit Unit @relation("CorrectionBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
   conversion ItemUnitConversion? @relation(fields: [conversionId], references: [id], onDelete: Restrict)
+  sourceId String?
+  sourceReference String?
+  sourcePosition Int?
+  affectedSource OpeningStockSource? @relation("CorrectionAffectedSource", fields: [sourceId], references: [id], onDelete: Restrict)
+  retirement OpeningStockWithdrawal?
+  movement InventoryLedgerMovement?
   source OpeningStockSource?
   @@index([correctionId, position])
   @@map("opening_stock_correction_line")

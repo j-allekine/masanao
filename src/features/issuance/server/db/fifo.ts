@@ -37,7 +37,7 @@ export async function allocatePostedItemReceipts(database: Prisma.TransactionCli
   }
   // Existing postings have no recorded receipt source. Reconstruct once, with an
   // explicit basis, without changing any old movement or original posting evidence.
-  const outgoing = await database.inventoryLedgerMovement.findMany({ where: { itemId, baseUnitId, movementType: "stock-out" }, include: { issuanceItemTotal: { include: { receiptAllocations: true, openingWithdrawals: true } } }, orderBy: [{ occurredAt: "asc" }, { id: "asc" }] });
+  const outgoing = await database.inventoryLedgerMovement.findMany({ where: { itemId, baseUnitId, movementType: "stock-out", openingStockCorrectionLineId: null }, include: { issuanceItemTotal: { include: { receiptAllocations: true, openingWithdrawals: true } } }, orderBy: [{ occurredAt: "asc" }, { id: "asc" }] });
   for (const movement of outgoing) {
     const total = movement.issuanceItemTotal;
     if (!total) throw new FifoAllocationError("A stock-out has no issuance source. Review the inventory history before posting.");
