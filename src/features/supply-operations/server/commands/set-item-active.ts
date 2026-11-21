@@ -13,7 +13,9 @@ export async function setItemActiveCommand(
       return {
         ok: false,
         kind: "referenced",
-        error: "This Item cannot be deactivated because posted stock activity references it.",
+        error: result.source === "opening-stock"
+          ? "This Item cannot be deactivated because posted Opening Stock references it."
+          : "This Item cannot be deactivated because posted Delivery Receipts reference it.",
       };
     }
 

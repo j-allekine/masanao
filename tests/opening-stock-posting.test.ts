@@ -95,7 +95,7 @@ describe("Opening Stock posting and source integration", () => {
     const f = await fixture(); const saved = await f.save();
     value(await postOpeningStock(f.admin, { attemptId: f.attemptId, revision: saved.revision, zeroCostAcknowledged: false }));
     expect(await postDeliveryReceipt(f.staff, { ...f.receipt, receiptDate: "2000-01-01" })).toMatchObject({ ok: false });
-    expect(await setItemActive(f.admin, f.item.id, false)).toMatchObject({ ok: false, kind: "referenced" });
+    expect(await setItemActive(f.admin, f.item.id, false)).toEqual({ ok: false, kind: "referenced", error: "This Item cannot be deactivated because posted Opening Stock references it." });
     expect(await deleteItem(f.admin, f.item.id)).toMatchObject({ ok: false });
     const item = (await listItems()).find((entry) => entry.id === f.item.id)!;
     expect(item).toMatchObject({ hasPostedOpeningStock: true, hasPostedDeliveryReceiptLines: false });
