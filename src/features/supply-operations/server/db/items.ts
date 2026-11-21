@@ -402,8 +402,8 @@ export async function setItemActiveRecord(id: string, isActive: boolean) {
         where: { itemId: id },
         select: { id: true },
       });
-      if (receiptLine) return { kind: "referenced" as const };
-      if (await transaction.openingStockSource.findFirst({ where: { itemId: id }, select: { id: true } })) return { kind: "referenced" as const };
+      if (receiptLine) return { kind: "referenced" as const, source: "delivery-receipt" as const };
+      if (await transaction.openingStockSource.findFirst({ where: { itemId: id }, select: { id: true } })) return { kind: "referenced" as const, source: "opening-stock" as const };
     }
 
     const item = await transaction.item.update({
