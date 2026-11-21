@@ -18,10 +18,9 @@ export const openingStockSaveSchema = openingStockAttemptSchema.extend({
     zeroCostReason: z.string().max(1000),
   })).max(1000),
 }).superRefine((value, context) => {
-  const items = new Set<string>(); const ids = new Set<string>();
+  const ids = new Set<string>();
   value.lines.forEach((line, index) => {
-    if (items.has(line.itemId)) context.addIssue({ code: "custom", path: ["lines", index, "itemId"], message: "Select each Item once." });
     if (ids.has(line.id)) context.addIssue({ code: "custom", path: ["lines", index, "id"], message: "Duplicate count line." });
-    items.add(line.itemId); ids.add(line.id);
+    ids.add(line.id);
   });
 });

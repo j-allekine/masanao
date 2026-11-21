@@ -43,7 +43,7 @@ export type IssuanceReviewItem = IssuanceItemTotal & {
   unitConversions?: IssuanceReviewReference["unitConversions"];
 };
 export type IssuanceReceiptAllocation = { receiptLineId: string; quantity: string; receiptNo: string; purchaseOrderNo: string; receiptDate: string; basis: "fifo" | "reconstructed" };
-export type IssuanceOpeningAllocation = { sourceId: string; quantity: string; reference: string; countDate: string; costCentavos: string; sequence: number };
+export type IssuanceOpeningAllocation = { sourceId: string; linePosition?: number; quantity: string; reference: string; countDate: string; costCentavos: string; sequence: number };
 export type IssuanceReviewReference = { itemId: string; policy: IssuanceQuantityPolicy; availableQuantity: string; unitConversions?: { id: string; baseUnitQuantity: string; alternateUnit: { name: string; abbreviation: string } }[] };
 export type IssuancePosting = { postedAt: string; actorId: string; actorName: string; actorUsername: string };
 export type IssuanceWorkspace = { context: IssuanceMealContext; draft: IssuanceDraft; review: IssuanceReviewItem[]; reviewPending: boolean; reviewReferences: IssuanceReviewReference[]; posted?: IssuancePosting | null };

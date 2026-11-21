@@ -54,13 +54,13 @@ describe("Opening Stock drafts through the public workflow", () => {
     expect(await saveOpeningStockDraft(admin, { ...input, revision: saved.revision })).toMatchObject({ ok: false, kind: "reference" });
   });
 
-  it("rejects invalid dates, decimal formats and duplicate Items without changing a saved draft", async () => {
+  it("rejects invalid dates, decimal formats and duplicate line identities without changing a saved draft", async () => {
     const { admin, line } = await fixture(); const attemptId = crypto.randomUUID(); const begun = value(await beginOpeningStock(admin, { attemptId, revision: 0 }));
     const input = { attemptId, revision: begun.revision, countDate: "9999-12-31", note: "", lines: [line] };
     expect(await saveOpeningStockDraft(admin, input)).toMatchObject({ ok: false, kind: "validation", fields: { countDate: expect.any(String) } });
     for (const quantity of ["0", "-1", "1e3", "1,000", "oops"]) expect(await saveOpeningStockDraft(admin, { ...input, countDate: "", lines: [{ ...line, quantity }] })).toMatchObject({ ok: false, kind: "validation" });
     expect(await saveOpeningStockDraft(admin, { ...input, countDate: "", lines: [{ ...line, openingUnitCost: "-1" }] })).toMatchObject({ ok: false, kind: "validation" });
-    expect(await saveOpeningStockDraft(admin, { ...input, countDate: "", lines: [line, { ...line, id: crypto.randomUUID() }] })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await saveOpeningStockDraft(admin, { ...input, countDate: "", lines: [line, { ...line }] })).toMatchObject({ ok: false, kind: "validation" });
     expect(value(await getOpeningStockWorkspace(admin)).revision).toBe(begun.revision);
   });
 

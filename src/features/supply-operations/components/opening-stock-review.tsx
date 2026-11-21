@@ -33,11 +33,12 @@ function totalAmount(lines: OpeningStockLine[]) {
 
 function CountEvidence({ lines }: { lines: OpeningStockLine[] }) {
   return <>
+    <p className="text-body-sm text-muted-foreground">Opening lines are allocated in their recorded order, before later deliveries. This is an allocation convention because original purchase chronology is unknown; it does not prove physical picking order.</p>
     <div className="hidden md:block">
       <WorkspaceTableFrame caption="Opening Stock quantities and costs">
         <TableHeader><TableRow>{["Item", "Counted quantity", "Equivalent stock", "Opening unit cost", "Line amount"].map((label) => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader>
         <TableBody>{lines.map((line) => <TableRow key={line.id}>
-          <TableCell className="max-w-48 whitespace-normal break-words">{line.itemName}{/^0+(?:\.0+)?$/.test(line.openingUnitCost) && line.zeroCostReason && <p className="mt-1 text-body-sm text-muted-foreground">Zero-cost reason: {line.zeroCostReason}</p>}</TableCell>
+          <TableCell className="max-w-48 whitespace-normal break-words">{line.itemName}<p className="text-body-sm text-muted-foreground">Line {line.position + 1}</p>{/^0+(?:\.0+)?$/.test(line.openingUnitCost) && line.zeroCostReason && <p className="mt-1 text-body-sm text-muted-foreground">Zero-cost reason: {line.zeroCostReason}</p>}</TableCell>
           <TableCell className="whitespace-normal">{formatDisplayNumber(line.quantity)} {line.selectedUnitAbbreviation}{line.conversionId && <p className="text-body-sm text-muted-foreground">1 {line.selectedUnitAbbreviation} = {formatDisplayNumber(line.conversionFactor)} {line.baseUnitAbbreviation}</p>}</TableCell>
           <TableCell className="whitespace-normal tabular-nums">{formatDisplayNumber(line.calculatedBaseUnitQuantity ?? openingStockProduct(line.quantity, line.conversionFactor))} {line.baseUnitAbbreviation}</TableCell>
           <TableCell className="whitespace-normal tabular-nums">{money(line.openingUnitCost || null)} / {line.selectedUnitAbbreviation}</TableCell>
@@ -46,7 +47,7 @@ function CountEvidence({ lines }: { lines: OpeningStockLine[] }) {
       </WorkspaceTableFrame>
     </div>
     <div className="flex flex-col gap-3 md:hidden">{lines.map((line) => <Card key={line.id} size="sm">
-      <CardHeader><CardTitle className="break-words">{line.itemName}</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="break-words">{line.itemName}</CardTitle><p className="text-body-sm text-muted-foreground">Line {line.position + 1}</p></CardHeader>
       <CardContent className="flex flex-col gap-3">
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-body-sm">
           <dt className="text-muted-foreground">Counted</dt><dd className="break-words text-right tabular-nums">{formatDisplayNumber(line.quantity)} {line.selectedUnitAbbreviation}</dd>
@@ -81,7 +82,7 @@ export function OpeningStockReview({ open, onOpenChange, lines, countDate, note,
   return <Dialog open={open} onOpenChange={(nextOpen) => { if (!pending) onOpenChange(nextOpen); }}>
     <DialogContent showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
       <DialogHeader className="pr-8"><DialogTitle>Review opening stock</DialogTitle><DialogDescription>Posting makes these quantities available for issuance. The posted count will be read-only.</DialogDescription></DialogHeader>
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
+      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pb-2">
         {error && <Alert variant="destructive" role="alert" ref={errorRef} tabIndex={-1}><AlertTitle>Opening Stock was not posted</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
         <dl className="grid gap-3 text-body-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">Stock counted as of</dt><dd>{countDate || "Not entered"}</dd></div><div><dt className="text-muted-foreground">Reference / notes</dt><dd className="break-words">{note || "None provided"}</dd></div></dl>
         <p className="text-body-sm text-muted-foreground">The count represents stock at the beginning of the selected day, before that day’s deliveries and issuance.</p>

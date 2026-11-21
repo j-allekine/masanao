@@ -26,7 +26,7 @@ test.beforeAll(() => {
   db.close();
 });
 
-test("posting creates usable opening sources and mixed-source issuance evidence on desktop and mobile", async ({ page }, testInfo) => {
+test("same-Item cost lines survive reload and create distinct mixed-source issuance evidence on desktop and mobile", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
   expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -36,25 +36,51 @@ test("posting creates usable opening sources and mixed-source issuance evidence 
   for (const name of ["Posting Rice", "Posting Salt"]) {
     await page.getByRole("button", { name: "Add items", exact: true }).click();
     await page.getByLabel("Search Items", { exact: true }).fill(name);
-    await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button").filter({ hasText: name }).click();
+    await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${name} Staples & Dry Goods`) }).click();
   }
-  await page.getByRole("textbox", { name: "Quantity for Posting Rice", exact: true }).fill("3");
+  await page.getByRole("textbox", { name: "Quantity for Posting Rice", exact: true }).fill("2");
   await page.getByRole("combobox", { name: "Unit for Posting Rice", exact: true }).click();
   await page.getByRole("option", { name: "Posting Sack (25 kg)", exact: true }).click();
   await page.getByRole("textbox", { name: "Opening unit cost for Posting Rice", exact: true }).fill("1250");
   await page.getByRole("textbox", { name: "Quantity for Posting Salt", exact: true }).fill("1");
   await page.getByRole("textbox", { name: "Opening unit cost for Posting Salt", exact: true }).fill("0");
   await page.getByRole("textbox", { name: "Reason for zero cost", exact: true }).fill("Confirmed zero opening value");
+  await page.getByRole("button", { name: "Add another cost line for Posting Rice", exact: true }).click();
+  await page.getByRole("textbox", { name: "Quantity for Posting Rice, line 3", exact: true }).fill("25");
+  await page.getByRole("textbox", { name: "Opening unit cost for Posting Rice, line 3", exact: true }).fill("55");
+  // Deliberate second-line edit must not change the first line.
+  await expect(page.getByRole("textbox", { name: "Quantity for Posting Rice, line 1", exact: true })).toHaveValue("2");
+  await page.getByRole("button", { name: "Add another cost line for Posting Rice", exact: true }).click();
+  await page.getByRole("button", { name: "Remove Posting Rice, line 4", exact: true }).click();
+  await page.getByRole("button", { name: "Move line 3 up", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("draft saved");
+  await page.reload();
+  await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Quantity for Posting Rice, line 2", exact: true })).toHaveValue("25");
+  await expect(page.getByRole("textbox", { name: "Opening unit cost for Posting Rice, line 2", exact: true })).toHaveValue("55");
+  await page.getByRole("textbox", { name: "Quantity for Posting Rice, line 2", exact: true }).fill("-1");
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Quantity for Posting Rice, line 2", exact: true })).toBeFocused();
+  await page.getByRole("textbox", { name: "Quantity for Posting Rice, line 2", exact: true }).fill("25");
+  await page.screenshot({ path: testInfo.outputPath("opening-cost-lines-count-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 320, height: 800 });
+  await expect(page.getByRole("textbox", { name: "Quantity for Posting Rice, line 2", exact: true })).toHaveValue("25");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("opening-cost-lines-count-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
   const review = page.getByRole("dialog", { name: "Review opening stock", exact: true });
   await expect(review).toBeVisible();
   await expect(review.getByRole("button", { name: "Post opening stock", exact: true })).toBeDisabled();
-  await expect(review).toContainText("75 kg");
+  await expect(review).toContainText("50 kg");
+  await expect(review).toContainText("25 kg");
+  await expect(review).toContainText("Line 2");
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: testInfo.outputPath("opening-post-review-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 800 });
   await review.getByRole("checkbox").check();
-  await review.getByText("I confirm the zero costs and their recorded reasons.", { exact: true }).scrollIntoViewIfNeeded();
+  await review.getByText("I confirm the zero costs and their recorded reasons.", { exact: true }).evaluate((element) => element.scrollIntoView({ block: "center" }));
   await expect(review.getByText("I confirm the zero costs and their recorded reasons.", { exact: true })).toBeInViewport({ ratio: 1 });
   await expect(review.getByRole("button", { name: "Post opening stock", exact: true })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -99,7 +125,8 @@ test("posting creates usable opening sources and mixed-source issuance evidence 
   await page.getByRole("button", { name: "View issued totals", exact: true }).click();
   await page.getByRole("button", { name: "View breakdown for Posting Rice", exact: true }).click();
   const sources = page.getByRole("dialog", { name: "Details for Posting Rice", exact: true });
-  await expect(sources.getByRole("row").filter({ hasText: "OS-0001" })).toContainText("75 kg");
+  await expect(sources.getByRole("row").filter({ hasText: /OS-0001.*Line 1/ })).toContainText("50 kg");
+  await expect(sources.getByRole("row").filter({ hasText: /OS-0001.*Line 2/ })).toContainText("25 kg");
   await expect(sources.getByRole("row").filter({ hasText: "DR-AFTER-OPENING" })).toContainText("5 kg");
   await page.screenshot({ path: testInfo.outputPath("opening-mixed-sources-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 800 });
