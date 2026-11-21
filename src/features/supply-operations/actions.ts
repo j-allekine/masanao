@@ -1,6 +1,15 @@
 "use server";
 
 import { executeCreateItem } from "./server/actions/create-item";
+import { executeCreateItemWithConversions } from "./server/actions/create-item-with-conversions";
+
+export async function createItemWithConversionsAction(input: unknown) { return executeCreateItemWithConversions(input); }
+import { executeOpeningStockAction } from "./server/actions/opening-stock";
+
+export async function beginOpeningStockAction(input: unknown) { return executeOpeningStockAction("begin", input); }
+export async function saveOpeningStockDraftAction(input: unknown) { return executeOpeningStockAction("save", input); }
+export async function discardOpeningStockDraftAction(input: unknown) { return executeOpeningStockAction("discard", input); }
+export async function postOpeningStockAction(input: unknown) { return executeOpeningStockAction("post", input); }
 import { executeDeleteItem } from "./server/actions/delete-item";
 import { executeSetItemActive } from "./server/actions/set-item-active";
 import { executeUpdateItem } from "./server/actions/update-item";
@@ -65,3 +74,9 @@ export async function postDeliveryReceiptAction(formData: FormData): Promise<Del
 export async function readPurchaseOrderDeliverySummariesAction(ids: string[]) {
   return executeReadPurchaseOrderDeliverySummaries(ids);
 }
+
+import { executeOpeningStockCorrectionAction } from "./server/actions/opening-stock-corrections";
+export async function beginOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("begin", input); }
+export async function saveOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("save", input); }
+export async function postOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("post", input); }
+export async function discardOpeningStockCorrectionAction(input: unknown) { return executeOpeningStockCorrectionAction("discard", input); }

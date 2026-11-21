@@ -1,9 +1,14 @@
 import "server-only";
 
+export { getOpeningStockWorkspaceQuery as getOpeningStockWorkspace } from "./server/queries/opening-stock";
+export { beginOpeningStockCommand as beginOpeningStock, saveOpeningStockCommand as saveOpeningStockDraft, discardOpeningStockCommand as discardOpeningStockDraft, postOpeningStockCommand as postOpeningStock } from "./server/commands/opening-stock";
+export type { OpeningStockWorkspace, OpeningStockLineInput, OpeningStockLine, OpeningStockSaveInput, OpeningStockResult } from "./opening-stock-types";
+
 import type { CurrentActor } from "@/server/auth";
 import { isCurrentActorAdministrator } from "@/server/current-actor-role";
 
 import { createItemCommand } from "./server/commands/create-item";
+import { createItemWithConversionsCommand } from "./server/commands/create-item-with-conversions";
 import { deleteItemCommand } from "./server/commands/delete-item";
 import { setItemActiveCommand } from "./server/commands/set-item-active";
 import { updateItemCommand } from "./server/commands/update-item";
@@ -116,6 +121,10 @@ export async function createItem(actor: CurrentActor, input: unknown): Promise<I
   return authorizationFailure ? { ...authorizationFailure, fields: {} } : createItemCommand(input);
 }
 
+export async function createItemWithConversions(actor: CurrentActor | null | undefined, input: unknown) {
+  return createItemWithConversionsCommand(actor, input);
+}
+
 export async function updateItem(actor: CurrentActor, id: string, input: unknown): Promise<ItemUpdateResult> {
   const authorizationFailure = await authorizeAdministrator(actor);
   return authorizationFailure ? { ...authorizationFailure, fields: {} } : updateItemCommand(id, input);
@@ -135,10 +144,13 @@ export async function createItemUnitConversion(actor: CurrentActor, itemId: stri
   const authorizationFailure = await authorizeAdministrator(actor);
   return authorizationFailure
     ? { ...authorizationFailure, fields: {} }
-    : createItemUnitConversionCommand(itemId, input);
+    : createItemUnitConversionCommand(actor, itemId, input);
 }
 
 export { listInventory } from "./server/queries/list-inventory";
 export { exportInventory } from "./server/queries/export-inventory";
 export type { InventoryListItem, InventoryResult } from "./types";
 export { getKitchenDashboard } from "./server/queries/dashboard";
+
+export { beginOpeningStockCorrectionCommand as beginOpeningStockCorrection, saveOpeningStockCorrectionCommand as saveOpeningStockCorrection, postOpeningStockCorrectionCommand as postOpeningStockCorrection, discardOpeningStockCorrectionCommand as discardOpeningStockCorrection } from "./server/commands/opening-stock-corrections";
+export type { OpeningStockCorrection, OpeningStockCorrectionLine, OpeningStockCorrectionSaveInput, OpeningStockSourceSummary } from "./opening-stock-correction-types";

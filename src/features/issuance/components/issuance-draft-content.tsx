@@ -819,7 +819,7 @@ export default function IssuanceDraftContent({
           <DialogHeader>
             <DialogTitle>Post issuance?</DialogTitle>
             <DialogDescription>
-              These exact final quantities will be deducted together using the oldest receipt stock first (FIFO). Stock and
+              These exact final quantities will be deducted together using Opening Stock first when available, then the oldest receipt stock first (FIFO). Stock and
               Item eligibility will be checked again when you confirm.
             </DialogDescription>
           </DialogHeader>

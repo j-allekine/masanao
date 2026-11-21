@@ -6,6 +6,7 @@ import {
   useTransition,
   type ChangeEvent,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import { Plus, Save } from "lucide-react";
 
@@ -168,6 +169,9 @@ export default function ItemForm({
   onCancel,
   onSuccess,
   onDirtyChange,
+  initialName = "",
+  createAction,
+  additionalFields,
 }: {
   mode: "create" | "edit";
   item?: ItemListItem;
@@ -176,8 +180,11 @@ export default function ItemForm({
   onCancel: () => void;
   onSuccess: (item: ItemListItem) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  initialName?: string;
+  createAction?: (formData: FormData) => Promise<ItemFormActionState>;
+  additionalFields?: (context: { baseUnitId: string; pending: boolean }) => ReactNode;
 }) {
-  const initialFormValues = initialValues(item);
+  const initialFormValues = item ? initialValues(item) : { ...emptyFormValues, name: initialName };
   const [formValues, setFormValues] = useState<ItemFormValues>(
     initialFormValues,
   );
@@ -279,7 +286,7 @@ export default function ItemForm({
       try {
         const result =
           mode === "create"
-            ? await createItemAction(formData)
+            ? await (createAction ?? createItemAction)(formData)
             : await updateItemAction(formData);
         handleResult(result);
       } catch {
@@ -358,11 +365,11 @@ export default function ItemForm({
             error={fieldErrors.baseUnitId}
             options={unitOptions}
             onValueChange={(value) => updateField("baseUnitId", value)}
-            disabled={mode === "edit" && Boolean(item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines)}
+            disabled={mode === "edit" && Boolean(item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines || item?.hasPostedOpeningStock)}
           />
-          {mode === "edit" && (item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines) ? (
+          {mode === "edit" && (item?.unitConversions?.length || item?.hasPostedDeliveryReceiptLines || item?.hasPostedOpeningStock) ? (
             <p className="text-body-sm text-muted-foreground">
-              {item.hasPostedDeliveryReceiptLines
+              {item.hasPostedDeliveryReceiptLines || item.hasPostedOpeningStock
                 ? "Base Unit is locked because stock activity was posted for this Item."
                 : "Base Unit is locked while alternate Units are configured."}
             </p>
@@ -471,6 +478,7 @@ export default function ItemForm({
               errors={fieldErrors.note}
             />
           </Field>
+          {additionalFields?.({ baseUnitId: formValues.baseUnitId, pending: isSubmitting })}
         </FieldGroup>
       </div>
       <DialogFooter className="shrink-0">
