@@ -42,5 +42,5 @@ export async function withdrawOpeningStockSource(database: Prisma.TransactionCli
   const after = finiteDecimal(addRational(decimalRational(state.before), decimalRational(input.quantity)))!;
   const withdrawal = await database.openingStockWithdrawal.create({ data: { id: crypto.randomUUID(), sourceId, issuanceItemTotalId: input.issuanceItemTotalId, kind: "issuance", sequence: state.sequence + 1, quantity: input.quantity, beforeQuantity: state.before, afterQuantity: after, costCentavos: cost, postedAt: input.postedAt } });
   await database.openingStockSource.update({ where: { id: sourceId }, data: { revision: { increment: 1 } } });
-  return { sourceId, quantity: withdrawal.quantity, reference: state.source.reference, countDate: state.source.countDate, costCentavos: withdrawal.costCentavos, sequence: withdrawal.sequence };
+  return { sourceId, linePosition: state.source.position, quantity: withdrawal.quantity, reference: state.source.reference, countDate: state.source.countDate, costCentavos: withdrawal.costCentavos, sequence: withdrawal.sequence };
 }

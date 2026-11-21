@@ -34,7 +34,7 @@ async function fixture() {
     return postIssuance(staff, meal, { revision: draft.value.draft.revision });
   };
   const report = async () => {
-    const result = await getKitchenDashboard(staff, { start: countDate, end: today }, new Date(Date.now() + 1000));
+    const result = await getKitchenDashboard(staff, { start: countDate, end: today, activitySearch: key }, new Date(Date.now() + 1000));
     if (!result.ok) throw Error(result.error);
     return result.report.budgets.rows.find((row) => row.id === context.activityId)!;
   };
@@ -49,6 +49,46 @@ beforeEach(async () => {
 });
 
 describe("Opening Stock posting and source integration", () => {
+  it("retains same-Item line identity and order through removal/reordering, then issues mixed-unit cost layers exactly", async () => {
+    const f = await fixture();
+    const unit = await prisma.unit.create({ data: { id: crypto.randomUUID(), name: `Pack ${f.item.id}`, abbreviation: `p-${f.item.id}`, normalizedName: `pack ${f.item.id}`, normalizedAbbreviation: `p-${f.item.id}` } });
+    const conversion = await prisma.itemUnitConversion.create({ data: { id: crypto.randomUUID(), itemId: f.item.id, alternateUnitId: unit.id, baseUnitQuantity: "3" } });
+    const zero = { ...f.line, id: crypto.randomUUID(), quantity: "0.25", openingUnitCost: "0", zeroCostReason: "Supported assigned zero" };
+    const pack = { ...f.line, id: crypto.randomUUID(), quantity: "1", selectedUnitId: unit.id, conversionId: conversion.id, openingUnitCost: "0.01" };
+    let saved = await f.save({ lines: [f.line, zero, pack] });
+    expect(value(await getOpeningStockWorkspace(f.admin)).lines.map((line) => line.id)).toEqual([f.line.id, zero.id, pack.id]);
+    saved = value(await saveOpeningStockDraft(f.admin, { attemptId: f.attemptId, revision: saved.revision, countDate: f.countDate, note: "Reordered physical count", lines: [pack, zero] }));
+    const count = value(await getOpeningStockWorkspace(f.admin));
+    expect(count.lines).toMatchObject([{ id: pack.id, position: 0, calculatedBaseUnitQuantity: "3", lineAmount: "0.01" }, { id: zero.id, position: 1, calculatedBaseUnitQuantity: "0.25", lineAmount: "0", zeroCostReason: zero.zeroCostReason }]);
+    const input = { attemptId: f.attemptId, revision: saved.revision, zeroCostAcknowledged: true };
+    expect(await postOpeningStock(f.admin, input)).toMatchObject({ ok: true });
+    expect(await postOpeningStock(f.admin, input)).toMatchObject({ ok: true });
+    expect(await prisma.openingStockSource.count()).toBe(2);
+    const original = value(await getOpeningStockWorkspace(f.staff));
+    expect(await postDeliveryReceipt(f.staff, f.receipt)).toMatchObject({ ok: true });
+    const first = await f.issue("1"); if (!first.ok) throw Error(first.error);
+    expect(first.value.review[0].openingAllocations).toMatchObject([{ linePosition: 0, quantity: "1", costCentavos: "0" }]);
+    const mealId = crypto.randomUUID();
+    await prisma.mealSchedule.create({ data: { id: mealId, activityId: f.context.activityId, label: "Second meal", mealTime: "13:00" } });
+    const second = await f.issue("2.75", { ...f.context, mealScheduleId: mealId }); if (!second.ok) throw Error(second.error);
+    expect(second.value.review[0]).toMatchObject({ openingAllocations: [{ linePosition: 0, quantity: "2", costCentavos: "1" }, { linePosition: 1, quantity: "0.25", costCentavos: "0" }], receiptAllocations: [{ quantity: "0.5" }] });
+    expect(await f.report()).toMatchObject({ cost: "3001" });
+    expect(await getIssuanceWorkspace(f.staff, f.context)).toEqual(first);
+    expect(value(await getOpeningStockWorkspace(f.staff)).lines).toEqual(original.lines);
+    const inventory = await listInventory(f.staff); if (!inventory.ok) throw Error(inventory.error);
+    expect(inventory.rows.find((row) => row.id === f.item.id)?.balance).toEqual({ kind: "valid", quantity: "24.5" });
+    expect(await saveOpeningStockDraft(f.admin, { attemptId: f.attemptId, revision: saved.revision, countDate: f.countDate, note: "", lines: [zero] })).toMatchObject({ ok: false, kind: "conflict" });
+  });
+
+  it("rejects duplicate line identities while allowing incomplete same-Item cost lines", async () => {
+    const f = await fixture();
+    expect(await saveOpeningStockDraft(f.admin, { attemptId: f.attemptId, revision: f.begun.revision, countDate: f.countDate, note: "", lines: [f.line, { ...f.line, openingUnitCost: "2" }] })).toMatchObject({ ok: false, kind: "validation" });
+    const saved = await f.save({ lines: [f.line, { ...f.line, id: crypto.randomUUID(), quantity: "", openingUnitCost: "" }] });
+    expect(value(await getOpeningStockWorkspace(f.admin)).lines).toHaveLength(2);
+    expect(await postOpeningStock(f.admin, { attemptId: f.attemptId, revision: saved.revision, zeroCostAcknowledged: true })).toMatchObject({ ok: false, kind: "validation" });
+    expect(await prisma.inventoryLedgerMovement.count()).toBe(0);
+  });
+
   it("posts once, consumes opening before a later receipt, and reports exact mixed-source costs", async () => {
     const f = await fixture(); const saved = await f.save();
     const request = { attemptId: f.attemptId, revision: saved.revision, zeroCostAcknowledged: false };
