@@ -26,7 +26,7 @@ import OpeningStockItemEditor from "./opening-stock-item-editor";
 import { CountEvidence } from "./opening-stock-review";
 
 const timestamp = (value: string | null) => value ? new Intl.DateTimeFormat("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" }).format(new Date(value)) : "Assigned when posted";
-const value = (centavos: string | null) => centavos === null ? "Pending" : `₱${formatDisplayNumber(openingStockProduct(centavos, "0.01"))}`;
+const value = (centavos: string | null) => centavos === null ? "Pending" : `${centavos.startsWith("-") ? "-" : ""}₱${formatDisplayNumber(openingStockProduct(centavos.replace(/^-/, ""), "0.01"))}`;
 const signature = (correction: OpeningStockCorrection) => JSON.stringify({ reason: correction.reason, note: correction.note, lines: correction.lines });
 
 export default function OpeningStockCorrections({ workspace, categories, units }: { workspace: OpeningStockWorkspace; categories: CategoryListItem[]; units: UnitListItem[] }) {

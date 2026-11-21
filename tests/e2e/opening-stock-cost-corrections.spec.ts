@@ -63,7 +63,7 @@ test("administrator replaces entire selected remainders with explicit costs and 
   await expect(review).toContainText("Old remaining value: ₱0.03");
   await expect(review).toContainText("Replacement value: ₱0.06");
   await expect(review).toContainText("Value difference: ₱0.03");
-  await expect(review).toContainText("Value difference: ₱-4");
+  await expect(review).toContainText("Value difference: -₱4");
   await expect(review).toContainText("Quantity before and after: 3 pc → 3 pc");
   await expect(review).toContainText("historical revaluation is unavailable");
   await expect(review.getByRole("button", { name: "Post correction", exact: true })).toBeDisabled();
