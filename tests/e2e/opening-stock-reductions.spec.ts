@@ -1,0 +1,93 @@
+import Database from "better-sqlite3";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { expect, test } from "@playwright/test";
+import { postFixtureSignIn } from "./fixture-auth";
+
+const itemName = "Opening reduction supply with a deliberately long descriptive label";
+test.beforeAll(() => {
+  // This suite owns the fresh database created by the existing global setup.
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  db.exec(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
+    VALUES ('reduction-item','${itemName}','${itemName.toLowerCase()}','default-category-staples-dry-goods','default-unit-piece','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
+  db.close();
+});
+
+test("administrator reduces selected opening sources with saved review and staff history on desktop and 320px", async ({ page, browser }, testInfo) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1440, height: 960 });
+  expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.goto("/inventory/opening-stock");
+  await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
+  await page.getByRole("button", { name: "Add items", exact: true }).click();
+  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(itemName) }).click();
+  await page.getByLabel(`Quantity for ${itemName}`, { exact: true }).filter({ visible: true }).fill("3");
+  await page.getByLabel(`Opening unit cost for ${itemName}`, { exact: true }).filter({ visible: true }).fill("0.01");
+  await page.getByRole("button", { name: `Add another cost line for ${itemName}`, exact: true }).click();
+  await page.getByLabel(`Quantity for ${itemName}, line 2`, { exact: true }).filter({ visible: true }).fill("2");
+  await page.getByLabel(`Opening unit cost for ${itemName}, line 2`, { exact: true }).filter({ visible: true }).fill("2");
+  await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
+  await page.getByRole("button", { name: "Post opening stock", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Record correction", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Record correction", exact: true }).click();
+  await page.getByRole("button", { name: "Reduce remaining stock", exact: true }).click();
+  let editor = page.getByRole("dialog", { name: "Reduce remaining stock", exact: true });
+  await editor.getByLabel("Reason for correction").fill("Physical recount confirmed excess starting quantities in these source lines.");
+  await editor.getByRole("button", { name: "Select source lines", exact: true }).click();
+  let picker = page.getByRole("dialog", { name: "Select source line", exact: true });
+  await expect(picker.getByRole("button", { name: /source 1/ })).toContainText("Remaining: 3 pc");
+  await expect(picker.getByRole("button", { name: /source 2/ })).toContainText("Residual value: ₱4");
+  await picker.getByRole("button", { name: /source 1/ }).click();
+  await editor.getByLabel("Reduction quantity (pc)").fill("1");
+  await editor.getByRole("button", { name: "Select source lines", exact: true }).click();
+  picker = page.getByRole("dialog", { name: "Select source line", exact: true });
+  await picker.getByRole("button", { name: /source 2/ }).click();
+  await editor.getByLabel("Reduction quantity (pc)").nth(1).fill("0.5");
+  await editor.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(editor.getByRole("status")).toContainText("No stock moved or was reserved");
+  await page.reload();
+  await page.getByRole("button", { name: "Resume draft", exact: true }).click();
+  editor = page.getByRole("dialog", { name: "Reduce remaining stock", exact: true });
+  await expect(editor.getByLabel("Reduction quantity (pc)").first()).toHaveValue("1");
+  await expect(editor.getByLabel("Reduction quantity (pc)").nth(1)).toHaveValue("0.5");
+  await editor.getByRole("button", { name: "Review correction", exact: true }).click();
+  const review = page.getByRole("dialog", { name: "Review correction", exact: true });
+  await expect(review).toContainText("Before: 3 pc · ₱0.03");
+  await expect(review).toContainText("After: 2 pc · ₱0.02");
+  await expect(review).toContainText("Retired value: ₱0.01");
+  await expect(review).toContainText("After: 1.5 pc · ₱3");
+  const evidenceDir = process.env.MASANAO_OPENING_REDUCTION_EVIDENCE_DIR;
+  if (evidenceDir) mkdirSync(evidenceDir, { recursive: true });
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await review.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await expect(review.getByRole("button", { name: "Post correction", exact: true })).toBeInViewport();
+    await page.screenshot({ path: evidenceDir ? join(evidenceDir, `reduction-review-${width}.png`) : testInfo.outputPath(`reduction-review-${width}.png`), fullPage: true });
+  }
+  await review.getByRole("button", { name: "Back to correction", exact: true }).click();
+  await editor.getByRole("button", { name: "Select source lines", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(editor).toBeVisible();
+  await editor.getByRole("button", { name: "Review correction", exact: true }).click();
+  await review.getByRole("button", { name: "Post correction", exact: true }).click();
+  const posted = page.getByRole("dialog", { name: /OS-0001-C/ });
+  await expect(posted).toContainText("Retired value: ₱0.01");
+  await expect(posted.getByRole("button", { name: "Post correction", exact: true })).toHaveCount(0);
+  await page.screenshot({ path: evidenceDir ? join(evidenceDir, "reduction-posted-320.png") : testInfo.outputPath("reduction-posted-320.png"), fullPage: true });
+  await posted.getByRole("button", { name: "Close", exact: true }).last().click();
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  const sources = db.prepare('SELECT quantity,amount FROM opening_stock_source WHERE itemId = ? ORDER BY position').all("reduction-item");
+  expect(sources).toEqual([{ quantity: "3", amount: "0.03" }, { quantity: "2", amount: "4" }]);
+  expect(db.prepare('SELECT COUNT(*) AS count FROM opening_stock_withdrawal WHERE kind = ?').get("correction")).toEqual({ count: 2 });
+  db.close();
+  const staff = await browser.newContext({ viewport: { width: 320, height: 900 } });
+  expect((await postFixtureSignIn(staff.request, { data: { username: "kitchen.staff", password: "correct-horse-battery-staple" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  const staffPage = await staff.newPage();
+  await staffPage.goto("/inventory/opening-stock");
+  await expect(staffPage.getByRole("button", { name: "Record correction", exact: true })).toHaveCount(0);
+  await expect(staffPage.getByText("Reduce remaining stock · 2 lines", { exact: true })).toBeVisible();
+  await staffPage.getByRole("button", { name: "View correction", exact: true }).click();
+  await expect(staffPage.getByRole("dialog")).toContainText("After: 1.5 pc · ₱3");
+  await staff.close();
+});
