@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/prisma/client";
 import { beginOpeningStock, deleteItem, getKitchenDashboard, getOpeningStockWorkspace, listInventory, listItems, postDeliveryReceipt, postOpeningStock, saveOpeningStockDraft, setItemActive, updateItem } from "@/features/supply-operations/server";
 import { getIssuanceWorkspace, postIssuance, saveIssuanceDraft } from "@/features/issuance/server";
@@ -169,6 +169,24 @@ describe("Opening Stock posting and source integration", () => {
     expect(await f.report()).toMatchObject({ cost: "1" });
     const inventory = await listInventory(f.staff); if (!inventory.ok) throw Error(inventory.error);
     expect(inventory.rows.find((row) => row.id === f.item.id)?.balance).toEqual({ kind: "valid", quantity: "0" });
+  });
+
+  it("keeps the selected Manila count date when a saved draft posts after midnight", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-11-20T15:59:00.000Z"));
+      const f = await fixture();
+      const saved = await f.save({ countDate: "2026-11-20" });
+      vi.setSystemTime(new Date("2026-11-20T16:01:00.000Z"));
+      value(await postOpeningStock(f.admin, { attemptId: f.attemptId, revision: saved.revision, zeroCostAcknowledged: false }));
+      expect(value(await getOpeningStockWorkspace(f.staff))).toMatchObject({ countDate: "2026-11-20", postedAt: "2026-11-20T16:01:00.000Z" });
+      expect(await postDeliveryReceipt(f.staff, { ...f.receipt, receiptDate: "2026-11-19" })).toMatchObject({ ok: false });
+      expect(await postDeliveryReceipt(f.staff, { ...f.receipt, receiptDate: "2026-11-20" })).toMatchObject({ ok: true });
+      const issued = await f.issue("1");
+      expect(issued).toMatchObject({ ok: true });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rolls back opening withdrawals when issuance fails and rejects future dates or stale source references", async () => {
