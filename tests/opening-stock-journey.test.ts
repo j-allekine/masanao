@@ -99,4 +99,15 @@ it("carries a clean count through catalog creation, mixed issuance and every cor
     ["correction-retirement", "5", "35000"],
   ]);
   expect(await beginOpeningStock(admin, { attemptId: crypto.randomUUID(), revision: final.revision })).toMatchObject({ ok: false });
+  for (const actor of [null, staff]) {
+    for (const kind of ["add-omitted", "reduce-remaining", "correct-remaining-cost"]) {
+      expect(await beginOpeningStockCorrection(actor, { id: crypto.randomUUID(), kind })).toMatchObject({ ok: false, kind: "forbidden" });
+    }
+  }
+  await prisma.user.update({ where: { id: admin.id }, data: { disabled: true } });
+  expect(await getOpeningStockWorkspace(admin)).toMatchObject({ ok: false, kind: "forbidden" });
+  expect(await getOpeningStockWorkspace(null)).toMatchObject({ ok: false, kind: "forbidden" });
+  for (const kind of ["add-omitted", "reduce-remaining", "correct-remaining-cost"]) {
+    expect(await beginOpeningStockCorrection(admin, { id: crypto.randomUUID(), kind })).toMatchObject({ ok: false, kind: "forbidden" });
+  }
 });
