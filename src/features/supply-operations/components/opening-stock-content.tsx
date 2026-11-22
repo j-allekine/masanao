@@ -137,11 +137,11 @@ export default function OpeningStockContent({ workspace: initial, categories, un
   }
   function quantityInput(line: OpeningStockLine, index: number, prefix: string) {
     const key = `lines.${index}.quantity`;
-    return <Field data-invalid={Boolean(fields[key])}><FieldLabel className="sr-only" htmlFor={`${prefix}-${line.id}-quantity`}>Quantity for {lineName(line)}</FieldLabel><Input id={`${prefix}-${line.id}-quantity`} data-opening-field={key} aria-invalid={Boolean(fields[key])} aria-describedby={fields[key] ? `${prefix}-${line.id}-quantity-error` : undefined} inputMode="decimal" value={line.quantity} disabled={!editing || pending} placeholder="Counted quantity" onChange={(event) => changeLine(line.id, { quantity: event.target.value })} />{fields[key] && <FieldError id={`${prefix}-${line.id}-quantity-error`}>{fields[key]}</FieldError>}</Field>;
+    return <Field data-invalid={Boolean(fields[key])}><FieldLabel className="sr-only w-px" htmlFor={`${prefix}-${line.id}-quantity`}>Quantity for {lineName(line)}</FieldLabel><Input id={`${prefix}-${line.id}-quantity`} data-opening-field={key} aria-invalid={Boolean(fields[key])} aria-describedby={fields[key] ? `${prefix}-${line.id}-quantity-error` : undefined} inputMode="decimal" value={line.quantity} disabled={!editing || pending} placeholder="Counted quantity" onChange={(event) => changeLine(line.id, { quantity: event.target.value })} />{fields[key] && <FieldError id={`${prefix}-${line.id}-quantity-error`}>{fields[key]}</FieldError>}</Field>;
   }
   function costInput(line: OpeningStockLine, index: number, prefix: string) {
     const key = `lines.${index}.openingUnitCost`;
-    return <Field data-invalid={Boolean(fields[key])}><FieldLabel className="sr-only" htmlFor={`${prefix}-${line.id}-cost`}>Opening unit cost for {lineName(line)}</FieldLabel><Input id={`${prefix}-${line.id}-cost`} data-opening-field={key} aria-invalid={Boolean(fields[key])} inputMode="decimal" value={line.openingUnitCost} disabled={!editing || pending} placeholder="Unknown" onChange={(event) => changeLine(line.id, { openingUnitCost: event.target.value })} />{fields[key] && <FieldError>{fields[key]}</FieldError>}</Field>;
+    return <Field data-invalid={Boolean(fields[key])}><FieldLabel className="sr-only w-px" htmlFor={`${prefix}-${line.id}-cost`}>Opening unit cost for {lineName(line)}</FieldLabel><Input id={`${prefix}-${line.id}-cost`} data-opening-field={key} aria-invalid={Boolean(fields[key])} inputMode="decimal" value={line.openingUnitCost} disabled={!editing || pending} placeholder="Unknown" onChange={(event) => changeLine(line.id, { openingUnitCost: event.target.value })} />{fields[key] && <FieldError>{fields[key]}</FieldError>}</Field>;
   }
   function unitInput(line: OpeningStockLine, prefix: string) {
     const item = workspace.items.find((entry) => entry.id === line.itemId);
@@ -189,4 +189,5 @@ export default function OpeningStockContent({ workspace: initial, categories, un
     <OpeningStockReview returnFocusRef={reviewButtonRef} open={reviewOpen} onOpenChange={setReviewOpen} lines={lines.map((line, position) => ({ ...line, position, calculatedBaseUnitQuantity: openingStockProduct(line.quantity, line.conversionFactor), lineAmount: line.openingUnitCost === "" ? null : openingStockProduct(line.quantity, line.openingUnitCost) }))} countDate={countDate} note={note} pending={pending} error={postingError} zeroAcknowledged={zeroAcknowledged} onZeroAcknowledgedChange={setZeroAcknowledged} onPost={post} />
   </WorkspaceLayout>;
 }
+
 
