@@ -45,13 +45,13 @@ it("carries a clean count through catalog creation, mixed issuance and every cor
   value(await postOpeningStock(admin, postInput));
   expect(await postOpeningStock(admin, postInput)).toMatchObject({ ok: true });
   const original = (await workspace()).lines;
-  const vendor = await prisma.vendor.create({ data: { name: `Journey vendor ${key}`, normalizedName: `journey vendor ${key}` } });
-  const po = await prisma.purchaseOrder.create({ data: { purchaseOrderNo: `PO-${key}`, normalizedPurchaseOrderNo: `po-${key}`, vendorId: vendor.id } });
+  const vendor = await prisma.vendor.create({ data: { id: crypto.randomUUID(), name: `Journey vendor ${key}`, normalizedName: `journey vendor ${key}` } });
+  const po = await prisma.purchaseOrder.create({ data: { id: crypto.randomUUID(), purchaseOrderNo: `PO-${key}`, normalizedPurchaseOrderNo: `po-${key}`, vendorId: vendor.id } });
   expect(await postDeliveryReceipt(staff, { purchaseOrderId: po.id, receiptNo: `DR-${key}`, receiptDate: today, lines: [{ itemId: item.id, selectedUnitId: item.baseUnit.id, quantity: "25", unitPrice: "60" }] })).toMatchObject({ ok: true });
-  const design = await prisma.activityDesign.create({ data: { activityDesignNo: `AD-${key}`, fiscalYear: Number(today.slice(0, 4)), title: "Integrated kitchen count" } });
-  const activity = await prisma.activity.create({ data: { activityDesignId: design.id, name: "Lunch", officeName: "Kitchen", scheduledDate: new Date(`${today}T00:00:00Z`), plannedBudgetCentavos: BigInt(1000000) } });
+  const design = await prisma.activityDesign.create({ data: { id: crypto.randomUUID(), activityDesignNo: `AD-${key}`, fiscalYear: Number(today.slice(0, 4)), title: "Integrated kitchen count" } });
+  const activity = await prisma.activity.create({ data: { id: crypto.randomUUID(), activityDesignId: design.id, name: "Lunch", officeName: "Kitchen", scheduledDate: new Date(`${today}T00:00:00Z`), plannedBudgetCentavos: BigInt(1000000) } });
   const issue = async (quantity: string) => {
-    const meal = await prisma.mealSchedule.create({ data: { activityId: activity.id, label: "Lunch", mealTime: "12:00" } });
+    const meal = await prisma.mealSchedule.create({ data: { id: crypto.randomUUID(), activityId: activity.id, label: "Lunch", mealTime: "12:00" } });
     const context = { activityDesignId: design.id, activityId: activity.id, mealScheduleId: meal.id };
     const draft = await saveIssuanceDraft(staff, context, { revision: 0, mealPax: 1, recipes: [], stockItems: [{ itemId: item.id, conversionId: null, enteredQuantity: quantity }] });
     if (!draft.ok) throw Error(draft.error);
