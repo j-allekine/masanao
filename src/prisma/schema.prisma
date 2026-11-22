@@ -583,6 +583,7 @@ model OpeningStockSource {
   withdrawals OpeningStockWithdrawal[]
   affectedCorrectionLines OpeningStockCorrectionLine[] @relation("CorrectionAffectedSource")
   @@index([itemId, position])
+  @@index([originalSourceId])
   @@map("opening_stock_source")
 }
 
@@ -662,6 +663,8 @@ model OpeningStockCorrectionLine {
   sourceId String?
   sourceReference String?
   sourcePosition Int?
+  sourceQuantity String?
+  sourceAmount String?
   affectedSource OpeningStockSource? @relation("CorrectionAffectedSource", fields: [sourceId], references: [id], onDelete: Restrict)
   retirement OpeningStockWithdrawal?
   movement InventoryLedgerMovement?

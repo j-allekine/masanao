@@ -25,7 +25,7 @@ export async function readOpeningStockSourceCapacity(database: Prisma.Transactio
       if (withdrawal.kind === "correction-retirement") {
         const line = withdrawal.correctionLine;
         const retirement = line?.movement;
-        if (withdrawal.issuanceItemTotalId !== null || !line || line.sourceId !== source.id || line.correction.status !== "posted" || line.correction.openingStockId !== source.openingStockId || !retirement || retirement.movementType !== "stock-out" || retirement.itemId !== source.itemId || retirement.baseUnitId !== source.baseUnitId || compareRational(decimalRational(retirement.quantity), used) !== 0) throw invalid();
+        if (withdrawal.issuanceItemTotalId !== null || !line || line.sourceId !== source.id || !["reduce-remaining", "correct-remaining-cost"].includes(line.correction.kind) || line.correction.status !== "posted" || line.correction.openingStockId !== source.openingStockId || !retirement || retirement.movementType !== "stock-out" || retirement.itemId !== source.itemId || retirement.baseUnitId !== source.baseUnitId || compareRational(decimalRational(retirement.quantity), used) !== 0) throw invalid();
       } else if (withdrawal.kind !== "issuance" || !withdrawal.issuanceItemTotalId || withdrawal.correctionLineId !== null) throw invalid();
       sequence = withdrawal.sequence; before = withdrawal.afterQuantity;
     }
