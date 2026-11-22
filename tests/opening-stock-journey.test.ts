@@ -92,5 +92,11 @@ it("carries a clean count through catalog creation, mixed issuance and every cor
   expect(final.corrections).toHaveLength(3);
   expect(final.corrections!.every(correction => correction.status === "posted")).toBe(true);
   expect(final.sources!.find(source => source.id === omitted.id)).toMatchObject({ quantity: "6", remainingQuantity: "0", remainingValueCentavos: "0" });
+  expect(final.sources!.find(source => source.remainingQuantity === "3")).toMatchObject({ quantity: "5", remainingValueCentavos: "24000" });
+  const retirements = await prisma.openingStockWithdrawal.findMany({ where: { sourceId: omitted.id }, orderBy: { sequence: "asc" } });
+  expect(retirements.map(withdrawal => [withdrawal.kind, withdrawal.quantity, withdrawal.costCentavos])).toEqual([
+    ["correction-retirement", "1", "7000"],
+    ["correction-retirement", "5", "35000"],
+  ]);
   expect(await beginOpeningStock(admin, { attemptId: crypto.randomUUID(), revision: final.revision })).toMatchObject({ ok: false });
 });
