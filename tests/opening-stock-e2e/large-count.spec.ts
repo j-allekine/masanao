@@ -13,10 +13,11 @@ test.beforeAll(() => {
 
 test("a saved twenty-line count keeps long labels, review actions and keyboard focus usable at desktop and 320px", async ({ page }, info) => {
   test.setTimeout(240_000);
+  page.setDefaultTimeout(20_000);
   expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/inventory");
-  await page.getByRole("link", { name: "Opening Stock", exact: true }).click();
+  await page.getByRole("button", { name: "Opening Stock", exact: true }).click();
   await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   for (const name of names) {
@@ -35,13 +36,14 @@ test("a saved twenty-line count keeps long labels, review actions and keyboard f
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: info.outputPath(`large-count-${width}.png`), fullPage: true });
+    await page.screenshot({ path: info.outputPath(`large-count-${width}.png`) });
     await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
     const review = page.getByRole("dialog", { name: "Review opening stock", exact: true });
     await expect(review).toContainText(names[19]);
+    await review.getByText(names[19]).filter({ visible: true }).scrollIntoViewIfNeeded();
     expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     await expect(review.getByRole("button", { name: "Post opening stock", exact: true })).toBeInViewport();
-    await page.screenshot({ path: info.outputPath(`large-count-review-${width}.png`), fullPage: true });
+    await page.screenshot({ path: info.outputPath(`large-count-review-${width}.png`) });
     await page.keyboard.press("Escape");
     await expect(review).toBeHidden();
     await expect(page.getByRole("button", { name: "Review opening stock", exact: true })).toBeFocused();
