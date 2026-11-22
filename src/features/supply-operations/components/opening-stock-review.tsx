@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export function CountEvidence({ lines }: { lines: OpeningStockLine[] }) {
   </>;
 }
 
-export function OpeningStockReview({ open, onOpenChange, lines, countDate, note, pending, error, zeroAcknowledged, onZeroAcknowledgedChange, onPost }: {
+export function OpeningStockReview({ open, onOpenChange, lines, countDate, note, pending, error, zeroAcknowledged, onZeroAcknowledgedChange, onPost, returnFocusRef }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lines: OpeningStockLine[];
@@ -74,13 +74,14 @@ export function OpeningStockReview({ open, onOpenChange, lines, countDate, note,
   zeroAcknowledged: boolean;
   onZeroAcknowledgedChange: (value: boolean) => void;
   onPost: () => void;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
 }) {
   const errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error && !pending) errorRef.current?.focus(); }, [error, pending]);
   const zeroLines = lines.filter((line) => /^0+(?:\.0+)?$/.test(line.openingUnitCost));
   const incomplete = !countDate || !lines.length || lines.some((line) => !line.quantity || line.openingUnitCost === "" || (/^0+(?:\.0+)?$/.test(line.openingUnitCost) && !line.zeroCostReason.trim()));
   return <Dialog open={open} onOpenChange={(nextOpen) => { if (!pending) onOpenChange(nextOpen); }}>
-    <DialogContent showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
+    <DialogContent finalFocus={returnFocusRef} showCloseButton={!pending} className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
       <DialogHeader className="pr-8"><DialogTitle>Review opening stock</DialogTitle><DialogDescription>Posting makes these quantities available for issuance. The posted count will be read-only.</DialogDescription></DialogHeader>
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pb-2">
         {error && <Alert variant="destructive" role="alert" ref={errorRef} tabIndex={-1}><AlertTitle>Opening Stock was not posted</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
