@@ -1,46 +1,13 @@
+import { openingStockPostingFixture, openingStockValue as value } from "./helpers/opening-stock-fixtures";
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/prisma/client";
-import { beginOpeningStock, deleteItem, getKitchenDashboard, getOpeningStockWorkspace, listInventory, listItems, postDeliveryReceipt, postOpeningStock, saveOpeningStockDraft, setItemActive, updateItem } from "@/features/supply-operations/server";
-import { getIssuanceWorkspace, postIssuance, saveIssuanceDraft } from "@/features/issuance/server";
-import { postIssuanceRecord } from "@/features/issuance/server/db/post";
+import { getOpeningStockWorkspace, listInventory, listItems, postDeliveryReceipt, postOpeningStock } from "@/features/supply-operations/server";
+import { getIssuanceWorkspace } from "@/features/issuance/server";
+
 import { postOpeningStockCorrectionRecord } from "@/features/supply-operations/server/db/opening-stock-corrections";
 import { beginOpeningStockCorrection, saveOpeningStockCorrection, postOpeningStockCorrection, discardOpeningStockCorrection, createItemWithConversions } from "@/features/supply-operations/server";
-import { openingStockToday } from "@/features/supply-operations/domain/opening-stock";
-import type { OpeningStockResult } from "@/features/supply-operations/opening-stock-types";
 
-function value<T>(result: OpeningStockResult<T>) { if (!result.ok) throw Error(result.error); return result.value; }
-async function fixture() {
-  const key = crypto.randomUUID();
-  const admin = { id: `admin-${key}`, name: "Opening administrator", username: `admin-${key}` };
-  const staff = { id: `staff-${key}`, name: "Kitchen staff", username: `staff-${key}` };
-  await prisma.user.createMany({ data: [admin, staff].map((actor) => ({ ...actor, email: `${actor.id}@test.local`, role: actor === admin ? "admin" : "staff" })) });
-  const item = await prisma.item.create({ data: { id: `rice-${key}`, name: `Rice ${key}`, normalizedName: `rice ${key}`, categoryId: "default-category-staples-dry-goods", baseUnitId: "default-unit-kilogram", reorderLevel: "10" } });
-  const line = { id: crypto.randomUUID(), itemId: item.id, selectedUnitId: item.baseUnitId, conversionId: null, quantity: "75", openingUnitCost: "50", zeroCostReason: "" };
-  const today = openingStockToday();
-  const yesterday = new Date(`${today}T00:00:00Z`); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const countDate = yesterday.toISOString().slice(0, 10);
-  const attemptId = crypto.randomUUID();
-  const begun = value(await beginOpeningStock(admin, { attemptId, revision: 0 }));
-  const save = async (patch = {}) => value(await saveOpeningStockDraft(admin, { attemptId, revision: begun.revision, countDate, note: "Physical count sheet", lines: [line], ...patch }));
-  const context = { activityDesignId: `design-${key}`, activityId: `activity-${key}`, mealScheduleId: `meal-${key}` };
-  await prisma.activityDesign.create({ data: { id: context.activityDesignId, activityDesignNo: `AD-${key}`, title: "Opening stock event", fiscalYear: Number(today.slice(0, 4)) } });
-  await prisma.activity.create({ data: { id: context.activityId, activityDesignId: context.activityDesignId, name: `Opening meal ${key}`, officeName: "Kitchen", scheduledDate: new Date(`${today}T00:00:00Z`), plannedBudgetCentavos: BigInt(1000000) } });
-  await prisma.mealSchedule.create({ data: { id: context.mealScheduleId, activityId: context.activityId, label: "Lunch", mealTime: "12:00" } });
-  const vendor = await prisma.vendor.create({ data: { id: `vendor-${key}`, name: `Vendor ${key}`, normalizedName: `vendor ${key}` } });
-  const po = await prisma.purchaseOrder.create({ data: { id: `po-${key}`, purchaseOrderNo: `PO-${key}`, normalizedPurchaseOrderNo: `po-${key}`, vendorId: vendor.id } });
-  const receipt = { purchaseOrderId: po.id, receiptNo: `DR-${key}`, receiptDate: today, lines: [{ itemId: item.id, selectedUnitId: item.baseUnitId, quantity: "25", unitPrice: "60" }] };
-  const issue = async (quantity: string, meal = context) => {
-    const draft = await saveIssuanceDraft(staff, meal, { revision: 0, mealPax: 1, recipes: [], stockItems: [{ itemId: item.id, conversionId: null, enteredQuantity: quantity }] });
-    if (!draft.ok) throw Error(draft.error);
-    return postIssuance(staff, meal, { revision: draft.value.draft.revision });
-  };
-  const report = async () => {
-    const result = await getKitchenDashboard(staff, { start: countDate, end: today }, new Date(Date.now() + 1000));
-    if (!result.ok) throw Error(result.error);
-    return result.report.budgets.rows.find((row) => row.id === context.activityId)!;
-  };
-  return { admin, staff, item, line, attemptId, begun, save, context, receipt, issue, report, countDate };
-}
+const fixture = () => openingStockPostingFixture({ activitySearch: false });
 
 beforeEach(async () => {
  await prisma.openingStockWithdrawal.deleteMany(); await prisma.inventoryLedgerMovement.deleteMany(); await prisma.openingStockSource.deleteMany(); await prisma.openingStockCorrectionLine.deleteMany(); await prisma.openingStockCorrection.deleteMany(); await prisma.openingStockLine.deleteMany(); await prisma.openingStockDiscard.deleteMany(); await prisma.openingStockSetup.deleteMany();
