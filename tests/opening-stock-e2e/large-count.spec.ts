@@ -36,6 +36,18 @@ test("a saved twenty-line count keeps long labels, review actions and keyboard f
   for (const width of [1440, 320]) {
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    // Exact product of 0.123456789123456789 and 12.34, without rounding.
+    const amounts = page.getByText("₱1.52345677778345677626", { exact: true }).filter({ visible: true });
+    await expect(amounts).toHaveCount(20);
+    expect(await amounts.evaluateAll(elements => elements.every(element => {
+      const bounds = element.getBoundingClientRect();
+      const card = element.closest('[data-slot="card"]')?.getBoundingClientRect();
+      return element.scrollWidth <= element.clientWidth && (!card || bounds.right <= card.right);
+    }))).toBe(true);
+    if (width === 320) {
+      await amounts.last().scrollIntoViewIfNeeded();
+      await expect(amounts.last()).toBeInViewport();
+    }
     await page.screenshot({ path: info.outputPath(`large-count-${width}.png`) });
     await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
     const review = page.getByRole("dialog", { name: "Review opening stock", exact: true });
