@@ -28,6 +28,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await page.getByRole("button", { name: "Post opening stock", exact: true }).click();
   await expect(page.getByRole("heading", { name: "OS-0001", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Record correction", exact: true }).click();
+  await page.getByRole("button", { name: "Add omitted stock", exact: true }).click();
   let editor = page.getByRole("dialog", { name: "Add omitted stock", exact: true });
   await expect(editor).toBeVisible();
   await editor.getByRole("button", { name: "Add items", exact: true }).click();
@@ -96,6 +97,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await expect(page.getByRole("heading", { name: "Original counted quantities", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Current opening-derived stock", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Record correction", exact: true }).click();
+  await page.getByRole("button", { name: "Add omitted stock", exact: true }).click();
   editor = page.getByRole("dialog", { name: "Add omitted stock", exact: true });
   await editor.getByRole("textbox", { name: "Reason for correction", exact: true }).fill("Private administrator draft");
   await editor.getByRole("button", { name: "Save draft", exact: true }).click();

@@ -37,6 +37,14 @@ it("adds opening sources without altering existing receipt, issuance, draft or l
     insert.run("opening-in", null, null, "new-source", "stock-in");
     expect(() => insert.run("duplicate-opening", null, null, "new-source", "stock-in")).toThrow(/UNIQUE/);
     expect(() => db.exec("DELETE FROM opening_stock_source WHERE id='new-source'")).toThrow(/FOREIGN KEY/);
+    const beforeCorrections = read();
+    for (const entry of readdirSync(directory, { withFileTypes: true }).filter((entry) => entry.isDirectory() && entry.name > current).sort((a, b) => a.name.localeCompare(b.name))) db.exec(readFileSync(join(directory, entry.name, "migration.sql"), "utf8"));
+    expect(read()).toEqual(beforeCorrections);
+    expect(db.prepare("SELECT openingStockSourceId,openingStockCorrectionLineId FROM inventory_ledger_movement WHERE id IN ('migration-in','migration-out') ORDER BY id").all()).toEqual([
+      { openingStockSourceId: null, openingStockCorrectionLineId: null },
+      { openingStockSourceId: null, openingStockCorrectionLineId: null },
+    ]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM opening_stock_source WHERE openingStockLineId IS NOT NULL OR correctionLineId IS NOT NULL").get()).toEqual({ count: 0 });
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally { db.close(); }
 });

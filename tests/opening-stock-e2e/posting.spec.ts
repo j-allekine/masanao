@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
-const rice = "opening-post-rice";
+let rice = "";
 const salt = "opening-post-salt";
 const mealPath = "/activity-designs/opening-post-design/activities/opening-post-activity/meal-schedules/opening-post-meal";
 
@@ -10,12 +10,9 @@ test.beforeAll(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec(`
     INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
-    VALUES ('${rice}','Posting Rice','posting rice','default-category-staples-dry-goods','default-unit-kilogram','10',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP),
-    ('${salt}','Posting Salt','posting salt','default-category-staples-dry-goods','default-unit-kilogram','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
+    VALUES ('${salt}','Posting Salt','posting salt','default-category-staples-dry-goods','default-unit-kilogram','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO unit (id,name,normalizedName,abbreviation,normalizedAbbreviation,active,createdAt,updatedAt)
     VALUES ('opening-post-sack','Posting Sack','posting sack','posting-sack','posting-sack',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO item_unit_conversion (id,itemId,alternateUnitId,baseUnitQuantity,createdAt,updatedAt)
-    VALUES ('opening-post-conversion','${rice}','opening-post-sack','25',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO activity_design (id,activityDesignNo,fiscalYear,title,createdAt,updatedAt)
     VALUES ('opening-post-design','AD-OPENING-POST',2026,'Opening supplies',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO activity (id,activityDesignId,name,officeName,scheduledDate,plannedParticipantCount,plannedBudgetCentavos,createdAt,updatedAt)
@@ -27,13 +24,34 @@ test.beforeAll(() => {
 });
 
 test("same-Item cost lines survive reload and create distinct mixed-source issuance evidence on desktop and mobile", async ({ page }, testInfo) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
+  page.setDefaultTimeout(20_000);
   expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/inventory/opening-stock");
+  await page.goto("/inventory");
+  await page.getByRole("button", { name: "Opening Stock", exact: true }).click();
   await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
-  for (const name of ["Posting Rice", "Posting Salt"]) {
+  await page.getByRole("button", { name: "Add items", exact: true }).click();
+  await page.getByLabel("Search Items", { exact: true }).fill("Posting Rice");
+  await page.getByRole("button", { name: "Create Item: Posting Rice", exact: true }).click();
+  const itemEditor = page.getByRole("dialog", { name: "Create Item", exact: true });
+  await itemEditor.getByRole("combobox", { name: "Category", exact: true }).click();
+  await page.getByRole("option", { name: "Staples & Dry Goods", exact: true }).click();
+  await itemEditor.getByRole("combobox", { name: "Base Unit", exact: true }).click();
+  await page.getByRole("option", { name: "Kilogram (kg)", exact: true }).click();
+  await itemEditor.getByLabel("Reorder level", { exact: false }).fill("10");
+  await itemEditor.getByRole("button", { name: "Add alternate Unit", exact: true }).click();
+  await itemEditor.getByRole("combobox", { name: "Alternate Unit 1", exact: true }).click();
+  await page.getByRole("option", { name: "Posting Sack (posting-sack)", exact: true }).click();
+  await itemEditor.getByRole("textbox", { name: "Base Unit quantity 1", exact: true }).fill("25");
+  await itemEditor.getByRole("button", { name: "Create Item", exact: true }).click();
+  await expect(itemEditor).toBeHidden();
+  const catalog = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  rice = (catalog.prepare("SELECT id FROM item WHERE name = 'Posting Rice'").get() as { id: string }).id;
+  expect(rice).toBeTruthy();
+  catalog.close();
+  for (const name of ["Posting Salt"]) {
     await page.getByRole("button", { name: "Add items", exact: true }).click();
     await page.getByLabel("Search Items", { exact: true }).fill(name);
     await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${name} Staples & Dry Goods`) }).click();
@@ -92,20 +110,23 @@ test("same-Item cost lines survive reload and create distinct mixed-source issua
   await expect(page.getByRole("button", { name: "Save draft", exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("opening-post-record-mobile.png"), fullPage: true });
 
-  // Fixture-only later receipt exercises mixed-source issuance through the real UI.
+  // Procurement masters are fixtures; receiving and stock effects use the real UI.
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec(`
     INSERT INTO vendor (id,name,normalizedName,isActive,createdAt,updatedAt) VALUES ('opening-post-vendor','Opening Supplier','opening supplier',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
     INSERT INTO purchase_order (id,purchaseOrderNo,normalizedPurchaseOrderNo,vendorId,createdAt,updatedAt) VALUES ('opening-post-po','PO-AFTER-OPENING','po-after-opening','opening-post-vendor',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO delivery_receipt (id,purchaseOrderId,vendorId,vendorName,purchaseOrderNo,receiptNo,normalizedReceiptNo,receiptDate,postedAt)
-    VALUES ('opening-post-receipt','opening-post-po','opening-post-vendor','Opening Supplier','PO-AFTER-OPENING','DR-AFTER-OPENING','dr-after-opening',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);
-    INSERT INTO delivery_receipt_line (id,deliveryReceiptId,itemId,selectedUnitId,baseUnitId,itemName,selectedUnitName,baseUnitName,enteredQuantity,conversionFactor,calculatedBaseUnitQuantity,unitPrice,lineAmount)
-    VALUES ('opening-post-receipt-line','opening-post-receipt','${rice}','default-unit-kilogram','default-unit-kilogram','Posting Rice','Kilogram','Kilogram','25','1','25','60','1500');
-    INSERT INTO inventory_ledger_movement (id,deliveryReceiptLineId,itemId,baseUnitId,quantity,movementType,occurredAt)
-    VALUES ('opening-post-receipt-movement','opening-post-receipt-line','${rice}','default-unit-kilogram','25','stock-in',CURRENT_TIMESTAMP);
   `);
   db.close();
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/purchase-orders/opening-post-po/record-delivery");
+  await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
+  await page.getByRole("textbox", { name: "Receipt number", exact: true }).fill("DR-AFTER-OPENING");
+  await page.getByRole("combobox", { name: "Item", exact: true }).fill("Posting Rice");
+  await page.getByRole("option", { name: "Posting Rice", exact: true }).click();
+  await page.getByLabel("Quantity", { exact: true }).fill("25");
+  await page.getByLabel("Unit price", { exact: true }).fill("60");
+  await page.getByRole("button", { name: "Post delivery", exact: true }).click();
+  await expect(page).toHaveURL(/\/purchase-orders\/opening-post-po#delivery-receipt-/, { timeout: 30_000 });
   await page.goto(mealPath);
   await expect(page.locator('[data-issuance-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Add Stock item", exact: true }).click();
@@ -138,4 +159,63 @@ test("same-Item cost lines survive reload and create distinct mixed-source issua
   const zero = page.getByRole("dialog", { name: "Details for Posting Salt", exact: true });
   await expect(zero.getByRole("list", { name: "Opening Stock allocations" })).toContainText("₱0.00");
   await expect(zero.getByRole("heading", { name: "Receipt sources", exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.goto("/inventory/opening-stock");
+  await expect(page.locator('[data-opening-corrections-ready="true"]')).toBeVisible();
+  await page.getByRole("button", { name: "Record correction", exact: true }).click();
+  await page.getByRole("button", { name: "Add omitted stock", exact: true }).click();
+  let correction = page.getByRole("dialog", { name: "Add omitted stock", exact: true });
+  await correction.getByRole("textbox", { name: "Reason for correction", exact: true }).fill("A sealed container present at the count was omitted from its sheet.");
+  await correction.getByRole("button", { name: "Add items", exact: true }).click();
+  const omittedPicker = page.getByRole("dialog", { name: "Add omitted Item", exact: true });
+  await omittedPicker.getByRole("textbox", { name: "Search Items", exact: true }).fill("Posting Rice");
+  await omittedPicker.getByRole("button", { name: /^Posting Rice / }).click();
+  await correction.getByRole("textbox", { name: "Added quantity", exact: true }).fill("6");
+  await correction.getByRole("textbox", { name: "Opening unit cost", exact: true }).fill("70");
+  await correction.getByRole("button", { name: "Review correction", exact: true }).click();
+  let correctionReview = page.getByRole("dialog", { name: "Review correction", exact: true });
+  await expect(correctionReview).toContainText("+6 kg");
+  await correctionReview.getByRole("button", { name: "Post correction", exact: true }).click();
+  await page.getByRole("dialog", { name: /OS-0001-C/ }).getByRole("button", { name: "Close", exact: true }).last().click();
+  for (const kind of ["Reduce remaining stock", "Correct remaining cost"]) {
+    await page.getByRole("button", { name: "Record correction", exact: true }).click();
+    await page.getByRole("button", { name: kind, exact: true }).click();
+    correction = page.getByRole("dialog", { name: kind, exact: true });
+    await correction.getByRole("textbox", { name: "Reason for correction", exact: true }).fill(kind === "Reduce remaining stock" ? "Recount removed one kilogram that was entered twice." : "Correct the supported price of the entire remaining container.");
+    await correction.getByRole("button", { name: "Select source lines", exact: true }).click();
+    const sourcePicker = page.getByRole("dialog", { name: "Select source line", exact: true });
+    await sourcePicker.getByRole("button", { name: /Posting Rice.*source 4/ }).click();
+    if (kind === "Reduce remaining stock") await correction.getByLabel("Reduction quantity (kg)", { exact: true }).fill("1");
+    else await correction.getByLabel("Replacement cost per Base Unit (kg)", { exact: true }).fill("80");
+    await correction.getByRole("button", { name: "Review correction", exact: true }).click();
+    correctionReview = page.getByRole("dialog", { name: "Review correction", exact: true });
+    if (kind === "Reduce remaining stock") await expect(correctionReview).toContainText("After: 5 kg");
+    else {
+      await expect(correctionReview).toContainText("Quantity before and after: 5 kg → 5 kg");
+      await expect(correctionReview).toContainText("Replacement value: ₱400");
+    }
+    expect(await correctionReview.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`journey-${kind === "Reduce remaining stock" ? "reduction" : "replacement"}-320.png`), fullPage: true });
+    await correctionReview.getByRole("button", { name: "Post correction", exact: true }).click();
+    await page.getByRole("dialog", { name: /OS-0001-C/ }).getByRole("button", { name: "Close", exact: true }).last().click();
+  }
+  await expect(page.getByRole("button", { name: "View correction", exact: true })).toHaveCount(3);
+  await page.screenshot({ path: testInfo.outputPath("journey-history-320.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/inventory?q=Posting%20Rice");
+  await expect(page.locator('[data-inventory-ready="true"]')).toBeVisible();
+  const inventoryRice = page.getByRole("row").filter({ hasText: "Posting Rice" });
+  await expect(inventoryRice).toContainText("25 kg");
+  await inventoryRice.getByRole("button", { name: /Display unit for Posting Rice/ }).click();
+  await page.getByRole("menuitemradio", { name: "Posting Sack", exact: true }).click();
+  await expect(inventoryRice).toContainText("1 posting-sack");
+  await page.screenshot({ path: testInfo.outputPath("journey-inventory-1440.png"), fullPage: true });
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("journey-inventory-320.png"), fullPage: true });
+  await page.goto("/dashboard");
+  await expect(page.locator('[data-dashboard-ready="true"]')).toBeVisible();
+  await expect(page.getByRole("link", { name: "Opening supplies meal", exact: true })).toBeVisible();
+  await expect(page.getByText("₱4,175.00", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("journey-dashboard-320.png"), fullPage: true });
 });
