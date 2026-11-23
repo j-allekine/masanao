@@ -3,8 +3,8 @@ import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 import type { OpeningStockResult, OpeningStockSaveInput, OpeningStockWorkspace } from "../../opening-stock-types";
-import { openingStockProduct, openingStockToday, validOpeningStockDate } from "../../domain/opening-stock";
-import { compareRational, decimalRational } from "@/features/issuance/domain/rational";
+import { openingStockToday, validOpeningStockDate } from "../../domain/opening-stock";
+import { openingLineSnapshot, readOpeningLineSelection, validateOpeningLineForPosting } from "./opening-stock-lines";
 import { readOpeningStockCorrectionHistory } from "./opening-stock-corrections";
 import { OpeningStockSourceError } from "./opening-stock-sources";
 import { listItemRecords } from "./items";
@@ -78,26 +78,7 @@ export async function postOpeningStockRecord(actor: CurrentActor | null | undefi
     if (await database.inventoryLedgerMovement.findFirst({ select: { id: true } })) rejectOpeningStock("history", "Existing posted stock prevents an opening balance. No records have been changed.");
     const postedAt = new Date();
     for (const [index, line] of setup.lines.entries()) {
-      const fields: Record<string, string> = {};
-      let quantityValid = false; let costValid = false;
-      try { quantityValid = decimalRational(line.quantity).numerator > BigInt(0); } catch {}
-      try { costValid = line.openingUnitCost !== "" && decimalRational(line.openingUnitCost).numerator >= BigInt(0); } catch {}
-      if (!quantityValid) fields[`lines.${index}.quantity`] = "Enter a positive counted quantity.";
-      if (!costValid) fields[`lines.${index}.openingUnitCost`] = "Enter an explicit opening unit cost of zero or more.";
-      if (costValid && decimalRational(line.openingUnitCost).numerator === BigInt(0)) {
-        if (!line.zeroCostReason.trim()) fields[`lines.${index}.zeroCostReason`] = "Explain the assigned zero cost.";
-        if (!input.zeroCostAcknowledged) fields.zeroCostAcknowledged = "Acknowledge the zero-cost lines in review.";
-      }
-      if (Object.keys(fields).length) rejectOpeningStock("validation", "Complete the highlighted count fields before posting.", fields);
-      const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, include: { baseUnit: true } });
-      const selected = await database.unit.findFirst({ where: { id: line.selectedUnitId, active: true } });
-      if (!item?.baseUnit.active || !selected || item.baseUnitId !== line.baseUnitId) rejectOpeningStock("reference", `${line.itemName}: Item or units changed. Reselect and review this line.`);
-      const conversion = line.conversionId ? await database.itemUnitConversion.findFirst({ where: { id: line.conversionId, itemId: line.itemId, alternateUnitId: line.selectedUnitId } }) : null;
-      const base = !line.conversionId && line.selectedUnitId === item.baseUnitId;
-      if ((!base && !conversion) || (conversion && compareRational(decimalRational(conversion.baseUnitQuantity), decimalRational(line.conversionFactor)) !== 0)) rejectOpeningStock("reference", `${line.itemName}: its conversion changed. Remove and reselect the Item, then review its count.`);
-      const quantity = openingStockProduct(line.quantity, line.conversionFactor);
-      const amount = openingStockProduct(line.quantity, line.openingUnitCost);
-      if (!quantity || !amount || decimalRational(quantity).numerator <= BigInt(0) || quantity !== line.calculatedBaseUnitQuantity || amount !== line.lineAmount) rejectOpeningStock("reference", `${line.itemName}: count evidence is incomplete. Save and review the line again.`);
+      const { item, selected, quantity, amount } = await validateOpeningLineForPosting(database, line, index, input.zeroCostAcknowledged, "count", rejectOpeningStock);
       await database.openingStockLine.update({ where: { id: line.id }, data: { itemName: item.name, selectedUnitName: selected.name, selectedUnitAbbreviation: selected.abbreviation, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation } });
       const source = await database.openingStockSource.create({ data: { id: crypto.randomUUID(), openingStockId: setup.id, openingStockLineId: line.id, itemId: line.itemId, baseUnitId: line.baseUnitId, itemName: item.name, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation, reference: setup.reference, countDate: setup.countDate, position: line.position, quantity, amount, postedAt } });
       await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockSourceId: source.id, itemId: line.itemId, baseUnitId: line.baseUnitId, quantity, movementType: "stock-in", occurredAt: new Date(`${setup.countDate}T00:00:00.000Z`) } });
@@ -127,21 +108,12 @@ export async function saveOpeningStockRecord(actor: CurrentActor | null | undefi
     if (setup.status !== "draft" || setup.attemptId !== input.attemptId || setup.revision !== input.revision) rejectOpeningStock("conflict", "This draft changed or was discarded. Reopen Opening Stock and review before saving.");
     const lines = [];
     for (const [position, line] of input.lines.entries()) {
-      const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, include: { baseUnit: true, unitConversions: { include: { alternateUnit: true } } } });
-      if (!item || !item.baseUnit.active) rejectOpeningStock("reference", `Line ${position + 1}: select an active Item and Base Unit.`);
-      const conversion = line.conversionId ? item.unitConversions.find((entry) => entry.id === line.conversionId && entry.alternateUnitId === line.selectedUnitId && entry.alternateUnit.active) : null;
-      const base = line.selectedUnitId === item.baseUnitId && line.conversionId === null;
-      if (!base && !conversion) rejectOpeningStock("reference", `${item.name}: the selected unit is unavailable. Select it again and review the conversion.`);
+      const selection = await readOpeningLineSelection(database, line, position, rejectOpeningStock, name => `${name}: the selected unit is unavailable. Select it again and review the conversion.`);
+      const { item } = selection;
       const previous = setup.lines.find((entry) => entry.id === line.id);
       if (previous && previous.itemId !== line.itemId) rejectOpeningStock("reference", "A saved count line cannot change its Item. Remove it and add the intended Item.");
       if (previous && previous.baseUnitId !== item.baseUnitId) rejectOpeningStock("reference", `${item.name}: its Base Unit changed. Remove and reselect the Item.`);
-      const unchanged = previous && previous.selectedUnitId === line.selectedUnitId && previous.conversionId === line.conversionId;
-      const selected = conversion?.alternateUnit ?? item.baseUnit;
-      const conversionFactor = unchanged ? previous.conversionFactor : conversion?.baseUnitQuantity ?? "1";
-      lines.push({ ...line, position, openingStockId: OPENING_STOCK_ID, itemName: unchanged ? previous.itemName : item.name,
-        selectedUnitName: unchanged ? previous.selectedUnitName : selected.name, selectedUnitAbbreviation: unchanged ? previous.selectedUnitAbbreviation : selected.abbreviation,
-        baseUnitId: item.baseUnitId, baseUnitName: unchanged ? previous.baseUnitName : item.baseUnit.name, baseUnitAbbreviation: unchanged ? previous.baseUnitAbbreviation : item.baseUnit.abbreviation,
-        conversionFactor, calculatedBaseUnitQuantity: openingStockProduct(line.quantity, conversionFactor), lineAmount: line.openingUnitCost === "" ? null : openingStockProduct(line.quantity, line.openingUnitCost) });
+      lines.push({ ...line, position, openingStockId: OPENING_STOCK_ID, ...openingLineSnapshot(line, previous, selection) });
     }
     await database.openingStockLine.deleteMany({ where: { openingStockId: OPENING_STOCK_ID, id: { notIn: lines.map((line) => line.id) } } });
     for (const line of lines) {

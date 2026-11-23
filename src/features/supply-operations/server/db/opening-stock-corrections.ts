@@ -1,4 +1,5 @@
 import "server-only";
+import { openingLineSnapshot, readOpeningLineSelection, validateOpeningLineForPosting } from "./opening-stock-lines";
 import type { Prisma } from "@/prisma/generated/client";
 import type { CurrentActor } from "@/server/auth";
 import type { OpeningStockCorrectionSaveInput, OpeningStockCorrection, OpeningStockSourceSummary } from "../../opening-stock-correction-types";
@@ -66,20 +67,15 @@ export async function saveOpeningStockCorrectionRecord(actor: CurrentActor | nul
       if ("sourceId" in line) reject("validation", "Select an Item for omitted stock.");
       const owner = await database.openingStockCorrectionLine.findUnique({ where: { id: line.id }, select: { correctionId: true } });
       if (owner && owner.correctionId !== record.id) reject("reference", "A correction line belongs to another record. Add the Item again.");
-      const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, include: { baseUnit: true, unitConversions: { include: { alternateUnit: true } } } });
-      if (!item?.baseUnit.active) reject("reference", `Line ${position + 1}: select an active Item and Base Unit.`);
-      const conversion = line.conversionId ? item.unitConversions.find(c => c.id === line.conversionId && c.alternateUnitId === line.selectedUnitId && c.alternateUnit.active) : null;
-      if (!(line.conversionId === null && line.selectedUnitId === item.baseUnitId) && !conversion) reject("reference", `${item.name}: select an available unit again.`);
+      const selection = await readOpeningLineSelection(database, line, position, reject, name => `${name}: select an available unit again.`);
+      const { item } = selection;
       const previous = record.lines.find(entry => entry.id === line.id);
       if (previous && (previous.itemId !== item.id || previous.baseUnitId !== item.baseUnitId)) reject("reference", "Item or Base Unit changed. Remove and reselect the line.");
-      const unchanged = previous && previous.selectedUnitId === line.selectedUnitId && previous.conversionId === line.conversionId;
-      const unit = conversion?.alternateUnit ?? item.baseUnit;
-      const conversionFactor = unchanged ? previous.conversionFactor : conversion?.baseUnitQuantity ?? "1";
-      const calculatedBaseUnitQuantity = openingStockProduct(line.quantity, conversionFactor);
-      const lineAmount = line.openingUnitCost === "" ? null : openingStockProduct(line.quantity, line.openingUnitCost);
+      const snapshot = openingLineSnapshot(line, previous, selection);
+      const { calculatedBaseUnitQuantity, lineAmount } = snapshot;
       const context = contexts.get(item.id) ?? await currentContext(database, item.id);
       const addedCentavos = lineAmount !== null && calculatedBaseUnitQuantity && decimalRational(calculatedBaseUnitQuantity).numerator > BigInt(0) ? allocatedSupplyCost(lineAmount, calculatedBaseUnitQuantity, "0", calculatedBaseUnitQuantity) : null;
-      lines.push({ ...line, correctionId: record.id, position, itemName: unchanged ? previous.itemName : item.name, selectedUnitName: unchanged ? previous.selectedUnitName : unit.name, selectedUnitAbbreviation: unchanged ? previous.selectedUnitAbbreviation : unit.abbreviation, baseUnitId: item.baseUnitId, baseUnitName: unchanged ? previous.baseUnitName : item.baseUnit.name, baseUnitAbbreviation: unchanged ? previous.baseUnitAbbreviation : item.baseUnit.abbreviation, conversionFactor, calculatedBaseUnitQuantity, lineAmount, ...context, afterQuantity: calculatedBaseUnitQuantity ? finiteDecimal(addRational(decimalRational(context.beforeQuantity), decimalRational(calculatedBaseUnitQuantity))) : null, afterValueCentavos: addedCentavos === null ? null : (BigInt(context.beforeValueCentavos) + BigInt(addedCentavos)).toString() });
+      lines.push({ ...line, correctionId: record.id, position, ...snapshot, ...context, afterQuantity: calculatedBaseUnitQuantity ? finiteDecimal(addRational(decimalRational(context.beforeQuantity), decimalRational(calculatedBaseUnitQuantity))) : null, afterValueCentavos: addedCentavos === null ? null : (BigInt(context.beforeValueCentavos) + BigInt(addedCentavos)).toString() });
     // A later same-Item line starts after earlier additions in this correction.
       const priorLine = lines.at(-1);
       if (priorLine && priorLine.afterQuantity !== null && priorLine.afterValueCentavos !== null) contexts.set(priorLine.itemId, { beforeQuantity: priorLine.afterQuantity!, beforeValueCentavos: priorLine.afterValueCentavos!, sourceState: priorLine.sourceState });
@@ -107,23 +103,7 @@ export async function postOpeningStockCorrectionRecord(actor: CurrentActor | nul
       if (current.sourceState !== line.sourceState) reject("conflict", `${line.itemName}: remaining opening stock changed. Save and review the correction again.`);
     }
     for (const [index, line] of record.lines.entries()) {
-      const fields: Record<string, string> = {};
-      let positiveQuantity = false; let nonnegativeCost = false;
-      try { positiveQuantity = decimalRational(line.quantity).numerator > BigInt(0); } catch {}
-      try { nonnegativeCost = line.openingUnitCost !== "" && decimalRational(line.openingUnitCost).numerator >= BigInt(0); } catch {}
-      if (!positiveQuantity) fields[`lines.${index}.quantity`] = "Enter a positive quantity.";
-      if (!nonnegativeCost) fields[`lines.${index}.openingUnitCost`] = "Enter an explicit cost of zero or more.";
-      else if (decimalRational(line.openingUnitCost).numerator === BigInt(0)) {
-        if (!line.zeroCostReason.trim()) fields[`lines.${index}.zeroCostReason`] = "Explain the assigned zero cost.";
-        if (!input.zeroCostAcknowledged) fields.zeroCostAcknowledged = "Acknowledge zero-cost lines in review.";
-      }
-      if (Object.keys(fields).length) reject("validation", "Complete the correction fields before posting.", fields);
-      const item = await database.item.findFirst({ where: { id: line.itemId, isActive: true }, include: { baseUnit: true } });
-      const unit = await database.unit.findFirst({ where: { id: line.selectedUnitId, active: true } });
-      const conversion = line.conversionId ? await database.itemUnitConversion.findFirst({ where: { id: line.conversionId, itemId: line.itemId, alternateUnitId: line.selectedUnitId } }) : null;
-      if (!item?.baseUnit.active || !unit || item.baseUnitId !== line.baseUnitId || (line.conversionId ? !conversion || compareRational(decimalRational(conversion.baseUnitQuantity), decimalRational(line.conversionFactor)) !== 0 : line.selectedUnitId !== item.baseUnitId || line.conversionFactor !== "1")) reject("reference", `${line.itemName}: Item or conversion changed. Remove and reselect the line, then review.`);
-      const quantity = openingStockProduct(line.quantity, line.conversionFactor); const amount = openingStockProduct(line.quantity, line.openingUnitCost);
-      if (!quantity || amount === null || quantity !== line.calculatedBaseUnitQuantity || amount !== line.lineAmount) reject("reference", "Correction quantity or value evidence is incomplete. Save and review again.");
+      const { item, selected: unit, quantity, amount } = await validateOpeningLineForPosting(database, line, index, input.zeroCostAcknowledged, "omitted", reject);
       await database.openingStockCorrectionLine.update({ where: { id: line.id }, data: { itemName: item.name, selectedUnitName: unit.name, selectedUnitAbbreviation: unit.abbreviation, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation } });
       const source = await database.openingStockSource.create({ data: { id: crypto.randomUUID(), openingStockId: setup.id, correctionLineId: line.id, itemId: item.id, baseUnitId: item.baseUnitId, itemName: item.name, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation, reference: record.reference, countDate: setup.countDate, position: ++position, quantity, amount, postedAt } });
       await database.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), openingStockSourceId: source.id, itemId: item.id, baseUnitId: item.baseUnitId, quantity, movementType: "stock-in", occurredAt: postedAt } });
