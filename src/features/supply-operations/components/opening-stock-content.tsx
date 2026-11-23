@@ -20,9 +20,9 @@ import WorkspaceTableFrame from "@/components/workspace/table-frame";
 import { useEditorNavigationGuard } from "@/hooks/use-editor-navigation-guard";
 import { formatDisplayNumber } from "@/lib/format-display-number";
 import { beginOpeningStockAction, discardOpeningStockDraftAction, postOpeningStockAction, saveOpeningStockDraftAction } from "../actions";
-import { openingStockProduct, openingStockToday } from "../domain/opening-stock";
+import { openingStockProduct, openingStockToday, openingStockUnitSelection } from "../domain/opening-stock";
 import type { OpeningStockLine, OpeningStockWorkspace } from "../opening-stock-types";
-import type { CategoryListItem, ItemListItem, UnitListItem } from "../types";
+import type { CategoryListItem, ItemListItem, UnitListItem, ItemUnitConversionListItem } from "../types";
 import OpeningStockCorrections from "./opening-stock-corrections";
 import OpeningStockItemEditor from "./opening-stock-item-editor";
 import ItemUnitsSheet from "./item-units-sheet";
@@ -89,7 +89,9 @@ export default function OpeningStockContent({ workspace: initial, categories, un
     startTransition(async () => {
       const result = await saveOpeningStockDraftAction({ attemptId: workspace.attemptId, revision: workspace.revision, countDate, note, lines });
       if (!result.ok) { failure(result.error, result.fields); return; }
-      setWorkspace({ ...workspace, revision: result.value.revision }); setSavedSignature(signature); setFields({}); setError(""); setMessage("Opening Stock draft saved. No stock has moved.");
+      const savedLines = result.value.lines;
+      setLines(savedLines); setWorkspace({ ...workspace, revision: result.value.revision, lines: savedLines });
+      setSavedSignature(JSON.stringify({ countDate, note, lines: savedLines })); setFields({}); setError(""); setMessage("Opening Stock draft saved. No stock has moved.");
       if (openReview) { setZeroAcknowledged(false); setPostingError(""); setReviewOpen(true); }
     });
   }
@@ -145,11 +147,18 @@ export default function OpeningStockContent({ workspace: initial, categories, un
   }
   function unitInput(line: OpeningStockLine, prefix: string) {
     const item = workspace.items.find((entry) => entry.id === line.itemId);
-    const options = [{ value: "base", label: line.baseUnitAbbreviation }, ...(item?.unitConversions ?? []).filter((entry) => entry.alternateUnit.active).map((entry) => ({ value: entry.id, label: entry.label }))];
+    const savedLine = workspace.lines.find((entry) => entry.id === line.id);
+    const selection = (conversion?: ItemUnitConversionListItem) => openingStockUnitSelection(savedLine, {
+      conversionId: conversion?.id ?? null, selectedUnitId: conversion?.alternateUnit.id ?? line.baseUnitId,
+      selectedUnitName: conversion?.alternateUnit.name ?? line.baseUnitName, selectedUnitAbbreviation: conversion?.alternateUnit.abbreviation ?? line.baseUnitAbbreviation, conversionFactor: conversion?.baseUnitQuantity ?? "1",
+    });
+    const options = [{ value: "base", label: line.baseUnitAbbreviation, selection: selection() }, ...(item?.unitConversions ?? []).filter((entry) => entry.alternateUnit.active).map((entry) => {
+      const unit = selection(entry);
+      return { value: entry.id, label: `${unit.selectedUnitName} (${formatDisplayNumber(unit.conversionFactor)} ${line.baseUnitAbbreviation})`, selection: unit };
+    })];
     return <div className="flex min-w-0 flex-col gap-1"><Select items={options} value={line.conversionId ?? "base"} disabled={!editing || pending} onValueChange={(value) => {
-      const conversion = item?.unitConversions?.find((entry) => entry.id === value);
-      changeLine(line.id, { conversionId: conversion?.id ?? null, selectedUnitId: conversion?.alternateUnit.id ?? line.baseUnitId,
-        selectedUnitName: conversion?.alternateUnit.name ?? line.baseUnitName, selectedUnitAbbreviation: conversion?.alternateUnit.abbreviation ?? line.baseUnitAbbreviation, conversionFactor: conversion?.baseUnitQuantity ?? "1" });
+      const option = options.find((entry) => entry.value === value);
+      if (option) changeLine(line.id, option.selection);
     }}><SelectTrigger id={`${prefix}-${line.id}-unit`} aria-label={`Unit for ${lineName(line)}`} className="w-full min-w-0"><SelectValue /></SelectTrigger><SelectContent><SelectGroup>{options.map((option) => <SelectItem value={option.value} key={option.value}>{option.label}</SelectItem>)}</SelectGroup></SelectContent></Select>{line.conversionId && <p className="text-body-sm text-muted-foreground whitespace-normal break-words">1 {line.selectedUnitName} = {formatDisplayNumber(line.conversionFactor)} {line.baseUnitAbbreviation}</p>}{editing && item && <Button type="button" variant="link" size="sm" className="w-fit px-0" disabled={pending} aria-label={`Manage units for ${line.itemName}`} onClick={(event) => { managedUnitButtonRef.current = event.currentTarget; setManagedItemId(item.id); }}>Manage units</Button>}</div>;
   }
   function zeroReason(line: OpeningStockLine, prefix: string) {

@@ -1,3 +1,4 @@
+import type { OpeningStockLine } from "../opening-stock-types";
 import { decimalRational, finiteDecimal, multiplyRational } from "@/features/issuance/domain/rational";
 
 export function openingStockToday(now = new Date()) {
@@ -16,4 +17,12 @@ export function openingStockProduct(quantity: string, factor: string): string | 
   if (!quantity) return null;
   try { return finiteDecimal(multiplyRational(decimalRational(quantity), decimalRational(factor))); }
   catch { return null; }
+}
+
+type OpeningStockUnitSnapshot = Pick<OpeningStockLine, "conversionId" | "selectedUnitId" | "selectedUnitName" | "selectedUnitAbbreviation" | "conversionFactor">;
+
+/** Match save-time semantics: an unchanged selection retains its reviewed snapshot. */
+export function openingStockUnitSelection(saved: OpeningStockUnitSnapshot | undefined, selected: OpeningStockUnitSnapshot): OpeningStockUnitSnapshot {
+  const unit = saved && saved.selectedUnitId === selected.selectedUnitId && saved.conversionId === selected.conversionId ? saved : selected;
+  return { conversionId: unit.conversionId, selectedUnitId: unit.selectedUnitId, selectedUnitName: unit.selectedUnitName, selectedUnitAbbreviation: unit.selectedUnitAbbreviation, conversionFactor: unit.conversionFactor };
 }
