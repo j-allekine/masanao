@@ -12,7 +12,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:architecture": "node --test tests/architecture-boundaries.test.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/test-e2e.mjs",
+    "test:e2e:general": "playwright test",
+    "test:e2e:opening-stock": "playwright test --config playwright.opening-stock.config.ts",
     "verify:production-sqlite": "node --experimental-strip-types scripts/verify-production-sqlite.mjs"
   },
   "dependencies": {

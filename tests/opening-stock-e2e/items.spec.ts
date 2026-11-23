@@ -1,8 +1,8 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
-test.beforeAll(() => {
+test.beforeEach(() => {
   const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   database.exec(`
     INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)

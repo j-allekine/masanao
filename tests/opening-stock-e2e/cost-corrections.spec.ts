@@ -1,11 +1,11 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
-import { postFixtureSignIn } from "./fixture-auth";
+import { expect, test } from "./fixture";
+import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const itemName = "Opening replacement supply with a deliberately long descriptive label";
-test.beforeAll(() => {
+test.beforeEach(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.prepare(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
     VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-piece','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`).run("cost-correction-item", itemName, itemName.toLowerCase());

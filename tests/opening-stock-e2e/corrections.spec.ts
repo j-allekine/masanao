@@ -1,11 +1,11 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const existing = "Correction Rice";
 const created = "Correction supplied salt with a deliberately long descriptive Item name";
 
-test.beforeAll(() => {
+test.beforeEach(() => {
   const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   database.exec(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
     VALUES ('correction-ui-rice','${existing}','correction rice','default-category-staples-dry-goods','default-unit-kilogram','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`);

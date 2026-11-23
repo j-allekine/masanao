@@ -1,8 +1,8 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
-test.beforeAll(() => {
+test.beforeEach(() => {
   const database = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   database.exec(`
     INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
@@ -26,7 +26,7 @@ test("administrator counts exact quantities, saves, recovers errors, guards navi
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
   await page.getByLabel("Search Items", { exact: true }).fill("Count Rice");
-  await page.getByRole("button", { name: /Count Rice/ }).click();
+  await page.getByRole("button", { name: /^Count Rice / }).click();
   await page.getByRole("textbox", { name: "Quantity for Count Rice", exact: true }).fill("3");
   await page.getByRole("combobox", { name: "Unit for Count Rice", exact: true }).click();
   await page.getByRole("option", { name: "Count Sack (25 kg)", exact: true }).click();
