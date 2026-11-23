@@ -3,7 +3,7 @@ import { prisma } from "@/prisma/client";
 import { beginOpeningStock, discardOpeningStockDraft, getOpeningStockWorkspace, postDeliveryReceipt, saveOpeningStockDraft } from "@/features/supply-operations/server";
 import { postIssuance } from "@/features/issuance/server";
 import type { OpeningStockResult } from "@/features/supply-operations/opening-stock-types";
-import { openingStockToday } from "@/features/supply-operations/domain/opening-stock";
+import { openingStockToday, openingStockUnitSelection } from "@/features/supply-operations/domain/opening-stock";
 
 function value<T>(result: OpeningStockResult<T>) { if (!result.ok) throw new Error(result.error); return result.value; }
 async function fixture() {
@@ -27,6 +27,26 @@ beforeEach(async () => {
 });
 
 describe("Opening Stock drafts through the public workflow", () => {
+  it("returns only canonical serialized lines and refreshes the saved unit baseline", async () => {
+    const { admin, line, item, conversion } = await fixture();
+    const attemptId = crypto.randomUUID();
+    const begun = value(await beginOpeningStock(admin, { attemptId, revision: 0 }));
+    const input = { attemptId, revision: begun.revision, countDate: "", note: "", lines: [{ ...line, quantity: "2", openingUnitCost: "10" }] };
+    const first = value(await saveOpeningStockDraft(admin, input));
+    await prisma.itemUnitConversion.update({ where: { id: conversion.id }, data: { baseUnitQuantity: "30" } });
+    const currentUnit = await prisma.unit.update({ where: { id: line.selectedUnitId }, data: { name: "Changed Sack", abbreviation: "changed" } });
+    const selected = { conversionId: conversion.id, selectedUnitId: currentUnit.id, selectedUnitName: currentUnit.name, selectedUnitAbbreviation: currentUnit.abbreviation, conversionFactor: "30" };
+    const saved = value(await saveOpeningStockDraft(admin, { ...input, revision: first.revision, lines: [{ ...input.lines[0], quantity: "3", openingUnitCost: "11" }] }));
+    expect(saved.lines[0]).toMatchObject({ quantity: "3", openingUnitCost: "11", conversionFactor: "25", calculatedBaseUnitQuantity: "75", lineAmount: "33", selectedUnitName: first.lines[0].selectedUnitName });
+    expect(saved.lines[0]).not.toHaveProperty("openingStockId");
+    expect(JSON.parse(JSON.stringify(saved.lines))).toEqual(saved.lines);
+    expect(openingStockUnitSelection(saved.lines[0], selected)).toMatchObject({ conversionFactor: "25", selectedUnitName: first.lines[0].selectedUnitName });
+    const base = value(await saveOpeningStockDraft(admin, { ...input, revision: saved.revision, lines: [{ ...input.lines[0], selectedUnitId: item.baseUnitId, conversionId: null }] }));
+    expect(openingStockUnitSelection(base.lines[0], selected)).toEqual(selected);
+    const changed = value(await saveOpeningStockDraft(admin, { ...input, revision: base.revision }));
+    expect(changed.lines[0]).toMatchObject({ conversionFactor: "30", calculatedBaseUnitQuantity: "60", lineAmount: "20", selectedUnitName: "Changed Sack", selectedUnitAbbreviation: "changed" });
+  });
+
   it("saves incomplete fields and exact converted quantities, distinguishing blank costs from zero", async () => {
     const { admin, line } = await fixture();
     const attempt = { attemptId: crypto.randomUUID(), revision: 0 };

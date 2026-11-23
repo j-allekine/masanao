@@ -2,7 +2,7 @@ import "server-only";
 import { Prisma } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
-import type { OpeningStockResult, OpeningStockSaveInput, OpeningStockWorkspace } from "../../opening-stock-types";
+import type { OpeningStockLine, OpeningStockResult, OpeningStockSaveInput, OpeningStockWorkspace } from "../../opening-stock-types";
 import { openingStockToday, validOpeningStockDate } from "../../domain/opening-stock";
 import { openingLineSnapshot, readOpeningLineSelection, validateOpeningLineForPosting } from "./opening-stock-lines";
 import { readOpeningStockCorrectionHistory } from "./opening-stock-corrections";
@@ -101,7 +101,7 @@ export async function beginOpeningStockRecord(actor: CurrentActor | null | undef
   });
 }
 
-export async function saveOpeningStockRecord(actor: CurrentActor | null | undefined, input: OpeningStockSaveInput): Promise<OpeningStockResult<{ revision: number }>> {
+export async function saveOpeningStockRecord(actor: CurrentActor | null | undefined, input: OpeningStockSaveInput): Promise<OpeningStockResult<{ revision: number; lines: OpeningStockLine[] }>> {
   return runOpeningStock(async (database) => {
     const setup = await claim(database);
     await authorizeOpeningStock(database, actor, true);
@@ -113,15 +113,15 @@ export async function saveOpeningStockRecord(actor: CurrentActor | null | undefi
       const previous = setup.lines.find((entry) => entry.id === line.id);
       if (previous && previous.itemId !== line.itemId) rejectOpeningStock("reference", "A saved count line cannot change its Item. Remove it and add the intended Item.");
       if (previous && previous.baseUnitId !== item.baseUnitId) rejectOpeningStock("reference", `${item.name}: its Base Unit changed. Remove and reselect the Item.`);
-      lines.push({ ...line, position, openingStockId: OPENING_STOCK_ID, ...openingLineSnapshot(line, previous, selection) });
+      lines.push({ ...line, position, ...openingLineSnapshot(line, previous, selection) });
     }
     await database.openingStockLine.deleteMany({ where: { openingStockId: OPENING_STOCK_ID, id: { notIn: lines.map((line) => line.id) } } });
     for (const line of lines) {
       const { id, ...data } = line;
-      await database.openingStockLine.upsert({ where: { id }, create: line, update: data });
+      await database.openingStockLine.upsert({ where: { id }, create: { ...line, openingStockId: OPENING_STOCK_ID }, update: { ...data, openingStockId: OPENING_STOCK_ID } });
     }
     const updated = await database.openingStockSetup.update({ where: { id: OPENING_STOCK_ID }, data: { countDate: input.countDate, note: input.note, revision: { increment: 1 } } });
-    return { revision: updated.revision };
+    return { revision: updated.revision, lines };
   });
 }
 
