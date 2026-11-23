@@ -1,10 +1,10 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const names = Array.from({ length: 20 }, (_, index) => `Large count ${String(index + 1).padStart(2, "0")} kitchen supply with a long descriptive package and storage label`);
 
-test.beforeAll(() => {
+test.beforeEach(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   const insert = db.prepare("INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt) VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
   for (const [index, name] of names.entries()) insert.run(`large-count-${index}`, name, name.toLowerCase());

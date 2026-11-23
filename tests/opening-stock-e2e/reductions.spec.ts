@@ -1,12 +1,12 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
-import { postFixtureSignIn } from "./fixture-auth";
+import { expect, test } from "./fixture";
+import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const itemName = "Opening reduction supply with a deliberately long descriptive label";
-test.beforeAll(() => {
-  // This suite owns the fresh database created by the existing global setup.
+test.beforeEach(() => {
+  // The dedicated fixture restores the baseline before this per-test seed.
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec(`INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
     VALUES ('reduction-item','${itemName}','${itemName.toLowerCase()}','default-category-staples-dry-goods','default-unit-piece','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP);`);
@@ -38,11 +38,19 @@ test("administrator reduces selected opening sources with saved review and staff
   await expect(picker.getByRole("button", { name: /source 1/ })).toContainText("Remaining: 3 pc");
   await expect(picker.getByRole("button", { name: /source 2/ })).toContainText("Residual value: ₱4");
   await picker.getByRole("button", { name: /source 1/ }).click();
+  await expect(picker).toBeHidden();
+  // Click waits for the reopened dialog's position to settle before typing.
+  await editor.getByLabel("Reduction quantity (pc)").click();
+  await expect(editor.getByLabel("Reduction quantity (pc)")).toBeFocused();
   await editor.getByLabel("Reduction quantity (pc)").fill("1");
   await editor.getByRole("button", { name: "Select source lines", exact: true }).click();
   picker = page.getByRole("dialog", { name: "Select source line", exact: true });
   await picker.getByRole("button", { name: /source 2/ }).click();
+  await expect(picker).toBeHidden();
+  await editor.getByLabel("Reduction quantity (pc)").nth(1).click();
+  await expect(editor.getByLabel("Reduction quantity (pc)").nth(1)).toBeFocused();
   await editor.getByLabel("Reduction quantity (pc)").nth(1).fill("0.5");
+  await expect(editor.getByLabel("Reduction quantity (pc)").nth(1)).toHaveValue("0.5");
   await editor.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(editor.getByRole("status")).toContainText("No stock moved or was reserved");
   await page.reload();

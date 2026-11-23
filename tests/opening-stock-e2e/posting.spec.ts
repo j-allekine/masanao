@@ -1,12 +1,12 @@
 import Database from "better-sqlite3";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 let rice = "";
 const salt = "opening-post-salt";
 const mealPath = "/activity-designs/opening-post-design/activities/opening-post-activity/meal-schedules/opening-post-meal";
 
-test.beforeAll(() => {
+test.beforeEach(() => {
   const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   db.exec(`
     INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt)
