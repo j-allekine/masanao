@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { expect, test } from "./fixture";
+import { expect, test, selectOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const existing = "Correction Rice";
@@ -21,7 +21,7 @@ test("omitted stock persists, reviews explicit costs and posts linked desktop/mo
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
   await page.getByLabel("Search Items", { exact: true }).fill(existing);
-  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${existing} `) }).click();
+  await selectOpeningItems(page, [existing]);
   await page.getByRole("textbox", { name: `Quantity for ${existing}`, exact: true }).fill("2");
   await page.getByRole("textbox", { name: `Opening unit cost for ${existing}`, exact: true }).fill("3");
   await page.getByRole("button", { name: "Review opening stock", exact: true }).click();

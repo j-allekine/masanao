@@ -9,6 +9,17 @@ export const workspaceViewports = [
   { width: 320, height: 480 },
 ];
 
+export async function settleWorkspaceViewport(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise(requestAnimationFrame);
+    await Promise.all(document.getAnimations()
+      .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+      .map(animation => animation.finished.catch(() => {})));
+    await new Promise(requestAnimationFrame);
+  });
+}
+
 export async function scrollWorkspaceDocument(page: Page, fraction: number) {
   const scrollRange = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
   expect(scrollRange).toBeGreaterThan(50);

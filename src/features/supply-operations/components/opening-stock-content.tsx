@@ -8,7 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ import { openingStockProduct, openingStockToday, openingStockUnitSelection } fro
 import type { OpeningStockLine, OpeningStockWorkspace } from "../opening-stock-types";
 import type { CategoryListItem, ItemListItem, UnitListItem, ItemUnitConversionListItem } from "../types";
 import OpeningStockCorrections from "./opening-stock-corrections";
-import OpeningStockItemEditor from "./opening-stock-item-editor";
+import OpeningStockItemPicker from "./opening-stock-item-picker";
 import ItemUnitsSheet from "./item-units-sheet";
 import { OpeningStockPosted, OpeningStockReview } from "./opening-stock-review";
 
@@ -38,8 +37,7 @@ export default function OpeningStockContent({ workspace: initial, categories, un
   const [pending, startTransition] = useTransition();
   const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [createItemOpen, setCreateItemOpen] = useState(false);
+  const addItemsButtonRef = useRef<HTMLButtonElement>(null);
   const [managedItemId, setManagedItemId] = useState<string | null>(null);
   const managedUnitButtonRef = useRef<HTMLButtonElement>(null);
   const reviewButtonRef = useRef<HTMLButtonElement>(null);
@@ -68,13 +66,18 @@ export default function OpeningStockContent({ workspace: initial, categories, un
     setLines((current) => current.map((line) => line.id === id ? { ...line, ...patch } : line));
     setFields({}); setError(""); setMessage("");
   }
-  function addItem(item: ItemListItem) {
-    setLines((current) => [...current, { id: crypto.randomUUID(), itemId: item.id, itemName: item.name, quantity: "", position: current.length,
-      selectedUnitId: item.baseUnit.id, selectedUnitName: item.baseUnit.name, selectedUnitAbbreviation: item.baseUnit.abbreviation,
-      baseUnitId: item.baseUnit.id, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation,
-      conversionId: null, conversionFactor: "1", openingUnitCost: "", zeroCostReason: "", calculatedBaseUnitQuantity: null, lineAmount: null }]);
-    setPickerOpen(false); setSearch(""); setMessage(`${item.name} added. Enter its counted quantity and opening cost.`);
+  function addItems(items: ItemListItem[], allowExisting = false) {
+    setLines(current => {
+      const addedIds = new Set(current.map(line => line.itemId));
+      const additions = items.filter(item => allowExisting || !addedIds.has(item.id));
+      return [...current, ...additions.map((item, index) => ({ id: crypto.randomUUID(), itemId: item.id, itemName: item.name, quantity: "", position: current.length + index,
+        selectedUnitId: item.baseUnit.id, selectedUnitName: item.baseUnit.name, selectedUnitAbbreviation: item.baseUnit.abbreviation,
+        baseUnitId: item.baseUnit.id, baseUnitName: item.baseUnit.name, baseUnitAbbreviation: item.baseUnit.abbreviation,
+        conversionId: null, conversionFactor: "1", openingUnitCost: "", zeroCostReason: "", calculatedBaseUnitQuantity: null, lineAmount: null }) as OpeningStockLine)];
+    });
+    setPickerOpen(false); setMessage(items.length === 1 ? `${items[0].name} added. Enter its counted quantity and opening cost.` : `${items.length} Items added. Enter their counted quantities and opening costs.`);
   }
+  function addItem(item: ItemListItem) { addItems([item], true); }
   function begin() {
     const attemptId = crypto.randomUUID();
     startTransition(async () => {
@@ -175,23 +178,30 @@ export default function OpeningStockContent({ workspace: initial, categories, un
   };
   const remove = (line: OpeningStockLine) => <Button type="button" size="icon-sm" variant="ghost" disabled={!editing || pending} aria-label={`Remove ${lineName(line)}`} onClick={() => { setFields({}); setError(""); setMessage(""); setLines((current) => current.filter((entry) => entry.id !== line.id).map((entry, position) => ({ ...entry, position }))); }}><Trash2 /></Button>;
   if (workspace.status === "posted") return <OpeningStockPosted workspace={workspace}><OpeningStockCorrections workspace={workspace} categories={categories} units={units} /></OpeningStockPosted>;
-  return <WorkspaceLayout workspaceTitle="Supply Operations" data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
+  return <WorkspaceLayout workspaceTitle="Supply Operations" mode={editing ? "bounded" : "document"}
+    footer={editing ? <div className="mx-auto flex w-full max-w-content flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+      <p className="text-body-sm text-muted-foreground">{new Set(lines.map((line) => line.itemId)).size} Items · {lines.length} lines · {dirty ? "Unsaved changes" : "Saved draft"}</p>
+      <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-wrap sm:justify-end">
+        <Button variant="ghost" disabled={pending} onClick={() => setDiscardOpen(true)}>Discard setup draft</Button>
+        <Button variant="outline" ref={reviewButtonRef} disabled={pending || !hydrated || !lines.length} onClick={() => save(true)}>Review opening stock</Button>
+        <Button disabled={pending || !hydrated} onClick={() => save()}>{pending ? "Saving…" : "Save draft"}</Button>
+      </div>
+    </div> : undefined}
+    data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       {error && <Alert variant="destructive" ref={errorRef} tabIndex={-1}><AlertTitle>Review the starting count</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
       {message && <p role="status" className="text-body-sm text-muted-foreground">{message}</p>}
       {workspace.status === "not-started" ? <Card><CardHeader><CardTitle>Start with what’s already in your kitchen</CardTitle></CardHeader><CardContent className="flex flex-col gap-4"><p className="text-body-sm text-muted-foreground">Count supplies on hand before ordinary receiving and issuance begin. Original Purchase Orders are not required.</p>{!workspace.eligible && <Alert><AlertTitle>Stock history already exists</AlertTitle><AlertDescription>Opening Stock needs a clean operational start. Existing records have not been changed.</AlertDescription></Alert>}{workspace.canManage ? <Button className="w-fit" disabled={!hydrated || pending || !workspace.eligible} onClick={begin}>Start opening stock</Button> : <p className="text-body-sm">An administrator prepares the initial count.</p>}</CardContent></Card> : <>
         <div><h2 className="text-heading-2 font-semibold">Start with what’s already in your kitchen</h2><p className="mt-2 text-body-sm text-muted-foreground">Save while counting. Drafts do not move stock. Receiving and issuance pause until an administrator completes or discards setup.</p></div>
         <FieldSet disabled={!editing || pending}><FieldGroup className="grid gap-4 sm:grid-cols-2"><LocalDatePicker id="opening-count-date" name="countDate" label="Stock counted as of" emptyLabel="Choose count date" value={countDate} error={fields.countDate ? [fields.countDate] : undefined} onChange={setCountDate} /><Field data-invalid={Boolean(fields.note)}><FieldLabel htmlFor="opening-note">Reference / notes (optional)</FieldLabel><Input id="opening-note" maxLength={2000} value={note} onChange={(event) => setNote(event.target.value)} />{fields.note && <FieldError>{fields.note}</FieldError>}</Field></FieldGroup></FieldSet>
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-heading-3 font-semibold">Items on hand</h2><p className="text-body-sm text-muted-foreground">Enter physical quantities and cost per selected unit. Use another cost line only when the same Item has a distinct supported cost.</p></div>{editing && <Button disabled={pending} onClick={() => setPickerOpen(true)}><Plus data-icon="inline-start" />Add items</Button>}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-heading-3 font-semibold">Items on hand</h2><p className="text-body-sm text-muted-foreground">Enter physical quantities and cost per selected unit. Use another cost line only when the same Item has a distinct supported cost.</p></div>{editing && <Button ref={addItemsButtonRef} disabled={pending} onClick={() => setPickerOpen(true)}><Plus data-icon="inline-start" />Add items</Button>}</div>
         {!lines.length ? <Empty><EmptyHeader><EmptyTitle>No Items counted yet</EmptyTitle><EmptyDescription>Add an existing Item to begin. Empty drafts can be saved or discarded.</EmptyDescription></EmptyHeader></Empty> : <>
           <div className="hidden md:block"><WorkspaceTableFrame caption="Opening Stock count"><TableHeader><TableRow>{["Item", "Counted quantity", "Unit", "Equivalent stock", "Opening unit cost", "Line amount", ""].map((label) => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader><TableBody>{lines.map((line, index) => <TableRow key={line.id}><TableCell className="min-w-32 max-w-48 whitespace-normal break-words">{line.itemName}<p className="text-body-sm text-muted-foreground">Line {index + 1}</p></TableCell><TableCell className="min-w-28">{quantityInput(line, index, "desktop")}</TableCell><TableCell className="min-w-36">{unitInput(line, "desktop")}</TableCell><TableCell>{equivalent(line)}</TableCell><TableCell className="min-w-36">{costInput(line, index, "desktop")}{zeroReason(line, "desktop")}</TableCell><TableCell>{amount(line)}</TableCell><TableCell className="max-w-48 whitespace-normal">{lineActions(line, index)}</TableCell></TableRow>)}</TableBody></WorkspaceTableFrame></div>
           <div className="flex flex-col gap-3 md:hidden">{lines.map((line, index) => <Card key={line.id} size="sm"><CardHeader><CardTitle className="break-words">{line.itemName}</CardTitle><p className="text-body-sm text-muted-foreground">Line {index + 1}</p></CardHeader><CardContent className="flex flex-col gap-3"><FieldGroup className="grid grid-cols-2 gap-3"><Field><FieldLabel>Counted quantity</FieldLabel>{quantityInput(line, index, "mobile")}</Field><Field><FieldLabel>Unit</FieldLabel>{unitInput(line, "mobile")}</Field><Field><FieldLabel>Opening unit cost</FieldLabel>{costInput(line, index, "mobile")}</Field><Field className="min-w-0"><FieldLabel>Line amount</FieldLabel><p className="min-w-0 break-words">{amount(line)}</p></Field></FieldGroup><p className="text-body-sm">Equivalent stock: <strong>{equivalent(line)}</strong></p>{zeroReason(line, "mobile")}<div>{lineActions(line, index)}</div></CardContent></Card>)}</div>
         </>}
-        {editing && <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><p className="text-body-sm text-muted-foreground">{new Set(lines.map((line) => line.itemId)).size} Items · {lines.length} lines · {dirty ? "Unsaved changes" : "Saved draft"}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={pending} onClick={() => setDiscardOpen(true)}>Discard setup draft</Button><Button variant="outline" disabled={pending || !hydrated} onClick={() => save()}>{pending ? "Saving…" : "Save draft"}</Button><Button ref={reviewButtonRef} disabled={pending || !hydrated || !lines.length} onClick={() => save(true)}>Review opening stock</Button></div></div>}
       </>}
     </div>
-    <Dialog open={pickerOpen} onOpenChange={setPickerOpen}><DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Add items</DialogTitle><DialogDescription>Choose an existing Item or create a missing supply without losing the count.</DialogDescription></DialogHeader><FieldGroup><Field><FieldLabel htmlFor="opening-search">Search Items</FieldLabel><Input autoFocus id="opening-search" value={search} onChange={(event) => setSearch(event.target.value)} /></Field></FieldGroup><div className="flex max-h-72 flex-col gap-2 overflow-y-auto">{workspace.items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())).map((item) => <Button key={item.id} variant="outline" className="h-auto justify-between gap-3 py-3 whitespace-normal" disabled={lines.some((line) => line.itemId === item.id)} onClick={() => addItem(item)}><span className="min-w-0 break-words text-left">{item.name}<span className="block text-body-sm font-normal text-muted-foreground">{item.category.name} · {item.baseUnit.abbreviation}</span></span><span>{lines.some((line) => line.itemId === item.id) ? "Added" : "Add"}</span></Button>)}{!workspace.items.some((item) => item.name.toLowerCase().includes(search.toLowerCase())) && <p className="text-body-sm text-muted-foreground">No matching active Items.</p>}</div><Button type="button" variant="outline" onClick={() => { setPickerOpen(false); setCreateItemOpen(true); }}><Plus data-icon="inline-start" />Create Item{search ? `: ${search}` : ""}</Button></DialogContent></Dialog>
-    {createItemOpen && <OpeningStockItemEditor initialName={search} categories={categories} units={units} onClose={() => { setCreateItemOpen(false); setPickerOpen(true); }} onSuccess={(item) => { setWorkspace((current) => ({ ...current, items: [...current.items, item] })); setCreateItemOpen(false); addItem(item); }} />}
+    {pickerOpen && <OpeningStockItemPicker items={workspace.items} addedItemIds={lines.map(line => line.itemId)} categories={categories} units={units} returnFocusRef={addItemsButtonRef} onClose={() => setPickerOpen(false)} onItemsAdded={addItems} onItemCreated={item => setWorkspace(current => ({ ...current, items: [...current.items, item] }))} />}
     <ItemUnitsSheet item={workspace.items.find((item) => item.id === managedItemId) ?? null} units={units} canManage={workspace.canManage} open={Boolean(managedItemId)} onOpenChange={(open) => { if (!open) { setManagedItemId(null); requestAnimationFrame(() => managedUnitButtonRef.current?.focus()); } }} onSaved={(conversion) => { setWorkspace((current) => ({ ...current, items: current.items.map((item) => item.id === managedItemId ? { ...item, unitConversions: [...item.unitConversions ?? [], conversion] } : item) })); setMessage("Alternate unit added. Counted quantities and selected conversions were kept."); }} />
     <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Discard setup draft?</AlertDialogTitle><AlertDialogDescription>This clears the starting count and releases receiving and issuance. Catalog Items and their units remain. No stock will move.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={pending}>Keep counting</AlertDialogCancel><AlertDialogAction disabled={pending} onClick={(event) => { event.preventDefault(); discard(); }}>Discard setup draft</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <AlertDialog open={Boolean(guard.exitRequest)} onOpenChange={(open) => { if (!open) guard.dismissExit(); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Leave unsaved count changes?</AlertDialogTitle><AlertDialogDescription>Your saved draft remains. Changes since your last save will be lost.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Stay here</AlertDialogCancel><AlertDialogAction onClick={() => guard.confirmExit(() => {})}>Leave without saving</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>

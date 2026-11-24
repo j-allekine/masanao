@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import type { Locator, Page } from "@playwright/test";
-import { test, expect } from "./fixture";
+import { expect, test, selectOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const itemName = "Saved evidence rice";
@@ -19,7 +19,7 @@ async function start(page: Page) {
   await page.goto("/inventory/opening-stock");
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
-  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${itemName} `) }).click();
+  await selectOpeningItems(page, [itemName]);
 }
 const quantity = (page: Page) => page.getByLabel(`Quantity for ${itemName}`, { exact: true }).filter({ visible: true });
 const cost = (page: Page) => page.getByLabel(`Opening unit cost for ${itemName}`, { exact: true }).filter({ visible: true });

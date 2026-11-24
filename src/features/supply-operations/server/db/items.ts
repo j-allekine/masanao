@@ -319,7 +319,7 @@ export async function createItemWithConversionsRecord(actor: CurrentActor, input
         findItemConflictRecord(transaction, input.item),
         findActiveItemLookups(transaction, input.item),
       ]);
-      if (conflict) return { ok: false, kind: "duplicate", error: "An Item with that name already exists.", fields: { name: ["Enter a different Item name."] } };
+      if (conflict) return { ok: false, kind: "duplicate", error: "An Item with that name already exists.", fields: { name: ["An Item with that name already exists."] } };
       const fields: Record<string, string[]> = {};
       if (!lookups.category) fields.categoryId = ["Select an active Category."];
       if (!lookups.baseUnit) fields.baseUnitId = ["Select an active Base Unit."];

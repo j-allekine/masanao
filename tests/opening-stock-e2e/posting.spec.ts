@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { expect, test } from "./fixture";
+import { expect, test, selectOpeningItems, confirmOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 let rice = "";
@@ -34,7 +34,7 @@ test("same-Item cost lines survive reload and create distinct mixed-source issua
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
   await page.getByLabel("Search Items", { exact: true }).fill("Posting Rice");
-  await page.getByRole("button", { name: "Create Item: Posting Rice", exact: true }).click();
+  await page.getByRole("button", { name: "Create Item", exact: true }).click();
   const itemEditor = page.getByRole("dialog", { name: "Create Item", exact: true });
   await itemEditor.getByRole("combobox", { name: "Category", exact: true }).click();
   await page.getByRole("option", { name: "Staples & Dry Goods", exact: true }).click();
@@ -47,6 +47,7 @@ test("same-Item cost lines survive reload and create distinct mixed-source issua
   await itemEditor.getByRole("textbox", { name: "Base Unit quantity 1", exact: true }).fill("25");
   await itemEditor.getByRole("button", { name: "Create Item", exact: true }).click();
   await expect(itemEditor).toBeHidden();
+  await confirmOpeningItems(page);
   const catalog = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
   rice = (catalog.prepare("SELECT id FROM item WHERE name = 'Posting Rice'").get() as { id: string }).id;
   expect(rice).toBeTruthy();
@@ -54,7 +55,7 @@ test("same-Item cost lines survive reload and create distinct mixed-source issua
   for (const name of ["Posting Salt"]) {
     await page.getByRole("button", { name: "Add items", exact: true }).click();
     await page.getByLabel("Search Items", { exact: true }).fill(name);
-    await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(`^${name} Staples & Dry Goods`) }).click();
+    await selectOpeningItems(page, [name]);
   }
   await page.getByRole("textbox", { name: "Quantity for Posting Rice", exact: true }).fill("2");
   await page.getByRole("combobox", { name: "Unit for Posting Rice", exact: true }).click();

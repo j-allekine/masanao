@@ -32,7 +32,7 @@ describe("Opening Stock inline catalog creation", () => {
   it("rejects normalized duplicate names, repeated package sizes and invalid normal fields", async () => {
     const { admin, input } = await fixture();
     item(await createItemWithConversions(admin, input));
-    expect(await createItemWithConversions(admin, { ...input, item: { ...input.item, name: `  ${input.item.name.toUpperCase()}  ` } })).toMatchObject({ ok: false, kind: "duplicate", fields: { name: expect.any(Array) } });
+    expect(await createItemWithConversions(admin, { ...input, item: { ...input.item, name: `  ${input.item.name.toUpperCase()}  ` } })).toMatchObject({ ok: false, kind: "duplicate", fields: { name: ["An Item with that name already exists."] } });
     expect(await createItemWithConversions(admin, { ...input, item: { ...input.item, name: `Duplicate pack ${crypto.randomUUID()}` }, conversions: [input.conversions[0], { ...input.conversions[0], baseUnitQuantity: "25.0" }] })).toMatchObject({ ok: false, kind: "validation", fields: { "conversions.1.baseUnitQuantity": expect.any(Array) } });
     expect(await createItemWithConversions(admin, { item: { ...input.item, name: "", reorderLevel: "0", issuanceQuantityPolicy: "invalid" }, conversions: [] })).toMatchObject({ ok: false, kind: "validation", fields: { name: expect.any(Array), reorderLevel: expect.any(Array), issuanceQuantityPolicy: expect.any(Array) } });
   });

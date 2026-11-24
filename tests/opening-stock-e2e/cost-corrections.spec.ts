@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "./fixture";
+import { expect, test, selectOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const itemName = "Opening replacement supply with a deliberately long descriptive label";
@@ -19,7 +19,7 @@ test("administrator replaces entire selected remainders with explicit costs and 
   await page.goto("/inventory/opening-stock");
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
   await page.getByRole("button", { name: "Add items", exact: true }).click();
-  await page.getByRole("dialog", { name: "Add items", exact: true }).getByRole("button", { name: new RegExp(itemName) }).click();
+  await selectOpeningItems(page, [itemName]);
   await page.getByLabel(`Quantity for ${itemName}`, { exact: true }).filter({ visible: true }).fill("3");
   await page.getByLabel(`Opening unit cost for ${itemName}`, { exact: true }).filter({ visible: true }).fill("0.01");
   await page.getByRole("button", { name: `Add another cost line for ${itemName}`, exact: true }).click();

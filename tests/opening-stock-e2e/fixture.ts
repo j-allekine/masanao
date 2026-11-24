@@ -1,4 +1,4 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect, type Page } from "@playwright/test";
 import { restoreOpeningStockBaseline } from "./database-fixture";
 
 export const test = base.extend<{ openingStockBaseline: void }>({
@@ -16,4 +16,20 @@ export const test = base.extend<{ openingStockBaseline: void }>({
   }, { auto: true }],
 });
 
-export { expect } from "@playwright/test";
+export { expect };
+
+export async function confirmOpeningItems(page: Page) {
+  const picker = page.getByRole("dialog", { name: "Add items", exact: true });
+  await picker.getByRole("button", { name: /^Add selected \(/ }).click();
+  await expect(picker).toBeHidden();
+  await expect(page.getByRole("button", { name: "Add items", exact: true })).toBeFocused();
+}
+
+export async function selectOpeningItems(page: Page, names: string[]) {
+  const picker = page.getByRole("dialog", { name: "Add items", exact: true });
+  for (const name of names) {
+    await picker.getByRole("textbox", { name: "Search Items", exact: true }).fill(name);
+    await picker.getByRole("checkbox", { name: `Select ${name}`, exact: true }).check();
+  }
+  await confirmOpeningItems(page);
+}

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { expect, test } from "./fixture";
+import { expect, test, selectOpeningItems, confirmOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 test.beforeEach(() => {
@@ -24,19 +24,19 @@ for (const width of [1440, 320]) {
     await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
     await page.getByRole("button", { name: "Add items", exact: true }).click();
     await page.getByLabel("Search Items", { exact: true }).fill("Inline Existing");
-    await page.getByRole("button", { name: /Inline Existing.*Add/ }).click();
+    await selectOpeningItems(page, ["Inline Existing"]);
     await page.getByRole("textbox", { name: "Quantity for Inline Existing", exact: true }).fill("2");
     await page.getByRole("textbox", { name: "Opening unit cost for Inline Existing", exact: true }).fill("5");
 
     await page.getByRole("button", { name: "Add items", exact: true }).click();
     await page.getByLabel("Search Items", { exact: true }).fill("Cancelled Item");
-    await page.getByRole("button", { name: "Create Item: Cancelled Item", exact: true }).click();
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
     await page.getByRole("dialog", { name: "Create Item", exact: true }).getByLabel("Name", { exact: false }).fill("Cancelled Item changed");
-    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await page.getByRole("button", { name: "Back to items", exact: true }).click();
     await page.getByRole("button", { name: "Discard Item changes", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "Add items", exact: true })).toBeVisible();
     await page.getByLabel("Search Items", { exact: true }).fill(`Inline Rice ${width}`);
-    await page.getByRole("button", { name: `Create Item: Inline Rice ${width}`, exact: true }).click();
+    await page.getByRole("button", { name: "Create Item", exact: true }).click();
     const editor = page.getByRole("dialog", { name: "Create Item", exact: true });
     await editor.getByRole("combobox", { name: "Category", exact: true }).click();
     await page.getByRole("option", { name: "Staples & Dry Goods", exact: true }).click();
@@ -58,6 +58,7 @@ for (const width of [1440, 320]) {
     await page.screenshot({ path: info.outputPath(`inline-create-${width}.png`) });
     await editor.getByRole("button", { name: "Create Item", exact: true }).click();
     await expect(editor).toBeHidden();
+    await confirmOpeningItems(page);
     await expect(page.getByRole("textbox", { name: `Quantity for Inline Rice ${width}`, exact: true })).toHaveValue("");
     await expect(page.getByRole("textbox", { name: `Opening unit cost for Inline Rice ${width}`, exact: true })).toHaveValue("");
     await expect(page.getByRole("textbox", { name: "Quantity for Inline Existing", exact: true })).toHaveValue("2");

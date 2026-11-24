@@ -172,6 +172,8 @@ export default function ItemForm({
   initialName = "",
   createAction,
   additionalFields,
+  cancelLabel = "Cancel",
+  onBaseUnitChange,
 }: {
   mode: "create" | "edit";
   item?: ItemListItem;
@@ -183,6 +185,8 @@ export default function ItemForm({
   initialName?: string;
   createAction?: (formData: FormData) => Promise<ItemFormActionState>;
   additionalFields?: (context: { baseUnitId: string; pending: boolean }) => ReactNode;
+  cancelLabel?: string;
+  onBaseUnitChange?: (baseUnitId: string) => void;
 }) {
   const initialFormValues = item ? initialValues(item) : { ...emptyFormValues, name: initialName };
   const [formValues, setFormValues] = useState<ItemFormValues>(
@@ -230,6 +234,7 @@ export default function ItemForm({
   }, [fieldErrors, mode]);
 
   function updateField(field: ItemField, value: string) {
+    if (field === "baseUnitId" && value !== formValues.baseUnitId) onBaseUnitChange?.(value);
     setFormValues((currentValues) => ({
       ...currentValues,
       [field]: value,
@@ -328,6 +333,7 @@ export default function ItemForm({
             <Input
               id={`${mode}-item-name`}
               name="name"
+              autoFocus={mode === "create"}
               value={formValues.name}
               onChange={(event) => handleTextChange("name", event)}
               required
@@ -429,7 +435,7 @@ export default function ItemForm({
                       ? `${mode}-item-issuance-quantity-policy`
                       : undefined
                   }
-                  className="min-w-0 flex-1 whitespace-normal px-2"
+                  className="h-auto min-h-8 min-w-0 flex-1 whitespace-normal px-2 py-1"
                   value={option.value}
                   aria-invalid={fieldErrors.issuanceQuantityPolicy?.length ? true : undefined}
                   aria-describedby={
@@ -484,6 +490,7 @@ export default function ItemForm({
       <DialogFooter className="shrink-0">
         <WorkspaceFormActionButtons
           onCancel={onCancel}
+          cancelLabel={cancelLabel}
           isPending={isSubmitting}
           pendingLabel="Saving..."
           submitLabel={mode === "create" ? "Create Item" : "Save changes"}

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { expect, test } from "./fixture";
+import { expect, test, selectOpeningItems } from "./fixture";
 import { postFixtureSignIn } from "../e2e/fixture-auth";
 
 const names = Array.from({ length: 20 }, (_, index) => `Large count ${String(index + 1).padStart(2, "0")} kitchen supply with a long descriptive package and storage label`);
@@ -20,11 +20,9 @@ test("a saved twenty-line count keeps long labels, review actions and keyboard f
   await page.getByRole("button", { name: "Opening Stock", exact: true }).click();
   await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
   await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
+  await page.getByRole("button", { name: "Add items", exact: true }).click();
+  await selectOpeningItems(page, names);
   for (const name of names) {
-    await page.getByRole("button", { name: "Add items", exact: true }).click();
-    const picker = page.getByRole("dialog", { name: "Add items", exact: true });
-    await picker.getByRole("textbox", { name: "Search Items", exact: true }).fill(name);
-    await picker.getByRole("button", { name: new RegExp(`^${name}`) }).click();
     await page.getByRole("textbox", { name: `Quantity for ${name}`, exact: true }).fill("0.123456789123456789");
     await page.getByRole("textbox", { name: `Opening unit cost for ${name}`, exact: true }).fill("12.34");
   }
@@ -33,8 +31,20 @@ test("a saved twenty-line count keeps long labels, review actions and keyboard f
   await page.reload();
   await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
   await expect(page.getByRole("textbox", { name: `Quantity for ${names[19]}`, exact: true })).toHaveValue("0.123456789123456789");
-  for (const width of [1440, 320]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const [width, height] of [[1440, 900], [768, 900], [320, 480]]) {
+    await page.setViewportSize({ width, height });
+    const footer = page.locator('[data-slot="workspace-layout"] > footer');
+    const body = page.locator('[data-slot="workspace-body"]');
+    await expect(footer.getByRole("button", { name: "Save draft", exact: true })).toBeInViewport();
+    await expect(footer.getByRole("button", { name: "Review opening stock", exact: true })).toBeInViewport();
+    expect(await footer.evaluate(element => Math.abs(element.getBoundingClientRect().bottom - innerHeight) <= 1)).toBe(true);
+    const firstQuantity = page.getByRole("textbox", { name: `Quantity for ${names[0]}`, exact: true }).filter({ visible: true });
+    const lastQuantity = page.getByRole("textbox", { name: `Quantity for ${names[19]}`, exact: true }).filter({ visible: true });
+    await firstQuantity.scrollIntoViewIfNeeded();
+    await lastQuantity.focus();
+    await expect(lastQuantity).toBeInViewport();
+    await expect.poll(() => lastQuantity.evaluate(element => element.getBoundingClientRect().bottom <= element.closest('[data-slot="workspace-layout"]')!.querySelector('footer')!.getBoundingClientRect().top)).toBe(true);
+    expect(await body.evaluate(element => element.scrollTop > 0 && element.scrollHeight > element.clientHeight)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     // Exact product of 0.123456789123456789 and 12.34, without rounding.
     const amounts = page.getByText("₱1.52345677778345677626", { exact: true }).filter({ visible: true });
