@@ -49,7 +49,7 @@ test("administrator counts exact quantities, saves, recovers errors, guards navi
   await expect(page.getByRole("textbox", { name: "Quantity for Count Rice", exact: true })).toBeFocused();
   await expect(page.getByText("Review the starting count", { exact: true })).toBeVisible();
   await page.getByRole("textbox", { name: "Quantity for Count Rice", exact: true }).fill("4");
-  await page.getByRole("button", { name: "Inventory", exact: true }).click();
+  await page.getByRole("button", { name: "Back to Inventory", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toContainText("Leave unsaved count changes?");
   await page.getByRole("button", { name: "Stay here", exact: true }).click();
   await page.setViewportSize({ width: 320, height: 800 });

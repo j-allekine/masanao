@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +187,7 @@ export default function OpeningStockContent({ workspace: initial, categories, un
         <Button disabled={pending || !hydrated} onClick={() => save()}>{pending ? "Saving…" : "Save draft"}</Button>
       </div>
     </div> : undefined}
-    data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
+    data-opening-stock-ready={hydrated ? "true" : undefined} task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}><ArrowLeft data-icon="inline-start" aria-hidden="true" />Back to Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge variant="secondary">{workspace.status === "not-started" ? "Not started" : workspace.status === "draft" ? "Draft" : "Posted"}</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       {error && <Alert variant="destructive" ref={errorRef} tabIndex={-1}><AlertTitle>Review the starting count</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
       {message && <p role="status" className="text-body-sm text-muted-foreground">{message}</p>}
