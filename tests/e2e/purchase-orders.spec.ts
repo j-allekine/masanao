@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { expectFullRecordHeading, expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
+import { expectFullRecordHeading, expectPannedColumns, scrollWorkspaceDocument, settleWorkspaceViewport, workspaceViewports } from "./workspace-layout-helpers";
 import { postFixtureSignIn } from "./fixture-auth";
 
 const staffPassword = "correct-horse-battery-staple";
@@ -900,6 +900,7 @@ test("keeps Purchase Order catalog context and actions visible while scrolling",
         window.scrollTo(0, 0);
       }, width === 768 || height === 480);
       await expect(title).toBeInViewport({ ratio: 1 });
+      await settleWorkspaceViewport(page);
       const originalTitle = await title.boundingBox();
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);

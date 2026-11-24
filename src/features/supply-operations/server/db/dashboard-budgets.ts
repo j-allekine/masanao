@@ -114,6 +114,7 @@ export async function readDashboardBudgets(tx: Prisma.TransactionClient, period:
             itemTotals: { where: { issuanceRecord: postedWhere }, select: {
               itemId: true, item: { select: { baseUnitId: true } }, finalQuantity: true,
               receiptAllocations: { select: { id: true, deliveryReceiptLineId: true, quantity: true, basis: true } },
+              openingWithdrawals: { select: { quantity: true, beforeQuantity: true, afterQuantity: true, costCentavos: true, sequence: true, kind: true, postedAt: true, source: { select: { itemId: true, baseUnitId: true, quantity: true, amount: true, postedAt: true } } } },
             } },
           } },
         } },
@@ -130,10 +131,11 @@ export async function readDashboardBudgets(tx: Prisma.TransactionClient, period:
         if (posted) {
           if (!record!.itemTotals.length) cost = null;
           for (const item of record!.itemTotals) {
-            let valid = item.receiptAllocations.length > 0;
+            let valid = item.receiptAllocations.length + item.openingWithdrawals.length > 0;
             try {
               let quantity = decimalRational("0");
               for (const entry of item.receiptAllocations) quantity = addRational(quantity, decimalRational(entry.quantity));
+              for (const entry of item.openingWithdrawals) quantity = addRational(quantity, decimalRational(entry.quantity));
               valid &&= compareRational(quantity, decimalRational(item.finalQuantity)) === 0;
             } catch { valid = false; }
             for (const entry of item.receiptAllocations) {
@@ -142,6 +144,20 @@ export async function readDashboardBudgets(tx: Prisma.TransactionClient, period:
               if (!valid || !line || line.itemId !== item.itemId || line.baseUnitId !== item.item.baseUnitId || value == null) cost = null;
               else if (cost !== null) cost = (BigInt(cost) + BigInt(value)).toString();
               estimated ||= entry.basis === "reconstructed";
+            }
+            for (const entry of item.openingWithdrawals) {
+              const source = entry.source;
+              const value = allocatedSupplyCost(source.amount, source.quantity, entry.beforeQuantity, entry.quantity);
+              let evidenceValid = false;
+              try {
+                evidenceValid = entry.kind === "issuance" && entry.sequence > 0 && source.itemId === item.itemId && source.baseUnitId === item.item.baseUnitId
+                  && source.postedAt <= entry.postedAt && entry.postedAt <= record!.postedAt! && entry.postedAt <= now
+                  && decimalRational(source.amount).numerator >= BigInt(0)
+                  && compareRational(addRational(decimalRational(entry.beforeQuantity), decimalRational(entry.quantity)), decimalRational(entry.afterQuantity)) === 0
+                  && value !== null && value === entry.costCentavos;
+              } catch { evidenceValid = false; }
+              if (!valid || !evidenceValid) cost = null;
+              else if (cost !== null) cost = (BigInt(cost) + BigInt(entry.costCentavos)).toString();
             }
             if (!valid) cost = null;
           }

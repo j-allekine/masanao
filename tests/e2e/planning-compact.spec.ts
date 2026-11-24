@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { expect, test } from "@playwright/test";
 import { cleanupIssuanceFixtures } from "./issuance-fixture-cleanup";
 import { postFixtureSignIn } from "./fixture-auth";
-import { expectPannedColumns, scrollWorkspaceDocument, workspaceViewports } from "./workspace-layout-helpers";
+import { expectPannedColumns, scrollWorkspaceDocument, settleWorkspaceViewport, workspaceViewports } from "./workspace-layout-helpers";
 
 const design = "/activity-designs/e2e-issuance-compact-design-11";
 const detailedActivity = `${design}/activities/e2e-issuance-compact-detailed`;
@@ -66,11 +66,27 @@ test("Planning catalogs and child records retain their identity through long lis
         document.body.style.letterSpacing = enlarge ? ".02em" : "";
         scrollTo(0, 0);
       }, viewport.width === 768 || viewport.height === 480);
+      await settleWorkspaceViewport(page);
       await expect(heading).toBeInViewport();
+      const flowingHeader = await main.locator('[data-slot="workspace-layout"]').evaluate(element => element.hasAttribute("data-flow-scroll"));
+      if (flowingHeader) {
+        expect(await main.locator('[data-slot="workspace-chrome"]').evaluate(element => innerHeight - element.getBoundingClientRect().height)).toBeLessThan(112);
+      }
       for (const fraction of [0.5, 1]) {
         await scrollWorkspaceDocument(page, fraction);
+        if (flowingHeader) {
+          // An oversized record header flows so the small viewport retains working space.
+          await expect(table).toBeInViewport();
+        } else {
+          await expect(toggle).toBeInViewport({ ratio: 1 });
+          await expect(heading).toBeInViewport({ ratio: 1 });
+        }
+      }
+      if (flowingHeader) {
+        await page.evaluate(() => scrollTo(0, 0));
         await expect(toggle).toBeInViewport({ ratio: 1 });
-        await expect(heading).toBeInViewport({ ratio: 1 });
+        await expect(heading).toBeInViewport();
+        expect(await heading.evaluate(element => element.scrollHeight <= element.clientHeight)).toBe(true);
       }
       if (viewport.width >= 768) {
         const column = table.getByRole("columnheader").first();

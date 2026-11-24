@@ -5,11 +5,13 @@ import type { PrismaClient } from "@/prisma/generated/client";
 import { prisma } from "@/prisma/client";
 import type { CurrentActor } from "@/server/auth";
 import type { IssuanceContext, IssuanceErrorKind, IssuanceFailure, IssuanceResult, IssuanceWorkspace, IssuanceReviewItem } from "../../types";
-import { allocatePostedItemReceipts, FifoAllocationError } from "./fifo";
+import { allocatePostedItemSources, FifoAllocationError } from "./fifo";
+import { OpeningStockSourceError } from "@/features/supply-operations/server/db/opening-stock-sources";
 import { getIssuanceWorkspaceRecord } from "./drafts";
 import { isValidIssuanceFinalQuantity } from "../../domain/quantities";
 import { compareRational, decimalRational, displayRational, recipeContribution } from "../../domain/rational";
 import { InvalidStockEvidenceError } from "@/features/supply-operations/domain/inventory";
+import { assertOpeningStockGate, OpeningStockGateError } from "@/features/supply-operations/server/db/opening-stock";
 
 class PostingRejected extends Error {
   readonly result: IssuanceFailure;
@@ -25,6 +27,7 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       // SQLite BEGIN is deferred: this MUST be the first statement. Acquire the
       // writer lock before actor, reference, balance, or draft reads.
       const claim = await transaction.issuanceRecord.updateMany({ where: { mealScheduleId: context.mealScheduleId, status: "draft", revision }, data: { revision: { increment: 1 } } });
+      await assertOpeningStockGate(transaction);
       const persistedActor = await transaction.user.findFirst({ where: { id: actor.id, disabled: false, role: { in: ["staff", "admin"] } }, select: { id: true, name: true, username: true } });
       if (!persistedActor) reject("forbidden", "Sign in as active kitchen staff or an administrator to post issuance.");
       const workspace = await getIssuanceWorkspaceRecord(context, transaction);
@@ -65,7 +68,9 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       const result: IssuanceWorkspace = { ...workspace, draft: { ...workspace.draft, status: "posted", recipes: historicalRecipes, itemTotals: historicalReview.map(({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted }) => ({ itemId, calculatedNumerator, calculatedDenominator, finalQuantity, adjusted })) }, review: historicalReview, posted: { postedAt: postedAt.toISOString(), actorId: persistedActor.id, actorName: persistedActor.name, actorUsername: persistedActor.username ?? "" } };
       for (const [index, row] of historicalReview.entries()) {
         const total = await transaction.issuanceItemTotal.upsert({ where: { issuanceRecordId_itemId: { issuanceRecordId: workspace.draft.id, itemId: row.itemId } }, create: { id: crypto.randomUUID(), issuanceRecordId: workspace.draft.id, itemId: row.itemId, calculatedNumerator: row.calculatedNumerator, calculatedDenominator: row.calculatedDenominator, finalQuantity: row.finalQuantity, adjusted: row.adjusted }, update: { calculatedNumerator: row.calculatedNumerator, calculatedDenominator: row.calculatedDenominator, finalQuantity: row.finalQuantity, adjusted: row.adjusted } });
-        row.receiptAllocations = await allocatePostedItemReceipts(transaction, total.id, row.itemId, row.baseUnitId, row.finalQuantity);
+        const sources = await allocatePostedItemSources(transaction, total.id, row.itemId, row.baseUnitId, row.finalQuantity, postedAt);
+        row.receiptAllocations = sources.receiptAllocations;
+        row.openingAllocations = sources.openingAllocations;
         await transaction.inventoryLedgerMovement.create({ data: { id: crypto.randomUUID(), issuanceItemTotalId: total.id, itemId: row.itemId, baseUnitId: row.baseUnitId, quantity: row.finalQuantity, movementType: "stock-out", occurredAt: postedAt } });
         if (index === 0) await hooks.afterFirstMovement?.();
       }
@@ -74,8 +79,10 @@ export async function postIssuanceRecord(actor: CurrentActor, context: IssuanceC
       return { ok: true, value: result };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 15000 });
   } catch (error) {
+    if (error instanceof OpeningStockGateError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof InvalidStockEvidenceError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof FifoAllocationError) return { ok: false, kind: "reference", error: error.message };
+    if (error instanceof OpeningStockSourceError) return { ok: false, kind: "reference", error: error.message };
     if (error instanceof PostingRejected) return error.result;
     if (error instanceof Error && /SQLITE_BUSY|database is locked|SocketTimeout/i.test(error.message)) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try posting again shortly; no stock was deducted by this attempt." };
     if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P1008", "P2028"].includes(error.code)) return { ok: false, kind: "busy", error: "Another stock transaction is in progress. Try again shortly; no stock was deducted by this attempt." };

@@ -1,0 +1,73 @@
+import Database from "better-sqlite3";
+import { expect, test, selectOpeningItems } from "./fixture";
+import { postFixtureSignIn } from "../e2e/fixture-auth";
+
+const names = Array.from({ length: 20 }, (_, index) => `Large count ${String(index + 1).padStart(2, "0")} kitchen supply with a long descriptive package and storage label`);
+
+test.beforeEach(() => {
+  const db = new Database(process.env.MASANAO_E2E_DATABASE_PATH!);
+  const insert = db.prepare("INSERT INTO item (id,name,normalizedName,categoryId,baseUnitId,reorderLevel,isActive,createdAt,updatedAt) VALUES (?,?,?,'default-category-staples-dry-goods','default-unit-kilogram','1',1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)");
+  for (const [index, name] of names.entries()) insert.run(`large-count-${index}`, name, name.toLowerCase());
+  db.close();
+});
+
+test("a saved twenty-line count keeps long labels, review actions and keyboard focus usable at desktop and 320px", async ({ page }, info) => {
+  test.setTimeout(240_000);
+  page.setDefaultTimeout(20_000);
+  expect((await postFixtureSignIn(page.request, { data: { username: "municipal.admin", password: "administrator-password" }, headers: { origin: process.env.BETTER_AUTH_URL! } })).status()).toBe(200);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/inventory");
+  await page.getByRole("button", { name: "Opening Stock", exact: true }).click();
+  await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
+  await page.getByRole("button", { name: "Start opening stock", exact: true }).click();
+  await page.getByRole("button", { name: "Add items", exact: true }).click();
+  await selectOpeningItems(page, names);
+  for (const name of names) {
+    await page.getByRole("textbox", { name: `Quantity for ${name}`, exact: true }).fill("0.123456789123456789");
+    await page.getByRole("textbox", { name: `Opening unit cost for ${name}`, exact: true }).fill("12.34");
+  }
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("draft saved");
+  await page.reload();
+  await expect(page.locator('[data-opening-stock-ready="true"]')).toBeVisible();
+  await expect(page.getByRole("textbox", { name: `Quantity for ${names[19]}`, exact: true })).toHaveValue("0.123456789123456789");
+  for (const [width, height] of [[1440, 900], [768, 900], [320, 480]]) {
+    await page.setViewportSize({ width, height });
+    const footer = page.locator('[data-slot="workspace-layout"] > footer');
+    const body = page.locator('[data-slot="workspace-body"]');
+    await expect(footer.getByRole("button", { name: "Save draft", exact: true })).toBeInViewport();
+    await expect(footer.getByRole("button", { name: "Review opening stock", exact: true })).toBeInViewport();
+    expect(await footer.evaluate(element => Math.abs(element.getBoundingClientRect().bottom - innerHeight) <= 1)).toBe(true);
+    const firstQuantity = page.getByRole("textbox", { name: `Quantity for ${names[0]}`, exact: true }).filter({ visible: true });
+    const lastQuantity = page.getByRole("textbox", { name: `Quantity for ${names[19]}`, exact: true }).filter({ visible: true });
+    await firstQuantity.scrollIntoViewIfNeeded();
+    await lastQuantity.focus();
+    await expect(lastQuantity).toBeInViewport();
+    await expect.poll(() => lastQuantity.evaluate(element => element.getBoundingClientRect().bottom <= element.closest('[data-slot="workspace-layout"]')!.querySelector('footer')!.getBoundingClientRect().top)).toBe(true);
+    expect(await body.evaluate(element => element.scrollTop > 0 && element.scrollHeight > element.clientHeight)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    // Exact product of 0.123456789123456789 and 12.34, without rounding.
+    const amounts = page.getByText("₱1.52345677778345677626", { exact: true }).filter({ visible: true });
+    await expect(amounts).toHaveCount(20);
+    expect(await amounts.evaluateAll(elements => elements.every(element => {
+      const bounds = element.getBoundingClientRect();
+      const card = element.closest('[data-slot="card"]')?.getBoundingClientRect();
+      return element.scrollWidth <= element.clientWidth && (!card || bounds.right <= card.right);
+    }))).toBe(true);
+    if (width === 320) {
+      await amounts.last().scrollIntoViewIfNeeded();
+      await expect(amounts.last()).toBeInViewport();
+    }
+    await page.screenshot({ path: info.outputPath(`large-count-${width}.png`) });
+    await page.getByRole("button", { name: "Review opening stock", exact: true }).click();
+    const review = page.getByRole("dialog", { name: "Review opening stock", exact: true });
+    await expect(review).toContainText(names[19]);
+    await review.getByText(names[19]).filter({ visible: true }).scrollIntoViewIfNeeded();
+    expect(await review.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await expect(review.getByRole("button", { name: "Post opening stock", exact: true })).toBeInViewport();
+    await page.screenshot({ path: info.outputPath(`large-count-review-${width}.png`) });
+    await page.keyboard.press("Escape");
+    await expect(review).toBeHidden();
+    await expect(page.getByRole("button", { name: "Review opening stock", exact: true })).toBeFocused();
+  }
+});
