@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +98,7 @@ export function OpeningStockReview({ open, onOpenChange, lines, countDate, note,
 }
 
 export function OpeningStockPosted({ workspace, children }: { workspace: OpeningStockWorkspace; children?: ReactNode }) {
-  return <WorkspaceLayout workspaceTitle="Supply Operations" task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}>Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge>Posted</Badge></WorkspaceTaskHeader>}>
+  return <WorkspaceLayout workspaceTitle="Supply Operations" task={<WorkspaceTaskHeader actions={<Button variant="outline" nativeButton={false} render={<Link href="/inventory" />}><ArrowLeft data-icon="inline-start" aria-hidden="true" />Back to Inventory</Button>}><h1 className="text-heading-3 font-semibold">Opening Stock</h1><Badge>Posted</Badge></WorkspaceTaskHeader>}>
     <div className="mx-auto flex w-full min-w-0 max-w-content flex-col gap-6 px-4 py-6 sm:px-6">
       <div><h2 className="text-heading-2 font-semibold">{workspace.reference || "Opening Stock"}</h2><p className="mt-2 text-body-sm text-muted-foreground">These starting quantities were posted as stock. The original count is read-only.</p></div>
       <dl className="grid gap-4 text-body-sm sm:grid-cols-2 lg:grid-cols-4">
