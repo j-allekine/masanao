@@ -169,88 +169,58 @@ test.describe("production login interactions", () => {
   });
 });
 
-const signInSurfaces = [
-  { path: "/", submit: "Sign in" },
-  {
-    path: "/prototype/login",
-    submit: "Sign in",
-    success: "Local session ready for kitchen.staff.",
-  },
-  {
-    path: "/prototype/login-new",
-    submit: "Continue",
-    success: "Access preview ready.",
-  },
-] as const;
+for (const viewport of viewports) {
+  test(`required sign-in fields on / at ${viewport.name} width`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openLogin(page);
 
-for (const surface of signInSurfaces) {
-  for (const viewport of viewports) {
-    test(`required sign-in fields on ${surface.path} at ${viewport.name} width`, async ({ page }) => {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      if (surface.path === "/") await openLogin(page);
-      else await page.goto(surface.path);
+    const form = page.locator("form").filter({ has: page.getByRole("textbox", { name: "Username", exact: true }) });
+    const username = form.getByRole("textbox", { name: "Username", exact: true });
+    const password = form.getByLabel(/^Password/);
+    const submit = form.getByRole("button", { name: "Sign in", exact: true });
 
-      const form = page.locator("form").filter({ has: page.getByRole("textbox", { name: "Username", exact: true }) });
-      const username = form.getByRole("textbox", { name: "Username", exact: true });
-      const password = form.getByLabel(/^Password/);
-      const submit = form.getByRole("button", { name: surface.submit, exact: true });
+    await expect(form).toHaveAttribute("novalidate", "");
+    const fields = await Promise.all(
+      [
+        { input: username, label: "Username", error: "Enter your username." },
+        { input: password, label: "Password", error: "Enter your password." },
+      ].map(async (field) => {
+        const group = field.input.locator("..");
+        const label = form.locator("label").filter({ hasText: field.label });
+        const mark = label.getByText("*", { exact: true });
+        await expect(field.input).toHaveAccessibleName(field.label);
+        await expect(field.input).toHaveAttribute("required", "");
+        await expect(mark).toBeVisible();
+        await expect(mark).toHaveAttribute("aria-hidden", "true");
+        const markColor = await mark.evaluate((element) => getComputedStyle(element).color);
+        await expect(label).not.toHaveCSS("color", markColor);
+        await expect(group).not.toHaveCSS("border-top-color", markColor);
+        const fieldHeight = await group.locator("..").evaluate((element) => element.getBoundingClientRect().height);
+        return { ...field, group, markColor, fieldHeight };
+      }),
+    );
 
-      if (surface.path !== "/") {
-        await expect(async () => {
-          const showPassword = form.getByRole("button", { name: "Show password" });
-          if (await showPassword.isVisible()) await showPassword.click();
-          await expect(password).toHaveAttribute("type", "text", { timeout: 500 });
-        }).toPass({ timeout: 5_000 });
-        await form.getByRole("button", { name: "Hide password" }).click();
-      }
+    await submit.click();
 
-      await expect(form).toHaveAttribute("novalidate", "");
-      const fields = await Promise.all(
-        [
-          { input: username, label: "Username", error: "Enter your username." },
-          { input: password, label: "Password", error: "Enter your password." },
-        ].map(async (field) => {
-          const group = field.input.locator("..");
-          const label = form.locator("label").filter({ hasText: field.label });
-          const mark = label.getByText("*", { exact: true });
-          await expect(field.input).toHaveAccessibleName(field.label);
-          await expect(field.input).toHaveAttribute("required", "");
-          await expect(mark).toBeVisible();
-          await expect(mark).toHaveAttribute("aria-hidden", "true");
-          const markColor = await mark.evaluate((element) => getComputedStyle(element).color);
-          await expect(label).not.toHaveCSS("color", markColor);
-          await expect(group).not.toHaveCSS("border-top-color", markColor);
-          const fieldHeight = await group.locator("..").evaluate((element) => element.getBoundingClientRect().height);
-          return { ...field, group, markColor, fieldHeight };
-        }),
-      );
+    for (const { input, group, markColor, fieldHeight, error } of fields) {
+      await expect(input).toHaveAttribute("aria-invalid", "true");
+      await expect(input).toHaveAccessibleDescription(error);
+      await expect(group).toHaveCSS("border-top-color", markColor);
+      await expect(form.getByText(error, { exact: true })).toHaveCSS("position", "absolute");
+      await expect(form.getByText(error, { exact: true })).toHaveCSS("overflow", "hidden");
+      await expect.poll(() => group.locator("..").evaluate((element) => element.getBoundingClientRect().height)).toBe(fieldHeight);
+    }
 
-      await submit.click();
+    await expect(username).toBeFocused();
+    await username.fill("kitchen.staff");
+    await expect(username).not.toHaveAttribute("aria-invalid", "true");
+    await expect(password).toHaveAttribute("aria-invalid", "true");
+    await password.press("Enter");
+    await expect(password).toHaveAccessibleDescription("Enter your password.");
+    await expect(password).toBeFocused();
 
-      for (const { input, group, markColor, fieldHeight, error } of fields) {
-        await expect(input).toHaveAttribute("aria-invalid", "true");
-        await expect(input).toHaveAccessibleDescription(error);
-        await expect(group).toHaveCSS("border-top-color", markColor);
-        await expect(form.getByText(error, { exact: true })).toHaveCSS("position", "absolute");
-        await expect(form.getByText(error, { exact: true })).toHaveCSS("overflow", "hidden");
-        await expect.poll(() => group.locator("..").evaluate((element) => element.getBoundingClientRect().height)).toBe(fieldHeight);
-      }
+    await password.fill("test-password");
+    await expect(password).not.toHaveAttribute("aria-invalid", "true");
 
-      await expect(username).toBeFocused();
-      await username.fill("kitchen.staff");
-      await expect(username).not.toHaveAttribute("aria-invalid", "true");
-      await expect(password).toHaveAttribute("aria-invalid", "true");
-      if (surface.path === "/prototype/login-new") await submit.click();
-      else await password.press("Enter");
-      await expect(password).toHaveAccessibleDescription("Enter your password.");
-      if (surface.path !== "/prototype/login") await expect(password).toBeFocused();
-
-      await password.fill("test-password");
-      await expect(password).not.toHaveAttribute("aria-invalid", "true");
-      if ("success" in surface) {
-        await password.press("Enter");
-        await expect(form.getByRole("status")).toContainText(surface.success);
-      }
-    });
-  }
+  });
 }

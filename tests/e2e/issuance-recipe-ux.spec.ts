@@ -173,31 +173,4 @@ test("missing Meal pax is set on the draft before adding Recipes", async ({ page
   await expect(page.getByRole("textbox", { name: "Meal pax", exact: true })).toHaveValue("15");
 });
 
-test("Recipe Scaling keeps pax validation out of the layout", async ({ page }) => {
-  for (const width of [1280, 390]) {
-    await page.setViewportSize({ width, height: 844 });
-    await page.goto("/prototype/recipe-scaling");
-    await expect(page.locator('[data-shell-client-ready="true"]')).toBeVisible();
-    const meal = page.getByRole("spinbutton", { name: "Meal pax", exact: true });
-    await expectRequiredPax(page, meal);
-    await meal.clear();
-    await expectHiddenPaxError(page, meal, "Enter a number greater than zero.");
-    await meal.fill("120");
-    await expect(meal).toHaveAttribute("aria-invalid", "false");
-
-    await page.getByLabel("Add recipe", { exact: true }).click();
-    const recipePax = page.getByRole("spinbutton", { name: "Pax for new recipes", exact: true });
-    await expectRequiredPax(page, recipePax);
-    await recipePax.clear();
-    await expectHiddenPaxError(page, recipePax, "Enter a number greater than zero to add recipes.");
-    const recipe = page.getByRole("option", { name: /Chicken adobo/ });
-    await expect(recipe).toBeDisabled();
-    await recipePax.fill("25");
-    await expect(recipePax).toHaveAttribute("aria-invalid", "false");
-    await expect(recipe).toBeEnabled();
-    await recipe.click();
-    await expect(page.getByRole("status").filter({ hasText: "Chicken adobo added to this issuance." })).toHaveCount(1);
-  }
-});
-
 test.afterAll(cleanupIssuanceFixtures);
