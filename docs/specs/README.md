@@ -23,7 +23,7 @@ Each ticket includes its own public-interface tests and relevant browser coverag
 
 ## Prototype A
 
-Run `pnpm prototype:recipe-scaling` and open `/prototype/recipe-scaling?variant=A` on the development server. The implementation is `VariantA` in the recipe-scaling prototype component. Its immutable source reference is recorded in spec #221 and ticket #226.
+The prototype route and `prototype:recipe-scaling` command are retired from current `main`. To inspect `VariantA`, use the [immutable historical source](https://github.com/j-allekine/masanao/blob/f34099a6162e7f2511db30499c5d91fbf8ed81b0/src/components/prototypes/recipe-scaling/recipe-scaling-prototype.tsx). To run it, create a separate historical checkout with `git worktree add --detach ../masanao-prototype-reference f34099a6162e7f2511db30499c5d91fbf8ed81b0`, install that checkout's dependencies, then run `pnpm prototype:recipe-scaling` there and open `http://localhost:3117/prototype/recipe-scaling?variant=A`. Keep its environment and database separate from production.
 
 The prototype supplies visual hierarchy and interaction inspiration, not production arithmetic, persistence, or authorization. Production work must use the approved specs, existing Masanao UI patterns, and shadcn primitives. Preserve fixed top controls, searchable selection, secondary exceptions, compact lists, hidden ingredients in a Sheet, and no summary cards.
 
