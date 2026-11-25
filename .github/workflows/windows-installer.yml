@@ -34,7 +34,8 @@ jobs:
         with:
           node-version: 24.15.0
           architecture: x64
-          cache: pnpm
+          # Dependencies are installed in a temporary staging directory, not
+          # this checkout. Its pnpm store may not exist when setup-node saves.
       - name: Install pinned Inno Setup compiler
         shell: pwsh
         run: |
