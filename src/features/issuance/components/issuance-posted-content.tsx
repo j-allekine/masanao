@@ -26,6 +26,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import type { IssuanceWorkspace } from "../types";
+import OpeningSourceAllocations from "./opening-source-allocations";
 
 /** Posted values come entirely from persisted evidence. Never recalculate here. */
 export default function IssuancePostedContent({
@@ -121,14 +122,16 @@ export default function IssuancePostedContent({
           <DialogContent finalFocus={() => receiptOpenerId.current ? document.getElementById(receiptOpenerId.current) : null} className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-2xl">
             <DialogHeader className="pr-8">
               <DialogTitle>Details for {receiptRow?.itemName}</DialogTitle>
-              <DialogDescription className="sr-only">Saved quantities, policy and receipt sources.</DialogDescription>
+              <DialogDescription className="sr-only">Saved quantities, policy and stock sources.</DialogDescription>
             </DialogHeader>
             <dl className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
               <div><dt className="text-body-sm text-muted-foreground">Issued</dt><dd className="mt-1 break-all text-heading-2 font-semibold tabular-nums">{formatDisplayNumber(receiptRow?.finalQuantity)} {receiptRow?.baseUnitAbbreviation}</dd></div>
               <div><dt className="text-body-sm text-muted-foreground">Calculated</dt><dd className="mt-1 break-all tabular-nums">{receiptRow?.calculatedApproximate ? "≈ " : ""}{formatDisplayNumber(receiptRow?.calculatedQuantity)} {receiptRow?.baseUnitAbbreviation}</dd>{receiptRow?.adjusted ? <Badge variant="outline" className="mt-2">Adjusted</Badge> : null}</div>
             </dl>
+            <OpeningSourceAllocations row={receiptRow} />
+            {(!receiptRow?.openingAllocations?.length || Boolean(receiptRow?.receiptAllocations?.length)) && <>
             <h3 className="font-medium">Receipt sources</h3>
-            {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">Receipt sources were not recorded for this older issuance.</p>}
+            {receiptRow?.receiptAllocations?.length ? <p className="text-body-sm text-muted-foreground">Oldest receipt first (FIFO).</p> : <p className="text-body-sm text-muted-foreground">{receiptRow?.openingAllocations?.length ? "No Delivery Receipt quantity was used for this Item." : "Receipt sources were not recorded for this older issuance."}</p>}
             <ul className="flex flex-col divide-y sm:hidden" aria-label="Receipt allocations">
               {receiptRow?.receiptAllocations?.map((allocation) => <li key={allocation.receiptLineId} className="flex min-w-0 justify-between gap-3 py-3">
                 <div className="min-w-0">
@@ -149,6 +152,7 @@ export default function IssuancePostedContent({
               </TableRow>)}</TableBody>
             </Table></div>
             {receiptRow?.receiptAllocations?.some((allocation) => allocation.basis === "reconstructed") ? <p className="text-body-sm text-muted-foreground">Historical receipt sources were inferred using FIFO; they do not prove which receipts were picked at the original posting.</p> : null}
+            </>}
             <RecordDetails label="Calculation details" fields={[{ label: "Quantity rule at posting", value: receiptRow?.policy === "whole-only" ? "Whole quantities only" : "Decimals allowed" }]} />
           </DialogContent>
         </Dialog>

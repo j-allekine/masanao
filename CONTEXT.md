@@ -39,7 +39,7 @@ An administrator-managed positive quantity in an Item's Base Unit that marks its
 
 **Inactive Item**:
 An Item unavailable for future selection that remains identifiable in historical
-records. An Item with posted delivery history cannot become inactive.
+records. An Item with posted delivery or Opening Stock history cannot become inactive.
 
 **Unit**:
 A reusable quantity label such as kg, piece, sack, or tray. A Unit label does not define how much of a particular Item it represents.
@@ -142,7 +142,22 @@ Item than the accepted receiving quantity. It is not modeled by the current
 Purchase Order reference slice.
 
 **Inventory Ledger**:
-The accountable record of stock-in from Delivery Receipt Lines and stock-out from issued Item totals. Movement quantities use each Item's Base Unit.
+The accountable record of posted incoming and outgoing stock, including Delivery Receipts, Opening Stock, issuance and Opening Stock Corrections. Movement quantities use each Item's Base Unit.
+
+**Opening Stock**:
+The kitchen's counted supplies already on hand when Masanao begins operational use, recorded as a starting balance without requiring their original Purchase Orders or Delivery Receipts. It is not added again at the start of another year.
+
+**Opening unit cost**:
+The cost assigned to one selected Item Unit on an Opening Stock line, where a deliberately assigned zero is distinct from an unknown cost. It supports operational supply-cost reporting and does not establish official accounting valuation.
+
+**Opening Stock Correction**:
+A reasoned change to remaining opening-derived stock, linked to its original Opening Stock record. It adds omitted quantities, reduces remaining quantities, or replaces the assigned cost of remaining quantities while retaining the original record and prior issuance evidence.
+
+**Stock source**:
+A posted incoming quantity of an Item with its own available capacity and supporting evidence, such as a Delivery Receipt Line or an Opening Stock line. An Opening Stock Correction can retire or create opening-derived source capacity.
+
+**Source allocation**:
+The Base Unit quantity of an issued Item total attributed to a Stock source. It explains provenance without deducting stock a second time.
 
 **Available stock**:
 An Item's posted stock-in less its posted stock-out, expressed in its Base Unit. Draft demand does not reserve or deduct this stock.
@@ -154,7 +169,7 @@ An Item's quantity alert: zero available stock is Out of stock, positive stock a
 The Base Unit quantity of an issued Item total attributed to one Delivery Receipt Line, tracing that quantity to its receipt and Purchase Order. Allocations explain stock-out sources without deducting stock a second time.
 
 **FIFO**:
-First in, first out: issuance uses the oldest available receipt date first, continuing into later receipts when needed. This is a source-selection rule, not expiry tracking or inventory costing.
+First in, first out: issuance consumes available Opening Stock before subsequent deliveries, then the oldest available receipt date first; opening lines use their recorded order when original purchase chronology is unknown. This is a source-selection convention, not proof of historical physical picking or expiry tracking.
 
 **Reconstructed receipt allocation**:
 A FIFO source attribution inferred for an earlier issuance whose receipt usage was not recorded. It is labelled as an assumption rather than an observed historical picking choice.

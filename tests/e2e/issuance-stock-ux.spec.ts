@@ -65,7 +65,8 @@ test("Stock cart preserves exact quantities and supports batch addition", async 
   await page.getByRole("option", { name: "Kilogram (kg) · Base", exact: true }).click();
   await picker.getByRole("listitem").filter({ hasText: "Replacement Rice" }).getByRole("textbox", { name: "Quantity", exact: true }).fill("2.000000000000000001");
   await page.setViewportSize({ width: 320, height: 720 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // Resize can overlap the Unit menu's exit animation; check the settled layout.
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("stock-cart-mobile.png"), fullPage: true });
   await picker.getByRole("button", { name: "Add 2 Stock items", exact: true }).click();
   await expect(picker).not.toBeVisible();

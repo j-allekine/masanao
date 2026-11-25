@@ -57,7 +57,7 @@ function ItemMobileCard({
               onDelete={() => setIsDeleteDialogOpen(true)}
               onUnits={onUnits}
               canManage={canManage}
-              isDeactivationLocked={item.hasPostedDeliveryReceiptLines}
+              isDeactivationLocked={item.hasPostedDeliveryReceiptLines || Boolean(item.hasPostedOpeningStock)}
               disabled={actionDisabled}
             />
         </CardHeader>
@@ -146,7 +146,7 @@ function ItemRow({
               onDelete={() => setIsDeleteDialogOpen(true)}
               onUnits={onUnits}
               canManage={canManage}
-              isDeactivationLocked={item.hasPostedDeliveryReceiptLines}
+              isDeactivationLocked={item.hasPostedDeliveryReceiptLines || Boolean(item.hasPostedOpeningStock)}
               disabled={actionDisabled}
             />
           </div>
