@@ -99,6 +99,9 @@ jobs:
       - name: Run native SQLite runtime smoke test
         run: pnpm exec vitest run tests/native-sqlite-runtime.test.ts --reporter=verbose
 
+      - name: Verify initial Windows administrator and account preservation
+        run: node --test tests/windows-local-data.test.mjs
+
   production-runtime:
     runs-on: ubuntu-latest
     env:

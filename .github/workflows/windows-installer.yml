@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/windows-installer.yml'
       - 'scripts/windows/**'
+      - 'tests/windows-*.test.mjs'
   workflow_dispatch:
     inputs:
       version:
@@ -48,6 +49,9 @@ jobs:
           $process = Start-Process -FilePath $setup -ArgumentList "/VERYSILENT /NORESTART /CURRENTUSER /DIR=`"$compilerDir`"" -WindowStyle Hidden -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Inno Setup installation failed ($($process.ExitCode))." }
           "INNO_COMPILER=$(Join-Path $compilerDir 'ISCC.exe')" >> $env:GITHUB_ENV
+      - name: Verify visible browser handoff
+        shell: pwsh
+        run: node --test tests/windows-browser-launch.test.mjs
       - name: Build installer
         shell: pwsh
         run: ./scripts/windows/build-installer.ps1 -Version $env:INSTALLER_VERSION -Compiler $env:INNO_COMPILER
