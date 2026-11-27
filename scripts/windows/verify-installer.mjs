@@ -32,9 +32,25 @@ const node = join(app, "node.exe");
 const launcher = join(app, "scripts", "windows", "launcher.mjs");
 const url = "http://localhost:3000";
 const silentOptions = ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"];
-const setupOptions = [...silentOptions, "/NOICONS", "/MERGETASKS=!desktopicon"];
+const verifyShortcuts = process.env.MASANAO_VERIFY_SHORTCUTS === "1";
+// The installer fixes its group name with DisableProgramGroupPage=yes.
+const testGroup = "Masanao";
+const setupOptions = verifyShortcuts
+  ? [...silentOptions, "/MERGETASKS=desktopicon"]
+  : [...silentOptions, "/NOICONS", "/MERGETASKS=!desktopicon"];
 const testCredentials = { username: "installer.test", password: randomBytes(16).toString("hex") };
 const staffCredentials = { username: "installer.staff", password: randomBytes(16).toString("hex") };
+
+async function startServer() {
+  const executable = join(app, "Masanao.exe");
+  if (await stat(executable).catch(() => null)) {
+    const bytes = await readFile(executable);
+    const pe = bytes.readUInt32LE(0x3c);
+    assert.equal(bytes.readUInt16LE(pe + 24 + 68), 2, "Masanao must use the Windows GUI subsystem (no console)");
+    return start(executable, ["start-test"]);
+  }
+  return start(node, [launcher, "start-test"]);
+}
 
 function start(executable, args, input) {
   const child = spawn(executable, args, {
@@ -46,6 +62,66 @@ function start(executable, args, input) {
 
 async function run(executable, args, input) {
   assert.equal(await start(executable, args, input).done, 0, `${executable} failed`);
+}
+
+async function stopServer() {
+  const executable = join(app, "Masanao.exe");
+  if (await stat(executable).catch(() => null)) await run(executable, ["stop"]);
+  else await run(node, [launcher, "stop"]);
+}
+
+function verifyInstalledShortcuts() {
+  if (!verifyShortcuts) return;
+  const powershell = join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const script = `
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $shell = New-Object -ComObject WScript.Shell
+    $desktop = [Environment]::GetFolderPath('Desktop')
+    $programs = [Environment]::GetFolderPath('Programs')
+    @(
+      $shell.CreateShortcut((Join-Path $desktop 'Masanao.lnk'))
+      $shell.CreateShortcut((Join-Path (Join-Path $programs $env:MASANAO_TEST_GROUP) 'Masanao.lnk'))
+      $shell.CreateShortcut((Join-Path (Join-Path $programs $env:MASANAO_TEST_GROUP) 'Stop Masanao.lnk'))
+    ) | ForEach-Object {
+      @{ target = $_.TargetPath; icon = $_.IconLocation; directory = $_.WorkingDirectory; arguments = $_.Arguments }
+    } | ConvertTo-Json -Compress
+  `;
+  const result = spawnSync(powershell, ["-NoProfile", "-Command", script], {
+    env: { ...env, MASANAO_TEST_GROUP: testGroup }, windowsHide: true, encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const shortcuts = JSON.parse(result.stdout);
+  assert.equal(shortcuts.length, 3);
+  for (const shortcut of shortcuts) {
+    assert.equal(shortcut.target.toLowerCase(), join(app, "Masanao.exe").toLowerCase());
+    assert.equal(shortcut.directory.toLowerCase(), app.toLowerCase());
+    assert.equal(shortcut.icon.split(",")[0].toLowerCase(), join(app, "Masanao.ico").toLowerCase());
+  }
+  assert.equal(shortcuts[0].arguments, "");
+  assert.equal(shortcuts[1].arguments, "");
+  assert.equal(shortcuts[2].arguments, "stop");
+  console.log("Desktop, Start menu, and Stop shortcuts use the native launcher and Masanao icon.");
+}
+
+async function verifyDesktopLaunch() {
+  if (!verifyShortcuts) return;
+  const powershell = join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const result = spawnSync(powershell, ["-NoProfile", "-Command", `
+    $shortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Masanao.lnk'
+    $process = Start-Process -FilePath $shortcut -WindowStyle Hidden -Wait -PassThru
+    exit $process.ExitCode
+  `], { env, windowsHide: true, encoding: "utf8", timeout: 30_000 });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  console.log("Real desktop shortcut opened the running application through its native launcher.");
+  const hold = process.env.MASANAO_VERIFY_HOLD_FILE;
+  if (hold) {
+    await writeFile(`${hold}.ready`, JSON.stringify({ app, data, url }));
+    const deadline = Date.now() + 180_000;
+    while (!(await stat(`${hold}.release`).catch(() => null))) {
+      if (Date.now() >= deadline) throw new Error("Timed out waiting for visual shortcut verification");
+      await delay(250);
+    }
+  }
 }
 
 async function verifyInstallDestination() {
@@ -130,9 +206,9 @@ async function verifyBrowser(createRecord) {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(url);
     await expect(page.getByRole("form", { name: "Masanao staff sign in" })).toHaveAttribute("data-client-ready", "true");
-    await page.getByLabel("Username", { exact: true }).fill(testCredentials.username);
-    await page.getByLabel("Password", { exact: true }).fill(testCredentials.password);
-    await page.getByLabel("Password", { exact: true }).press("Enter");
+    await page.getByRole("textbox", { name: "Username" }).fill(testCredentials.username);
+    await page.locator('input[name="password"]').fill(testCredentials.password);
+    await page.locator('input[name="password"]').press("Enter");
     await expect(page).toHaveURL(`${url}/dashboard`);
     await page.goto(`${url}/master-data`);
     await expect(page.locator('[data-client-ready="true"]')).toBeVisible();
@@ -146,6 +222,11 @@ async function verifyBrowser(createRecord) {
     }
     await page.getByRole("searchbox").fill("Installer verification unit");
     await expect(page.getByRole("row").filter({ hasText: "Installer verification unit" })).toBeVisible();
+    for (const path of ["/dashboard", "/items", "/inventory", "/inventory/opening-stock", "/purchase-orders", "/activity-designs", "/activities", "/recipes"]) {
+      const response = await page.goto(`${url}${path}`);
+      assert.equal(response.status(), 200, `Installed route failed: ${path}`);
+      await expect(page.locator("main").first()).toBeVisible();
+    }
     assert.deepEqual(blocked, [], "The installed browser flow attempted a non-local request");
     assert.deepEqual(errors, [], "The installed browser flow raised a JavaScript error");
   } finally {
@@ -163,10 +244,24 @@ try {
   installed = true;
   assert.equal(spawnSync("reg.exe", ["query", registryKey, "/reg:64"], { windowsHide: true }).status, 0,
     "The installed app did not register under the expected Windows identity");
-  await run(node, [launcher, "create-admin"], JSON.stringify(testCredentials));
+  if (await stat(join(app, "Masanao.exe")).catch(() => null)) {
+    testCredentials.username = "admin";
+    server = await startServer();
+    const initialCookie = await verifyLogin(server, { username: "admin", password: "password123" });
+    const changed = await fetch(`${url}/api/auth/change-password`, {
+      method: "POST",
+      headers: { cookie: initialCookie, origin: url, "content-type": "application/json" },
+      body: JSON.stringify({ currentPassword: "password123", newPassword: testCredentials.password }),
+    });
+    assert.equal(changed.status, 200, "Could not change the default administrator password");
+    await stopServer();
+    assert.equal(await server.done, 0);
+  } else {
+    await run(node, [launcher, "create-admin"], JSON.stringify(testCredentials));
+  }
   assert.equal(await start(node, [launcher, "create-admin"], JSON.stringify(staffCredentials)).done, 1, "Bootstrap allowed a second administrator");
   const secret = await readFile(join(data, "auth-secret.txt"), "utf8");
-  server = start(node, [launcher, "start-test"]);
+  server = await startServer();
   const cookie = await verifyLogin(server);
   const saved = await fetch(`${url}/api/admin/accounts`, {
     method: "POST",
@@ -182,6 +277,7 @@ try {
   assert.equal(await server.done, 0, "Installer did not stop the previous app cleanly");
   await unlink(damagedLauncher);
   launcherRenamed = false;
+  verifyInstalledShortcuts();
   assert.equal(await readFile(join(data, "auth-secret.txt"), "utf8"), secret);
   await verifyPortConflict("127.0.0.1");
   const hasIPv6 = await verifyPortConflict("::1");
@@ -190,16 +286,24 @@ try {
   const migration = join(app, "src", "prisma", "migrations", "99999999999999_installer_smoke");
   await mkdir(migration);
   await writeFile(join(migration, "migration.sql"), 'CREATE TABLE "installer_smoke" ("id" INTEGER PRIMARY KEY);\n');
-  server = start(node, [launcher, "start-test"]);
+  server = await startServer();
   await verifyLogin(server);
   await verifyLogin(server, staffCredentials);
+  if (testCredentials.username !== "admin") {
+    const defaultLogin = await fetch(`${url}/api/auth/sign-in/username`, {
+      method: "POST",
+      headers: { origin: url, "content-type": "application/json" },
+      body: JSON.stringify({ username: "admin", password: "password123" }),
+    });
+    assert.equal(defaultLogin.status, 401, "Upgrade added a default account despite existing users");
+  }
   await run(node, [launcher, "start-test"]);
   if (hasIPv6) assert.equal((await fetch("http://[::1]:3000/login")).status, 200);
   const backups = await readdir(join(data, "backups"));
   assert.equal(backups.length, 1, "The pending migration did not create exactly one backup");
   assert.ok((await stat(join(data, "backups", backups[0]))).size > 0);
 
-  await run(node, [launcher, "stop"]);
+  await stopServer();
   assert.equal(await server.done, 0);
   const badMigration = join(app, "src", "prisma", "migrations", "99999999999999_installer_smoke_failure");
   await mkdir(badMigration);
@@ -215,9 +319,23 @@ try {
   await mkdir(data);
   await copyFile(join(failedData, "auth-secret.txt"), join(data, "auth-secret.txt"));
   await copyFile(join(failedData, "backups", failureSnapshot), join(data, "masanao.db"));
-  server = start(node, [launcher, "start-test"]);
+  server = await startServer();
   await verifyLogin(server, staffCredentials);
   await verifyBrowser(false);
+  await verifyDesktopLaunch();
+  await run(node, ["--eval", `
+    const assert = require('node:assert/strict');
+    const path = require('node:path');
+    const load = require('node:module').createRequire(path.join(process.argv[1], 'package.json'));
+    const Database = load('better-sqlite3');
+    const database = new Database(path.join(process.argv[2], 'masanao.db'), { readonly: true, fileMustExist: true });
+    try {
+      assert.equal(database.prepare('PRAGMA quick_check').get().quick_check, 'ok');
+      assert.deepEqual(database.prepare('PRAGMA foreign_key_check').all(), []);
+      assert.equal(database.prepare('SELECT COUNT(*) AS count FROM "user"').get().count, 2);
+      console.log('SQLite integrity, foreign keys, and preserved account count passed.');
+    } finally { database.close(); }
+  `, app, data]);
 
   await run(await findUninstaller(), silentOptions);
   installed = false;

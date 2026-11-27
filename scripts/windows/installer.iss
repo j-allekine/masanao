@@ -18,6 +18,8 @@ OutputBaseFilename=Masanao-Setup-{#AppVersion}-x64
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile={#PayloadDir}\Masanao.ico
+UninstallDisplayIcon={app}\Masanao.exe
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"
@@ -32,10 +34,10 @@ Type: filesandordirs; Name: "{app}\public"
 Type: filesandordirs; Name: "{app}\src\prisma\migrations"
 
 [Icons]
-Name: "{group}\Masanao"; Filename: "{app}\scripts\windows\start.cmd"; WorkingDir: "{app}"; Flags: runminimized
-Name: "{group}\Stop Masanao"; Filename: "{app}\node.exe"; Parameters: """{app}\scripts\windows\launcher.mjs"" stop"; WorkingDir: "{app}"; Flags: runminimized
+Name: "{group}\Masanao"; Filename: "{app}\Masanao.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Masanao.ico"
+Name: "{group}\Stop Masanao"; Filename: "{app}\Masanao.exe"; Parameters: "stop"; WorkingDir: "{app}"; IconFilename: "{app}\Masanao.ico"
 Name: "{group}\Set up first administrator"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy RemoteSigned -File ""{app}\scripts\windows\create-admin.ps1"""; WorkingDir: "{app}"
-Name: "{userdesktop}\Masanao"; Filename: "{app}\scripts\windows\start.cmd"; WorkingDir: "{app}"; Flags: runminimized; Tasks: desktopicon
+Name: "{userdesktop}\Masanao"; Filename: "{app}\Masanao.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Masanao.ico"; Tasks: desktopicon
 
 [Code]
 var

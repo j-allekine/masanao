@@ -75,6 +75,13 @@ try {
             Copy-Directory $target (Join-Path $payload $aliasPath)
         }
     }
+    $icon = Join-Path $payload 'Masanao.ico'
+    & $node (Join-Path $PSScriptRoot 'build-icon.mjs') $repository $build $icon
+    if ($LASTEXITCODE -ne 0) { throw 'Masanao icon generation failed.' }
+    $csharp = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+    & $csharp /nologo /target:winexe /platform:x64 /reference:System.Windows.Forms.dll "/win32icon:$icon" "/out:$(Join-Path $payload 'Masanao.exe')" (Join-Path $PSScriptRoot 'Masanao.cs')
+    if ($LASTEXITCODE -ne 0) { throw 'Masanao launcher compilation failed.' }
+
     Move-Item -LiteralPath 'node_modules' -Destination (Join-Path $payload 'node_modules')
     Remove-Item -LiteralPath (Join-Path $payload 'node_modules/.modules.yaml') -Force
     Copy-Directory 'public' (Join-Path $payload 'public')
@@ -82,7 +89,7 @@ try {
     Copy-Item -LiteralPath 'src/prisma/schema.prisma' -Destination (Join-Path $payload 'src/prisma')
     Copy-Directory 'src/prisma/migrations' (Join-Path $payload 'src/prisma/migrations')
     New-Item -ItemType Directory -Path (Join-Path $payload 'scripts/windows') -Force | Out-Null
-    foreach ($file in @('local-data.mjs', 'launcher.mjs', 'next-process.cjs', 'start.cmd', 'create-admin.ps1')) {
+    foreach ($file in @('local-data.mjs', 'launcher.mjs', 'open-browser.mjs', 'next-process.cjs', 'start.cmd', 'create-admin.ps1')) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination (Join-Path $payload 'scripts/windows')
     }
     Copy-Item -LiteralPath $node -Destination (Join-Path $payload 'node.exe')

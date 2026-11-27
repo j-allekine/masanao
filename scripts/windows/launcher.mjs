@@ -1,24 +1,17 @@
-import { fork, spawn } from "node:child_process";
+import { fork } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { existsSync, readFileSync } from "node:fs";
 import { createConnection, createServer } from "node:net";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { openBrowser } from "./open-browser.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const dataDirectory = join(process.env.LOCALAPPDATA, "Masanao", "Data");
 const pipeId = createHash("sha256").update(dataDirectory.toLowerCase()).digest("hex");
 const pipe = `\\\\.\\pipe\\Masanao-${pipeId}`;
 const url = "http://localhost:3000";
-
-function openBrowser() {
-  const browser = spawn("rundll32.exe", ["url.dll,FileProtocolHandler", url], {
-    stdio: "ignore",
-    windowsHide: true,
-  });
-  browser.on("error", (error) => console.error(`Open ${url} in your browser. ${error.message}`));
-}
 
 async function askRunningInstance(action) {
   const connection = createConnection(pipe);
@@ -114,7 +107,7 @@ async function launch(open) {
       } else if (action === "open") {
         if (stopRequested) connection.end("Masanao is shutting down. Try again shortly.");
         else if (ready) {
-          openBrowser();
+          openBrowser(url);
           connection.end("ok");
         } else {
           connection.end("Masanao is still starting. Try again shortly.");
@@ -140,9 +133,10 @@ async function launch(open) {
     const probe = createServer();
     await listenOnLoopback(probe, "127.0.0.1");
     await new Promise((resolve) => probe.close(resolve));
-    const { prepareDatabase, runtimeEnvironment } = await import("./local-data.mjs");
+    const { ensureDefaultAdmin, prepareDatabase, runtimeEnvironment } = await import("./local-data.mjs");
     const env = runtimeEnvironment(dataDirectory, url);
     await prepareDatabase(root, dataDirectory, env);
+    await ensureDefaultAdmin(dataDirectory);
     if (stopRequested) return;
     child = fork(join(root, "scripts", "windows", "next-process.cjs"), ["3000"], {
       cwd: root,
@@ -158,7 +152,7 @@ async function launch(open) {
       startupOutput = (startupOutput + chunk).slice(-4096);
       if (startupOutput.includes("Ready in")) {
         ready = true;
-        if (open && !stopRequested) openBrowser();
+        if (open && !stopRequested) openBrowser(url);
       }
     });
     const [code] = await childExit;

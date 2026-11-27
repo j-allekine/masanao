@@ -69,17 +69,23 @@ export async function prepareDatabase(root, dataDirectory, env) {
   if (result.status !== 0) throw new Error("Database setup failed. Contact the person who installed Masanao before retrying.");
 }
 
-export async function createFirstAdmin(dataDirectory, { username, password }) {
+export async function ensureDefaultAdmin(dataDirectory) {
+  return createFirstAdmin(dataDirectory, { username: "admin", password: "password123" }, { ifEmpty: true });
+}
+
+export async function createFirstAdmin(dataDirectory, { username, password }, { ifEmpty = false } = {}) {
   if (typeof username !== "string" || !/^[a-zA-Z0-9_.]{3,30}$/.test(username) ||
       typeof password !== "string" || password.length < 8 || password.length > 128) {
     throw new Error("Use a 3–30 character username (letters, numbers, dots or underscores) and an 8–128 character password.");
   }
   username = username.toLowerCase();
-  const passwordHash = await hashPassword(password);
   const database = new Database(join(dataDirectory, "masanao.db"), { fileMustExist: true });
   try {
-    database.transaction(() => {
+    if (ifEmpty && database.prepare('SELECT 1 FROM "user" LIMIT 1').get()) return false;
+    const passwordHash = await hashPassword(password);
+    return database.transaction(() => {
       if (database.prepare('SELECT 1 FROM "user" LIMIT 1').get()) {
+        if (ifEmpty) return false;
         throw new Error("This installation already has a user account.");
       }
       const id = randomUUID();
@@ -91,6 +97,7 @@ export async function createFirstAdmin(dataDirectory, { username, password }) {
         ("id", "issuer", "accountId", "providerId", "userId", "password", "createdAt", "updatedAt")
         VALUES (?, 'local:credential', ?, 'credential', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`)
         .run(randomUUID(), id, id, passwordHash);
+      return true;
     }).immediate();
   } finally {
     database.close();
